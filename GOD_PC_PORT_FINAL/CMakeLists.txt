@@ -11,8 +11,9 @@ else()
     add_compile_options(-msse4.1 -mpopcnt -march=native) # Para Linux/GCC
 endif()
 
-# AJUSTE ESTE CAMINHO: Aponte para onde você baixou a pasta PS2Recomp no seu novo PC
-set(PS2RECOMP_PATH "/home/cristiano/PS2Recomp")
+# AJUSTE: O caminho agora é relativo à raiz do repositório clonado
+# Se a pasta PS2Recomp estiver na raiz do repositório:
+set(PS2RECOMP_PATH "${PROJECT_SOURCE_DIR}/../PS2Recomp")
 set(PS2RUNTIME_PATH "${PS2RECOMP_PATH}/ps2xRuntime")
 
 # Incluir diretórios de cabeçalho
