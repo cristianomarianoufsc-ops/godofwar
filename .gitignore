@@ -4,25 +4,29 @@ bin/
 obj/
 CMakeFiles/
 CMakeCache.txt
-GOD_PC_PORT_FINAL/build/
+**/build/
 
-# Ignorar arquivos pesados de dados (os 5GB) dentro da pasta do jogo
-GOD_PC_PORT_FINAL/data/
-GOD_PC_PORT_FINAL/*.iso
-GOD_PC_PORT_FINAL/*.bin
-GOD_PC_PORT_FINAL/*.pak
-GOD_PC_PORT_FINAL/*.wad
-GOD_PC_PORT_FINAL/*.pss
-GOD_PC_PORT_FINAL/*.mp4
+# Ignorar a pasta de dados do jogo EM QUALQUER LUGAR (os 5GB)
+**/data/
+**/Data/
 
-# Ignorar arquivos pesados específicos da pasta data
-GOD_PC_PORT_FINAL/data/*.pak
-GOD_PC_PORT_FINAL/data/*.img
-GOD_PC_PORT_FINAL/data/*.irx
-GOD_PC_PORT_FINAL/data/*.PAK
-GOD_PC_PORT_FINAL/data/*.IMG
-GOD_PC_PORT_FINAL/data/*.IRX
-
+# Ignorar extensões pesadas específicas (caso não estejam na pasta data)
+*.iso
+*.ISO
+*.bin
+*.BIN
+*.pak
+*.PAK
+*.wad
+*.WAD
+*.pss
+*.PSS
+*.mp4
+*.MP4
+*.img
+*.IMG
+*.irx
+*.IRX
 
 # Ignorar temporários do sistema
 .DS_Store
