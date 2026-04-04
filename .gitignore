@@ -15,6 +15,15 @@ GOD_PC_PORT_FINAL/*.wad
 GOD_PC_PORT_FINAL/*.pss
 GOD_PC_PORT_FINAL/*.mp4
 
+# Ignorar arquivos pesados específicos da pasta data
+GOD_PC_PORT_FINAL/data/*.pak
+GOD_PC_PORT_FINAL/data/*.img
+GOD_PC_PORT_FINAL/data/*.irx
+GOD_PC_PORT_FINAL/data/*.PAK
+GOD_PC_PORT_FINAL/data/*.IMG
+GOD_PC_PORT_FINAL/data/*.IRX
+
+
 # Ignorar temporários do sistema
 .DS_Store
 Thumbs.db
