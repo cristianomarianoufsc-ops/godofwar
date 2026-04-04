@@ -12,7 +12,7 @@ else()
 endif()
 
 # AJUSTE: O caminho agora é relativo à raiz do repositório clonado
-# Se a pasta PS2Recomp estiver na raiz do repositório:
+# A pasta PS2Recomp foi movida para dentro da raiz do repositório
 set(PS2RECOMP_PATH "${PROJECT_SOURCE_DIR}/../PS2Recomp")
 set(PS2RUNTIME_PATH "${PS2RECOMP_PATH}/ps2xRuntime")
 
