@@ -1,0 +1,20 @@
+# Ignorar pastas de compilação (geradas pelo CMake)
+build/
+bin/
+obj/
+CMakeFiles/
+CMakeCache.txt
+GOD_PC_PORT_FINAL/build/
+
+# Ignorar arquivos pesados de dados (os 5GB) dentro da pasta do jogo
+GOD_PC_PORT_FINAL/data/
+GOD_PC_PORT_FINAL/*.iso
+GOD_PC_PORT_FINAL/*.bin
+GOD_PC_PORT_FINAL/*.pak
+GOD_PC_PORT_FINAL/*.wad
+GOD_PC_PORT_FINAL/*.pss
+GOD_PC_PORT_FINAL/*.mp4
+
+# Ignorar temporários do sistema
+.DS_Store
+Thumbs.db
