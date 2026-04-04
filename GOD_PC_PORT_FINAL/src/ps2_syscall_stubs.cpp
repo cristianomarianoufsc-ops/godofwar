@@ -28,8 +28,19 @@ std::string translate_path(const std::string& ps2_path, PS2Runtime* runtime) {
     if (semi != std::string::npos) path = path.substr(0, semi);
 
     // Constrói o caminho final relativo à pasta data/ do projeto
-    // Isso assume que você está rodando o executável a partir da pasta build/
-    return "../data/" + path;
+    // Tenta primeiro "../data/" (se rodar de build/) e depois "data/" (se rodar da raiz)
+    if (fs::exists("../data/" + path)) {
+        return "../data/" + path;
+    } else if (fs::exists("data/" + path)) {
+        return "data/" + path;
+    }
+    
+    // Se não encontrar, tenta dentro da pasta GOD_PC_PORT_FINAL/data/
+    if (fs::exists("GOD_PC_PORT_FINAL/data/" + path)) {
+        return "GOD_PC_PORT_FINAL/data/" + path;
+    }
+    
+    return "data/" + path; // Fallback padrão
 }
 
 // --- STUB DE HARDWARE (RESOLVE O LOOP 0x100088) ---
@@ -39,11 +50,7 @@ void stub_hardware_init(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime) 
     if (count++ % 100 == 0) {
         std::cout << "LOG: Simulando Hardware Pronto (0x100088)" << std::endl;
     }
-    // MUDANÇA AQUI: Retornamos 0 para indicar que o hardware está IDLE (Pronto)
-    setReturnS32(ctx, 0); 
-}
-
-    // Retornamos 1 para indicar ao jogo que o hardware terminou a inicialização
+    // MUDANÇA: Retornamos 1 para indicar ao jogo que o hardware terminou a inicialização
     // Sem isso, o jogo fica preso em um loop infinito de espera (polling)
     setReturnS32(ctx, 1); 
 }
