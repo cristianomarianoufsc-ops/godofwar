@@ -118,4 +118,11 @@ void entry_0x100008(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtime) {
     // 0x100088: 0x70000013  mtlo1       $zero
     ctx->pc = 0x100088u;
     ctx->lo1 = GPR_U64(ctx, 0);
+
+    // Patch: Jump to next entry point to avoid unimplemented function error at 0x10008c
+    ctx->pc = 0x1001d0u;
+    if (runtime->hasFunction(0x1001d0u)) {
+        auto targetFn = runtime->lookupFunction(0x1001d0u);
+        targetFn(rdram, ctx, runtime);
+    }
 }
