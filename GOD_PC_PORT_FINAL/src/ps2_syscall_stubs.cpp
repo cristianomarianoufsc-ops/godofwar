@@ -63,15 +63,18 @@ void syscall_rf_open(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime) {
     const char* ps2_path = (const char*)&rdram[path_addr & PS2_RAM_MASK];
     std::string pc_path = translate_path(ps2_path, runtime);
 
-    std::cout << "LOG: RF_OPEN -> PS2: " << ps2_path << " | PC: " << pc_path << std::endl;
+    std::cout << "[I/O] RF_OPEN: Tentando abrir arquivo original: " << ps2_path << std::endl;
+    std::cout << "[I/O] RF_OPEN: Traduzido para PC: " << pc_path << std::endl;
 
     FILE* fp = fopen(pc_path.c_str(), "rb");
     if (fp) {
+        std::cout << "[I/O] RF_OPEN: SUCESSO! Arquivo encontrado e aberto. (FD=" << g_next_fd << ")" << std::endl;
         int fd = g_next_fd++;
         g_open_files[fd] = {fp, pc_path};
         setReturnS32(ctx, fd);
     } else {
-        std::cerr << "ERRO: Falha ao abrir arquivo: " << pc_path << " (Verifique se ele existe na pasta data/)" << std::endl;
+        std::cerr << "[I/O] RF_OPEN: ERRO! Arquivo não encontrado no caminho: " << pc_path << std::endl;
+        std::cerr << "      Certifique-se de que a pasta 'data/' está no lugar certo." << std::endl;
         setReturnS32(ctx, -1);
     }
 }
