@@ -45,17 +45,32 @@ std::string translate_path(const std::string& ps2_path, PS2Runtime* runtime) {
 
 // --- STUB DE HARDWARE (RESOLVE O LOOP 0x100088) ---
 // Esta função simula a resposta do hardware do PS2 (DMA/GS)
+// O God of War fica preso no endereço 0x100088 esperando por uma flag de hardware.
 void stub_hardware_init(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime) {
     static int count = 0;
-    if (count++ % 500 == 0) {
-        uint32_t a0 = getRegU32(ctx, 4);
-        uint32_t a1 = getRegU32(ctx, 5);
-        uint32_t v0 = getRegU32(ctx, 2);
-        std::cout << "[HW] Loop 0x100088: a0=" << std::hex << a0 << " a1=" << a1 << " v0=" << v0 << std::dec << std::endl;
-        std::cout << "LOG: Simulando Hardware Pronto (0x100088) -> Retornando 0" << std::endl;
+    
+    // Captura o estado atual dos registradores para depuração
+    uint32_t a0 = getRegU32(ctx, 4);
+    uint32_t a1 = getRegU32(ctx, 5);
+    uint32_t v0 = getRegU32(ctx, 2);
+    uint32_t t0 = getRegU32(ctx, 8); // Frequentemente usado para comparar flags de hardware
+    
+    if (count % 1000 == 0) {
+        std::cout << "\n[HW_DEBUG] Loop 0x100088 (Hardware Init)" << std::endl;
+        std::cout << " > a0=" << std::hex << "0x" << a0 << " a1=0x" << a1 << std::endl;
+        std::cout << " > v0=" << "0x" << v0 << " t0=0x" << t0 << std::dec << std::endl;
+        std::cout << " > Ação: Forçando Retorno 0 para quebrar o loop de polling." << std::endl;
     }
-    // MUDANÇA: Alguns stubs de hardware do PS2Recomp esperam 0 para indicar sucesso ou fim de transferência
+    
+    // Incrementa o contador para evitar logs excessivos
+    count++;
+    
+    // No God of War, este loop espera que o bit de "Ready" de algum canal de DMA seja ativado.
+    // Retornar 0 simula que o hardware terminou sua tarefa de inicialização.
     setReturnS32(ctx, 0); 
+    
+    // Opcional: Se o loop persistir, podemos tentar forçar o registrador v0 diretamente
+    // setRegU32(ctx, 2, 0); 
 }
 
 // --- SYSCALLS DE SISTEMA DE ARQUIVOS (Fase B) ---

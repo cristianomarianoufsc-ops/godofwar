@@ -55,15 +55,19 @@ int main(int argc, char** argv) {
     if (!runtime.loadELF(elfPath.c_str())) {
         std::cout << "Tentando caminhos alternativos para o ELF..." << std::endl;
         
-        // Caminho 1: Saindo da pasta build e entrando em data/
-        std::string altPath1 = "../../data/SCUS_973.99";
+        // Caminho 1: Saindo da pasta build e entrando em data/ (Caminho mais provável no Linux Mint)
+        std::string altPath1 = "../data/SCUS_973.99";
         // Caminho 2: Saindo da pasta build, subindo mais um nível e entrando em data/
-        std::string altPath2 = "../../../data/SCUS_973.99";
+        std::string altPath2 = "../../data/SCUS_973.99";
+        // Caminho 3: Diretamente na pasta data da raiz (se rodar da raiz)
+        std::string altPath3 = "data/SCUS_973.99";
         
         if (runtime.loadELF(altPath1.c_str())) {
             std::cout << "ELF carregado com sucesso de: " << altPath1 << std::endl;
         } else if (runtime.loadELF(altPath2.c_str())) {
             std::cout << "ELF carregado com sucesso de: " << altPath2 << std::endl;
+        } else if (runtime.loadELF(altPath3.c_str())) {
+            std::cout << "ELF carregado com sucesso de: " << altPath3 << std::endl;
         } else {
             std::cerr << "Erro fatal: Não foi possível encontrar o arquivo ELF original!" << std::endl;
             std::cerr << "Certifique-se de que o arquivo SCUS_973.99 está na pasta 'data/' na raiz do repositório." << std::endl;
