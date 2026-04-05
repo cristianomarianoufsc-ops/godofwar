@@ -70,8 +70,13 @@ void stub_hardware_init(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime) 
     // esperam um bit não-zero para indicar que o hardware terminou sua tarefa.
     setReturnS32(ctx, 1); 
     
-    // Opcional: Se o loop persistir, podemos tentar forçar o registrador v0 diretamente
-    // setRegU32(ctx, 2, 1); 
+    // FORÇAR SAÍDA DO LOOP: Se o jogo continuar preso no endereço 0x100088,
+    // vamos forçar o Program Counter (PC) a avançar para a próxima instrução (0x10008C).
+    // Isso "quebra" o loop mecanicamente, empurrando o jogo para a frente.
+    if (ctx->pc == 0x100088) {
+        std::cout << " > Ação: Forçando PC para 0x10008C para quebrar o loop mecanicamente." << std::endl;
+        ctx->pc = 0x10008C;
+    }
 }
 
 // --- SYSCALLS DE SISTEMA DE ARQUIVOS (Fase B) ---
