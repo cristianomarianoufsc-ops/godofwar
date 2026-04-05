@@ -47,12 +47,15 @@ std::string translate_path(const std::string& ps2_path, PS2Runtime* runtime) {
 // Esta função simula a resposta do hardware do PS2 (DMA/GS)
 void stub_hardware_init(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime) {
     static int count = 0;
-    if (count++ % 100 == 0) {
-        std::cout << "LOG: Simulando Hardware Pronto (0x100088)" << std::endl;
+    if (count++ % 500 == 0) {
+        uint32_t a0 = getRegU32(ctx, 4);
+        uint32_t a1 = getRegU32(ctx, 5);
+        uint32_t v0 = getRegU32(ctx, 2);
+        std::cout << "[HW] Loop 0x100088: a0=" << std::hex << a0 << " a1=" << a1 << " v0=" << v0 << std::dec << std::endl;
+        std::cout << "LOG: Simulando Hardware Pronto (0x100088) -> Retornando 0" << std::endl;
     }
-    // MUDANÇA: Retornamos 1 para indicar ao jogo que o hardware terminou a inicialização
-    // Sem isso, o jogo fica preso em um loop infinito de espera (polling)
-    setReturnS32(ctx, 1); 
+    // MUDANÇA: Alguns stubs de hardware do PS2Recomp esperam 0 para indicar sucesso ou fim de transferência
+    setReturnS32(ctx, 0); 
 }
 
 // --- SYSCALLS DE SISTEMA DE ARQUIVOS (Fase B) ---
