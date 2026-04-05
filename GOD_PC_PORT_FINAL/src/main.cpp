@@ -17,17 +17,18 @@ int main(int argc, char** argv) {
     InitWindow(640, 448, "God of War - PC Port");
     SetTargetFPS(60);
 
-    if (argc < 2) {
-        std::cout << "Uso: ./GodOfWarPCPort <caminho_para_SCUS_973.99>" << std::endl;
-        return 0;
-    }
-
     // 1. Inicializa o Runtime
     PS2Runtime runtime;
 
-    // Configura os caminhos de I/O a partir do ELF para que o tradutor de caminhos funcione
+    std::string elfPath = "";
     if (argc >= 2) {
+        elfPath = argv[1];
         PS2Runtime::configureIoPathsFromElf(argv[1]);
+    } else {
+        std::cout << "[INFO] Nenhum caminho de ELF fornecido. Tentando caminhos padrão..." << std::endl;
+        // Se não houver argumentos, assume que o usuário quer rodar o padrão na pasta data
+        elfPath = "../data/SCUS_973.99"; 
+        PS2Runtime::configureIoPathsFromElf(elfPath.c_str());
     }
 
          // 2. IMPORTANTE: Inicializa a memória antes de carregar o ELF
@@ -48,7 +49,6 @@ int main(int argc, char** argv) {
     // Como alternativa segura, vamos apenas garantir que os stubs existam.
 
     // 4. Carrega o ELF original (agora com memória disponível)
-    std::string elfPath = argv[1];
     std::cout << "Carregando ELF: " << elfPath << std::endl;
     
     // Tenta carregar o ELF. Se falhar, tenta caminhos alternativos comuns
