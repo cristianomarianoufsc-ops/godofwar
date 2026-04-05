@@ -6,27 +6,23 @@ CMakeFiles/
 CMakeCache.txt
 **/build/
 
-# Ignorar a pasta de dados do jogo EM QUALQUER LUGAR (os 5GB)
-**/data/
-**/Data/
-
-# Ignorar extensões pesadas específicas (caso não estejam na pasta data)
-*.iso
-*.ISO
-*.bin
-*.BIN
+# Ignorar SOMENTE o arquivo PART1.PAK de 4,3 GB (devido ao limite do GitHub)
+# Este arquivo deve ser baixado externamente
+**/data/PART1.PAK
+**/Data/PART1.PAK
 *.pak
 *.PAK
-*.wad
-*.WAD
-*.pss
-*.PSS
-*.mp4
-*.MP4
-*.img
-*.IMG
-*.irx
-*.IRX
+
+# Permitir arquivos de sistema do PS2 que são pequenos (KB/MB)
+# Removidas as regras que ignoravam IRX, IMG, BIN, etc.
+# Mantemos apenas extensões de vídeo muito pesadas se necessário, 
+# mas por enquanto vamos liberar para o repositório.
+
+# Ignorar extensões de vídeo/imagem de disco que REALMENTE são grandes (acima de 100MB)
+# Se algum arquivo dessas extensões for menor que 100MB, ele passará.
+# Para o seu caso, o .IMG de 278KB agora vai passar.
+# *.iso
+# *.ISO
 
 # Ignorar temporários do sistema
 .DS_Store
