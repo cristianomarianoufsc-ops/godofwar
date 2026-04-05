@@ -66,11 +66,12 @@ void stub_hardware_init(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime) 
     count++;
     
     // No God of War, este loop espera que o bit de "Ready" de algum canal de DMA seja ativado.
-    // Retornar 0 simula que o hardware terminou sua tarefa de inicialização.
-    setReturnS32(ctx, 0); 
+    // MUDANÇA: Tentando retornar 1 em vez de 0. Muitos stubs de hardware do PS2Recomp
+    // esperam um bit não-zero para indicar que o hardware terminou sua tarefa.
+    setReturnS32(ctx, 1); 
     
     // Opcional: Se o loop persistir, podemos tentar forçar o registrador v0 diretamente
-    // setRegU32(ctx, 2, 0); 
+    // setRegU32(ctx, 2, 1); 
 }
 
 // --- SYSCALLS DE SISTEMA DE ARQUIVOS (Fase B) ---
