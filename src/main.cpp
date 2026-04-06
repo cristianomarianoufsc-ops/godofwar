@@ -7,7 +7,7 @@ int main(int argc, char *argv[])
 {
     // O caminho para o executável original do PS2 (ELF)
     // No seu caso, é o SCUS_973.99
-    std::string elfPath = "SCUS_973.99";
+    std::string elfPath = "GOD_PC_PORT_FINAL/data/SCUS_973.99";
     
     if (argc > 1) {
         elfPath = argv[1];
