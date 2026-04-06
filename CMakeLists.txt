@@ -3,9 +3,10 @@ project(GodOfWarPCPort)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+add_compile_options(-msse4.1 -mavx)
 
 # Caminhos para o PS2Recomp (Runtime)
-set(PS2RECOMP_PATH "/home/ubuntu/PS2Recomp")
+set(PS2RECOMP_PATH "${PROJECT_SOURCE_DIR}/PS2Recomp")
 set(PS2RUNTIME_PATH "${PS2RECOMP_PATH}/ps2xRuntime")
 
 # Incluir diretórios de cabeçalho
