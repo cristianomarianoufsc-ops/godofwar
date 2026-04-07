@@ -124,5 +124,8 @@ void entry_0x100008(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtime) {
     if (runtime->hasFunction(0x1001d0u)) {
         auto targetFn = runtime->lookupFunction(0x1001d0u);
         targetFn(rdram, ctx, runtime);
+    } else {
+        // Se a função não estiver registrada, chamamos diretamente o símbolo
+        entry_1001d0_0x1003c0(rdram, ctx, runtime);
     }
 }
