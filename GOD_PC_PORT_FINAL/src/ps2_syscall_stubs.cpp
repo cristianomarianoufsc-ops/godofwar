@@ -71,11 +71,11 @@ void stub_hardware_init(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime) 
     setReturnS32(ctx, 1); 
     
     // FORÇAR SAÍDA DO LOOP: Se o jogo continuar preso no endereço 0x100088,
-    // vamos forçar o Program Counter (PC) a avançar para a próxima instrução (0x10008C).
-    // Isso "quebra" o loop mecanicamente, empurrando o jogo para a frente.
+    // vamos forçar o Program Counter (PC) a avançar para o próximo ponto de entrada válido (0x1001d0).
+    // O endereço 0x10008c não está mapeado, por isso causava erro.
     if (ctx->pc == 0x100088) {
-        std::cout << " > Ação: Forçando PC para 0x10008C para quebrar o loop mecanicamente." << std::endl;
-        ctx->pc = 0x10008C;
+        std::cout << " > Ação: Forçando PC para 0x1001d0 para quebrar o loop mecanicamente." << std::endl;
+        ctx->pc = 0x1001d0;
     }
 }
 
