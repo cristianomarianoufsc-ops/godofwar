@@ -74,8 +74,11 @@ void stub_hardware_init(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime) 
     // vamos forçar o Program Counter (PC) a avançar para o próximo ponto de entrada válido (0x1001d0).
     // O endereço 0x10008c não está mapeado, por isso causava erro.
     if (ctx->pc == 0x100088) {
-        std::cout << " > Ação: Forçando PC para 0x1001d0 para quebrar o loop mecanicamente." << std::endl;
+        std::cout << " > Ação: Forçando PC para 0x1001d0 e chamando função diretamente." << std::endl;
         ctx->pc = 0x1001d0;
+        // Chamada direta para garantir que o código continue mesmo se o dispatch falhar
+        extern void entry_1001d0_0x1003c0(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtime);
+        entry_1001d0_0x1003c0(rdram, ctx, runtime);
     }
 }
 
