@@ -1,0 +1,25 @@
+# =====================================================
+# God of War PC Port - Configuracoes
+# Edite este arquivo para personalizar o jogo.
+# Nao e necessario recompilar apos salvar!
+# =====================================================
+
+[janela]
+largura    = 640   # largura da janela em pixels (ex: 1280, 1920)
+altura     = 448   # altura da janela em pixels  (ex: 720, 1080)
+tela_cheia = false # true = tela cheia
+fps_limite = 60    # 0 = sem limite de FPS
+
+[audio]
+volume_master  = 1.0  # volume geral (0.0 = mudo, 1.0 = maximo)
+volume_musica  = 1.0
+volume_efeitos = 1.0
+
+[dados]
+# Se os arquivos do jogo estiverem em outro lugar, informe o caminho aqui.
+# Exemplo: pasta_data = "/home/usuario/godofwar/data"
+# Deixe comentado para usar o caminho padrao automatico.
+# pasta_data = ""
+
+[debug]
+mostrar_fps = false  # true = exibe contador de FPS na tela
