@@ -3,6 +3,7 @@
 #include "ps2_stubs.h"
 #include "game_overrides.h"
 #include "ps2_runtime_macros.h"
+#include "ps2_call_tracer.h"
 #include <iostream>
 #include <fstream>
 #include <algorithm>
@@ -1799,6 +1800,10 @@ void PS2Runtime::dispatchLoop(uint8_t *rdram, R5900Context *ctx)
         RecompiledFunction fn = lookupFunction(pc);
         const uint32_t dispatchedPc = pc;
         const uint32_t dispatchedRa = static_cast<uint32_t>(_mm_extract_epi32(ctx->r[31], 0));
+        const uint32_t dispatchedSp = static_cast<uint32_t>(_mm_extract_epi32(ctx->r[29], 0));
+
+        // Registra a chamada de função no tracer (ativado via PS2_TRACE=1)
+        g_callTracer.trace(dispatchedPc, dispatchedRa, dispatchedSp);
 
         {
             GuestExecutionScope guestExecution(this);
@@ -1810,6 +1815,10 @@ void PS2Runtime::dispatchLoop(uint8_t *rdram, R5900Context *ctx)
             const uint32_t ra = static_cast<uint32_t>(_mm_extract_epi32(ctx->r[31], 0));
             const uint32_t sp = static_cast<uint32_t>(_mm_extract_epi32(ctx->r[29], 0));
             const uint32_t gp = static_cast<uint32_t>(_mm_extract_epi32(ctx->r[28], 0));
+            // Registra erro de PC=0 no tracer
+            g_callTracer.traceEvent("ERRO_PC_ZERO",
+                dispatchedPc, dispatchedRa,
+                ("sp=0x" + std::to_string(sp) + " gp=0x" + std::to_string(gp)).c_str());
             std::cerr << "[dispatch:pc-zero] from=0x" << std::hex << dispatchedPc
                       << " fromRa=0x" << dispatchedRa
                       << " ra=0x" << ra
