@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "=== God of War PC Port - Build ==="
+echo "=== God of War PC Port - Build + Execução ==="
 echo "Configurando o projeto com CMake..."
 
 mkdir -p build
@@ -17,5 +17,6 @@ echo ""
 echo "=== Build concluído com sucesso! ==="
 echo "Executável gerado: build/GodOfWarPCPort"
 echo ""
-echo "Para rodar o jogo:"
-echo "  ./build/GodOfWarPCPort GOD_PC_PORT_FINAL/data/SCUS_973.99"
+echo "Iniciando o jogo..."
+cd ..
+exec ./build/GodOfWarPCPort GOD_PC_PORT_FINAL/data/SCUS_973.99
