@@ -1,0 +1,129 @@
+eu fui tentar rodar o jogo aqui como o comando e deu:
+
+cristiano@cristiano-King:~/Documentos/GitHub/godofwar$ bash instalar_linux_mint.sh
+=== God of War PC Port - Instalação Linux Mint ===
+
+[1/6] Instalando dependências do sistema...
+[sudo] senha para cristiano:     
+Atingido:1 https://brave-browser-apt-release.s3.brave.com stable InRelease
+Ignorar:2 http://packages.linuxmint.com zena InRelease                         
+Ignorar:3 https://mirror.mwt.me/shiftkey-desktop/apt focal InRelease           
+Atingido:4 http://packages.linuxmint.com zena Release                          
+Erro:5 https://mirror.mwt.me/shiftkey-desktop/apt focal Release                
+  404  Not Found [IP: 2606:4700:20::ac43:48ab 443]
+Atingido:6 http://security.ubuntu.com/ubuntu noble-security InRelease          
+Atingido:7 http://archive.ubuntu.com/ubuntu noble InRelease 
+Atingido:9 http://archive.ubuntu.com/ubuntu noble-updates InRelease
+Atingido:10 http://archive.ubuntu.com/ubuntu noble-backports InRelease
+Lendo listas de pacotes... Pronto
+N: Pulando a aquisição do arquivo configurado 'main/binary-i386/Packages', pois o repositório 'https://brave-browser-apt-release.s3.brave.com stable InRelease' não tem suporte à arquitetura 'i386'
+E: O repositório 'https://mirror.mwt.me/shiftkey-desktop/apt focal Release' não tem um arquivo Release.
+N: A atualização de tal repositório não pode ser feita com segurança e, portanto, está desabilitada por padrão.
+N: Veja a página man apt-secure(8) para detalhes sobre criação de repositório e configuração de usuário.
+Lendo listas de pacotes... Pronto
+Construindo árvore de dependências... Pronto
+Lendo informação de estado... Pronto        
+build-essential já é a versão mais nova (12.10ubuntu1).
+g++ já é a versão mais nova (4:13.2.0-7ubuntu1).
+cmake já é a versão mais nova (3.28.3-1build7).
+pkg-config já é a versão mais nova (1.8.1-2build1).
+git já é a versão mais nova (1:2.43.0-1ubuntu7.3).
+libgl1-mesa-dev já é a versão mais nova (25.2.8-0ubuntu0.24.04.1).
+libglu1-mesa-dev já é a versão mais nova (9.0.2-1.1build1).
+libxrandr-dev já é a versão mais nova (2:1.5.2-2build1).
+libxinerama-dev já é a versão mais nova (2:1.1.4-3build1).
+libxcursor-dev já é a versão mais nova (1:1.2.1-1build1).
+libxi-dev já é a versão mais nova (2:1.8.1-1build1).
+libxext-dev já é a versão mais nova (2:1.3.4-1build2).
+libxext-dev configurado para instalar manualmente.
+Os pacotes adicionais a seguir serão instalados:
+  libegl1-mesa-dev libglfw3 libvulkan-dev
+Pacotes sugeridos:
+  libosmesa6 libglfw3-doc
+Os NOVOS pacotes a seguir serão instalados:
+  libegl1-mesa-dev libglfw3 libglfw3-dev libopenal-dev libvulkan-dev
+0 pacotes atualizados, 5 pacotes novos instalados, 0 a serem removidos e 38 não atualizados.
+É preciso baixar 1.412 kB de arquivos.
+Depois desta operação, 27,4 MB adicionais de espaço em disco serão usados.
+Obter:1 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libegl1-mesa-dev amd64 25.2.8-0ubuntu0.24.04.1 [26,4 kB]
+Obter:2 http://archive.ubuntu.com/ubuntu noble/universe amd64 libglfw3 amd64 3.3.10-1build1 [80,5 kB]
+Obter:3 http://archive.ubuntu.com/ubuntu noble/universe amd64 libglfw3-dev amd64 3.3.10-1build1 [41,5 kB]
+Obter:4 http://archive.ubuntu.com/ubuntu noble/universe amd64 libopenal-dev amd64 1:1.23.1-4build1 [24,5 kB]
+Obter:5 http://archive.ubuntu.com/ubuntu noble/main amd64 libvulkan-dev amd64 1.3.275.0-1build1 [1.239 kB]
+Baixados 1.412 kB em 8s (173 kB/s)                                             
+A seleccionar pacote anteriormente não seleccionado libegl1-mesa-dev:amd64.
+(Lendo banco de dados ... 518071 ficheiros e diretórios atualmente instalados.)
+A preparar para desempacotar .../libegl1-mesa-dev_25.2.8-0ubuntu0.24.04.1_amd64.
+deb ...
+A descompactar libegl1-mesa-dev:amd64 (25.2.8-0ubuntu0.24.04.1) ...
+A seleccionar pacote anteriormente não seleccionado libglfw3:amd64.
+A preparar para desempacotar .../libglfw3_3.3.10-1build1_amd64.deb ...
+A descompactar libglfw3:amd64 (3.3.10-1build1) ...
+A seleccionar pacote anteriormente não seleccionado libglfw3-dev:amd64.
+A preparar para desempacotar .../libglfw3-dev_3.3.10-1build1_amd64.deb ...
+A descompactar libglfw3-dev:amd64 (3.3.10-1build1) ...
+A seleccionar pacote anteriormente não seleccionado libopenal-dev:amd64.
+A preparar para desempacotar .../libopenal-dev_1%3a1.23.1-4build1_amd64.deb ...
+A descompactar libopenal-dev:amd64 (1:1.23.1-4build1) ...
+A seleccionar pacote anteriormente não seleccionado libvulkan-dev:amd64.
+A preparar para desempacotar .../libvulkan-dev_1.3.275.0-1build1_amd64.deb ...
+A descompactar libvulkan-dev:amd64 (1.3.275.0-1build1) ...
+Configurando libglfw3:amd64 (3.3.10-1build1) ...
+Configurando libvulkan-dev:amd64 (1.3.275.0-1build1) ...
+Configurando libglfw3-dev:amd64 (3.3.10-1build1) ...
+Configurando libopenal-dev:amd64 (1:1.23.1-4build1) ...
+Configurando libegl1-mesa-dev:amd64 (25.2.8-0ubuntu0.24.04.1) ...
+A processar 'triggers' para libc-bin (2.39-0ubuntu8.7) ...
+
+[2/6] Verificando Raylib...
+  Raylib 6.0.0 já instalado via apt.
+
+[3/6] Verificando versão do CMake...
+  CMake 3.28.3 OK.
+
+[4/6] Verificando arquivos do jogo...
+  part1.pak encontrado!
+  Arquivos do jogo OK.
+
+[5/6] Compilando o projeto (pode demorar 10-30 minutos)...
+  São 5626 arquivos C++ gerados pelo recompilador PS2 - isso é normal!
+
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring done (4.4s)
+-- Generating done (2.4s)
+-- Build files have been written to: /home/cristiano/Documentos/GitHub/godofwar/build
+
+  Iniciando compilação com 4 threads paralelas...
+[  0%] Building CXX object CMakeFiles/GodOfWarPCPort.dir/src/register_functions.cpp.o
+[  0%] Building CXX object CMakeFiles/GodOfWarPCPort.dir/src/main.cpp.o
+[  0%] Building CXX object CMakeFiles/GodOfWarPCPort.dir/src/ps2_syscall_stubs.cpp.o
+[  0%] Building CXX object CMakeFiles/GodOfWarPCPort.dir/src/recompiled/FUN_00106180_0x106180.cpp.o
+[  0%] Building CXX object CMakeFiles/GodOfWarPCPort.dir/src/recompiled/FUN_001061a8_0x1061a8.cpp.o
+[  0%] Building CXX object CMakeFiles/GodOfWarPCPort.dir/src/recompiled/FUN_001061c8_0x1061c8.cpp.o
+[  0%] Building CXX object CMakeFiles/GodOfWarPCPort.dir/src/recompiled/FUN_001061f8_0x1061f8.cpp.o
+[  0%] Building CXX object CMakeFiles/GodOfWarPCPort.dir/src/recompiled/FUN_001064f0_0x1064f0.cpp.o
+
+(ETC..ETC...)
+
+2820C0_0x2820c0.cpp.o
+[ 96%] Building CXX object CMakeFiles/GodOfWarPCPort.dir/src/recompiled/sub_00282148_0x282148.cpp.o
+c++: fatal error: Morto signal terminated program cc1plus
+compilation terminated.
+make[2]: *** [CMakeFiles/GodOfWarPCPort.dir/build.make:72918: CMakeFiles/GodOfWarPCPort.dir/src/recompiled/sub_002457A8_0x2457a8.cpp.o] Erro 1
+make[2]: ** Esperando que outros processos terminem.
+make[1]: *** [CMakeFiles/Makefile2:83: CMakeFiles/GodOfWarPCPort.dir/all] Erro 2
+make: *** [Makefile:91: all] Erro 2
+cristiano@cristiano-King:~/Documentos/GitHub/godofwar$ 
+
+

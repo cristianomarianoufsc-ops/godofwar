@@ -120,8 +120,21 @@ cmake "$SCRIPT_DIR/GOD_PC_PORT_FINAL" \
     -DCMAKE_CXX_STANDARD=20
 
 echo ""
-echo "  Iniciando compilação com $(nproc) threads paralelas..."
-make -j$(nproc) 2>&1
+
+# Calcula número seguro de threads baseado na RAM disponível
+# Cada processo do compilador C++ usa cerca de 1.5 GB de RAM
+RAM_TOTAL_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+RAM_TOTAL_GB=$((RAM_TOTAL_KB / 1024 / 1024))
+THREADS_SEGUROS=$((RAM_TOTAL_GB / 2))
+[ "$THREADS_SEGUROS" -lt 1 ] && THREADS_SEGUROS=1
+THREADS_DISPONIVEIS=$(nproc)
+[ "$THREADS_SEGUROS" -gt "$THREADS_DISPONIVEIS" ] && THREADS_SEGUROS=$THREADS_DISPONIVEIS
+
+echo "  RAM total: ${RAM_TOTAL_GB} GB | Threads seguros: ${THREADS_SEGUROS} (de ${THREADS_DISPONIVEIS} disponíveis)"
+echo "  Iniciando compilação com ${THREADS_SEGUROS} thread(s) paralela(s)..."
+echo "  (Reduzido para evitar estouro de memória — compile com -j1 se ainda ocorrer erro)"
+echo ""
+make -j${THREADS_SEGUROS} 2>&1
 
 echo ""
 echo -e "${GREEN}=== Build concluído com sucesso! ===${NC}"
