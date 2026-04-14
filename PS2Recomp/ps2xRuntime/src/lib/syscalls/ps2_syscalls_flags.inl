@@ -556,12 +556,31 @@ void WaitEventFlag(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
 
     if ((mode & ~WEF_MODE_MASK) != 0)
     {
+        static std::atomic<uint32_t> s_illegalModeLogs{0};
+        if (s_illegalModeLogs.fetch_add(1, std::memory_order_relaxed) < 16u)
+        {
+            std::cout << "[WaitEventFlag:ILLEGAL_MODE] eid=" << eid
+                      << " waitBits=0x" << std::hex << waitBits
+                      << " mode=0x" << mode
+                      << " pc=0x" << ctx->pc
+                      << " ra=0x" << getRegU32(ctx, 31)
+                      << std::dec << std::endl;
+        }
         setReturnS32(ctx, KE_ILLEGAL_MODE);
         return;
     }
 
     if (waitBits == 0)
     {
+        static std::atomic<uint32_t> s_ilpatLogs{0};
+        if (s_ilpatLogs.fetch_add(1, std::memory_order_relaxed) < 16u)
+        {
+            std::cout << "[WaitEventFlag:ILPAT] eid=" << eid
+                      << " mode=0x" << std::hex << mode
+                      << " pc=0x" << ctx->pc
+                      << " ra=0x" << getRegU32(ctx, 31)
+                      << std::dec << std::endl;
+        }
         setReturnS32(ctx, KE_EVF_ILPAT);
         return;
     }
@@ -569,6 +588,16 @@ void WaitEventFlag(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
     auto info = lookupEventFlagInfo(eid);
     if (!info)
     {
+        static std::atomic<uint32_t> s_unknownEidLogs{0};
+        if (s_unknownEidLogs.fetch_add(1, std::memory_order_relaxed) < 16u)
+        {
+            std::cout << "[WaitEventFlag:UNKNOWN_EID] eid=" << eid
+                      << " waitBits=0x" << std::hex << waitBits
+                      << " mode=0x" << mode
+                      << " pc=0x" << ctx->pc
+                      << " ra=0x" << getRegU32(ctx, 31)
+                      << std::dec << std::endl;
+        }
         setReturnS32(ctx, KE_UNKNOWN_EVFID);
         return;
     }
