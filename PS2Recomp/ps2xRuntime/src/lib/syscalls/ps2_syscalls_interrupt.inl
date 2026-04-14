@@ -115,6 +115,14 @@ static void dispatchIntcHandlersForCause(uint8_t *rdram, PS2Runtime *runtime, ui
     {
         if (!runtime->hasFunction(info.handler))
         {
+            static std::atomic<uint32_t> s_skipLogs{0};
+            if (s_skipLogs.fetch_add(1, std::memory_order_relaxed) < 32u)
+            {
+                std::cout << "[INTC:skip] cause=" << cause
+                          << " handler=0x" << std::hex << info.handler
+                          << " arg=0x" << info.arg
+                          << std::dec << " → sem função recompilada, pulando!" << std::endl;
+            }
             continue;
         }
 
