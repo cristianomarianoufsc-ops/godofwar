@@ -13,7 +13,7 @@ echo ""
 
 # --- Passo 1: Atualizar pacotes e instalar dependências base ---
 echo -e "${YELLOW}[1/6] Instalando dependências do sistema...${NC}"
-sudo apt update
+sudo apt update || true
 sudo apt install -y \
     build-essential \
     g++ \
