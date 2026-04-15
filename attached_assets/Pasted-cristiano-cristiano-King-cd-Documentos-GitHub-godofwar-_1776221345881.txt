@@ -1,0 +1,101 @@
+cristiano@cristiano-King:~$ cd ~/Documentos/GitHub/godofwar/build && make -j1
+cd ~/Documentos/GitHub/godofwar && bash jogar.sh
+[100%] Built target GodOfWarPCPort
+=================================================
+  God of War PC Port
+=================================================
+  ELF: /home/cristiano/Documentos/GitHub/godofwar/GOD_PC_PORT_FINAL/data/SCUS_973.99
+
+=================================================
+  God of War PC Port
+=================================================
+[Config] Carregando configurações de config.toml
+ELF: /home/cristiano/Documentos/GitHub/godofwar/GOD_PC_PORT_FINAL/data/SCUS_973.99
+INFO: Initializing raylib 6.0
+INFO: Platform backend: DESKTOP (GLFW)
+INFO: Supported raylib modules:
+INFO:     > rcore:..... loaded (mandatory)
+INFO:     > rlgl:...... loaded (mandatory)
+INFO:     > rshapes:... loaded (optional)
+INFO:     > rtextures:. loaded (optional)
+INFO:     > rtext:..... loaded (optional)
+INFO:     > rmodels:... loaded (optional)
+INFO:     > raudio:.... loaded (optional)
+INFO: DISPLAY: Device initialized successfully 
+INFO:     > Display size: 1366 x 768
+INFO:     > Screen size:  640 x 448
+INFO:     > Render size:  640 x 448
+INFO:     > Viewport offsets: 0, 0
+INFO: GLAD: OpenGL extensions loaded successfully
+INFO: GL: Supported extensions count: 207
+INFO: GL: OpenGL device information:
+INFO:     > Vendor:   Intel
+INFO:     > Renderer: Mesa Intel(R) HD Graphics 4000 (IVB GT2)
+INFO:     > Version:  4.2 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.1
+INFO:     > GLSL:     4.20
+INFO: GL: VAO extension detected, VAO functions loaded successfully
+INFO: GL: NPOT textures extension detected, full NPOT textures supported
+INFO: GL: DXT compressed textures supported
+INFO: GL: ETC2/EAC compressed textures supported
+INFO: PLATFORM: DESKTOP (GLFW - X11): Initialized successfully
+INFO: TEXTURE: [ID 1] Texture loaded successfully (1x1 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 1] Default texture loaded successfully
+INFO: SHADER: [ID 1] Vertex shader compiled successfully
+INFO: SHADER: [ID 2] Fragment shader compiled successfully
+INFO: SHADER: [ID 3] Program shader loaded successfully
+INFO: SHADER: [ID 3] Default shader loaded successfully
+INFO: RLGL: Render batch vertex buffers loaded successfully in RAM (CPU)
+INFO: RLGL: Render batch vertex buffers loaded successfully in VRAM (GPU)
+INFO: RLGL: Default OpenGL state initialized successfully
+INFO: TEXTURE: [ID 2] Texture loaded successfully (128x128 | GRAY_ALPHA | 1 mipmaps)
+INFO: FONT: Default font loaded successfully (224 glyphs)
+INFO: SYSTEM: Working Directory: /home/cristiano/Documentos/GitHub/godofwar
+INFO: TIMER: Target time per frame: 16.667 milliseconds
+INFO: AUDIO: Device initialized successfully
+INFO:     > Backend:       miniaudio | PulseAudio
+INFO:     > Format:        32-bit IEEE Floating Point -> 32-bit Signed Integer
+INFO:     > Channels:      2 -> 2
+INFO:     > Sample rate:   48000 -> 48000
+INFO:     > Periods size:  3600
+Janela: 640x448 | FPS: 60
+Registrando funções recompiladas...
+Mapeando 5625 funções recompiladas...
+Carregando ELF: /home/cristiano/Documentos/GitHub/godofwar/GOD_PC_PORT_FINAL/data/SCUS_973.99
+Loading segment: 0x100000 - 0x35d080 (filesz: 0x1c7018, memsz: 0x25d080)
+Registered code region: 100000 - 35d080
+ELF file loaded successfully. Entry point: 0x100008
+Iniciando execução...
+Starting execution at address 0x100008
+INFO: TEXTURE: [ID 3] Texture loaded successfully (640x448 | R8G8B8A8 | 1 mipmaps)
+
+[HW_DEBUG] Loop 0x100088 (Hardware Init)
+ > a0=0x0 a1=0x0
+ > v0=0x0 t0=0x0
+ > Ação: Forçando Retorno 0 para quebrar o loop de polling.
+ > Ação: Forçando PC para 0x1001d0 e chamando função diretamente.
+[frame:upload] idx=0 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+CPU is doing some work at PC 0x29aa48. PC not updating.
+CPU is doing some work at PC 0x29aa48. PC not updating.
+[frame:upload] idx=1 fbp=0 fbw=a psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+
+etc.. etc..
+
+CPU is doing some work at PC 0x29aa48. PC not updating.
+CPU is doing some work at PC 0x29aa48. PC not updating.
+[run:tick] tick=438 pc=0x29aa48 ra=0x0 sp=0xa2673890 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+CPU is doing some work at PC 0x29aa48. PC not updating.
+CPU is doing some work at PC 0x29aa48. PC not updating.
+[run] window close requested, breaking out of loop
+Game thread returned. PC=0x29aa48 RA=0x0
+INFO: TEXTURE: [ID 3] Unloaded texture data from VRAM (GPU)
+INFO: TEXTURE: [ID 2] Unloaded texture data from VRAM (GPU)
+INFO: SHADER: [ID 3] Default shader unloaded successfully
+INFO: TEXTURE: [ID 1] Default texture unloaded successfully
+INFO: Window closed successfully
+[run] exiting loop, activeThreads=0
+WARNING: GLFW: Error: 65537 Description: The GLFW library is not initialized
+jogar.sh, linha 29: 36953 Falha de segmentação  (imagem do núcleo gravada) "$EXE" "$ELF"
+cristiano@cristiano-King:~/Documentos/GitHub/godofwar$ 
+
+
+
