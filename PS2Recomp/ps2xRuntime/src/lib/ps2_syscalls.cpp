@@ -314,6 +314,16 @@ namespace ps2_syscalls
         case static_cast<uint32_t>(-0x78):
             ps2_stubs::sceSifSetDChain(rdram, ctx, runtime);
             return true;
+        case 0x7C:
+        case 0x7E:
+        case 0x7F:
+        case 0x80:
+        case 0x81:
+        case 0x82:
+        case 0x84:
+            // Syscalls de hardware/SIF pouco usados pelo God of War — retornam 0 como stub
+            setReturnS32(ctx, 0);
+            return true;
         case 0x83:
             FindAddress(rdram, ctx, runtime);
             return true;

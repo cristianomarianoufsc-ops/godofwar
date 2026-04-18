@@ -107,19 +107,15 @@ int main(int argc, char** argv)
 
     std::cout << "Iniciando execução..." << std::endl;
 
-    // --- Loop principal ---
-    while (!WindowShouldClose())
-    {
-        runtime.run();
+    // --- Executa o runtime (já possui loop interno com renderização e detecção de fechamento) ---
+    runtime.run();
 
-        BeginDrawing();
-            ClearBackground(BLACK);
-            if (cfg.mostrar_fps)
-                DrawFPS(8, 8);
-        EndDrawing();
-    }
+    // Fecha áudio e janela apenas se ainda estiverem abertos (run() pode já tê-los fechado)
+    if (IsAudioDeviceReady())
+        CloseAudioDevice();
 
-    CloseAudioDevice();
-    CloseWindow();
+    if (IsWindowReady())
+        CloseWindow();
+
     return 0;
 }
