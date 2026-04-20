@@ -17,6 +17,10 @@ void entry_1001d0_0x1003c0(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
     PS_LOG_ENTRY("entry_1001d0_0x1003c0");
 #endif
 
+    // Entry alternativo em 0x100200 (crt0 real) — acionado pelo stub_hardware_init.
+    // Deve ser verificado ANTES de ctx->pc ser sobrescrito pelo TLB init (0x1001d0).
+    if (ctx->pc == 0x100200u) goto label_100200;
+
     ctx->pc = 0x1001d0u;
 
     // 0x1001d0: 0x80a65ac  j           func_2996B0
@@ -65,6 +69,7 @@ void entry_1001d0_0x1003c0(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
     ctx->pc = 0x1001fcu;
     // NOP
     // 0x100200: 0x27bdff70  addiu       $sp, $sp, -0x90
+    label_100200:
     ctx->pc = 0x100200u;
     SET_GPR_S32(ctx, 29, (int32_t)ADD32(GPR_U32(ctx, 29), 4294967152));
     // 0x100204: 0x3c03dead  lui         $v1, 0xDEAD

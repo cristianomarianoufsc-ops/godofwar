@@ -44,42 +44,22 @@ std::string translate_path(const std::string& ps2_path, PS2Runtime* runtime) {
 }
 
 // --- STUB DE HARDWARE (RESOLVE O LOOP 0x100088) ---
-// Esta função simula a resposta do hardware do PS2 (DMA/GS)
-// O God of War fica preso no endereço 0x100088 esperando por uma flag de hardware.
+// Substitui o loop de polling de hardware do PS2 (0x100088).
+// Em vez de executar o TLB init thread (0x1001d0 → 0x2996b0 → ExitThread),
+// pulamos direto para o crt0 do C runtime em 0x100200, com SP em posição válida.
+// O TLB não é usado na emulação (acesso direto à RAM), então o init é desnecessário.
 void stub_hardware_init(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime) {
-    static int count = 0;
-    
-    // Captura o estado atual dos registradores para depuração
-    uint32_t a0 = getRegU32(ctx, 4);
-    uint32_t a1 = getRegU32(ctx, 5);
-    uint32_t v0 = getRegU32(ctx, 2);
-    uint32_t t0 = getRegU32(ctx, 8); // Frequentemente usado para comparar flags de hardware
-    
-    if (count % 1000 == 0) {
-        std::cout << "\n[HW_DEBUG] Loop 0x100088 (Hardware Init)" << std::endl;
-        std::cout << " > a0=" << std::hex << "0x" << a0 << " a1=0x" << a1 << std::endl;
-        std::cout << " > v0=" << "0x" << v0 << " t0=0x" << t0 << std::dec << std::endl;
-        std::cout << " > Ação: Forçando Retorno 0 para quebrar o loop de polling." << std::endl;
-    }
-    
-    // Incrementa o contador para evitar logs excessivos
-    count++;
-    
-    // No God of War, este loop espera que o bit de "Ready" de algum canal de DMA seja ativado.
-    // MUDANÇA: Tentando retornar 1 em vez de 0. Muitos stubs de hardware do PS2Recomp
-    // esperam um bit não-zero para indicar que o hardware terminou sua tarefa.
-    setReturnS32(ctx, 1); 
-    
-    // FORÇAR SAÍDA DO LOOP: Se o jogo continuar preso no endereço 0x100088,
-    // vamos forçar o Program Counter (PC) a avançar para o próximo ponto de entrada válido (0x1001d0).
-    // O endereço 0x10008c não está mapeado, por isso causava erro.
-    if (ctx->pc == 0x100088) {
-        std::cout << " > Ação: Forçando PC para 0x1001d0 e chamando função diretamente." << std::endl;
-        ctx->pc = 0x1001d0;
-        // Chamada direta para garantir que o código continue mesmo se o dispatch falhar
-        extern void entry_1001d0_0x1003c0(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtime);
-        entry_1001d0_0x1003c0(rdram, ctx, runtime);
-    }
+    std::cout << "[HW_INIT] Hardware init stub: pulando TLB init, iniciando crt0 em 0x100200" << std::endl;
+
+    // Configura SP no topo da RAM do PS2 (32 MB - 64 KB de folga)
+    // O crt0 em 0x100200 faz "addiu sp, sp, -0x90" imediatamente; precisa de SP válido.
+    // Usa _mm_set_epi64x (disponível via ps2_runtime.h) para setar o registro SIMD de SP.
+    ctx->r[29] = _mm_set_epi64x(0, static_cast<int64_t>(static_cast<int32_t>(0x01FF0000u)));  // $sp
+
+    // a0 = a1 = a2 = 0 (argc=0, argv=NULL, envp=NULL) - OK para o God of War PS2
+
+    // Direciona o dispatch loop para o entry alternativo do crt0
+    ctx->pc = 0x100200u;
 }
 
 // --- SYSCALLS DE SISTEMA DE ARQUIVOS (Fase B) ---
@@ -144,5 +124,24 @@ void syscall_rf_close(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime) {
     } else {
         setReturnS32(ctx, -1);
     }
+}
+
+// --- STUB: printf interno do C runtime do PS2 (0x296440) ---
+// sub_00296440 é o printf de debug usado durante a inicialização do C runtime.
+// Ele chama sub_00295568 (parser de formato, 8282 linhas) que tenta fazer um
+// jr $a0 para um endereço da jump table (0x2C68E0) que não está mapeado no
+// switch gerado pelo recompilador → ctx->pc errado → cascata de early-returns.
+// Solução: tornar o printf um no-op. O jogo não depende deste output para funcionar.
+void stub_ps2_printf(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime) {
+    // Opcional: exibir a string de formato para diagnóstico
+    uint32_t fmt_addr = getRegU32(ctx, 4);  // a0 = ponteiro para formato
+    if (fmt_addr != 0 && fmt_addr < 0x02000000) {
+        const char* fmt = (const char*)&rdram[fmt_addr & 0x01FFFFFFu];
+        std::cout << "[PS2_PRINTF stub] " << fmt;
+    }
+    // Retorna 0 (nenhum byte escrito) para o chamador via RA
+    uint32_t ra = getRegU32(ctx, 31);
+    setReturnS32(ctx, 0);
+    ctx->pc = ra;
 }
 
