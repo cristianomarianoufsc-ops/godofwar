@@ -522,6 +522,7 @@ void sub_00138930_0x138930(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
 void entry_138978_0x1389d8(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtime);
 void entry_1389d8_0x138cb0(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtime);
 void sub_00138CB0_0x138cb0(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtime);
+void sub_00138D48_0x138d48(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtime);
 void sub_00138DE8_0x138de8(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtime);
 void entry_138e78_0x138f78(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtime);
 void sub_00138F78_0x138f78(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtime);

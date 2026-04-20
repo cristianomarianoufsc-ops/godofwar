@@ -546,6 +546,7 @@ void register_recompiled_functions(PS2Runtime* runtime) {
     runtime->registerFunction(0x138978, &entry_138978_0x1389d8);
     runtime->registerFunction(0x1389d8, &entry_1389d8_0x138cb0);
     runtime->registerFunction(0x138cb0, &sub_00138CB0_0x138cb0);
+    runtime->registerFunction(0x138d48, &sub_00138D48_0x138d48);
     runtime->registerFunction(0x138de8, &sub_00138DE8_0x138de8);
     runtime->registerFunction(0x138e78, &entry_138e78_0x138f78);
     runtime->registerFunction(0x138f78, &sub_00138F78_0x138f78);

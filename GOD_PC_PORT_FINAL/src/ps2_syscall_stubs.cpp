@@ -4,6 +4,9 @@
 #include <string>
 #include <filesystem>
 #include "ps2_runtime.h"
+#include "ps2_runtime_macros.h"
+#include "ps2_recompiled_functions.h"
+#include "ps2_recompiled_stubs.h"
 
 namespace fs = std::filesystem;
 
@@ -44,22 +47,70 @@ std::string translate_path(const std::string& ps2_path, PS2Runtime* runtime) {
 }
 
 // --- STUB DE HARDWARE (RESOLVE O LOOP 0x100088) ---
-// Substitui o loop de polling de hardware do PS2 (0x100088).
-// Em vez de executar o TLB init thread (0x1001d0 → 0x2996b0 → ExitThread),
-// pulamos direto para o crt0 do C runtime em 0x100200, com SP em posição válida.
-// O TLB não é usado na emulação (acesso direto à RAM), então o init é desnecessário.
+// O _start original do God of War PS2 (0x100008 a 0x1001c8) faz:
+//   1. Zera todos os registradores CPU (entry_0x100008)
+//   2. Zera registradores COP2/VU0 (0x10008c a ~0x100118) — tratado aqui via stub
+//   3. Chama sub_002994A0 ($a0=0x35C1A8, $v1=61) - init OS/thread
+//   4. Chama entry_293ea0   ($a0=0x35C1A8, $a1=0)  - init OS/RPC
+//   5. Chama sub_00138CB0   ($a0=0x2c7080)          - init heap do jogo
+//   6. Chama sub_00138D48   ($a0=0x2c7080, $a1=0x2c7084) - init módulos do jogo
+//   7. J 0x2996b0 (ExitThread) — a thread de boot encerra
+//
+// O crt0 (0x100200) é invocado internamente pelo runtime PS2 BIOS (sub_002994A0 ou
+// sub_002996B0 via chamada de sistema CreateThread), não diretamente pelo _start.
+// Esse stub reproduz a sequência completa para que o jogo inicialize corretamente.
 void stub_hardware_init(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime) {
-    std::cout << "[HW_INIT] Hardware init stub: pulando TLB init, iniciando crt0 em 0x100200" << std::endl;
+    std::cout << "[HW_INIT] _start: executando cadeia de inicializacao do jogo" << std::endl;
 
-    // Configura SP no topo da RAM do PS2 (32 MB - 64 KB de folga)
-    // O crt0 em 0x100200 faz "addiu sp, sp, -0x90" imediatamente; precisa de SP válido.
-    // Usa _mm_set_epi64x (disponível via ps2_runtime.h) para setar o registro SIMD de SP.
-    ctx->r[29] = _mm_set_epi64x(0, static_cast<int64_t>(static_cast<int32_t>(0x01FF0000u)));  // $sp
+    // Configura SP = 0x01FF0000 (topo da RAM PS2 - 64 KB de folga)
+    ctx->r[29] = _mm_set_epi64x(0, static_cast<int64_t>(static_cast<int32_t>(0x01FF0000u)));
 
-    // a0 = a1 = a2 = 0 (argc=0, argv=NULL, envp=NULL) - OK para o God of War PS2
+    // RA sentinela nao-zero: as funcoes salvam/restauram RA via stack,
+    // entao definir RA=0x1 antes de cada chamada garante que apos jr $ra
+    // o ctx->pc sera 0x1 (nao zero) — substituido em seguida pela proxima chamada.
+    const uint32_t SENTINEL_RA = 0x00000001u;
 
-    // Direciona o dispatch loop para o entry alternativo do crt0
-    ctx->pc = 0x100200u;
+    // --- Chamada 1: sub_002994A0 (init OS/thread) ---
+    // Argumentos originais: $a0 = 0x35C1A8, $a1 = 0, $v1 = 61 (prioridade thread)
+    std::cout << "[HW_INIT] Chamando sub_002994A0 (OS init)..." << std::endl;
+    ctx->pc = 0x2994a0u;
+    SET_GPR_S32(ctx, 4, (int32_t)0x35C1A8u);  // a0
+    SET_GPR_S32(ctx, 5, 0);                    // a1
+    SET_GPR_S32(ctx, 3, 61);                   // v1 (prioridade)
+    SET_GPR_U32(ctx, 31, SENTINEL_RA);          // ra = sentinel
+    sub_002994A0_0x2994a0(rdram, ctx, runtime);
+    // ctx->pc agora é SENTINEL_RA (via jr $ra) — sobrescrevemos a seguir
+
+    // --- Chamada 2: entry_293ea0 (init RPC/SIF) ---
+    std::cout << "[HW_INIT] Chamando entry_293ea0 (RPC/SIF init)..." << std::endl;
+    ctx->pc = 0x293ea0u;
+    SET_GPR_S32(ctx, 4, (int32_t)0x35C1A8u);  // a0
+    SET_GPR_S32(ctx, 5, 0);                    // a1
+    SET_GPR_U32(ctx, 31, SENTINEL_RA);
+    entry_293ea0_0x293ed0(rdram, ctx, runtime);
+
+    // --- Chamada 3: sub_00138CB0 (init heap do jogo) ---
+    // Argumento: $a0 = 0x2C7080 (ponteiro para estrutura do heap)
+    std::cout << "[HW_INIT] Chamando sub_00138CB0 (heap init)..." << std::endl;
+    ctx->pc = 0x138cb0u;
+    SET_GPR_S32(ctx, 4, (int32_t)0x2C7080u);  // a0 = heap ptr
+    SET_GPR_U32(ctx, 31, SENTINEL_RA);
+    sub_00138CB0_0x138cb0(rdram, ctx, runtime);
+
+    // --- Chamada 4: sub_00138D48 (init módulos do jogo) ---
+    // Argumentos: $a0 = 0x2C7080, $a1 = 0x2C7084 (a1 = a0 + 4, via delay slot original)
+    std::cout << "[HW_INIT] Chamando sub_00138D48 (modulos init)..." << std::endl;
+    ctx->pc = 0x138d48u;
+    SET_GPR_S32(ctx, 4, (int32_t)0x2C7080u);  // a0
+    SET_GPR_S32(ctx, 5, (int32_t)0x2C7084u);  // a1 = a0 + 4
+    SET_GPR_U32(ctx, 31, SENTINEL_RA);
+    sub_00138D48_0x138d48(rdram, ctx, runtime);
+
+    std::cout << "[HW_INIT] Sequencia de init concluida. Encerrando thread de boot." << std::endl;
+
+    // J 0x2996b0 (ExitThread): a thread de boot do _start encerra aqui.
+    // As threads criadas pelos inits acima continuarao executando.
+    ctx->pc = 0x2996b0u;
 }
 
 // --- SYSCALLS DE SISTEMA DE ARQUIVOS (Fase B) ---
