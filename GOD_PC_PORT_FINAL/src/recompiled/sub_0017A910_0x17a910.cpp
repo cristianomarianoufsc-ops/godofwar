@@ -10,6 +10,8 @@
 #include "ps2_log.h"
 #endif
 
+#include <cstdio>
+
 // Function: sub_0017A910
 // Address: 0x17a910 - 0x17a940
 void sub_0017A910_0x17a910(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtime) {
@@ -17,6 +19,7 @@ void sub_0017A910_0x17a910(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
     PS_LOG_ENTRY("sub_0017A910_0x17a910");
 #endif
 
+    fprintf(stderr, "[17A910] ENTRADA\n"); fflush(stderr);
     ctx->pc = 0x17a910u;
 
     // 0x17a910: 0x27bdfff0  addiu       $sp, $sp, -0x10
@@ -41,6 +44,7 @@ void sub_0017A910_0x17a910(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         if (ctx->pc == __entryPc) { ctx->pc = 0x17A920u; }
         if (ctx->pc != 0x17A920u) { return; }
     }
+    fprintf(stderr, "[17A910] call 1/3 (0x13F8A0) RETORNOU pc=0x%x\n", ctx->pc); fflush(stderr);
     ctx->pc = 0x17A920u;
     // 0x17a920: 0xc05e8e6  jal         func_17A398
     ctx->pc = 0x17A920u;
@@ -58,6 +62,7 @@ void sub_0017A910_0x17a910(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         if (ctx->pc == __entryPc) { ctx->pc = 0x17A928u; }
         if (ctx->pc != 0x17A928u) { return; }
     }
+    fprintf(stderr, "[17A910] call 2/3 (0x17A398) RETORNOU pc=0x%x\n", ctx->pc); fflush(stderr);
     ctx->pc = 0x17A928u;
     // 0x17a928: 0x3c040030  lui         $a0, 0x30
     ctx->pc = 0x17a928u;
@@ -83,6 +88,7 @@ void sub_0017A910_0x17a910(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         if (ctx->pc == __entryPc) { ctx->pc = 0x17A934u; }
         if (ctx->pc != 0x17A934u) { return; }
     }
+    fprintf(stderr, "[17A910] call 3/3 (entry_182ff0) RETORNOU pc=0x%x\n", ctx->pc); fflush(stderr);
     ctx->pc = 0x17A934u;
     // 0x17a934: 0xdfbf0000  ld          $ra, 0x0($sp)
     ctx->pc = 0x17a934u;
