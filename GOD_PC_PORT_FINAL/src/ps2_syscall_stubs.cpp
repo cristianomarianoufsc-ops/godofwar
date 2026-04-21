@@ -72,41 +72,51 @@ void stub_hardware_init(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime) 
 
     // --- Chamada 1: sub_002994A0 (init OS/thread) ---
     // Argumentos originais: $a0 = 0x35C1A8, $a1 = 0, $v1 = 61 (prioridade thread)
-    std::cout << "[HW_INIT] Chamando sub_002994A0 (OS init)..." << std::endl;
+    std::cout << "[HW_INIT] [1/4] Chamando sub_002994A0 (OS/thread init) a0=0x35C1A8 v1=61..." << std::endl;
     ctx->pc = 0x2994a0u;
-    SET_GPR_S32(ctx, 4, (int32_t)0x35C1A8u);  // a0
-    SET_GPR_S32(ctx, 5, 0);                    // a1
-    SET_GPR_S32(ctx, 3, 61);                   // v1 (prioridade)
-    SET_GPR_U32(ctx, 31, SENTINEL_RA);          // ra = sentinel
+    SET_GPR_S32(ctx, 4, (int32_t)0x35C1A8u);
+    SET_GPR_S32(ctx, 5, 0);
+    SET_GPR_S32(ctx, 3, 61);
+    SET_GPR_U32(ctx, 31, SENTINEL_RA);
     sub_002994A0_0x2994a0(rdram, ctx, runtime);
-    // ctx->pc agora é SENTINEL_RA (via jr $ra) — sobrescrevemos a seguir
+    std::cout << "[HW_INIT] [1/4] RETORNOU: pc=0x" << std::hex << ctx->pc
+              << " v0=0x" << (uint32_t)(_mm_extract_epi32(ctx->r[2], 0))
+              << " ra=0x" << (uint32_t)(_mm_extract_epi32(ctx->r[31], 0))
+              << std::dec << std::endl;
 
     // --- Chamada 2: entry_293ea0 (init RPC/SIF) ---
-    std::cout << "[HW_INIT] Chamando entry_293ea0 (RPC/SIF init)..." << std::endl;
+    std::cout << "[HW_INIT] [2/4] Chamando entry_293ea0 (RPC/SIF init) a0=0x35C1A8..." << std::endl;
     ctx->pc = 0x293ea0u;
-    SET_GPR_S32(ctx, 4, (int32_t)0x35C1A8u);  // a0
-    SET_GPR_S32(ctx, 5, 0);                    // a1
+    SET_GPR_S32(ctx, 4, (int32_t)0x35C1A8u);
+    SET_GPR_S32(ctx, 5, 0);
     SET_GPR_U32(ctx, 31, SENTINEL_RA);
     entry_293ea0_0x293ed0(rdram, ctx, runtime);
+    std::cout << "[HW_INIT] [2/4] RETORNOU: pc=0x" << std::hex << ctx->pc
+              << " v0=0x" << (uint32_t)(_mm_extract_epi32(ctx->r[2], 0))
+              << std::dec << std::endl;
 
     // --- Chamada 3: sub_00138CB0 (init heap do jogo) ---
-    // Argumento: $a0 = 0x2C7080 (ponteiro para estrutura do heap)
-    std::cout << "[HW_INIT] Chamando sub_00138CB0 (heap init)..." << std::endl;
+    std::cout << "[HW_INIT] [3/4] Chamando sub_00138CB0 (heap init) a0=0x2C7080..." << std::endl;
     ctx->pc = 0x138cb0u;
-    SET_GPR_S32(ctx, 4, (int32_t)0x2C7080u);  // a0 = heap ptr
+    SET_GPR_S32(ctx, 4, (int32_t)0x2C7080u);
     SET_GPR_U32(ctx, 31, SENTINEL_RA);
     sub_00138CB0_0x138cb0(rdram, ctx, runtime);
+    std::cout << "[HW_INIT] [3/4] RETORNOU: pc=0x" << std::hex << ctx->pc
+              << " v0=0x" << (uint32_t)(_mm_extract_epi32(ctx->r[2], 0))
+              << std::dec << std::endl;
 
     // --- Chamada 4: sub_00138D48 (init módulos do jogo) ---
-    // Argumentos: $a0 = 0x2C7080, $a1 = 0x2C7084 (a1 = a0 + 4, via delay slot original)
-    std::cout << "[HW_INIT] Chamando sub_00138D48 (modulos init)..." << std::endl;
+    std::cout << "[HW_INIT] [4/4] Chamando sub_00138D48 (modulos init) a0=0x2C7080 a1=0x2C7084..." << std::endl;
     ctx->pc = 0x138d48u;
-    SET_GPR_S32(ctx, 4, (int32_t)0x2C7080u);  // a0
-    SET_GPR_S32(ctx, 5, (int32_t)0x2C7084u);  // a1 = a0 + 4
+    SET_GPR_S32(ctx, 4, (int32_t)0x2C7080u);
+    SET_GPR_S32(ctx, 5, (int32_t)0x2C7084u);
     SET_GPR_U32(ctx, 31, SENTINEL_RA);
     sub_00138D48_0x138d48(rdram, ctx, runtime);
+    std::cout << "[HW_INIT] [4/4] RETORNOU: pc=0x" << std::hex << ctx->pc
+              << " v0=0x" << (uint32_t)(_mm_extract_epi32(ctx->r[2], 0))
+              << std::dec << std::endl;
 
-    std::cout << "[HW_INIT] Sequencia de init concluida. Encerrando thread de boot." << std::endl;
+    std::cout << "[HW_INIT] Sequencia de init concluida. Encerrando thread de boot (pc->0x2996b0)." << std::endl;
 
     // J 0x2996b0 (ExitThread): a thread de boot do _start encerra aqui.
     // As threads criadas pelos inits acima continuarao executando.
