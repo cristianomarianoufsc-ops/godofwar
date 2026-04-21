@@ -4,6 +4,14 @@ project(GodOfWarPCPort)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Usar ccache se disponível (acelera muito rebuilds)
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+    message(STATUS "ccache encontrado: ${CCACHE_PROGRAM} - acelerando builds")
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+    set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+endif()
+
 # Habilitar instruções SSE4.1 e POPCNT necessárias para o PS2Recomp
 if(MSVC)
     add_compile_options(/arch:AVX2) # Para Windows/Visual Studio
@@ -31,17 +39,41 @@ file(GLOB_RECURSE RECOMPILED_SOURCES "${PROJECT_SOURCE_DIR}/src/recompiled/*.cpp
 # Coletar fontes do runtime
 file(GLOB_RECURSE RUNTIME_SOURCES "${PS2RUNTIME_PATH}/src/lib/*.cpp")
 
+# Biblioteca estática separada para o runtime — permite rebuildar
+# só o runtime sem recompilar os 5.626 arquivos do jogo (rebuild_runtime.sh)
+add_library(ps2runtime STATIC ${RUNTIME_SOURCES})
+target_compile_definitions(ps2runtime PRIVATE
+    PS2_RUNTIME_DEBUG
+    RAYLIB_GRAPHICS
+)
+
+# Biblioteca estática com o código recompilado do jogo (5.626 .cpp)
+# Build inicial é lento, mas raramente precisa ser refeito.
+add_library(gow_recompiled STATIC ${RECOMPILED_SOURCES})
+target_compile_definitions(gow_recompiled PRIVATE
+    PS2_RUNTIME_DEBUG
+    RAYLIB_GRAPHICS
+)
+
 # Criar o executável
 add_executable(${PROJECT_NAME}
     src/main.cpp
     src/register_functions.cpp
     src/ps2_syscall_stubs.cpp
-    ${RECOMPILED_SOURCES}
-    ${RUNTIME_SOURCES}
 )
 
 # Linkar bibliotecas
-target_link_libraries(${PROJECT_NAME} raylib)
+# --whole-archive garante que TODAS as funções recompiladas entrem no binário
+# (mesmo que pareçam não usadas — elas são chamadas por endereço via dispatch)
+if(NOT MSVC)
+    target_link_libraries(${PROJECT_NAME}
+        -Wl,--whole-archive gow_recompiled -Wl,--no-whole-archive
+        ps2runtime
+        raylib
+    )
+else()
+    target_link_libraries(${PROJECT_NAME} gow_recompiled ps2runtime raylib)
+endif()
 
 # Definir macros necessárias para o runtime
 target_compile_definitions(${PROJECT_NAME} PRIVATE 

@@ -20,7 +20,21 @@ Este projeto converte o executável original do PS2 (`SCUS_973.99`) para código
   - `src/lib/` — Implementação do runtime (GS, IOP, VU, áudio, memória)
 - `instalar_linux_mint.sh` — Script de instalação automática para Linux Mint
 - `jogar.sh` — Script para executar o jogo
-- `build.sh` — Script de build para o Replit
+- `build.sh` — Script de build completo (primeira vez, leva horas)
+- `rebuild_runtime.sh` — Rebuild rápido só do runtime (segundos a minutos)
+
+## Ferramentas de iteração rápida
+
+O `CMakeLists.txt` foi separado em duas bibliotecas estáticas:
+- `gow_recompiled` — os 5.626 .cpp gerados (build inicial lento, raramente muda)
+- `ps2runtime` — o runtime do PS2 (muda bastante durante depuração)
+
+Combinado com **ccache** (cache de compilação automático), isso permite:
+- Mexer no runtime e recompilar em segundos via `bash rebuild_runtime.sh`
+- Rebuilds completos depois do primeiro também ficam muito mais rápidos
+- Cache do ccache configurado em 5GB (`ccache -s` mostra estatísticas)
+
+Use `bash rebuild_runtime.sh --run` para recompilar e já executar o jogo.
 
 ## Como Rodar no Linux Mint
 
