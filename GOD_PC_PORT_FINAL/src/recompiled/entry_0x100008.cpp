@@ -118,4 +118,16 @@ void entry_0x100008(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtime) {
     // 0x100088: 0x70000013  mtlo1       $zero
     ctx->pc = 0x100088u;
     ctx->lo1 = GPR_U64(ctx, 0);
+
+    // ---- FIX (Bug A + Bug B do HANDOFF_AGENT.md) ----
+    // Bug A: o recompilador deixou pc=0x100088 (ultima instrucao). Avancamos para
+    // a proxima instrucao valida para que o dispatchLoop nao fique preso.
+    ctx->pc = 0x10008cu;
+
+    // Bug B: o ELF original do God of War assume que o kernel da PS2 configura
+    // SP/GP/RA depois deste bloco de boot. Como nao temos kernel, simulamos isso
+    // restaurando o stack pointer aqui (mesmo valor usado em PS2Runtime::run()).
+    // GP fica em 0 por enquanto; se o jogo precisar do _gp do ELF isso aparecera
+    // como o proximo bug a ser corrigido.
+    SET_GPR_VEC(ctx, 29, _mm_set_epi64x(0, static_cast<int64_t>(PS2_RAM_SIZE - 0x10u)));
 }
