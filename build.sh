@@ -2,15 +2,21 @@
 set -e
 
 echo "=== God of War PC Port - Build + Execução ==="
-echo "Configurando o projeto com CMake..."
 
 mkdir -p build
+
+if [ ! -f "build/CMakeCache.txt" ]; then
+    echo "Configurando o projeto com CMake (primeira vez)..."
+    cd build
+    cmake ../GOD_PC_PORT_FINAL -DCMAKE_BUILD_TYPE=Debug 2>&1
+    cd ..
+else
+    echo "CMake já configurado. Pulando configuração e retomando compilação..."
+fi
+
 cd build
-
-cmake ../GOD_PC_PORT_FINAL -DCMAKE_BUILD_TYPE=Debug 2>&1
-
 echo ""
-echo "Compilando... (pode demorar alguns minutos devido aos 5626 arquivos gerados)"
+echo "Compilando... (retomando de onde parou, $(ls CMakeFiles/GodOfWarPCPort.dir/src/recompiled/*.o 2>/dev/null | wc -l)/5626 arquivos já prontos)"
 make -j$(nproc) 2>&1
 
 echo ""
