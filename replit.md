@@ -36,6 +36,28 @@ Combinado com **ccache** (cache de compilação automático), isso permite:
 
 Use `bash rebuild_runtime.sh --run` para recompilar e já executar o jogo.
 
+## Relatório de funções/syscalls/stubs ausentes
+
+O runtime registra automaticamente tudo que o jogo chama mas ainda não está
+implementado: stubs (`TODO_NAMED`), syscalls com ID desconhecido e funções
+sem endereço registrado.
+
+Quando o programa termina (normal, Ctrl+C ou SIGTERM), grava o relatório em:
+- `./ps2_missing.log` por padrão
+- ou no caminho indicado por `PS2_MISSING_LOG=...`
+
+Conteúdo do relatório (ordenado pelos mais chamados):
+- Tipo (STUB / SYSCALL / FUNCTION)
+- Quantas vezes foi chamado
+- Quando ocorreu a primeira chamada (ms)
+- PC do primeiro chamador, RA, e args (a0..a3)
+
+Use esse relatório para **priorizar** o que implementar primeiro:
+provavelmente poucos itens cobrem 90% das chamadas.
+
+Arquivos: `PS2Recomp/ps2xRuntime/include/ps2_missing_report.h`
+e `PS2Recomp/ps2xRuntime/src/lib/ps2_missing_report.cpp`.
+
 ## Como Rodar no Linux Mint
 
 1. Faça o clone/pull do repositório

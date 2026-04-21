@@ -2,6 +2,7 @@
 #include "ps2_runtime.h"
 #include "ps2_runtime_macros.h"
 #include "ps2_syscalls.h"
+#include "ps2_missing_report.h"
 #include <iostream>
 #include <algorithm>
 #include <array>
@@ -227,6 +228,9 @@ namespace ps2_stubs
     void TODO_NAMED(const char *name, uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
     {
         const std::string stubName = name ? name : "unknown";
+
+        // Sempre registra no relatório consolidado (independente do limite de warnings).
+        ps2_missing_report::record(ps2_missing_report::Kind::Stub, stubName.c_str(), ctx);
 
         uint32_t callCount = 0;
         {

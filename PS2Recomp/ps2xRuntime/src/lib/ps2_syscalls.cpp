@@ -3,6 +3,7 @@
 #include "ps2_iop_audio.h"
 #include "ps2_runtime_macros.h"
 #include "ps2_stubs.h"
+#include "ps2_missing_report.h"
 #include <iostream>
 #include <algorithm>
 #include <cctype>

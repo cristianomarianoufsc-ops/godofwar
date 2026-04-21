@@ -1,4 +1,5 @@
 #include "ps2_runtime.h"
+#include "ps2_missing_report.h"
 #include "ps2_syscalls.h"
 #include "ps2_stubs.h"
 #include "game_overrides.h"
@@ -1041,6 +1042,9 @@ PS2Runtime::RecompiledFunction PS2Runtime::lookupFunction(uint32_t address)
 
     std::cerr << "Warning: Function at address 0x" << std::hex << address << std::dec << " not found" << std::endl;
 
+    // Registra no relatório consolidado de "missing".
+    ps2_missing_report::recordFunctionAddr(address, nullptr);
+
     static RecompiledFunction defaultFunction = [](uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
     {
         const uint32_t ra = ctx ? static_cast<uint32_t>(_mm_extract_epi32(ctx->r[31], 0)) : 0u;
@@ -2071,6 +2075,10 @@ void PS2Runtime::HandleIntegerOverflow(R5900Context *ctx)
 
 void PS2Runtime::run()
 {
+    // Inicializa o relatorio de funcoes/syscalls/stubs ausentes.
+    // Idempotente — pode ser chamado em todo run().
+    ps2_missing_report::init();
+
     m_stopRequested.store(false, std::memory_order_relaxed);
     ps2_stubs::resetSifState();
     ps2_stubs::resetGsSyncVCallbackState();

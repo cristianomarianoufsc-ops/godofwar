@@ -248,6 +248,9 @@ void TODO(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime, uint32_t encod
         return;
     }
 
+    // Registra no relatório consolidado de "missing" (sempre, não só na primeira vez).
+    ps2_missing_report::recordSyscall(syscallId, ctx);
+
     static std::mutex s_unknownMutex;
     static std::unordered_map<uint32_t, uint64_t> s_unknownCounts;
     {
