@@ -58,6 +58,60 @@ provavelmente poucos itens cobrem 90% das chamadas.
 Arquivos: `PS2Recomp/ps2xRuntime/include/ps2_missing_report.h`
 e `PS2Recomp/ps2xRuntime/src/lib/ps2_missing_report.cpp`.
 
+## Roadmap de ferramentas (para próximos agentes)
+
+A estratégia do projeto é construir ferramentas que aceleram o trabalho de
+fundo (debug, implementação de stubs, etc). Cada ferramenta entregue fica
+para sempre no repositório. Ordem planejada:
+
+### Já entregues
+1. ✅ **Build incremental rápido** — ccache + bibliotecas estáticas separadas
+   + `rebuild_runtime.sh`. Corta ciclo de iteração de horas para segundos.
+2. ✅ **Relatório de funções ausentes** — `ps2_missing_report` (acima).
+   Gera `./ps2_missing.log` priorizado por contagem de chamadas.
+
+### Próximas (ordem sugerida)
+
+3. ⏳ **Patcher de PC final nas funções recompiladas**
+   - Problema: o handover (seção 5) suspeita que o recompilador deixa o `ctx->pc`
+     na última instrução em vez de avançar 4 bytes. Pode afetar todas as 5.626
+     funções, não só a entry.
+   - Antes de construir: rodar o jogo com a ferramenta #2 ativa e olhar o
+     `ps2_missing.log`. Se aparecerem MUITAS entradas tipo `func_0x...`,
+     o patcher é prioridade. Se aparecerem só algumas, fazer fix manual.
+   - Quando construir: script Python que escaneia `GOD_PC_PORT_FINAL/src/recompiled/*.cpp`,
+     detecta o último `ctx->pc = 0xXXX;` de cada função e adiciona o avanço de
+     4 bytes. Backup automático antes de patchear.
+
+4. ⏳ **Diff de execução vs PCSX2**
+   - Problema: encontrar bugs sutis onde o nosso runtime diverge do
+     comportamento real do PS2.
+   - Como: ativar trace de PC no PCSX2 com mesmo ELF, comparar com nosso
+     trace (`/tmp/ps2_trace.log` via `PS2_TRACE=1`). Onde divergem = bug.
+   - Custo: maior (precisa configurar PCSX2 com tracing). Fazer só se os
+     bugs ficarem realmente difíceis.
+
+5. ⏳ **Visualizador/parser do trace de execução**
+   - Problema: o `/tmp/ps2_trace.log` cresce muito rápido e fica ilegível.
+   - Como: script Python que identifica hot spots, loops infinitos,
+     padrões de chamada, e gera um resumo legível.
+
+6. ⏳ **Auto-implementação de stubs por padrão**
+   - Quando: depois de implementar manualmente uns 5-10 stubs, vai aparecer
+     padrão (ex: muitos só precisam retornar 0, outros copiam estruturas).
+   - Como: meta-script que gera implementações a partir de templates.
+
+### Estratégia geral
+
+- **Sempre rode a ferramenta #2 (relatório) antes de decidir a próxima ferramenta.**
+  Os dados reais do que o jogo chama devem guiar prioridades, não suposições.
+- **Cada bug fixado deve gerar pelo menos uma melhoria de ferramenta**
+  se for um bug que pode se repetir em outros pontos.
+- **Não prometa rodar o jogo completo** — o objetivo realista é progresso
+  mensurável (avançar mais frames, abrir o menu, carregar uma fase).
+- **Honestidade com o usuário** sobre limitações é prioridade
+  (ver seção 10 do `HANDOFF_AGENT.md`).
+
 ## Como Rodar no Linux Mint
 
 1. Faça o clone/pull do repositório
