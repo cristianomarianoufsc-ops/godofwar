@@ -1,0 +1,74 @@
+cristiano@cristiano-King:~/Documentos/GitHub/godofwar$ bash instalar_linux_mint.sh
+=== God of War PC Port - Instalação Linux Mint ===
+
+[1/6] Instalando dependências do sistema...
+[sudo] senha para cristiano:     
+Atingido:1 https://brave-browser-apt-release.s3.brave.com stable InRelease
+Ignorar:2 http://packages.linuxmint.com zena InRelease                         
+Ignorar:3 https://mirror.mwt.me/shiftkey-desktop/apt focal InRelease           
+Atingido:4 http://archive.ubuntu.com/ubuntu noble InRelease                    
+Atingido:5 http://packages.linuxmint.com zena Release                          
+Obter:6 http://security.ubuntu.com/ubuntu noble-security InRelease [126 kB]    
+Erro:7 https://mirror.mwt.me/shiftkey-desktop/apt focal Release                
+  404  Not Found [IP: 2606:4700:20::ac43:48ab 443]
+Obter:8 http://archive.ubuntu.com/ubuntu noble-updates InRelease [126 kB]      
+Obter:10 http://archive.ubuntu.com/ubuntu noble-backports InRelease [126 kB]   
+Obter:11 http://security.ubuntu.com/ubuntu noble-security/main amd64 Components [21,5 kB]
+Obter:12 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages [1.910 kB]
+Obter:13 http://security.ubuntu.com/ubuntu noble-security/universe i386 Packages [793 kB]
+Obter:14 http://archive.ubuntu.com/ubuntu noble-updates/main i386 Packages [605 kB]
+Obter:15 http://archive.ubuntu.com/ubuntu noble-updates/main Translation-en [346 kB]
+Obter:16 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 Components [177 kB]
+Obter:17 http://archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages [2.981 kB]
+Obter:18 http://security.ubuntu.com/ubuntu noble-security/universe amd64 Packages [1.170 kB]
+Obter:19 http://archive.ubuntu.com/ubuntu noble-updates/restricted Translation-en [694 kB]
+Obter:20 http://archive.ubuntu.com/ubuntu noble-updates/universe amd64 Components [387 kB]
+Obter:21 http://security.ubuntu.com/ubuntu noble-security/universe Translation-en [225 kB]
+Obter:22 http://security.ubuntu.com/ubuntu noble-security/universe amd64 Components [74,1 kB]
+Obter:23 http://archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 Components [940 B]
+Obter:24 http://archive.ubuntu.com/ubuntu noble-backports/main amd64 Components [7.384 B]
+Obter:25 http://archive.ubuntu.com/ubuntu noble-backports/universe amd64 Components [10,5 kB]
+Lendo listas de pacotes... Pronto                                              
+N: Pulando a aquisição do arquivo configurado 'main/binary-i386/Packages', pois o repositório 'https://brave-browser-apt-release.s3.brave.com stable InRelease' não tem suporte à arquitetura 'i386'
+E: O repositório 'https://mirror.mwt.me/shiftkey-desktop/apt focal Release' não tem um arquivo Release.
+N: A atualização de tal repositório não pode ser feita com segurança e, portanto, está desabilitada por padrão.
+N: Veja a página man apt-secure(8) para detalhes sobre criação de repositório e configuração de usuário.
+Lendo listas de pacotes... Pronto
+Construindo árvore de dependências... Pronto
+Lendo informação de estado... Pronto        
+build-essential já é a versão mais nova (12.10ubuntu1).
+g++ já é a versão mais nova (4:13.2.0-7ubuntu1).
+cmake já é a versão mais nova (3.28.3-1build7).
+pkg-config já é a versão mais nova (1.8.1-2build1).
+git já é a versão mais nova (1:2.43.0-1ubuntu7.3).
+libgl1-mesa-dev já é a versão mais nova (25.2.8-0ubuntu0.24.04.1).
+libglu1-mesa-dev já é a versão mais nova (9.0.2-1.1build1).
+libglfw3-dev já é a versão mais nova (3.3.10-1build1).
+libopenal-dev já é a versão mais nova (1:1.23.1-4build1).
+libxrandr-dev já é a versão mais nova (2:1.5.2-2build1).
+libxinerama-dev já é a versão mais nova (2:1.1.4-3build1).
+libxcursor-dev já é a versão mais nova (1:1.2.1-1build1).
+libxi-dev já é a versão mais nova (2:1.8.1-1build1).
+libxext-dev já é a versão mais nova (2:1.3.4-1build2).
+0 pacotes atualizados, 0 pacotes novos instalados, 0 a serem removidos e 4 não atualizados.
+
+[2/6] Verificando Raylib...
+  Raylib 6.0.0 já instalado via apt.
+
+[3/6] Verificando versão do CMake...
+  CMake 3.28.3 OK.
+
+[4/6] Verificando arquivos do jogo...
+  part1.pak encontrado!
+  Arquivos do jogo OK.
+
+[5/6] Compilando o projeto (pode demorar 10-30 minutos)...
+  São 5626 arquivos C++ gerados pelo recompilador PS2 - isso é normal!
+
+-- Configuring done (0.2s)
+-- Generating done (2.0s)
+-- Build files have been written to: /home/cristiano/Documentos/GitHub/godofwar/build
+
+  RAM total: 11 GB | Threads seguros: 4 (de 4 disponíveis)
+  Iniciando compilação com 4 thread(s) paralela(s)...
+  (Reduzido para evitar estouro de memória — compile com -j1 se ainda ocorrer erro)
