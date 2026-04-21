@@ -1773,6 +1773,11 @@ void PS2Runtime::dispatchLoop(uint8_t *rdram, R5900Context *ctx)
     uint32_t samePcCount = 0;
     constexpr uint32_t kSamePcYieldInterval = 0x4000u;
 
+    // Boot tracer: imprime os primeiros 300 PCs despachados para diagnóstico
+    static std::atomic<uint32_t> s_bootTraceCount{0};
+    constexpr uint32_t kBootTraceLimit = 300u;
+    thread_local uint32_t tl_dispatchCount = 0u;
+
     while (!isStopRequested())
     {
         const uint32_t pc = ctx->pc;
@@ -1801,6 +1806,17 @@ void PS2Runtime::dispatchLoop(uint8_t *rdram, R5900Context *ctx)
         const uint32_t dispatchedPc = pc;
         const uint32_t dispatchedRa = static_cast<uint32_t>(_mm_extract_epi32(ctx->r[31], 0));
         const uint32_t dispatchedSp = static_cast<uint32_t>(_mm_extract_epi32(ctx->r[29], 0));
+
+        // Boot tracer: loga os primeiros kBootTraceLimit dispatches globais
+        ++tl_dispatchCount;
+        if (s_bootTraceCount.fetch_add(1u, std::memory_order_relaxed) < kBootTraceLimit)
+        {
+            std::cout << "[BOOT#" << std::dec << tl_dispatchCount
+                      << "] pc=0x" << std::hex << dispatchedPc
+                      << " ra=0x" << dispatchedRa
+                      << " sp=0x" << dispatchedSp
+                      << std::dec << std::endl;
+        }
 
         // Registra a chamada de função no tracer (ativado via PS2_TRACE=1)
         g_callTracer.trace(dispatchedPc, dispatchedRa, dispatchedSp);

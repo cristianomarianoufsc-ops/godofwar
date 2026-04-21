@@ -5,6 +5,7 @@
 
 #include "ps2_syscalls.h"
 #include "ps2_stubs.h"
+#include <iostream>
 
 #ifdef PS2_FUNCTION_LOG_TRACKER
 #include "ps2_log.h"
@@ -18,6 +19,10 @@ void sub_00138D48_0x138d48(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
 #ifdef PS2_FUNCTION_LOG_TRACKER
     PS_LOG_ENTRY("sub_00138D48_0x138d48");
 #endif
+    std::cout << "[138D48] ENTRADA a0=0x" << std::hex
+              << (uint32_t)(_mm_extract_epi32(ctx->r[4], 0))
+              << " a1=0x" << (uint32_t)(_mm_extract_epi32(ctx->r[5], 0))
+              << std::dec << std::endl;
 
     ctx->pc = 0x138d48u;
 
@@ -47,6 +52,7 @@ void sub_00138D48_0x138d48(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
     // Delay slot: daddu $s1, $a1, $zero
     SET_GPR_U64(ctx, 17, (uint64_t)GPR_U64(ctx, 5) + (uint64_t)GPR_U64(ctx, 0));
     ctx->pc = 0x283770u;
+    std::cout << "[138D48] JAL [1/11] -> 0x283770" << std::endl;
     if (runtime->hasFunction(0x283770u)) {
         auto targetFn = runtime->lookupFunction(0x283770u);
         const uint32_t __entryPc = ctx->pc;
@@ -54,9 +60,10 @@ void sub_00138D48_0x138d48(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         if (ctx->pc == __entryPc) { ctx->pc = 0x138d64u; }
         if (ctx->pc != 0x138d64u) { return; }
     } else {
-        // func_283770 nao encontrada - skip gracefully
+        std::cout << "[138D48] JAL [1/11] 0x283770 NAO REGISTRADA - skip" << std::endl;
         ctx->pc = 0x138d64u;
     }
+    std::cout << "[138D48] JAL [1/11] retornou pc=0x" << std::hex << ctx->pc << std::dec << std::endl;
     ctx->pc = 0x138d64u;
 
     // 0x138d64: lui $v0, 0x30  -> r2 = 0x300000
@@ -93,6 +100,7 @@ void sub_00138D48_0x138d48(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
     // Delay slot: sw $s1, -3076($v0) -> mem[0x330000 - 0xC04] = s1
     WRITE32(ADD32(GPR_U32(ctx, 2), (uint32_t)-3076), GPR_U32(ctx, 17));
     ctx->pc = 0x17aa88u;
+    std::cout << "[138D48] JAL [2/11] -> 0x17aa88" << std::endl;
     {
         const uint32_t __entryPc = ctx->pc;
         if (runtime->hasFunction(0x17aa88u)) {
@@ -106,12 +114,14 @@ void sub_00138D48_0x138d48(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
             if (ctx->pc != 0x138d88u) { return; }
         }
     }
+    std::cout << "[138D48] JAL [2/11] retornou pc=0x" << std::hex << ctx->pc << std::dec << std::endl;
     ctx->pc = 0x138d88u;
 
     // 0x138d88: jal 0x17acb8  [delay: nop]
     ctx->pc = 0x138d88u;
     SET_GPR_U32(ctx, 31, 0x138d90u);
     ctx->pc = 0x17acb8u;
+    std::cout << "[138D48] JAL [3/11] -> 0x17acb8" << std::endl;
     if (runtime->hasFunction(0x17acb8u)) {
         auto targetFn = runtime->lookupFunction(0x17acb8u);
         const uint32_t __entryPc = ctx->pc;
@@ -119,15 +129,17 @@ void sub_00138D48_0x138d48(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         if (ctx->pc == __entryPc) { ctx->pc = 0x138d90u; }
         if (ctx->pc != 0x138d90u) { return; }
     } else {
-        // func_17acb8 nao encontrada - skip
+        std::cout << "[138D48] JAL [3/11] 0x17acb8 NAO REGISTRADA - skip" << std::endl;
         ctx->pc = 0x138d90u;
     }
+    std::cout << "[138D48] JAL [3/11] retornou pc=0x" << std::hex << ctx->pc << std::dec << std::endl;
     ctx->pc = 0x138d90u;
 
     // 0x138d90: jal 0x138b10  [delay: nop]
     ctx->pc = 0x138d90u;
     SET_GPR_U32(ctx, 31, 0x138d98u);
     ctx->pc = 0x138b10u;
+    std::cout << "[138D48] JAL [4/11] -> 0x138b10" << std::endl;
     if (runtime->hasFunction(0x138b10u)) {
         auto targetFn = runtime->lookupFunction(0x138b10u);
         const uint32_t __entryPc = ctx->pc;
@@ -135,15 +147,17 @@ void sub_00138D48_0x138d48(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         if (ctx->pc == __entryPc) { ctx->pc = 0x138d98u; }
         if (ctx->pc != 0x138d98u) { return; }
     } else {
-        // func_138b10 nao encontrada - skip
+        std::cout << "[138D48] JAL [4/11] 0x138b10 NAO REGISTRADA - skip" << std::endl;
         ctx->pc = 0x138d98u;
     }
+    std::cout << "[138D48] JAL [4/11] retornou pc=0x" << std::hex << ctx->pc << std::dec << std::endl;
     ctx->pc = 0x138d98u;
 
     // 0x138d98: jal 0x1838d0  [delay: nop]
     ctx->pc = 0x138d98u;
     SET_GPR_U32(ctx, 31, 0x138da0u);
     ctx->pc = 0x1838d0u;
+    std::cout << "[138D48] JAL [5/11] -> 0x1838d0" << std::endl;
     if (runtime->hasFunction(0x1838d0u)) {
         auto targetFn = runtime->lookupFunction(0x1838d0u);
         const uint32_t __entryPc = ctx->pc;
@@ -151,15 +165,17 @@ void sub_00138D48_0x138d48(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         if (ctx->pc == __entryPc) { ctx->pc = 0x138da0u; }
         if (ctx->pc != 0x138da0u) { return; }
     } else {
-        // func_1838d0 nao encontrada - skip
+        std::cout << "[138D48] JAL [5/11] 0x1838d0 NAO REGISTRADA - skip" << std::endl;
         ctx->pc = 0x138da0u;
     }
+    std::cout << "[138D48] JAL [5/11] retornou pc=0x" << std::hex << ctx->pc << std::dec << std::endl;
     ctx->pc = 0x138da0u;
 
     // 0x138da0: jal 0x17a910  [delay: nop]
     ctx->pc = 0x138da0u;
     SET_GPR_U32(ctx, 31, 0x138da8u);
     ctx->pc = 0x17a910u;
+    std::cout << "[138D48] JAL [6/11] -> 0x17a910" << std::endl;
     {
         const uint32_t __entryPc = ctx->pc;
         if (runtime->hasFunction(0x17a910u)) {
@@ -173,12 +189,14 @@ void sub_00138D48_0x138d48(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
             if (ctx->pc != 0x138da8u) { return; }
         }
     }
+    std::cout << "[138D48] JAL [6/11] retornou pc=0x" << std::hex << ctx->pc << std::dec << std::endl;
     ctx->pc = 0x138da8u;
 
     // 0x138da8: jal 0x21ff60  [delay: nop]
     ctx->pc = 0x138da8u;
     SET_GPR_U32(ctx, 31, 0x138db0u);
     ctx->pc = 0x21ff60u;
+    std::cout << "[138D48] JAL [7/11] -> 0x21ff60" << std::endl;
     {
         const uint32_t __entryPc = ctx->pc;
         if (runtime->hasFunction(0x21ff60u)) {
@@ -192,12 +210,14 @@ void sub_00138D48_0x138d48(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
             if (ctx->pc != 0x138db0u) { return; }
         }
     }
+    std::cout << "[138D48] JAL [7/11] retornou pc=0x" << std::hex << ctx->pc << std::dec << std::endl;
     ctx->pc = 0x138db0u;
 
     // 0x138db0: jal 0x17bc80  [delay: nop]
     ctx->pc = 0x138db0u;
     SET_GPR_U32(ctx, 31, 0x138db8u);
     ctx->pc = 0x17bc80u;
+    std::cout << "[138D48] JAL [8/11] -> 0x17bc80" << std::endl;
     {
         const uint32_t __entryPc = ctx->pc;
         if (runtime->hasFunction(0x17bc80u)) {
@@ -211,12 +231,14 @@ void sub_00138D48_0x138d48(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
             if (ctx->pc != 0x138db8u) { return; }
         }
     }
+    std::cout << "[138D48] JAL [8/11] retornou pc=0x" << std::hex << ctx->pc << std::dec << std::endl;
     ctx->pc = 0x138db8u;
 
     // 0x138db8: jal 0x17a940  [delay: nop]
     ctx->pc = 0x138db8u;
     SET_GPR_U32(ctx, 31, 0x138dc0u);
     ctx->pc = 0x17a940u;
+    std::cout << "[138D48] JAL [9/11] -> 0x17a940" << std::endl;
     {
         const uint32_t __entryPc = ctx->pc;
         if (runtime->hasFunction(0x17a940u)) {
@@ -230,12 +252,14 @@ void sub_00138D48_0x138d48(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
             if (ctx->pc != 0x138dc0u) { return; }
         }
     }
+    std::cout << "[138D48] JAL [9/11] retornou pc=0x" << std::hex << ctx->pc << std::dec << std::endl;
     ctx->pc = 0x138dc0u;
 
     // 0x138dc0: jal 0x17aa18  [delay: nop]
     ctx->pc = 0x138dc0u;
     SET_GPR_U32(ctx, 31, 0x138dc8u);
     ctx->pc = 0x17aa18u;
+    std::cout << "[138D48] JAL [10/11] -> 0x17aa18" << std::endl;
     {
         const uint32_t __entryPc = ctx->pc;
         if (runtime->hasFunction(0x17aa18u)) {
@@ -249,12 +273,14 @@ void sub_00138D48_0x138d48(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
             if (ctx->pc != 0x138dc8u) { return; }
         }
     }
+    std::cout << "[138D48] JAL [10/11] retornou pc=0x" << std::hex << ctx->pc << std::dec << std::endl;
     ctx->pc = 0x138dc8u;
 
     // 0x138dc8: jal 0x17a9b0  [delay: nop]
     ctx->pc = 0x138dc8u;
     SET_GPR_U32(ctx, 31, 0x138dd0u);
     ctx->pc = 0x17a9b0u;
+    std::cout << "[138D48] JAL [11/11] -> 0x17a9b0" << std::endl;
     {
         const uint32_t __entryPc = ctx->pc;
         if (runtime->hasFunction(0x17a9b0u)) {
@@ -268,7 +294,10 @@ void sub_00138D48_0x138d48(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
             if (ctx->pc != 0x138dd0u) { return; }
         }
     }
+    std::cout << "[138D48] JAL [11/11] retornou pc=0x" << std::hex << ctx->pc << std::dec << std::endl;
     ctx->pc = 0x138dd0u;
+
+    std::cout << "[138D48] SAIDA - todas as 11 sub-funcoes concluidas" << std::endl;
 
     // 0x138dd0: lq $s0, 32($sp)
     ctx->pc = 0x138dd0u;
