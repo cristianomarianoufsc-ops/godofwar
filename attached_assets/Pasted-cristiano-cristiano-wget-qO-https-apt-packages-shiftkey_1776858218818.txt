@@ -1,0 +1,94 @@
+cristiano@cristiano:~$ wget -qO - https://apt.packages.shiftkey.dev/gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/shiftkey-packages.gpg
+sudo sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/shiftkey-packages.gpg] https://apt.packages.shiftkey.dev/ubuntu/ any main" > /etc/apt/sources.list.d/shiftkey-packages.list'
+sudo apt update
+sudo apt install -y github-desktop
+[sudo] senha para cristiano:     
+gpg: nenhum dado OpenPGP válido encontrado.
+Ignorar:1 https://apt.packages.shiftkey.dev/ubuntu any InRelease
+Ignorar:2 http://packages.linuxmint.com zena InRelease                         
+Atingido:3 http://archive.ubuntu.com/ubuntu noble InRelease                    
+Atingido:4 http://security.ubuntu.com/ubuntu noble-security InRelease
+Atingido:5 http://packages.linuxmint.com zena Release       
+Atingido:6 http://archive.ubuntu.com/ubuntu noble-updates InRelease
+Ignorar:1 https://apt.packages.shiftkey.dev/ubuntu any InRelease               
+Atingido:8 http://archive.ubuntu.com/ubuntu noble-backports InRelease          
+Ignorar:1 https://apt.packages.shiftkey.dev/ubuntu any InRelease 
+Erro:1 https://apt.packages.shiftkey.dev/ubuntu any InRelease    
+  Certificate verification failed: The certificate is NOT trusted. The name in the certificate does not match the expected.  Could not handshake: Error in the certificate verification. [IP: 2603:1061:14:120::1 443]
+Lendo listas de pacotes... Pronto                                
+Construindo árvore de dependências... Pronto
+Lendo informação de estado... Pronto        
+238 pacotes podem ser atualizados. Execute 'apt list --upgradable' para vê-los.
+W: Falhou ao buscar https://apt.packages.shiftkey.dev/ubuntu/dists/any/InRelease  Certificate verification failed: The certificate is NOT trusted. The name in the certificate does not match the expected.  Could not handshake: Error in the certificate verification. [IP: 2603:1061:14:120::1 443]
+W: Falhou o download de alguns ficheiros de índice. Foram ignorados ou os antigos foram usados em seu lugar.
+Lendo listas de pacotes... Pronto
+Construindo árvore de dependências... Pronto
+Lendo informação de estado... Pronto        
+E: Impossível encontrar o pacote github-desktop
+cristiano@cristiano:~$ sudo rm /etc/apt/sources.list.d/shiftkey-packages.list
+wget -qO - https://mirror.mwt.me/ghd/gpgkey | sudo tee /etc/apt/keyrings/mwt-desktop.asc > /dev/null
+sudo sh -c 'echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/mwt-desktop.asc] https://mirror.mwt.me/ghd/deb/ stable main" > /etc/apt/sources.list.d/mwt-desktop.list'
+sudo apt update
+sudo apt install -y github-desktop
+Ignorar:1 http://packages.linuxmint.com zena InRelease                         
+Atingido:2 http://archive.ubuntu.com/ubuntu noble InRelease                    
+Erro:3 https://mirror.mwt.me/ghd/deb stable InRelease                          
+  410  Gone [IP: 2606:4700:20::ac43:48ab 443]
+Atingido:4 http://security.ubuntu.com/ubuntu noble-security InRelease          
+Atingido:5 http://packages.linuxmint.com zena Release                          
+Atingido:6 http://archive.ubuntu.com/ubuntu noble-updates InRelease
+Atingido:8 http://archive.ubuntu.com/ubuntu noble-backports InRelease
+Lendo listas de pacotes... Pronto
+E: Falhou ao buscar https://mirror.mwt.me/ghd/deb/dists/stable/InRelease  410  Gone [IP: 2606:4700:20::ac43:48ab 443]
+E: O repositório 'https://mirror.mwt.me/ghd/deb stable InRelease' não está assinado.
+N: A atualização de tal repositório não pode ser feita com segurança e, portanto, está desabilitada por padrão.
+N: Veja a página man apt-secure(8) para detalhes sobre criação de repositório e configuração de usuário.
+Lendo listas de pacotes... Pronto
+Construindo árvore de dependências... Pronto
+Lendo informação de estado... Pronto        
+E: Impossível encontrar o pacote github-desktop
+cristiano@cristiano:~$ ccache --version
+ccache -s
+ls -la ~/Documentos/GitHub/godofwar/build.sh ~/Documentos/GitHub/godofwar/rebuild_runtime.sh
+ccache version 4.9.1
+Features: file-storage http-storage redis+unix-storage redis-storage
+
+Copyright (C) 2002-2007 Andrew Tridgell
+Copyright (C) 2009-2024 Joel Rosdahl and other contributors
+
+See <https://ccache.dev/credits.html> for a complete list of contributors.
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 3 of the License, or (at your option) any later
+version.
+Local storage:
+  Cache size (GiB): 0.0 / 5.0 ( 0.00%)
+-rwxrwxr-x 1 cristiano cristiano  766 abr 22 01:02 /home/cristiano/Documentos/GitHub/godofwar/build.sh
+-rwxrwxr-x 1 cristiano cristiano 1152 abr 22 01:02 /home/cristiano/Documentos/GitHub/godofwar/rebuild_runtime.sh
+cristiano@cristiano:~$ flatpak install -y flathub io.github.shiftey.Desktop
+Procurando por correspondências…
+Runtime exigido para io.github.shiftey.Desktop/x86_64/stable (runtime/org.freedesktop.Platform/x86_64/24.08) localizado no remoto flathub
+
+Permissões de io.github.shiftey.Desktop:
+    ipc                   network               fallback-x11      gpg-agent
+    ssh-auth              wayland               x11               devices
+    file access [1]       dbus access [2]
+
+    [1] /opt:ro, /var/lib/flatpak/app:ro, host, xdg-run/keyring
+    [2] com.canonical.AppMenu.Registrar, org.freedesktop.Flatpak,
+        org.freedesktop.Notifications, org.freedesktop.secrets, org.gtk.vfs.*
+
+
+        ID                                   Ramo       Op Remoto  Baixar
+ 1. [✓] org.freedesktop.Platform.GL.default  24.08      i  flathub 146,5 MB / 146,7 MB
+ 2. [✓] org.freedesktop.Platform.GL.default  24.08extra i  flathub  24,7 MB / 146,7 MB
+ 3. [✓] org.freedesktop.Platform.Locale      24.08      i  flathub  10,7 MB / 388,8 MB
+ 4. [✓] org.freedesktop.Platform.VAAPI.Intel 24.08      i  flathub  15,4 MB / 15,5 MB
+ 5. [✓] org.freedesktop.Platform.openh264    2.5.1      i  flathub 913,7 kB / 971,4 kB
+ 6. [✓] org.gtk.Gtk3theme.Mint-Y-Aqua        3.22       i  flathub  73,1 kB / 114,9 kB
+ 7. [✓] org.freedesktop.Platform             24.08      i  flathub 214,1 MB / 268,6 MB
+ 8. [✓] io.github.shiftey.Desktop            stable     i  flathub 168,9 MB / 180,3 MB
+
+Instalação concluída.
+cristiano@cristiano:~$ 
