@@ -1,0 +1,28 @@
+ristiano@cristiano:~$ wget -qO - https://apt.packages.shiftkey.dev/gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/shiftkey-packages.gpg
+sudo sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/shiftkey-packages.gpg] https://apt.packages.shiftkey.dev/ubuntu/ any main" > /etc/apt/sources.list.d/shiftkey-packages.list'
+sudo apt update
+sudo apt install -y github-desktop
+[sudo] senha para cristiano:     
+gpg: nenhum dado OpenPGP válido encontrado.
+Ignorar:1 https://apt.packages.shiftkey.dev/ubuntu any InRelease
+Ignorar:2 http://packages.linuxmint.com zena InRelease                         
+Atingido:3 http://archive.ubuntu.com/ubuntu noble InRelease                    
+Atingido:4 http://security.ubuntu.com/ubuntu noble-security InRelease
+Atingido:5 http://packages.linuxmint.com zena Release       
+Atingido:6 http://archive.ubuntu.com/ubuntu noble-updates InRelease
+Ignorar:1 https://apt.packages.shiftkey.dev/ubuntu any InRelease               
+Atingido:8 http://archive.ubuntu.com/ubuntu noble-backports InRelease          
+Ignorar:1 https://apt.packages.shiftkey.dev/ubuntu any InRelease 
+Erro:1 https://apt.packages.shiftkey.dev/ubuntu any InRelease    
+  Certificate verification failed: The certificate is NOT trusted. The name in the certificate does not match the expected.  Could not handshake: Error in the certificate verification. [IP: 2603:1061:14:120::1 443]
+Lendo listas de pacotes... Pronto                                
+Construindo árvore de dependências... Pronto
+Lendo informação de estado... Pronto        
+238 pacotes podem ser atualizados. Execute 'apt list --upgradable' para vê-los.
+W: Falhou ao buscar https://apt.packages.shiftkey.dev/ubuntu/dists/any/InRelease  Certificate verification failed: The certificate is NOT trusted. The name in the certificate does not match the expected.  Could not handshake: Error in the certificate verification. [IP: 2603:1061:14:120::1 443]
+W: Falhou o download de alguns ficheiros de índice. Foram ignorados ou os antigos foram usados em seu lugar.
+Lendo listas de pacotes... Pronto
+Construindo árvore de dependências... Pronto
+Lendo informação de estado... Pronto        
+E: Impossível encontrar o pacote github-desktop
+cristiano@cristiano:~$ 
