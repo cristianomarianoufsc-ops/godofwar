@@ -119,9 +119,45 @@ fi
 # -----------------------------------------------------------------------------
 # 6. Configurar ccache
 # -----------------------------------------------------------------------------
-log "[6/6] Configurando ccache com 5 GB de cache..."
+log "[6/7] Configurando ccache com 5 GB de cache..."
 ccache --max-size=5G > /dev/null
 ccache --set-config=compression=true > /dev/null
+
+# -----------------------------------------------------------------------------
+# 7. Configurar git (interativo)
+# -----------------------------------------------------------------------------
+log "[7/7] Configurando git..."
+EXISTING_NAME=$(git config --global user.name 2>/dev/null || true)
+EXISTING_EMAIL=$(git config --global user.email 2>/dev/null || true)
+
+if [[ -n "$EXISTING_NAME" && -n "$EXISTING_EMAIL" ]]; then
+    log "Git ja esta configurado:"
+    log "  Nome:  $EXISTING_NAME"
+    log "  Email: $EXISTING_EMAIL"
+    read -p "Quer reconfigurar? (s/N): " RECONFIG
+    if [[ ! "$RECONFIG" =~ ^[Ss]$ ]]; then
+        log "Mantendo configuracao atual do git."
+    else
+        EXISTING_NAME=""
+    fi
+fi
+
+if [[ -z "$EXISTING_NAME" ]]; then
+    echo
+    read -p "Digite seu nome (aparece nos commits): " GIT_NAME
+    read -p "Digite seu email (do GitHub): " GIT_EMAIL
+
+    if [[ -n "$GIT_NAME" && -n "$GIT_EMAIL" ]]; then
+        git config --global user.name  "$GIT_NAME"
+        git config --global user.email "$GIT_EMAIL"
+        log "Git configurado: $GIT_NAME <$GIT_EMAIL>"
+    else
+        warn "Nome ou email vazios, pulando configuracao do git."
+        warn "Configure manualmente depois com:"
+        warn "  git config --global user.name  \"Seu Nome\""
+        warn "  git config --global user.email \"seu@email.com\""
+    fi
+fi
 
 # -----------------------------------------------------------------------------
 # Resumo final
@@ -138,20 +174,11 @@ echo "  - ccache: $(ccache --version | head -1)"
 echo "  - raylib: $(pkg-config --modversion raylib)"
 echo
 warn "Proximos passos manuais:"
-echo "  1. Configurar git (se nao configurou ainda):"
-echo "     git config --global user.name  \"Seu Nome\""
-echo "     git config --global user.email \"seu@email.com\""
-echo
-echo "  2. Clonar o projeto (se ainda nao clonou):"
-echo "     mkdir -p ~/Documentos/GitHub && cd ~/Documentos/GitHub"
-echo "     git clone https://github.com/cristianomarianoufsc-ops/godofwar.git"
-echo
-echo "  3. Baixar o part1.pak (4 GB, leva ~2 horas):"
-echo "     cd ~/Documentos/GitHub/godofwar"
+echo "  1. Baixar o part1.pak (4 GB, leva ~2 horas):"
 echo "     gdown 'https://drive.google.com/uc?id=1pmhBQeneIMLyIiAeWeAiAebOJb3O6fuM' \\"
 echo "           -O GOD_PC_PORT_FINAL/data/part1.pak"
 echo
-echo "  4. Build:"
+echo "  2. Build:"
 echo "     bash build.sh"
 echo
 warn "Reinicie o terminal antes de usar o gdown (para o PATH atualizar)."
