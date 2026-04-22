@@ -69,19 +69,20 @@ para sempre no repositório. Ordem planejada:
    + `rebuild_runtime.sh`. Corta ciclo de iteração de horas para segundos.
 2. ✅ **Relatório de funções ausentes** — `ps2_missing_report` (acima).
    Gera `./ps2_missing.log` priorizado por contagem de chamadas.
+3. ✅ **Inspetor MIPS do ELF** — `tools/mips_inspect.py`.
+   Lê o ELF (`SCUS_973.99`), desmonta MIPS little-endian, e diagnostica
+   automaticamente buracos (gaps) entre funções recompiladas.
+   Requer: `sudo apt install python3-capstone`.
+   - `python3 tools/mips_inspect.py 0x10047c` — desmonta a partir do endereço
+   - `python3 tools/mips_inspect.py --gap 0x10047c` — identifica o gap que
+     contém o endereço e diagnostica se é padding ou código real
+   - `python3 tools/mips_inspect.py --list-gaps` — lista os 30 maiores gaps
+     do recompilador (priorização sistêmica em vez de bug-by-bug).
+   - **Setup automático:** `setup_linux.sh` na raiz do projeto recria todo
+     o ambiente (apt deps, raylib 5.5, ccache, pipx, gdown, git config) em
+     qualquer Mint/Ubuntu novo. `bash setup_linux.sh`.
 
 ### Próximas (ordem sugerida)
-
-3. ⏳ **Patcher de PC final nas funções recompiladas**
-   - Problema: o handover (seção 5) suspeita que o recompilador deixa o `ctx->pc`
-     na última instrução em vez de avançar 4 bytes. Pode afetar todas as 5.626
-     funções, não só a entry.
-   - Antes de construir: rodar o jogo com a ferramenta #2 ativa e olhar o
-     `ps2_missing.log`. Se aparecerem MUITAS entradas tipo `func_0x...`,
-     o patcher é prioridade. Se aparecerem só algumas, fazer fix manual.
-   - Quando construir: script Python que escaneia `GOD_PC_PORT_FINAL/src/recompiled/*.cpp`,
-     detecta o último `ctx->pc = 0xXXX;` de cada função e adiciona o avanço de
-     4 bytes. Backup automático antes de patchear.
 
 4. ⏳ **Diff de execução vs PCSX2**
    - Problema: encontrar bugs sutis onde o nosso runtime diverge do
