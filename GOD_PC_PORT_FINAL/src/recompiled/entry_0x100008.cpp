@@ -122,7 +122,13 @@ void entry_0x100008(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtime) {
     // ---- FIX (Bug A + Bug B do HANDOFF_AGENT.md) ----
     // Bug A: o recompilador deixou pc=0x100088 (ultima instrucao). Avancamos para
     // a proxima instrucao valida para que o dispatchLoop nao fique preso.
-    ctx->pc = 0x10008cu;
+    //
+    // EXPERIMENTO (Opcao A): o recompilador NAO gerou funcoes entre 0x10008c
+    // e 0x1003c0 (~830 bytes de buraco). Pulando direto para a primeira funcao
+    // real recompilada (sub_001003C0) para ver o que acontece. Se o jogo
+    // progredir, sabemos que esse buraco era padding/dados e nao codigo.
+    // Se travar/crashar diferente, o relatorio dira o proximo passo.
+    ctx->pc = 0x1003c0u;
 
     // Bug B: o ELF original do God of War assume que o kernel da PS2 configura
     // SP/GP/RA depois deste bloco de boot. Como nao temos kernel, simulamos isso
