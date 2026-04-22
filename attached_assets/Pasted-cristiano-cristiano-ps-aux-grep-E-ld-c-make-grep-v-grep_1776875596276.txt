@@ -1,0 +1,15 @@
+cristiano@cristiano:~$ ps aux | grep -E 'ld|c\+\+|make' | grep -v grep | wc -l
+28
+cristiano@cristiano:~$ ps aux --sort=-%cpu | head -10
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+cristia+  160210 47.4 24.2 2973144 2935804 pts/0 R+   13:31   0:30 /usr/bin/ld -plugin /usr/libexec/gcc/x86_64-linux-gnu/13/liblto_plugin.so -plugin-opt=/usr/libexec/gcc/x86_64-linux-gnu/13/lto-wrapper -plugin-opt=-fresolution=/tmp/ccRE4nPz.res -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc --build-id --eh-frame-hdr -m elf_x86_64 --hash-style=gnu --as-needed -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie -z now -z relro -o GodOfWarPCPort /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crti.o /usr/lib/gcc/x86_64-linux-gnu/13/crtbeginS.o -L/usr/local/lib -L/usr/lib/gcc/x86_64-linux-gnu/13 -L/usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu -L/usr/lib/gcc/x86_64-linux-gnu/13/../../../../lib -L/lib/x86_64-linux-gnu -L/lib/../lib -L/usr/lib/x86_64-linux-gnu -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-linux-gnu/13/../../.. CMakeFiles/GodOfWarPCPort.dir/src/main.cpp.o CMakeFiles/GodOfWarPCPort.dir/src/register_functions.cpp.o CMakeFiles/GodOfWarPCPort.dir/src/ps2_syscall_stubs.cpp.o -rpath /usr/local/lib --whole-archive libgow_recompiled.a --no-whole-archive libps2runtime.a /usr/local/lib/libraylib.so -lraylib -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/lib/gcc/x86_64-linux-gnu/13/crtendS.o /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crtn.o
+cristia+    2750 39.4  9.1 4886872 1103032 ?     Rl   00:35 306:55 /usr/lib/firefox/firefox-bin -contentproc -isForBrowser -prefsHandle 0:42857 -prefMapHandle 1:273205 -jsInitHandle 2:223356 -parentBuildID 20251217121356 -sandboxReporter 3 -chrootClient 4 -ipcHandle 5 -initialChannelId {9a12dfa8-50db-4562-bcce-b0ad057eedad} -parentPid 2146 -crashReporter 6 -crashHelper 7 -greomni /usr/lib/firefox/omni.ja -appomni /usr/lib/firefox/browser/omni.ja -appDir /usr/lib/firefox/browser 16 tab
+cristia+    2146  8.7  4.9 13315456 598688 ?     Sl   00:34  67:45 /usr/lib/firefox/firefox
+cristia+    3371  3.3  4.7 1315356 576212 ?      Sl   00:38  26:08 mintinstall
+cristia+    1489  2.2  0.5 562348 71108 ?        Sl   00:32  17:36 mate-power-manager
+root         364  1.9  0.0  30084  8212 ?        Ss   00:31  14:53 /usr/lib/systemd/systemd-udevd
+root         974  1.1  1.5 1012552 184304 tty7   Ssl+ 00:31   9:09 /usr/lib/xorg/Xorg -core :0 -seat seat0 -auth /var/run/lightdm/root/:0 -nolisten tcp vt7 -novtswitch
+cristia+    1925  1.0  0.5 497068 63676 ?        Sl   00:32   8:23 mintreport-tray
+polkitd      700  0.5  0.1 394816 18080 ?        Ssl  00:31   4:36 /usr/lib/polkit-1/polkitd --no-debug
+cristiano@cristiano:~$ 
+
