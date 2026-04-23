@@ -27,11 +27,11 @@ name = "Start application"
 author = "agent"
 
 [workflows.workflow.metadata]
-outputType = "vnc"
+outputType = "console"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "bash build.sh"
+args = "echo 'Build local — Replit nao compila. Use git pull no seu PC e rode bash build.sh local.'"
 
 [[workflows.workflow]]
 name = "Download part1.pak"
