@@ -42,4 +42,4 @@ outputType = "console"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "gdown 'https://drive.google.com/uc?id=1pmhBQeneIMLyIiAeWeAiAebOJb3O6fuM' -O GOD_PC_PORT_FINAL/data/part1.pak && echo 'DOWNLOAD CONCLUÍDO!' || echo 'FALHA NO DOWNLOAD'"
+args = "uv run gdown 'https://drive.google.com/uc?id=1pmhBQeneIMLyIiAeWeAiAebOJb3O6fuM' -O GOD_PC_PORT_FINAL/data/part1.pak && echo 'DOWNLOAD CONCLUÍDO!' || echo 'FALHA NO DOWNLOAD'"
