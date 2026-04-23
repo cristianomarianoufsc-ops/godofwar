@@ -2198,6 +2198,14 @@ void PS2Runtime::run()
             const uint32_t dbgSp = m_debugSp.load(std::memory_order_relaxed);
             const uint32_t dbgGp = m_debugGp.load(std::memory_order_relaxed);
             const int activeThreads = g_activeThreads.load(std::memory_order_relaxed);
+            // m_debugPc/Ra/Sp/Gp sao atualizados APENAS no topo do dispatchLoop;
+            // se a fn() em execucao ainda nao retornou (ex: loop C++ infinito
+            // dentro de uma funcao recompilada), esses valores ficam stale.
+            // Lemos diretamente do contexto pra ter a PC viva (race benigna,
+            // x86 garante load/store atomico de uint32 alinhado).
+            const uint32_t livePc = m_cpuContext.pc;
+            const uint32_t liveRa = static_cast<uint32_t>(_mm_extract_epi32(m_cpuContext.r[31], 0));
+            const uint32_t liveSp = static_cast<uint32_t>(_mm_extract_epi32(m_cpuContext.r[29], 0));
 
             constexpr uint32_t kSndTransTypeAddr = 0x01E0E1C0u;
             constexpr uint32_t kSndTransBankAddr = 0x01E0E1C8u;
@@ -2237,6 +2245,9 @@ void PS2Runtime::run()
             }
             std::cout << "[run:tick] tick=" << tick
                       << " pc=0x" << std::hex << dbgPc
+                      << " livePc=0x" << livePc
+                      << " liveRa=0x" << liveRa
+                      << " liveSp=0x" << liveSp
                       << " ra=0x" << dbgRa
                       << " sp=0x" << dbgSp
                       << " gp=0x" << dbgGp
