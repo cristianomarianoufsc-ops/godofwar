@@ -34,10 +34,12 @@ include_directories(
 find_package(raylib REQUIRED)
 
 # Coletar todos os arquivos C++ gerados
-file(GLOB_RECURSE RECOMPILED_SOURCES "${PROJECT_SOURCE_DIR}/src/recompiled/*.cpp")
+# CONFIGURE_DEPENDS: faz o CMake re-checar o diretório a cada `make`,
+# pegando arquivos novos sem precisar rodar cmake manualmente.
+file(GLOB_RECURSE RECOMPILED_SOURCES CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/src/recompiled/*.cpp")
 
 # Coletar fontes do runtime
-file(GLOB_RECURSE RUNTIME_SOURCES "${PS2RUNTIME_PATH}/src/lib/*.cpp")
+file(GLOB_RECURSE RUNTIME_SOURCES CONFIGURE_DEPENDS "${PS2RUNTIME_PATH}/src/lib/*.cpp")
 
 # Biblioteca estática separada para o runtime — permite rebuildar
 # só o runtime sem recompilar os 5.626 arquivos do jogo (rebuild_runtime.sh)

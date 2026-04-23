@@ -61,6 +61,25 @@ Sempre estes 3 itens em uma única mensagem:
 Com esses 3 itens o agente fecha a análise em 1 round-trip. Sem eles, perde-se
 2-3 idas e voltas pedindo informação básica.
 
+### ⚠️ Armadilha conhecida: CMake GLOB e arquivos .cpp novos
+
+O `CMakeLists.txt` usa `file(GLOB_RECURSE ... CONFIGURE_DEPENDS)` para coletar
+os 5.6k arquivos de `src/recompiled/`. **Sem `CONFIGURE_DEPENDS`** (versão
+antiga), arquivos `.cpp` adicionados depois da primeira execução do `cmake`
+NÃO entram no build, e o linker dá centenas de erros tipo
+`undefined reference to entry_0xXXXXXX`.
+
+**Sintoma**: `[100%] Built target gow_recompiled` seguido de muitos
+`/usr/bin/ld: ... undefined reference to ...`.
+
+**Conserto**: o `CMakeLists.txt` já tem `CONFIGURE_DEPENDS` agora. Se aparecer
+de novo, mande o usuário rodar:
+```bash
+cd ~/Documentos/GitHub/godofwar/build
+cmake ../GOD_PC_PORT_FINAL && make -j$(nproc)
+```
+Isso re-avalia o GLOB sem perder os `.o` já compilados.
+
 ### Regras pro agente Replit
 
 - **NÃO rodar `bash build.sh` no Replit** — só desperdiça CPU.
