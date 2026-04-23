@@ -118,6 +118,49 @@ para sempre no repositório. Ordem planejada:
      primeiro pra destravar o boot.
    - Para gerar log: `bash build.sh 2>&1 | tee build/run.log`.
 
+8. ✅ **Live PC no `[run:tick]`** — `m_debugPc/Ra/Sp` só é atualizado no
+   topo do `dispatchLoop`. Se uma `fn()` recompilada entra em loop C++
+   infinito (callee profundo), esses valores ficam **stale** mostrando
+   "pc=0x1003c0" para sempre, mascarando o real ponto de travamento.
+   Agora o tick também loga `livePc=0x... liveRa=0x... liveSp=0x...` lidos
+   diretamente de `m_cpuContext` (race benigna, x86 garante load atômico
+   de uint32 alinhado). Compare `livePc` entre ticks consecutivos para
+   identificar busy loops.
+   - Arquivo: `PS2Recomp/ps2xRuntime/src/lib/ps2_runtime.cpp` no `run:tick`.
+
+## Estado atual da depuração (sessão de 2026-04-23)
+
+**Boot avança até:** janela abre, raylib + audio init OK, ELF carrega,
+`Starting execution at address 0x100008`, dispatcha `BOOT#1 pc=0x100008`
+e `BOOT#2 pc=0x1003c0`. Stub BIOS dispara **uma vez** para `0x80004`
+(`syscallId=1` = ResetEE). Frame uploads rodam (`nonBlack=0`, tudo preto).
+
+**Trava em:** `m_debugPc=0x1003c0` mostrado no `[run:tick]` por **3000+
+ticks** (~50 segundos). NENHUM `[dispatch:first-bad-pc]`, NENHUM
+`[dispatch:recover-pc]`, NENHUM `[dispatch:stuck-pc]`. Significa que o
+`dispatchLoop` **não está iterando** — uma `fn()` recompilada entrou e
+nunca retornou. Provavelmente loop interno em `sub_00100408`,
+`func_131288` (`entry_131288_0x131300`) ou `sub_00238860` (callees de
+`sub_001003C0`).
+
+**Próxima ação concreta para o agente que continuar:**
+1. Pedir ao usuário para rodar de novo capturando log:
+   `bash build.sh 2>&1 | tee build/run.log`
+2. Olhar as linhas `[run:tick]` e ver o `livePc=0x...` (novo campo
+   adicionado na sessão atual). Esse será o PC real onde a CPU está.
+3. Se o `livePc` ficar oscilando num range pequeno (ex: 0x238ab0 ↔
+   0x238ad4), localizar a função em `GOD_PC_PORT_FINAL/src/recompiled/`
+   e analisar qual flag/memória ela está pollando que nunca muda.
+4. Provavelmente vai ser polling de `sndType/sndLvl` (sound) ou semáforo
+   PS2 (`WaitSema` sempre retorna sem signal).
+5. Se for syscall: implementar stub real em `ps2_syscalls/` em vez do
+   `retorna 0` atual do `[lookup:bios-stub]`.
+
+**Ferramenta #8 sugerida (não implementada):** localizador automático
+"PC range → função recompilada" — dado um `livePc`, lê os headers
+`// Address: 0xX - 0xY` dos `.cpp` e identifica a função e contexto C++
+(labels, gotos, while loops) próximo. Cortaria 5min por iteração de debug.
+
 ### Próximas (ordem sugerida)
 
 4. ⏳ **Diff de execução vs PCSX2**
