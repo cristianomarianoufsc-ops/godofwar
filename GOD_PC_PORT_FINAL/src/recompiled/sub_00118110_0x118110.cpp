@@ -6,9 +6,17 @@
 #include "ps2_syscalls.h"
 #include "ps2_stubs.h"
 
+#include <cstdio>
+#include <atomic>
+
 #ifdef PS2_FUNCTION_LOG_TRACKER
 #include "ps2_log.h"
 #endif
+
+namespace {
+    constexpr int kMaxFullLogs_118110 = 40;
+    std::atomic<int> g_call_count_118110{0};
+}
 
 // Function: sub_00118110
 // Address: 0x118110 - 0x118798
@@ -16,6 +24,16 @@ void sub_00118110_0x118110(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
 #ifdef PS2_FUNCTION_LOG_TRACKER
     PS_LOG_ENTRY("sub_00118110_0x118110");
 #endif
+
+    const int dbg_call_118110 = g_call_count_118110.fetch_add(1) + 1;
+    if (dbg_call_118110 <= kMaxFullLogs_118110) {
+        fprintf(stderr,
+            "[DBG 118110] #%d ENTER a0=%08x a1=%08x a2=%08x a3=%08x\n",
+            dbg_call_118110,
+            GPR_U32(ctx, 4), GPR_U32(ctx, 5),
+            GPR_U32(ctx, 6), GPR_U32(ctx, 7));
+        fflush(stderr);
+    }
 
     ctx->pc = 0x118110u;
 
@@ -1629,6 +1647,11 @@ label_1186b0:
     // 0x1186c8: 0xdfbf0010  ld          $ra, 0x10($sp)
     ctx->pc = 0x1186c8u;
     SET_GPR_U64(ctx, 31, READ64(ADD32(GPR_U32(ctx, 29), 16)));
+    if (dbg_call_118110 <= kMaxFullLogs_118110) {
+        fprintf(stderr, "[DBG 118110] #%d EXIT@1186cc v0=%08x\n",
+            dbg_call_118110, GPR_U32(ctx, 2));
+        fflush(stderr);
+    }
     // 0x1186cc: 0x3e00008  jr          $ra
     ctx->pc = 0x1186CCu;
     {
@@ -1868,6 +1891,11 @@ label_11875c:
     // 0x118788: 0xdfbf0010  ld          $ra, 0x10($sp)
     ctx->pc = 0x118788u;
     SET_GPR_U64(ctx, 31, READ64(ADD32(GPR_U32(ctx, 29), 16)));
+    if (dbg_call_118110 <= kMaxFullLogs_118110) {
+        fprintf(stderr, "[DBG 118110] #%d EXIT@11878c v0=%08x\n",
+            dbg_call_118110, GPR_U32(ctx, 2));
+        fflush(stderr);
+    }
     // 0x11878c: 0x3e00008  jr          $ra
     ctx->pc = 0x11878Cu;
     {

@@ -6,9 +6,17 @@
 #include "ps2_syscalls.h"
 #include "ps2_stubs.h"
 
+#include <cstdio>
+#include <atomic>
+
 #ifdef PS2_FUNCTION_LOG_TRACKER
 #include "ps2_log.h"
 #endif
+
+namespace {
+    constexpr int kMaxFullLogs_13DB18 = 40;
+    std::atomic<int> g_call_count_13DB18{0};
+}
 
 // Function: entry_13db18
 // Address: 0x13db18 - 0x13db28
@@ -16,6 +24,18 @@ void entry_13db18_0x13db28(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
 #ifdef PS2_FUNCTION_LOG_TRACKER
     PS_LOG_ENTRY("entry_13db18_0x13db28");
 #endif
+
+    const int dbg_call = g_call_count_13DB18.fetch_add(1) + 1;
+    const uint32_t dbg_a0 = GPR_U32(ctx, 4);
+    const uint32_t dbg_a1 = GPR_U32(ctx, 5);
+    if (dbg_call <= kMaxFullLogs_13DB18) {
+        fprintf(stderr,
+            "[DBG 13DB18] #%d ENTER a0=%08x a1=%08x | "
+            "old_v0=[a0+0x10]=%08x (will be returned via [a1])\n",
+            dbg_call, dbg_a0, dbg_a1,
+            (uint32_t)READ32(ADD32(dbg_a0, 16)));
+        fflush(stderr);
+    }
 
     ctx->pc = 0x13db18u;
 
