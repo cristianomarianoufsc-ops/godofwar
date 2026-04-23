@@ -16,6 +16,8 @@
 #include <atomic>
 #include <thread>
 #include <unordered_map>
+#include <unordered_set>
+#include <mutex>
 #include <sstream>
 #include "raylib.h"
 #include "ps2_gs_gpu.h"
@@ -1038,6 +1040,48 @@ PS2Runtime::RecompiledFunction PS2Runtime::lookupFunction(uint32_t address)
         {
             return parent->second;
         }
+    }
+
+    // Enderecos baixos (< 0x00100000) sao tipicamente vetores de syscall do
+    // BIOS PS2 (ResetEE em 0x80000, SetGsCrt em 0x80004, etc.) ou ponteiros
+    // de vtable apontando para stubs do kernel. Se chamarmos a recuperacao
+    // padrao para esses, ela tentaria pular para o RA, que cai no MEIO da
+    // funcao chamadora (mid-function PC), travando o dispatcher num loop de
+    // "function not found". Em vez disso, retornamos um stub leve que apenas
+    // zera $v0 e devolve o controle ao chamador, deixando a propria funcao
+    // recompilada continuar normalmente apos o jalr.
+    if (address < 0x00100000u)
+    {
+        const uint32_t syscallId = address >> 2;
+        ps2_missing_report::recordSyscall(syscallId, nullptr);
+
+        static std::mutex s_biosWarnMutex;
+        static std::unordered_set<uint32_t> s_biosWarnedAddrs;
+        bool firstTime = false;
+        {
+            std::lock_guard<std::mutex> lock(s_biosWarnMutex);
+            firstTime = s_biosWarnedAddrs.insert(address).second;
+        }
+        if (firstTime)
+        {
+            std::cerr << "[lookup:bios-stub] addr=0x" << std::hex << address
+                      << " syscallId=" << std::dec << syscallId
+                      << " (assumindo vetor BIOS PS2; retornando v0=0)"
+                      << std::endl;
+        }
+
+        static RecompiledFunction biosStub = [](uint8_t * /*rdram*/, R5900Context *ctx, PS2Runtime * /*runtime*/)
+        {
+            if (ctx)
+            {
+                // v0 = 0 (return value padrao para syscalls nao implementados)
+                ctx->r[2] = _mm_setzero_si128();
+                // NAO mexer em ctx->pc - o caller recompilado faz
+                // "if (ctx->pc == __entryPc) ctx->pc = RA;" automaticamente,
+                // restaurando o fluxo normal apos o jalr.
+            }
+        };
+        return biosStub;
     }
 
     std::cerr << "Warning: Function at address 0x" << std::hex << address << std::dec << " not found" << std::endl;

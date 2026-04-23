@@ -82,6 +82,29 @@ para sempre no repositório. Ordem planejada:
      o ambiente (apt deps, raylib 5.5, ccache, pipx, gdown, git config) em
      qualquer Mint/Ubuntu novo. `bash setup_linux.sh`.
 
+5. ✅ **Descobridor de gaps** — `tools/gap_discover.py`. Varre o ELF nos gaps
+   reais (usando `// Address: 0xX - 0xY` dos .cpp existentes), detecta
+   prólogos R5900 (`addiu/daddiu $sp,$sp,-X`), refina o final via último
+   `jr $ra`, e gera CSV no formato `loadGhidraFunctionMap` (`name,start,end,size`).
+   Resultado: 75 funções novas (~18KB) em `tools/discovered_functions.csv`.
+   Para usar de verdade exige rodar o PS2Recomp com TOML referenciando
+   `ghidra_output = "tools/discovered_functions.csv"` (binário externo).
+
+6. ✅ **Stub de syscall BIOS no dispatcher** — Em `lookupFunction` (runtime),
+   qualquer endereço `< 0x00100000` (faixa do BIOS PS2) agora retorna um
+   stub leve que zera `$v0` e devolve controle SEM mexer em `ctx->pc`,
+   evitando o loop "function not found 0x10047c" que ocorria quando uma
+   vtable expunha um vetor de syscall (ex: 0x80004 = SetGsCrt).
+   - Diagnóstico: o caller recompilado (sub_00100408) faz
+     `if (ctx->pc != 0x10047C) return;` após o `jalr`. A recuperação antiga
+     setava `ctx->pc = stack-recovered`, fazia o caller retornar, e o
+     dispatcher ficava preso tentando despachar 0x10047c (mid-function).
+   - Stub novo: deixa o caller continuar normalmente após o `jalr`, como
+     se o syscall tivesse sido chamado e retornado 0.
+   - Cada endereço novo loga uma vez `[lookup:bios-stub] addr=0x...
+     syscallId=N` e é registrado em `ps2_missing_report` para auditoria.
+   - Arquivo: `PS2Recomp/ps2xRuntime/src/lib/ps2_runtime.cpp` (lookupFunction).
+
 ### Próximas (ordem sugerida)
 
 4. ⏳ **Diff de execução vs PCSX2**
