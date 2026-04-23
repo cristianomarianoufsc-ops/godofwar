@@ -2,6 +2,77 @@
 
 Port estático do God of War (PS2) para PC usando o PS2Recomp.
 
+---
+
+## ⚡ FLUXO DE TRABALHO (LEIA ANTES DE QUALQUER COISA)
+
+**O Replit NÃO compila nem roda o jogo.** O ambiente Replit serve apenas como
+"IDE remota + análise de código". A compilação e execução são feitas pelo
+usuário no PC local dele (Linux Mint), que tem cópia idêntica do repositório
+inclusive com o `data/part1.pak` (~4 GB) já presente.
+
+### Por que esse fluxo
+
+- Compilar 5.626 arquivos no Replit leva ~80 minutos (CPU compartilhada).
+- No PC local com ccache populado, recompilação incremental leva segundos.
+- O usuário tem display real, GPU, gamepad e GDB local disponíveis.
+- O `.pak` de 4 GB já está no PC dele — não precisa baixar do Drive a cada
+  ambiente novo.
+
+### Ciclo padrão por iteração
+
+1. Agente edita arquivos `.cpp`/`.h` no Replit e commita (checkpoint automático
+   gera o commit).
+2. Agente avisa o usuário: "faz `git pull` e roda `bash X.sh`".
+3. Usuário no PC: `git pull origin main` → build → executa o jogo.
+4. Usuário coleta logs (ver abaixo) e cola no chat.
+5. Agente analisa e volta ao passo 1.
+
+### Comandos no PC do usuário (Linux Mint)
+
+Caminho do projeto local: `~/Documentos/GitHub/godofwar/`
+
+```bash
+cd ~/Documentos/GitHub/godofwar
+git pull origin main
+
+# Caso A — mudanças apenas no runtime (PS2Recomp/ps2xRuntime/):
+bash rebuild_runtime.sh --run         # segundos a poucos minutos
+
+# Caso B — mudanças em src/recompiled/ ou src/main.cpp:
+bash build.sh                          # incremental, com ccache fica rápido
+
+# Rodar manualmente capturando logs:
+./build/GodOfWarPCPort GOD_PC_PORT_FINAL/data/SCUS_973.99 \
+    > saida_stdout.log 2> saida_stderr.log
+```
+
+### O que o usuário deve mandar quando reportar erro
+
+Sempre estes 3 itens em uma única mensagem:
+
+1. **`saida_stderr.log`** — onde caem os `[DBG ...]`, warnings e mensagens do
+   runtime.
+2. **`ps2_missing.log`** — gerado automaticamente quando o programa termina
+   (Ctrl+C, SIGTERM ou crash). Lista stubs/syscalls/funções ausentes.
+3. **Comportamento observado** em uma frase: "tela preta", "trava em N
+   segundos", "logo Sony pisca e some", etc.
+
+Com esses 3 itens o agente fecha a análise em 1 round-trip. Sem eles, perde-se
+2-3 idas e voltas pedindo informação básica.
+
+### Regras pro agente Replit
+
+- **NÃO rodar `bash build.sh` no Replit** — só desperdiça CPU.
+- **NÃO iniciar o workflow `Start application`** — está intencionalmente
+  configurado pra apenas imprimir uma mensagem de aviso.
+- O workflow `Download part1.pak` também não precisa ser rodado (usuário já tem
+  o arquivo local).
+- Pode rodar análises estáticas, validação de sintaxe (`g++ -fsyntax-only`),
+  ripgrep, leitura de arquivos. **Compilação completa, jamais.**
+
+---
+
 ## Visão Geral
 
 Este projeto converte o executável original do PS2 (`SCUS_973.99`) para código C++ nativo usando recompilação estática. São 5.629 funções MIPS traduzidas para C++20, vinculadas ao `ps2xRuntime` que emula o hardware do PS2.
