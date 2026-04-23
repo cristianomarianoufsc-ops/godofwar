@@ -1052,7 +1052,9 @@ PS2Runtime::RecompiledFunction PS2Runtime::lookupFunction(uint32_t address)
     // recompilada continuar normalmente apos o jalr.
     if (address < 0x00100000u)
     {
-        const uint32_t syscallId = address >> 2;
+        // PS2 syscall vectors comecam em 0x80000 com 4 bytes cada.
+        // syscall #1 = 0x80004, #2 = 0x80008, ...
+        const uint32_t syscallId = (address >= 0x80000u) ? ((address - 0x80000u) >> 2) : 0u;
         ps2_missing_report::recordSyscall(syscallId, nullptr);
 
         static std::mutex s_biosWarnMutex;
@@ -1102,13 +1104,22 @@ PS2Runtime::RecompiledFunction PS2Runtime::lookupFunction(uint32_t address)
         if (ctx && runtime)
         {
             thread_local uint32_t s_recoverCount = 0u;
-            thread_local bool s_loggedContext = false;
             const uint32_t pc = ctx->pc;
             const bool hasPcFunction = runtime->hasFunction(pc);
 
+            // Loga cada par (badPc -> recoveryPc) UMA vez globalmente.
+            // Sem isso, o "primeiro bad-pc" so aparece uma vez por thread,
+            // mascarando loops onde MUITOS endereços diferentes caem aqui.
+            static std::mutex s_badPcMutex;
+            static std::unordered_set<uint32_t> s_loggedBadPcs;
+            auto shouldLogBadPc = [&](uint32_t badPc) -> bool {
+                std::lock_guard<std::mutex> lock(s_badPcMutex);
+                return s_loggedBadPcs.insert(badPc).second;
+            };
+
             if (!hasPcFunction && s_recoverCount < 8192u)
             {
-                if (!s_loggedContext)
+                if (shouldLogBadPc(pc))
                 {
                     std::ostringstream stackDump;
                     if (rdram)
@@ -1131,7 +1142,6 @@ PS2Runtime::RecompiledFunction PS2Runtime::lookupFunction(uint32_t address)
                               << " trace=" << formatDispatchHistory()
                               << stackDump.str()
                               << std::dec << std::endl;
-                    s_loggedContext = true;
                 }
 
                 uint32_t recoveryPc = 0u;
@@ -1169,7 +1179,6 @@ PS2Runtime::RecompiledFunction PS2Runtime::lookupFunction(uint32_t address)
             if (hasPcFunction)
             {
                 s_recoverCount = 0u;
-                s_loggedContext = false;
             }
             else if (pc < 0x00100000u && ra == pc && s_recoverCount < 4096u)
             {
@@ -1819,7 +1828,7 @@ void PS2Runtime::dispatchLoop(uint8_t *rdram, R5900Context *ctx)
 {
     uint32_t lastPc = std::numeric_limits<uint32_t>::max();
     uint32_t samePcCount = 0;
-    constexpr uint32_t kSamePcYieldInterval = 0x4000u;
+    constexpr uint32_t kSamePcYieldInterval = 0x400u;
 
     // Boot tracer: imprime os primeiros 300 PCs despachados para diagnóstico
     static std::atomic<uint32_t> s_bootTraceCount{0};
@@ -1835,7 +1844,14 @@ void PS2Runtime::dispatchLoop(uint8_t *rdram, R5900Context *ctx)
             ++samePcCount;
             if ((samePcCount % kSamePcYieldInterval) == 0u)
             {
-                std::cout << "CPU is doing some work at PC 0x" << std::hex << pc << ". PC not updating." << std::endl;
+                const uint32_t ra = static_cast<uint32_t>(_mm_extract_epi32(ctx->r[31], 0));
+                const uint32_t sp = static_cast<uint32_t>(_mm_extract_epi32(ctx->r[29], 0));
+                std::cout << "[dispatch:stuck-pc] pc=0x" << std::hex << pc
+                          << " ra=0x" << ra
+                          << " sp=0x" << sp
+                          << " samePcCount=" << std::dec << samePcCount
+                          << " trace=" << formatDispatchHistory()
+                          << std::endl;
                 std::this_thread::yield();
             }
         }
