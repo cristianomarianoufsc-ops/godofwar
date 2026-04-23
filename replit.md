@@ -135,26 +135,54 @@ para sempre no repositório. Ordem planejada:
 e `BOOT#2 pc=0x1003c0`. Stub BIOS dispara **uma vez** para `0x80004`
 (`syscallId=1` = ResetEE). Frame uploads rodam (`nonBlack=0`, tudo preto).
 
-**Trava em:** `m_debugPc=0x1003c0` mostrado no `[run:tick]` por **3000+
-ticks** (~50 segundos). NENHUM `[dispatch:first-bad-pc]`, NENHUM
-`[dispatch:recover-pc]`, NENHUM `[dispatch:stuck-pc]`. Significa que o
-`dispatchLoop` **não está iterando** — uma `fn()` recompilada entrou e
-nunca retornou. Provavelmente loop interno em `sub_00100408`,
-`func_131288` (`entry_131288_0x131300`) ou `sub_00238860` (callees de
-`sub_001003C0`).
+**LOOP INFINITO LOCALIZADO (após instrumentação livePc):**
+
+Com `livePc` lendo direto de `m_cpuContext.pc`, capturamos os ticks reais:
+- tick 1200: `livePc=0x13d980 liveRa=0x13d954 liveSp=0x1fffde0`
+- tick 1320: `livePc=0x13dc90 liveRa=0x13da58 liveSp=0x1fffdc0`
+- tick 1440: `livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0`
+- tick 1560: `livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0` ← idêntico
+- tick 1680: `livePc=0x13dcc4 liveRa=0x13da58 liveSp=0x1fffdc0`
+
+Programa oscila entre 2 hot spots → confirma loop. `dbgPc=0x1003c0` é
+stale só porque a `fn()` raiz nunca retornou.
+
+**Loops identificados (não-infinitos individualmente):**
+- `sub_00118110_0x118110.cpp` label_118168: loop `while (a1 < 15)` que
+  inicializa tabela de 15 elementos (zera fields 0x48, 0x84, 0xC0).
+  Termina em 15 iterações — **não é o problema**.
+- `sub_0013DC78_0x13dc78.cpp` ~0x13dc90: função "format/process",
+  começa com `sltiu $v0, $s1, 4` — loop de processamento curto.
+
+**O LOOP REAL está no caller `sub_00100E28_0x100e28.cpp`:**
+```cpp
+loop:                                  // ~0x100e28
+    init_table_15_elements();          // sub_00118110 (liveRa=0x100e7c
+                                       //   = PC após jal func_118110)
+    process_something();               // sub_0013DB18 → sub_0013DC78
+    if (flag_que_nunca_muda)
+        goto loop;
+```
+Confirmado por `liveRa=0x100e7c` = exatamente a instrução depois do
+`jal func_118110` em `sub_00100E28` (linhas 110-130 de
+`sub_00100E28_0x100e28.cpp`).
 
 **Próxima ação concreta para o agente que continuar:**
-1. Pedir ao usuário para rodar de novo capturando log:
-   `bash build.sh 2>&1 | tee build/run.log`
-2. Olhar as linhas `[run:tick]` e ver o `livePc=0x...` (novo campo
-   adicionado na sessão atual). Esse será o PC real onde a CPU está.
-3. Se o `livePc` ficar oscilando num range pequeno (ex: 0x238ab0 ↔
-   0x238ad4), localizar a função em `GOD_PC_PORT_FINAL/src/recompiled/`
-   e analisar qual flag/memória ela está pollando que nunca muda.
-4. Provavelmente vai ser polling de `sndType/sndLvl` (sound) ou semáforo
-   PS2 (`WaitSema` sempre retorna sem signal).
-5. Se for syscall: implementar stub real em `ps2_syscalls/` em vez do
-   `retorna 0` atual do `[lookup:bios-stub]`.
+1. Ler `sub_00100E28_0x100e28.cpp` inteiro (193 linhas) e identificar
+   a condição de saída do `goto loop` externo. Procure por `lw` de algum
+   endereço RDRAM seguido de `beqz/bnez` que controla o loop.
+2. Esse `lw` lê uma flag/contador num endereço fixo (ex: 0x01Exxxxx
+   da área de sound/sema/IRQ). Identificar o endereço e qual subsistema.
+3. Possíveis culpados:
+   - **Semáforo PS2** que `WaitSema` deveria sinalizar (ver tabela #7,
+     `ps2_syscalls.py`).
+   - **Flag de DMA/VIF/GIF** completion que nosso `m_memory` não está
+     setando após upload de frame.
+   - **IRQ counter** (`vsync` IRQ que conta frames — se nunca avança,
+     o jogo espera pra sempre).
+4. Implementar em `ps2_runtime.cpp` o setamento da flag/incremento do
+   contador toda vez que o evento real ocorrer (ex: cada `gsWriteCount`
+   incremento dispara vsync IRQ counter no RDRAM).
 
 **Ferramenta #8 sugerida (não implementada):** localizador automático
 "PC range → função recompilada" — dado um `livePc`, lê os headers
