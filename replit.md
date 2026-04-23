@@ -80,6 +80,43 @@ cmake ../GOD_PC_PORT_FINAL && make -j$(nproc)
 ```
 Isso re-avalia o GLOB sem perder os `.o` já compilados.
 
+### 🔬 Estado da investigação (boot loop / segfault)
+
+Atualizado em 2026-04-23. Já chegamos a rodar o jogo (tela preta) e ele
+crasha com SIGSEGV após ~2,4 s. Resumo dos achados:
+
+**1. Loop principal está em `sub_00100E28`** com tudo zerado:
+- Lê global em `0x32E854` (== 0)
+- Chama função no endereço apontado pela global (== 0 → função 0)
+- Chama `func_118110(0)` → retorna 0
+- Chama `func_13DB18(0, 0)` → escreve em `[0]` → ⚠️ segfault provável
+
+**2. NINGUÉM escreve na global `0x32E854`** em todo o código recompilado
+(busca por literal). Pode ser indireto (`lui+sw`) ou simplesmente nunca
+inicializado por falta de chamada do CRT0/inicializador. Watchpoint instalado
+no runtime (`PS2_GLOBAL_WATCH_ADDR` em `ps2_runtime.h`) que loga com
+`[watch:GLOBAL_0x32E854]` em stderr toda escrita nesse endereço. Se nada
+aparecer, a global de fato nunca é inicializada e precisamos descobrir quem
+deveria fazer isso (provavelmente algum stub do BIOS PS2).
+
+**3. `func_0x10047C` chamada 8.192×/s (8k em 2.4s)** mas NÃO é função real —
+é uma instrução interna de `sub_00100408` (linha 142 do .cpp gerado:
+`daddu $a1, $s1, $zero`). O recompilador gerou um padrão estranho de
+`ctx->pc = 0x10047C; return;` que o runtime trata como chamada externa.
+Conserto definitivo seria no gerador (`PS2Recomp/ps2xRecomp/`), mas é
+trabalho grande. Por ora, quando rodar normalmente, isso só polui logs.
+
+**4. Arquivos instrumentados** (`fprintf(stderr, "[DBG ...]")` com limite de
+40 chamadas via `std::atomic<int>`):
+- `sub_00100E28_0x100e28.cpp` — entry, post-jalr, pre-call e exit
+- `sub_00118110_0x118110.cpp` — entry e 2 exits
+- `entry_13db18_0x13db28.cpp` — entry completo
+
+**5. Próximo passo provável**: rodar de novo, verificar se o watchpoint da
+global em `0x32E854` dispara. Se sim, achamos o inicializador. Se não,
+precisamos implementar manualmente no `stub_hardware_init`
+(`GOD_PC_PORT_FINAL/src/ps2_syscall_stubs.cpp`).
+
 ### Regras pro agente Replit
 
 - **NÃO rodar `bash build.sh` no Replit** — só desperdiça CPU.

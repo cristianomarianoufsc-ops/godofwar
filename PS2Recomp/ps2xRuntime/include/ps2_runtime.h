@@ -18,6 +18,7 @@
 #include <atomic>
 #include <mutex>
 #include <filesystem>
+#include <cstdio>
 #include <iostream>
 #include <iomanip>
 
@@ -207,6 +208,14 @@ inline constexpr uint32_t PS2_PATH_WATCH_BYTES = 0x200u;
 inline constexpr uint32_t PS2_PATH_WATCH_MAX_LOGS = 4096u;
 inline std::atomic<uint32_t> g_ps2PathWatchLogCount{0};
 
+// Watchpoint para a global crítica em 0x32E854 (root pointer lido pela
+// função sub_00100E28 no boot loop). Se ela nunca for escrita, sabemos
+// que falta um inicializador. Se for escrita, esse log mostra de onde.
+inline constexpr uint32_t PS2_GLOBAL_WATCH_ADDR = 0x0032E854u;
+inline constexpr uint32_t PS2_GLOBAL_WATCH_BYTES = 4u;
+inline constexpr uint32_t PS2_GLOBAL_WATCH_MAX_LOGS = 64u;
+inline std::atomic<uint32_t> g_ps2GlobalWatchLogCount{0};
+
 inline uint32_t ps2PathWatchPhysAddr()
 {
     return PS2_PATH_WATCH_ADDR & PS2_RAM_MASK;
@@ -253,6 +262,34 @@ inline uint8_t ps2PathWatchExtractByteFromWrite(uint32_t writeAddr, uint32_t wat
     return static_cast<uint8_t>((valueHi >> ((byteIndex - 8u) * 8u)) & 0xFFu);
 }
 
+// Verifica se uma escrita toca a global crítica 0x32E854 e loga.
+inline void ps2CheckGlobalWatch(uint32_t writeAddr,
+                                uint32_t size,
+                                uint64_t valueLo,
+                                const char *op,
+                                const R5900Context *ctx)
+{
+    const uint32_t globalAddr = PS2_GLOBAL_WATCH_ADDR & PS2_RAM_MASK;
+    const uint64_t writeStart = writeAddr;
+    const uint64_t writeEnd = writeStart + static_cast<uint64_t>(size);
+    if (writeEnd <= globalAddr || writeStart >= globalAddr + PS2_GLOBAL_WATCH_BYTES)
+    {
+        return;
+    }
+    const uint32_t logIdx = g_ps2GlobalWatchLogCount.fetch_add(1, std::memory_order_relaxed);
+    if (logIdx >= PS2_GLOBAL_WATCH_MAX_LOGS)
+    {
+        return;
+    }
+    const uint32_t pc = ctx ? ctx->pc : 0u;
+    const uint32_t ra = ctx ? static_cast<uint32_t>(_mm_extract_epi32(ctx->r[31], 0)) : 0u;
+    fprintf(stderr,
+            "[watch:GLOBAL_0x32E854] #%u op=%s addr=0x%x size=%u value=0x%llx pc=0x%x ra=0x%x\n",
+            logIdx + 1u, op, writeAddr, size,
+            static_cast<unsigned long long>(valueLo), pc, ra);
+    fflush(stderr);
+}
+
 inline void ps2TraceGuestWrite(uint8_t *rdram,
                                uint32_t guestAddr,
                                uint32_t size,
@@ -267,6 +304,9 @@ inline void ps2TraceGuestWrite(uint8_t *rdram,
     }
 
     const uint32_t writeAddr = guestAddr & PS2_RAM_MASK;
+    // Vigia da global 0x32E854 — sempre checa, independente do path-watch.
+    ps2CheckGlobalWatch(writeAddr, size, valueLo, op, ctx);
+
     if (!ps2PathWatchIntersects(writeAddr, size))
     {
         return;
