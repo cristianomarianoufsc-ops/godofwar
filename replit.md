@@ -105,6 +105,19 @@ para sempre no repositório. Ordem planejada:
      syscallId=N` e é registrado em `ps2_missing_report` para auditoria.
    - Arquivo: `PS2Recomp/ps2xRuntime/src/lib/ps2_runtime.cpp` (lookupFunction).
 
+7. ✅ **Decodificador de syscalls do BIOS PS2** — `tools/ps2_syscalls.py`.
+   Tabela canônica de ~80 syscalls do EE (ResetEE, SetGsCrt, CreateThread,
+   WaitSema, SifSetDma, etc.) com nome, categoria e criticidade (1-5).
+   Modos:
+   - `python3 tools/ps2_syscalls.py 0x44` — decodifica syscall #68 = WaitSema
+   - `python3 tools/ps2_syscalls.py --addr 0x80004` — endereço -> syscall
+   - `python3 tools/ps2_syscalls.py --list` — lista completa de referência
+   - `python3 tools/ps2_syscalls.py --report --log build/run.log` — lê log
+     do jogo, conta cada `[lookup:bios-stub] syscallId=N`, e ordena por
+     criticidade × frequência. Diz EXATAMENTE qual syscall implementar
+     primeiro pra destravar o boot.
+   - Para gerar log: `bash build.sh 2>&1 | tee build/run.log`.
+
 ### Próximas (ordem sugerida)
 
 4. ⏳ **Diff de execução vs PCSX2**
