@@ -1,0 +1,134 @@
+cristiano@cristiano:~$ sudo apt install -y python3-capstone
+cd ~/Documentos/GitHub/godofwar
+git pull
+python3 tools/mips_inspect.py --gap 0x10047c
+python3 tools/mips_inspect.py --list-gaps
+[sudo] senha para cristiano:     
+Lendo listas de pacotes... Pronto
+Construindo árvore de dependências... Pronto
+Lendo informação de estado... Pronto        
+Os pacotes adicionais a seguir serão instalados:
+  libcapstone4
+Os NOVOS pacotes a seguir serão instalados:
+  libcapstone4 python3-capstone
+0 pacotes atualizados, 2 pacotes novos instalados, 0 a serem removidos e 242 não atualizados.
+É preciso baixar 743 kB de arquivos.
+Depois desta operação, 7.127 kB adicionais de espaço em disco serão usados.
+Obter:1 http://archive.ubuntu.com/ubuntu noble/universe amd64 libcapstone4 amd64 4.0.2-5.1build1 [656 kB]
+Obter:2 http://archive.ubuntu.com/ubuntu noble/universe amd64 python3-capstone amd64 4.0.2-5.1build1 [87,5 kB]
+Baixados 743 kB em 3s (254 kB/s)           
+A seleccionar pacote anteriormente não seleccionado libcapstone4:amd64.
+(Lendo banco de dados ... 517602 ficheiros e diretórios atualmente instalados.)
+A preparar para desempacotar .../libcapstone4_4.0.2-5.1build1_amd64.deb ...
+A descompactar libcapstone4:amd64 (4.0.2-5.1build1) ...
+A seleccionar pacote anteriormente não seleccionado python3-capstone.
+A preparar para desempacotar .../python3-capstone_4.0.2-5.1build1_amd64.deb ...
+A descompactar python3-capstone (4.0.2-5.1build1) ...
+Configurando libcapstone4:amd64 (4.0.2-5.1build1) ...
+Configurando python3-capstone (4.0.2-5.1build1) ...
+A processar 'triggers' para libc-bin (2.39-0ubuntu8.6) ...
+remote: Enumerating objects: 10, done.
+remote: Counting objects: 100% (10/10), done.
+remote: Compressing objects: 100% (2/2), done.
+remote: Total 7 (delta 5), reused 7 (delta 5), pack-reused 0 (from 0)
+Unpacking objects: 100% (7/7), 2.40 KiB | 491.00 KiB/s, done.
+From https://github.com/cristianomarianoufsc-ops/godofwar
+   d0dea12..728e2b0  main       -> origin/main
+Updating d0dea12..728e2b0
+Fast-forward
+ .replit                                            |   1 +
+ ...ento-funcionou-Olha-o-que-mud_1776916858471.txt |  53 ++++++++
+ ...umentos-GitHub-godofwar-git-p_1776916851558.txt | 136 +++++++++++++++++++++
+ 3 files changed, 190 insertions(+)
+ create mode 100644 attached_assets/Pasted-PROGRESSO-ENORME-O-experimento-funcionou-Olha-o-que-mud_1776916858471.txt
+ create mode 100644 attached_assets/Pasted-cristiano-cristiano-cd-Documentos-GitHub-godofwar-git-p_1776916851558.txt
+Endereco 0x0010047c esta no gap entre funcoes recompiladas:
+  Gap         : 0x00100408 -> 0x001004b8 (176 bytes)
+  Funcao ant. : sub_*_0x100408
+  Proxima fn  : sub_*_0x1004b8
+  Zerados     : 50/176 (28%)
+
+  >>> DIAGNOSTICO: gap misto. Veja o disassembly abaixo.
+
+=== Conteudo do gap 0x100408-0x1004b8 ===
+  0x00100408: b0ffbd27  addiu      $sp, $sp, -0x50
+  0x0010040c: 2000b27f  .byte      0x20, 0x00, 0xb2, 0x7f
+  0x00100410: 4000b07f  ext        $s0, $sp, 1, 1
+  0x00100414: 2d908000  .byte      0x2d, 0x90, 0x80, 0x00
+  0x00100418: 3000b17f  dpa.w.ph   $ac0, $sp, $s1
+  0x0010041c: 20004226  addiu      $v0, $s2, 0x20
+  0x00100420: 1000bfff  .byte      0x10, 0x00, 0xbf, 0xff
+  0x00100424: 2000438e  lw         $v1, 0x20($s2)
+  0x00100428: 0000a2af  sw         $v0, ($sp)
+  0x0010042c: 1c006210  beq        $v1, $v0, 0x1004a0
+  0x00100430: 0400a3af  sw         $v1, 4($sp)
+  0x00100434: 0400b08f  lw         $s0, 4($sp)
+  0x00100438: 0000028e  lw         $v0, ($s0)
+  0x0010043c: 2800118e  lw         $s1, 0x28($s0)
+  0x00100440: 0400a2af  sw         $v0, 4($sp)
+  0x00100444: 0400038e  lw         $v1, 4($s0)
+  0x00100448: 0000028e  lw         $v0, ($s0)
+  0x0010044c: 000062ac  sw         $v0, ($v1)
+  0x00100450: 0000038e  lw         $v1, ($s0)
+  0x00100454: 0400028e  lw         $v0, 4($s0)
+  0x00100458: 040062ac  sw         $v0, 4($v1)
+  0x0010045c: 000000ae  sw         $zero, ($s0)
+  0x00100460: 040000ae  sw         $zero, 4($s0)
+  0x00100464: 5c00028e  lw         $v0, 0x5c($s0)
+  0x00100468: 02000524  addiu      $a1, $zero, 2
+  0x0010046c: 08004484  lh         $a0, 8($v0)
+  0x00100470: 0c00428c  lw         $v0, 0xc($v0)
+  0x00100474: 09f84000  jalr       $v0
+  0x00100478: 21200402  addu       $a0, $s0, $a0
+  0x0010047c: 2d282002  .byte      0x2d, 0x28, 0x20, 0x02
+  0x00100480: 2d300002  .byte      0x2d, 0x30, 0x00, 0x02
+  0x00100484: 8a03040c  jal        0x100e28
+  0x00100488: 2d204002  .byte      0x2d, 0x20, 0x40, 0x02
+  0x0010048c: 0400a38f  lw         $v1, 4($sp)
+  0x00100490: 0000a28f  lw         $v0, ($sp)
+  0x00100494: e8ff6214  bne        $v1, $v0, 0x100438
+  0x00100498: 0400b08f  lw         $s0, 4($sp)
+  0x0010049c: 00000000  nop        
+  0x001004a0: 4000b07b  xori.b     $w1, $w0, 0xb0
+  0x001004a4: 3000b17b  .byte      0x30, 0x00, 0xb1, 0x7b
+  0x001004a8: 2000b27b  ld.b       $w0, -0x4e($zero)
+  0x001004ac: 1000bfdf  .byte      0x10, 0x00, 0xbf, 0xdf
+  0x001004b0: 0800e003  jr         $ra
+  0x001004b4: 5000bd27  addiu      $sp, $sp, 0x50
+Funcoes recompiladas : 4896
+Gaps (>4 bytes)      : 4895
+
+Top 30 maiores gaps (ordenados por tamanho):
+  inicio       fim             tam  %zero  primeiros bytes
+  ------------ ------------ ------  -----  ----------------
+  0x0029b638   0x002a4d70   38712 B    54%  d0ffbd273f4805003f5004003c400500
+  0x00111760   0x00115978   16920 B    27%  c0febd278000be7f3001b8e72df08000
+  0x00162f18   0x001654e0   9672 B    20%  3300023c80f8bd274c10428c6007b17f
+  0x00118b40   0x0011ad58   8728 B    27%  00ffbd27f000b07fe000b17fd000b27f
+  0x00271f48   0x00273cf0   7592 B    29%  a0ffbd272d38a0004000b3ff2c00053c
+  0x002345e0   0x002360e0   6912 B    19%  80febd27ffff02347001b07f6001b17f
+  0x001b5d70   0x001b7720   6576 B    14%  10ffbd278000b67fe000b07fd000b17f
+  0x001281c8   0x00129820   5720 B    25%  00febd273300023c7001b57f5001b77f
+  0x001c5440   0x001c6a30   5616 B    20%  50fdbd278002b07f4002b47f2d808000
+  0x001bc5d0   0x001bdb58   5512 B    21%  2a00023c30ffbd273ccc428cc000b07f
+  0x001eb1c0   0x001ec6e0   5408 B    17%  30fbbd279004b17f8004b27fa004b07f
+  0x00104708   0x00105ad8   5072 B    30%  20febd272d780000a001b37f9001b47f
+  0x0028de40   0x0028f038   4600 B    23%  a0fdbd274002b17f2002b37f2d88a000
+  0x00205488   0x002065c0   4408 B    22%  10febd27b001b27fd001b07f2d908000
+  0x0019a028   0x0019b140   4376 B    19%  50f7bd274008b67fa008b07f2db08000
+  0x00178e60   0x00179f00   4256 B    24%  a0ffbd271000b47f5000b07f2da0a000
+  0x001fbcb8   0x001fcd48   4240 B    16%  90fbbd270018a548d003b47f0020a748
+  0x001afad0   0x001b0b10   4160 B    22%  80ffbd27ffffa3307000b07f2d48e000
+  0x00109518   0x0010a530   4120 B    10%  10f1bd270068a648a00eb37f0020a748
+  0x0020ddf0   0x0020ed98   4008 B    20%  00ffbd27d000b27ff000b07f2d908000
+  0x0015ddb0   0x0015ece8   3896 B    21%  18010224380003241828a2001830c300
+  0x0028c0f8   0x0028d028   3888 B    21%  10ffbd272d500000d000b17f9000b57f
+  0x0028f140   0x00290048   3848 B    25%  e0febd274400a2274800a3270001b17f
+  0x001c6c60   0x001c7b30   3792 B    17%  d0fdbd271002b07ff001b27f2d808000
+  0x0016f1d8   0x00170070   3736 B    23%  30febd27c001b07f9001b37f2d808000
+  0x00276f68   0x00277dd8   3696 B    20%  c0ffbd270000b0ff3000bfff2d808000
+  0x001941f0   0x00195018   3624 B    18%  60fbbd272a00023c4004b27fe003be7f
+  0x0015f598   0x00160380   3560 B    22%  30ffbd27adde033cb000b07f2c00063c
+  0x001452f8   0x001460c0   3528 B    20%  00ffbd27e000b07f2d8080009000b57f
+  0x0016bef8   0x0016ccc0   3528 B    24%  60fcbd27803f013c000081442003b27f
+cristiano@cristiano:~/Documentos/GitHub/godofwar$ 
