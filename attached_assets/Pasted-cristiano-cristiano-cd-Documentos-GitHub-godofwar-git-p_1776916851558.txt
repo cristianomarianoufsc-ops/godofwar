@@ -1,0 +1,136 @@
+cristiano@cristiano:~$ cd ~/Documentos/GitHub/godofwar
+git pull
+bash rebuild_runtime.sh
+./build/GodOfWarPCPort
+remote: Enumerating objects: 7, done.
+remote: Counting objects: 100% (7/7), done.
+remote: Compressing objects: 100% (4/4), done.
+remote: Total 6 (delta 3), reused 5 (delta 2), pack-reused 0 (from 0)
+Unpacking objects: 100% (6/6), 3.40 KiB | 1.13 MiB/s, done.
+From https://github.com/cristianomarianoufsc-ops/godofwar
+   cf803f9..718c0b9  main       -> origin/main
+Updating cf803f9..718c0b9
+Fast-forward
+ setup_linux.sh | 184 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 184 insertions(+)
+ create mode 100755 setup_linux.sh
+[1/3] Recompilando o runtime do PS2...
+[100%] Built target ps2runtime
+
+[2/3] Relinkando o executável GodOfWarPCPort...
+[  1%] Built target ps2runtime
+[  1%] Linking CXX static library libgow_recompiled.a
+[100%] Built target gow_recompiled
+[100%] Linking CXX executable GodOfWarPCPort
+[100%] Built target GodOfWarPCPort
+
+[3/3] Pronto! Executável atualizado: build/GodOfWarPCPort
+
+=================================================
+  God of War PC Port
+=================================================
+[Config] Carregando configurações de config.toml
+ELF: GOD_PC_PORT_FINAL/data/SCUS_973.99
+INFO: Initializing raylib 5.5
+INFO: Platform backend: DESKTOP (GLFW)
+INFO: Supported raylib modules:
+INFO:     > rcore:..... loaded (mandatory)
+INFO:     > rlgl:...... loaded (mandatory)
+INFO:     > rshapes:... loaded (optional)
+INFO:     > rtextures:. loaded (optional)
+INFO:     > rtext:..... loaded (optional)
+INFO:     > rmodels:... loaded (optional)
+INFO:     > raudio:.... loaded (optional)
+INFO: DISPLAY: Device initialized successfully
+INFO:     > Display size: 1366 x 768
+INFO:     > Screen size:  640 x 448
+INFO:     > Render size:  640 x 448
+INFO:     > Viewport offsets: 0, 0
+INFO: GLAD: OpenGL extensions loaded successfully
+INFO: GL: Supported extensions count: 207
+INFO: GL: OpenGL device information:
+INFO:     > Vendor:   Intel
+INFO:     > Renderer: Mesa Intel(R) HD Graphics 4000 (IVB GT2)
+INFO:     > Version:  4.2 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.1
+INFO:     > GLSL:     4.20
+INFO: GL: VAO extension detected, VAO functions loaded successfully
+INFO: GL: NPOT textures extension detected, full NPOT textures supported
+INFO: GL: DXT compressed textures supported
+INFO: GL: ETC2/EAC compressed textures supported
+INFO: PLATFORM: DESKTOP (GLFW - X11): Initialized successfully
+INFO: TEXTURE: [ID 1] Texture loaded successfully (1x1 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 1] Default texture loaded successfully
+INFO: SHADER: [ID 1] Vertex shader compiled successfully
+INFO: SHADER: [ID 2] Fragment shader compiled successfully
+INFO: SHADER: [ID 3] Program shader loaded successfully
+INFO: SHADER: [ID 3] Default shader loaded successfully
+INFO: RLGL: Render batch vertex buffers loaded successfully in RAM (CPU)
+INFO: RLGL: Render batch vertex buffers loaded successfully in VRAM (GPU)
+INFO: RLGL: Default OpenGL state initialized successfully
+INFO: TEXTURE: [ID 2] Texture loaded successfully (128x128 | GRAY_ALPHA | 1 mipmaps)
+INFO: FONT: Default font loaded successfully (224 glyphs)
+INFO: SYSTEM: Working Directory: /home/cristiano/Documentos/GitHub/godofwar
+INFO: TIMER: Target time per frame: 16.667 milliseconds
+INFO: AUDIO: Device initialized successfully
+INFO:     > Backend:       miniaudio | PulseAudio
+INFO:     > Format:        32-bit IEEE Floating Point -> 32-bit Signed Integer
+INFO:     > Channels:      2 -> 2
+INFO:     > Sample rate:   48000 -> 48000
+INFO:     > Periods size:  3600
+Janela: 640x448 | FPS: 60
+Registrando funções recompiladas...
+Mapeando 5625 funções recompiladas...
+Carregando ELF: GOD_PC_PORT_FINAL/data/SCUS_973.99
+Loading segment: 0x100000 - 0x35d080 (filesz: 0x1c7018, memsz: 0x25d080)
+Registered code region: 100000 - 35d080
+ELF file loaded successfully. Entry point: 0x100008
+Iniciando execução...
+[ps2_missing_report] ativado. Relatorio sera salvo em ./ps2_missing.log ao encerrar (ou Ctrl+C).
+Starting execution at address 0x100008
+INFO: TEXTURE: [ID 3] Texture loaded successfully (640x448 | R8G8B8A8 | 1 mipmaps)
+[BOOT#1] pc=0x100008 ra=0x0 sp=0x1fffff0
+[BOOT#2] pc=0x1003c0 ra=0x0 sp=0x1fffff0
+[frame:upload] idx=0 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=1 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=2 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=3 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=4 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=5 fbp=0 fbw=10 psm=0x0 size
+
+etc etc...
+
+50=0 allowFallback=1
+Warning: Function at address 0x80004 not found
+[dispatch:first-bad-pc] bad=0x80004 ra=0x10047c sp=0x1ffff80 gp=0x0 v0=0x80004 v1=0x0 a0=0x0 a1=0x2 trace=0x13e090 -> 0x13dc78 -> 0x23aa40 -> 0x13e090 -> 0x13d910 -> 0x13dc78 -> 0x13da10 -> 0x13dc78 -> 0x187868 -> 0x13d630 -> 0x13e090 -> 0x13dc78 -> 0x23aa40 -> 0x13e090 -> 0x13d910 -> 0x13dc78 -> 0x13da10 -> 0x13dc78 -> 0x187868 -> 0x13d630 -> 0x13e090 -> 0x13dc78 -> 0x23aa40 -> 0x13e090 -> 0x13d910 -> 0x13dc78 -> 0x13da10 -> 0x13dc78 -> 0x187868 -> 0x13d630 -> 0x13e090 -> 0x13dc78 -> 0x23aa40 -> 0x13e090 -> 0x13d910 -> 0x13dc78 -> 0x13da10 -> 0x13dc78 -> 0x187868 -> 0x13d630 -> 0x13e090 -> 0x13dc78 -> 0x23aa40 -> 0x13e090 -> 0x13d910 -> 0x13dc78 -> 0x13da10 -> 0x13dc78 -> 0x187868 -> 0x13d630 -> 0x13e090 -> 0x13dc78 -> 0x23aa40 -> 0x13e090 -> 0x13d910 -> 0x13dc78 -> 0x13da10 -> 0x13dc78 -> 0x13d688 -> 0x13e090 -> 0x13dc78 -> 0x2897c4 -> 0x13db18 -> 0x80004 [stack] +0=0x20 +4=0x0 +8=0x0 +c=0x0 +10=0x1003d4 +14=0x0 +18=0x0 +1c=0x0 +20=0x0 +24=0x0 +28=0x0 +2c=0x0 +30=0x0 +34=0x0 +38=0x0 +3c=0x0
+[dispatch:recover-pc] bad=0x80004 ra=0x10047c fallback=0x2897c4 sp=0x1ffff80
+[BOOT#3] pc=0x2897c4 ra=0x10047c sp=0x1ffff80
+Warning: Function at address 0x10047c not found
+[BOOT#4] pc=0x10047c ra=0x10047c sp=0x1ffff80
+[dispatch:recover-pc] bad=0x10047c ra=0x10047c fallback=0x13db18 sp=0x1ffff80
+[BOOT#5] pc=0x13db18 ra=0x10047c sp=0x1ffff80
+Warning: Function at address 0x10047c not found
+[BOOT#6] pc=0x10047c ra=0x10047c sp=0x1ffff80
+
+etc etc
+
+Warning: Function at address 0x10047c not found
+Warning: Function at address 0x10047c not found
+Warning: Function at address 0x10047c[frame:upload] idx= not found
+57 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+Warning: Function at address 0x10047c not found
+Warning: Function at address 0x10047c not found
+Warning: Function at address 0x10047c not found
+Warning: Function at address 0x10047c not found
+Error: Called unimplemented function at address 0x10047c ra=0x10047c sp=0x1ffff80 gp=0x0 a0=0x0 hostTid=79af6f8bd6c0 pcTrace=0x2897c4 -> 0x10047c -> 0x13db18 -> 0x10047c -> 0x2897c4 -> 0x10047c -> 0x13db18 -> 0x10047c -> 0x2897c4 -> 0x10047c -> 0x13db18 -> 0x10047c -> 0x2897c4 -> 0x10047c -> 0x13db18 -> 0x10047c -> 0x2897c4 -> 0x10047c -> 0x13db18 -> 0x10047c -> 0x2897c4 -> 0x10047c -> 0x13db18 -> 0x10047c -> 0x2897c4 -> 0x10047c -> 0x13db18 -> 0x10047c -> 0x2897c4 -> 0x10047c -> 0x13db18 -> 0x10047c -> 0x2897c4 -> 0x10047c -> 0x13db18 -> 0x10047c -> 0x2897c4 -> 0x10047c -> 0x13db18 -> 0x10047c -> 0x2897c4 -> 0x10047c -> 0x13db18 -> 0x10047c -> 0x2897c4 -> 0x10047c -> 0x13db18 -> 0x10047c -> 0x2897c4 -> 0x10047c -> 0x13db18 -> 0x10047c -> 0x2897c4 -> 0x10047c -> 0x13db18 -> 0x10047c -> 0x2897c4 -> 0x10047c -> 0x13db18 -> 0x10047c -> 0x2897c4 -> 0x10047c -> 0x13db18 -> 0x10047c
+Game thread returned. PC=0x10047c RA=0x10047c
+INFO: TEXTURE: [ID 3] Unloaded texture data from VRAM (GPU)
+INFO: TEXTURE: [ID 2] Unloaded texture data from VRAM (GPU)
+INFO: SHADER: [ID 3] Default shader unloaded successfully
+INFO: TEXTURE: [ID 1] Default texture unloaded successfully
+INFO: Window closed successfully
+[run] exiting loop, activeThreads=0
+INFO: AUDIO: Device closed successfully
+[ps2_missing_report] relatorio salvo em ./ps2_missing.log
+cristiano@cristiano:~/Documentos/GitHub/godofwar$ 
+
+

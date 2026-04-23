@@ -1,0 +1,53 @@
+PROGRESSO ENORME! O experimento funcionou. Olha o que mudou:
+Antes (antes do Fix)
+
+    PC preso só em 0x10008c, 8193 chamadas, 1 função ausente
+    Nada de código do jogo executando
+
+Agora
+
+    Frame uploads acontecendo (idx=0, 1, 2... 57) → o jogo tá rodando o loop principal
+    Trace de funções reais chamando umas às outras: 0x13e090 → 0x13dc78 → 0x23aa40 → 0x187868 → 0x13d630... → isso é código do God of War de verdade executando
+    Dois novos pontos travam: 0x80004 (provavelmente uma syscall de BIOS) e 0x10047c (provavelmente uma função interna)
+
+Saímos do "tela preta absoluta" pra "executando código real até bater num bloqueio novo". Isso é um avanço gigante.
+
+Vou construir o Inspetor MIPS agora. É um script Python que lê o ELF do God of War, desmonta as instruções MIPS de qualquer endereço, e ainda detecta os gaps automaticamente.
+
+A lógica funciona. Detectou 4896 funções recompiladas e confirmou os dois gaps que descobrimos manualmente:
+
+    Gap de 0x10008c: 952 bytes (já sabíamos)
+    Gap de 0x10047c: 176 bytes (44 instruções MIPS) — esse é o foco agora
+
+Vou atualizar o replit.md pra registrar a Ferramenta #3 como entregue.
+
+Ferramenta #3 entregue! Resumo do que foi feito:
+
+    Criei tools/mips_inspect.py — desmontador MIPS que lê o ELF do God of War
+    Validei a lógica: detectou 4896 funções recompiladas e confirmou os gaps que descobrimos
+    Atualizei o replit.md movendo a Ferramenta #3 pra "Já entregues" + documentação completa de uso
+
+Comandos pra você usar agora
+
+Depois de fazer push aqui no Replit e git pull no seu PC:
+
+sudo apt install -y python3-capstone
+cd ~/Documentos/GitHub/godofwar
+python3 tools/mips_inspect.py --gap 0x10047c
+
+Esse comando vai:
+
+    Detectar automaticamente que 0x10047c está no gap entre 0x100408 e 0x1004b8 (176 bytes)
+    Calcular quantos % são zeros (= padding) vs código real
+    Diagnosticar: se ≥90% zeros = "seguro pular", se ≤10% zeros = "código real, não pode pular"
+    Mostrar o disassembly MIPS completo do gap
+
+Bonus que vai te economizar muito tempo:
+
+python3 tools/mips_inspect.py --list-gaps
+
+Lista os 30 maiores buracos do recompilador no projeto inteiro. Vamos ver de uma vez quantos são, qual o tamanho típico, quantos são padding vs código real. Isso decide se a Ferramenta #4 deve ser um "gap patcher" automático ou não.
+
+Precisa fazer push aqui no Replit pra esses arquivos chegarem no seu PC. Depois roda os comandos acima e me manda o resultado dos dois — com os dados, finalmente vou poder dizer com certeza se o gap em 0x10047c pode ser pulado, e qual a próxima ferramenta faz mais sentido.
+
+Próximo passo: depois de você rodar python3 tools/mips_inspect.py --gap 0x10047c e --list-gaps, com os resultados decidimos se a Ferramenta #4 vira um gap-patcher automático ou se atacamos o gap específico de 0x10047c manualmente.
