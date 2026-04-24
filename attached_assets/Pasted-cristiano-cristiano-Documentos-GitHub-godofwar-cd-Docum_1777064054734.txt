@@ -1,0 +1,1058 @@
+cristiano@cristiano:~/Documentos/GitHub/godofwar$ cd ~/Documentos/GitHub/godofwar
+git pull origin main
+
+# Dispara o build (os 5.6k .o já estão compilados, vai direto pro link)
+systemd-inhibit --what=idle:sleep:handle-lid-switch \
+    --why="Build God of War" \
+    bash -c 'bash recompilar.sh && PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_teste.txt'
+remote: Enumerating objects: 16, done.
+remote: Counting objects: 100% (16/16), done.
+remote: Compressing objects: 100% (4/4), done.
+remote: Total 11 (delta 7), reused 11 (delta 7), pack-reused 0 (from 0)
+Unpacking objects: 100% (11/11), 3.85 KiB | 262.00 KiB/s, done.
+From https://github.com/cristianomarianoufsc-ops/godofwar
+ * branch            main       -> FETCH_HEAD
+   a2ceff1..c87fb74  main       -> origin/main
+Updating a2ceff1..c87fb74
+Fast-forward
+ GOD_PC_PORT_FINAL/CMakeLists.txt                   | 35 +++++++++----
+ ...umentos-GitHub-godofwar-git-p_1777062033954.txt | 50 ++++++++++++++++++
+ ...umentos-GitHub-godofwar-git-p_1777062186161.txt | 61 ++++++++++++++++++++++
+ replit.md                                          | 13 +++--
+ 4 files changed, 146 insertions(+), 13 deletions(-)
+ create mode 100644 attached_assets/Pasted-cristiano-cristiano-cd-Documentos-GitHub-godofwar-git-p_1777062033954.txt
+ create mode 100644 attached_assets/Pasted-cristiano-cristiano-cd-Documentos-GitHub-godofwar-git-p_1777062186161.txt
+=== Recompilação incremental ===
+Apenas arquivos modificados serão recompilados.
+
+-- ccache encontrado: /usr/bin/ccache - acelerando builds
+-- Configuring done (0.2s)
+-- Generating done (2.1s)
+-- Build files have been written to: /home/cristiano/Documentos/GitHub/godofwar/build
+[  1%] Linking CXX static library libps2runtime.a
+[  1%] Built target ps2runtime
+[  1%] Linking CXX static library libgow_recompiled.a
+[100%] Built target gow_recompiled
+[100%] Building CXX object CMakeFiles/GodOfWarPCPort.dir/src/register_functions.cpp.o
+[100%] Building CXX object CMakeFiles/GodOfWarPCPort.dir/src/main.cpp.o
+[100%] Building CXX object CMakeFiles/GodOfWarPCPort.dir/src/ps2_syscall_stubs.cpp.o
+[100%] Linking CXX executable GodOfWarPCPort
+[100%] Built target GodOfWarPCPort
+
+=== Concluído! Executável atualizado: build/GodOfWarPCPort ===
+=================================================
+  God of War PC Port
+=================================================
+  ELF: /home/cristiano/Documentos/GitHub/godofwar/GOD_PC_PORT_FINAL/data/SCUS_973.99
+
+=================================================
+  God of War PC Port
+=================================================
+[Config] Carregando configurações de config.toml
+ELF: /home/cristiano/Documentos/GitHub/godofwar/GOD_PC_PORT_FINAL/data/SCUS_973.99
+INFO: Initializing raylib 5.5
+INFO: Platform backend: DESKTOP (GLFW)
+INFO: Supported raylib modules:
+INFO:     > rcore:..... loaded (mandatory)
+INFO:     > rlgl:...... loaded (mandatory)
+INFO:     > rshapes:... loaded (optional)
+INFO:     > rtextures:. loaded (optional)
+INFO:     > rtext:..... loaded (optional)
+INFO:     > rmodels:... loaded (optional)
+INFO:     > raudio:.... loaded (optional)
+INFO: DISPLAY: Device initialized successfully
+INFO:     > Display size: 1366 x 768
+INFO:     > Screen size:  640 x 448
+INFO:     > Render size:  640 x 448
+INFO:     > Viewport offsets: 0, 0
+INFO: GLAD: OpenGL extensions loaded successfully
+INFO: GL: Supported extensions count: 207
+INFO: GL: OpenGL device information:
+INFO:     > Vendor:   Intel
+INFO:     > Renderer: Mesa Intel(R) HD Graphics 4000 (IVB GT2)
+INFO:     > Version:  4.2 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.1
+INFO:     > GLSL:     4.20
+INFO: GL: VAO extension detected, VAO functions loaded successfully
+INFO: GL: NPOT textures extension detected, full NPOT textures supported
+INFO: GL: DXT compressed textures supported
+INFO: GL: ETC2/EAC compressed textures supported
+INFO: PLATFORM: DESKTOP (GLFW - X11): Initialized successfully
+INFO: TEXTURE: [ID 1] Texture loaded successfully (1x1 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 1] Default texture loaded successfully
+INFO: SHADER: [ID 1] Vertex shader compiled successfully
+INFO: SHADER: [ID 2] Fragment shader compiled successfully
+INFO: SHADER: [ID 3] Program shader loaded successfully
+INFO: SHADER: [ID 3] Default shader loaded successfully
+INFO: RLGL: Render batch vertex buffers loaded successfully in RAM (CPU)
+INFO: RLGL: Render batch vertex buffers loaded successfully in VRAM (GPU)
+INFO: RLGL: Default OpenGL state initialized successfully
+INFO: TEXTURE: [ID 2] Texture loaded successfully (128x128 | GRAY_ALPHA | 1 mipmaps)
+INFO: FONT: Default font loaded successfully (224 glyphs)
+INFO: SYSTEM: Working Directory: /home/cristiano/Documentos/GitHub/godofwar
+INFO: TIMER: Target time per frame: 16.667 milliseconds
+INFO: AUDIO: Device initialized successfully
+INFO:     > Backend:       miniaudio | PulseAudio
+INFO:     > Format:        32-bit IEEE Floating Point -> 32-bit Signed Integer
+INFO:     > Channels:      2 -> 2
+INFO:     > Sample rate:   48000 -> 48000
+INFO:     > Periods size:  3600
+Janela: 640x448 | FPS: 60
+Registrando funções recompiladas...
+Mapeando 5625 funções recompiladas...
+Carregando ELF: /home/cristiano/Documentos/GitHub/godofwar/GOD_PC_PORT_FINAL/data/SCUS_973.99
+Loading segment: 0x100000 - 0x35d080 (filesz: 0x1c7018, memsz: 0x25d080)
+Registered code region: 100000 - 35d080
+ELF file loaded successfully. Entry point: 0x100008
+Iniciando execução...
+[ps2_missing_report] ativado. Relatorio sera salvo em ./ps2_missing.log ao encerrar (ou Ctrl+C).
+Starting execution at address 0x100008
+INFO: TEXTURE: [ID 3] Texture loaded successfully (640x448 | R8G8B8A8 | 1 mipmaps)
+[BOOT#1] pc=0x100008 ra=0x0 sp=0x1fffff0
+[BOOT#2] pc=0x1003c0 ra=0x0 sp=0x1fffff0
+[DBG 100E28] #1 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=0000
+[DBG 100E28] #1 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #1 -> calling func_118110(s0=00000000)
+[DBG 118110] #1 ENTER a0=00000000 a1=00000000 a2=00000000 a3=00000000
+[DBG 118110] #1 EXIT@1186cc v0=00000000
+[DBG 100E28] #1 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #1 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #1 EXIT v0=00000000
+[lookup:bios-stub] addr=0x80004 syscallId=1 (assumindo vetor BIOS PS2; retornando v0=0)
+[DBG 100E28] #2 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #2 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #2 -> calling func_118110(s0=00000000)
+[DBG 118110] #2 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #2 EXIT@1186cc v0=00000000
+[DBG 100E28] #2 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #2 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #2 EXIT v0=00000000
+[DBG 100E28] #3 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #3 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #3 -> calling func_118110(s0=00000000)
+[DBG 118110] #3 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #3 EXIT@1186cc v0=00000000
+[DBG 100E28] #3 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #3 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #3 EXIT v0=00000000
+[DBG 100E28] #4 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #4 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #4 -> calling func_118110(s0=00000000)
+[DBG 118110] #4 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #4 EXIT@1186cc v0=00000000
+[DBG 100E28] #4 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #4 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #4 EXIT v0=00000000
+[DBG 100E28] #5 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #5 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #5 -> calling func_118110(s0=00000000)
+[DBG 118110] #5 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #5 EXIT@1186cc v0=00000000
+[DBG 100E28] #5 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #5 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #5 EXIT v0=00000000
+[DBG 100E28] #6 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #6 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #6 -> calling func_118110(s0=00000000)
+[DBG 118110] #6 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #6 EXIT@1186cc v0=00000000
+[DBG 100E28] #6 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #6 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #6 EXIT v0=00000000
+[DBG 100E28] #7 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #7 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #7 -> calling func_118110(s0=00000000)
+[DBG 118110] #7 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #7 EXIT@1186cc v0=00000000
+[DBG 100E28] #7 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #7 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #7 EXIT v0=00000000
+[DBG 100E28] #8 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #8 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #8 -> calling func_118110(s0=00000000)
+[DBG 118110] #8 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #8 EXIT@1186cc v0=00000000
+[DBG 100E28] #8 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #8 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #8 EXIT v0=00000000
+[DBG 100E28] #9 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #9 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #9 -> calling func_118110(s0=00000000)
+[DBG 118110] #9 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #9 EXIT@1186cc v0=00000000
+[DBG 100E28] #9 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #9 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #9 EXIT v0=00000000
+[DBG 100E28] #10 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #10 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #10 -> calling func_118110(s0=00000000)
+[DBG 118110] #10 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #10 EXIT@1186cc v0=00000000
+[DBG 100E28] #10 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #10 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #10 EXIT v0=00000000
+[DBG 100E28] #11 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #11 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #11 -> calling func_118110(s0=00000000)
+[DBG 118110] #11 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #11 EXIT@1186cc v0=00000000
+[DBG 100E28] #11 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #11 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #11 EXIT v0=00000000
+[DBG 100E28] #12 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #12 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #12 -> calling func_118110(s0=00000000)
+[DBG 118110] #12 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #12 EXIT@1186cc v0=00000000
+[DBG 100E28] #12 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #12 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #12 EXIT v0=00000000
+[DBG 100E28] #13 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #13 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #13 -> calling func_118110(s0=00000000)
+[DBG 118110] #13 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #13 EXIT@1186cc v0=00000000
+[DBG 100E28] #13 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #13 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #13 EXIT v0=00000000
+[DBG 100E28] #14 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #14 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #14 -> calling func_118110(s0=00000000)
+[DBG 118110] #14 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #14 EXIT@1186cc v0=00000000
+[DBG 100E28] #14 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #14 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #14 EXIT v0=00000000
+[DBG 100E28] #15 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #15 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #15 -> calling func_118110(s0=00000000)
+[DBG 118110] #15 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #15 EXIT@1186cc v0=00000000
+[DBG 100E28] #15 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #15 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #15 EXIT v0=00000000
+[DBG 100E28] #16 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #16 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #16 -> calling func_118110(s0=00000000)
+[DBG 118110] #16 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #16 EXIT@1186cc v0=00000000
+[DBG 100E28] #16 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #16 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #16 EXIT v0=00000000
+[DBG 100E28] #17 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #17 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #17 -> calling func_118110(s0=00000000)
+[DBG 118110] #17 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #17 EXIT@1186cc v0=00000000
+[DBG 100E28] #17 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #17 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #17 EXIT v0=00000000
+[DBG 100E28] #18 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #18 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #18 -> calling func_118110(s0=00000000)
+[DBG 118110] #18 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #18 EXIT@1186cc v0=00000000
+[DBG 100E28] #18 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #18 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #18 EXIT v0=00000000
+[DBG 100E28] #19 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #19 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #19 -> calling func_118110(s0=00000000)
+[DBG 118110] #19 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #19 EXIT@1186cc v0=00000000
+[DBG 100E28] #19 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #19 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #19 EXIT v0=00000000
+[DBG 100E28] #20 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #20 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #20 -> calling func_118110(s0=00000000)
+[DBG 118110] #20 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #20 EXIT@1186cc v0=00000000
+[DBG 100E28] #20 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #20 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #20 EXIT v0=00000000
+[DBG 100E28] #21 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #21 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #21 -> calling func_118110(s0=00000000)
+[DBG 118110] #21 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #21 EXIT@1186cc v0=00000000
+[DBG 100E28] #21 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #21 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #21 EXIT v0=00000000
+[DBG 100E28] #22 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #22 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #22 -> calling func_118110(s0=00000000)
+[DBG 118110] #22 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #22 EXIT@1186cc v0=00000000
+[DBG 100E28] #22 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #22 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #22 EXIT v0=00000000
+[DBG 100E28] #23 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #23 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #23 -> calling func_118110(s0=00000000)
+[DBG 118110] #23 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #23 EXIT@1186cc v0=00000000
+[DBG 100E28] #23 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #23 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #23 EXIT v0=00000000
+[DBG 100E28] #24 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #24 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #24 -> calling func_118110(s0=00000000)
+[DBG 118110] #24 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[frame:upload] idx=0 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[DBG 118110] #24 EXIT@1186cc v0=00000000
+[DBG 100E28] #24 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #24 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #24 EXIT v0=00000000
+[DBG 100E28] #25 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #25 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #25 -> calling func_118110(s0=00000000)
+[DBG 118110] #25 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #25 EXIT@1186cc v0=00000000
+[DBG 100E28] #25 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #25 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #25 EXIT v0=00000000
+[DBG 100E28] #26 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #26 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #26 -> calling func_118110(s0=00000000)
+[DBG 118110] #26 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #26 EXIT@1186cc v0=00000000
+[DBG 100E28] #26 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #26 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #26 EXIT v0=00000000
+[DBG 100E28] #27 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #27 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #27 -> calling func_118110(s0=00000000)
+[DBG 118110] #27 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #27 EXIT@1186cc v0=00000000
+[DBG 100E28] #27 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #27 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #27 EXIT v0=00000000
+[DBG 100E28] #28 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #28 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #28 -> calling func_118110(s0=00000000)
+[DBG 118110] #28 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #28 EXIT@1186cc v0=00000000
+[DBG 100E28] #28 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #28 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #28 EXIT v0=00000000
+[DBG 100E28] #29 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #29 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #29 -> calling func_118110(s0=00000000)
+[DBG 118110] #29 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #29 EXIT@1186cc v0=00000000
+[DBG 100E28] #29 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #29 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #29 EXIT v0=00000000
+[DBG 100E28] #30 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #30 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #30 -> calling func_118110(s0=00000000)
+[DBG 118110] #30 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #30 EXIT@1186cc v0=00000000
+[DBG 100E28] #30 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #30 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #30 EXIT v0=00000000
+[DBG 100E28] #31 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #31 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #31 -> calling func_118110(s0=00000000)
+[DBG 118110] #31 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #31 EXIT@1186cc v0=00000000
+[DBG 100E28] #31 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #31 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #31 EXIT v0=00000000
+[DBG 100E28] #32 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #32 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #32 -> calling func_118110(s0=00000000)
+[DBG 118110] #32 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #32 EXIT@1186cc v0=00000000
+[DBG 100E28] #32 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #32 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #32 EXIT v0=00000000
+[DBG 100E28] #33 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #33 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #33 -> calling func_118110(s0=00000000)
+[DBG 118110] #33 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #33 EXIT@1186cc v0=00000000
+[DBG 100E28] #33 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #33 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #33 EXIT v0=00000000
+[DBG 100E28] #34 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #34 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #34 -> calling func_118110(s0=00000000)
+[DBG 118110] #34 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #34 EXIT@1186cc v0=00000000
+[DBG 100E28] #34 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #34 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #34 EXIT v0=00000000
+[DBG 100E28] #35 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #35 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #35 -> calling func_118110(s0=00000000)
+[DBG 118110] #35 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #35 EXIT@1186cc v0=00000000
+[DBG 100E28] #35 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #35 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #35 EXIT v0=00000000
+[DBG 100E28] #36 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #36 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #36 -> calling func_118110(s0=00000000)
+[DBG 118110] #36 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #36 EXIT@1186cc v0=00000000
+[DBG 100E28] #36 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #36 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #36 EXIT v0=00000000
+[DBG 100E28] #37 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #37 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #37 -> calling func_118110(s0=00000000)
+[DBG 118110] #37 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #37 EXIT@1186cc v0=00000000
+[DBG 100E28] #37 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #37 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #37 EXIT v0=00000000
+[DBG 100E28] #38 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #38 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #38 -> calling func_118110(s0=00000000)
+[DBG 118110] #38 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #38 EXIT@1186cc v0=00000000
+[DBG 100E28] #38 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #38 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #38 EXIT v0=00000000
+[DBG 100E28] #39 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #39 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #39 -> calling func_118110(s0=00000000)
+[DBG 118110] #39 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #39 EXIT@1186cc v0=00000000
+[DBG 100E28] #39 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #39 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #39 EXIT v0=00000000
+[DBG 100E28] #40 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #40 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #40 -> calling func_118110(s0=00000000)
+[DBG 118110] #40 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #40 EXIT@1186cc v0=00000000
+[DBG 100E28] #40 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #40 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #40 EXIT v0=00000000
+[frame:upload] idx=1 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=2 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=3 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=4 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=5 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=6 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=7 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=8 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=9 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=10 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=11 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=12 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=13 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=14 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=15 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=16 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=17 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=18 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=19 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=20 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=21 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=22 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=23 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=24 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=25 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=26 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=27 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=28 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=29 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=30 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=31 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=32 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=33 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=34 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=35 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=36 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=37 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=38 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=39 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=40 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=41 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=42 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=43 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=44 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=45 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=46 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=47 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=48 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=49 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=50 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=51 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=52 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=53 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=54 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=55 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=56 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=57 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=58 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=59 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=60 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=61 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=62 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=63 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=64 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=65 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=66 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=67 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=68 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=69 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=70 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=71 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=72 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=73 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=74 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=75 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=76 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=77 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=78 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=79 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=80 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=81 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=82 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=83 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=84 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=85 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=86 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=87 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=88 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=89 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=90 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=91 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=92 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=93 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=94 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=95 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[run:tick] tick=120 pc=0x1003c0 livePc=0x18789c liveRa=0x118468 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=240 pc=0x1003c0 livePc=0x13d910 liveRa=0x187928 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=360 pc=0x1003c0 livePc=0x187888 liveRa=0x1181b4 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=480 pc=0x1003c0 livePc=0x13d654 liveRa=0x13d654 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=600 pc=0x1003c0 livePc=0x187968 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=720 pc=0x1003c0 livePc=0x13dc80 liveRa=0x13d654 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=840 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13d654 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=960 pc=0x1003c0 livePc=0x13d918 liveRa=0x187928 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=1080 pc=0x1003c0 livePc=0x13d920 liveRa=0x187928 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=1200 pc=0x1003c0 livePc=0x13dc88 liveRa=0x13da58 liveSp=0x1fffdc0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=1320 pc=0x1003c0 livePc=0x187880 liveRa=0x118488 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=1440 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=1560 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=1680 pc=0x1003c0 livePc=0x13d914 liveRa=0x187928 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=1800 pc=0x1003c0 livePc=0x13d640 liveRa=0x13d644 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=1920 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=2040 pc=0x1003c0 livePc=0x13de14 liveRa=0x13da58 liveSp=0x1fffdc0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=2160 pc=0x1003c0 livePc=0x13dcc4 liveRa=0x13d954 liveSp=0x1fffda0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=2280 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=2400 pc=0x1003c0 livePc=0x13d630 liveRa=0x1878fc liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=2520 pc=0x1003c0 livePc=0x13d644 liveRa=0x13d644 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=2640 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=2760 pc=0x1003c0 livePc=0x13da34 liveRa=0x18793c liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=2880 pc=0x1003c0 livePc=0x13d9b0 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=3000 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=3120 pc=0x1003c0 livePc=0x13d910 liveRa=0x187928 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=3240 pc=0x1003c0 livePc=0x13dc7c liveRa=0x13da58 liveSp=0x1fffdc0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=3360 pc=0x1003c0 livePc=0x13e094 liveRa=0x13d644 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=3480 pc=0x1003c0 livePc=0x13d95c liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=3600 pc=0x1003c0 livePc=0x13e090 liveRa=0x13d644 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=3720 pc=0x1003c0 livePc=0x11826c liveRa=0x118260 liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=3840 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=3960 pc=0x1003c0 livePc=0x13da58 liveRa=0x13da58 liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=4080 pc=0x1003c0 livePc=0x13e090 liveRa=0x187910 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=4200 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=4320 pc=0x1003c0 livePc=0x13e09c liveRa=0x187910 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=4440 pc=0x1003c0 livePc=0x13de18 liveRa=0x13d654 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=4560 pc=0x1003c0 livePc=0x13dc88 liveRa=0x13d654 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=4680 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13d6ac liveSp=0x1fffe90 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=4800 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13d654 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=4920 pc=0x1003c0 livePc=0x118454 liveRa=0x118448 liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=5040 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=5160 pc=0x1003c0 livePc=0x100450 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=5280 pc=0x1003c0 livePc=0x187868 liveRa=0x118284 liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=5400 pc=0x1003c0 livePc=0x23aa4c liveRa=0x187904 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=5520 pc=0x1003c0 livePc=0x13dcc4 liveRa=0x13d954 liveSp=0x1fffda0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=5640 pc=0x1003c0 livePc=0x13d910 liveRa=0x187928 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=5760 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13da58 liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=5880 pc=0x1003c0 livePc=0x187878 liveRa=0x118328 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=6000 pc=0x1003c0 livePc=0x13da4c liveRa=0x13da58 liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=6120 pc=0x1003c0 livePc=0x23aa40 liveRa=0x187904 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=6240 pc=0x1003c0 livePc=0x13e090 liveRa=0x13d644 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=6360 pc=0x1003c0 livePc=0x13d960 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=6480 pc=0x1003c0 livePc=0x11817c liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=6600 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=6720 pc=0x1003c0 livePc=0x13dc7c liveRa=0x13d954 liveSp=0x1fffda0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=6840 pc=0x1003c0 livePc=0x13d630 liveRa=0x1878fc liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=6960 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=7080 pc=0x1003c0 livePc=0x18795c liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=7200 pc=0x1003c0 livePc=0x10044c liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=7320 pc=0x1003c0 livePc=0x13d91c liveRa=0x187928 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=7440 pc=0x1003c0 livePc=0x13d658 liveRa=0x13d654 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=7560 pc=0x1003c0 livePc=0x13e090 liveRa=0x13d644 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=7680 pc=0x1003c0 livePc=0x13d630 liveRa=0x1878fc liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=7800 pc=0x1003c0 livePc=0x13e090 liveRa=0x13d644 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=7920 pc=0x1003c0 livePc=0x118180 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=8040 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13d654 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=8160 pc=0x1003c0 livePc=0x13da24 liveRa=0x18793c liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=8280 pc=0x1003c0 livePc=0x23aa40 liveRa=0x187904 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=8400 pc=0x1003c0 livePc=0x13dccc liveRa=0x13d954 liveSp=0x1fffda0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=8520 pc=0x1003c0 livePc=0x187960 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=8640 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=8760 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=8880 pc=0x1003c0 livePc=0x187930 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=9000 pc=0x1003c0 livePc=0x187978 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=9120 pc=0x1003c0 livePc=0x13dc88 liveRa=0x13d654 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=9240 pc=0x1003c0 livePc=0x13d630 liveRa=0x1878fc liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=9360 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=9480 pc=0x1003c0 livePc=0x13da20 liveRa=0x18793c liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=9600 pc=0x1003c0 livePc=0x13de10 liveRa=0x13da58 liveSp=0x1fffdc0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=9720 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=9840 pc=0x1003c0 livePc=0x13dc88 liveRa=0x13da58 liveSp=0x1fffdc0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=9960 pc=0x1003c0 livePc=0x13e0a4 liveRa=0x13d644 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=10080 pc=0x1003c0 livePc=0x13da24 liveRa=0x18793c liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=10200 pc=0x1003c0 livePc=0x13dc80 liveRa=0x13d654 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=10320 pc=0x1003c0 livePc=0x13e09c liveRa=0x187910 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=10440 pc=0x1003c0 livePc=0x118344 liveRa=0x118348 liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=10560 pc=0x1003c0 livePc=0x118404 liveRa=0x118408 liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=10680 pc=0x1003c0 livePc=0x13dc80 liveRa=0x13d654 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=10800 pc=0x1003c0 livePc=0x13d920 liveRa=0x187928 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=10920 pc=0x1003c0 livePc=0x13da10 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=11040 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=11160 pc=0x1003c0 livePc=0x23aa4c liveRa=0x187904 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=11280 pc=0x1003c0 livePc=0x187890 liveRa=0x1181dc liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=11400 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=11520 pc=0x1003c0 livePc=0x80004 liveRa=0x10047c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=11640 pc=0x1003c0 livePc=0x13de0c liveRa=0x13da58 liveSp=0x1fffdc0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=11760 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=11880 pc=0x1003c0 livePc=0x187888 liveRa=0x118468 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=12000 pc=0x1003c0 livePc=0x13dcc4 liveRa=0x13d954 liveSp=0x1fffda0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=12120 pc=0x1003c0 livePc=0x13db14 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=12240 pc=0x1003c0 livePc=0x23aa40 liveRa=0x187904 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=12360 pc=0x1003c0 livePc=0x13d92c liveRa=0x187928 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=12480 pc=0x1003c0 livePc=0x13dcc0 liveRa=0x13da58 liveSp=0x1fffdc0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=12600 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=12720 pc=0x1003c0 livePc=0x13e090 liveRa=0x13d644 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=12840 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=12960 pc=0x1003c0 livePc=0x13d658 liveRa=0x13d654 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=13080 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=13200 pc=0x1003c0 livePc=0x187988 liveRa=0x1182c8 liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=13320 pc=0x1003c0 livePc=0x1878fc liveRa=0x187904 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=13440 pc=0x1003c0 livePc=0x13d920 liveRa=0x187928 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=13560 pc=0x1003c0 livePc=0x13d688 liveRa=0x1184c0 liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=13680 pc=0x1003c0 livePc=0x100e80 liveRa=0x100e7c liveSp=0x1ffff40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=13800 pc=0x1003c0 livePc=0x13e0a4 liveRa=0x13d644 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=13920 pc=0x1003c0 livePc=0x13d630 liveRa=0x1878fc liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=14040 pc=0x1003c0 livePc=0x13de20 liveRa=0x13d654 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=14160 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13da58 liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=14280 pc=0x1003c0 livePc=0x187978 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=14400 pc=0x1003c0 livePc=0x13dccc liveRa=0x13d954 liveSp=0x1fffda0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=14520 pc=0x1003c0 livePc=0x187968 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=14640 pc=0x1003c0 livePc=0x13dc9c liveRa=0x13d654 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=14760 pc=0x1003c0 livePc=0x13d978 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=14880 pc=0x1003c0 livePc=0x187904 liveRa=0x187904 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=15000 pc=0x1003c0 livePc=0x118180 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=15120 pc=0x1003c0 livePc=0x187880 liveRa=0x11821c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=15240 pc=0x1003c0 livePc=0x100e28 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=15360 pc=0x1003c0 livePc=0x13d634 liveRa=0x1878fc liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=15480 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=15600 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=15720 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=15840 pc=0x1003c0 livePc=0x13de14 liveRa=0x13da58 liveSp=0x1fffdc0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=15960 pc=0x1003c0 livePc=0x100e7c liveRa=0x100e7c liveSp=0x1ffff40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=16080 pc=0x1003c0 livePc=0x23aa40 liveRa=0x187904 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=16200 pc=0x1003c0 livePc=0x13d640 liveRa=0x13d644 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=16320 pc=0x1003c0 livePc=0x13d9e8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=16440 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13da58 liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=16560 pc=0x1003c0 livePc=0x13d658 liveRa=0x1878fc liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=16680 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=16800 pc=0x1003c0 livePc=0x13de18 liveRa=0x13da58 liveSp=0x1fffdc0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=16920 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=17040 pc=0x1003c0 livePc=0x13dc80 liveRa=0x13da58 liveSp=0x1fffdc0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=17160 pc=0x1003c0 livePc=0x13de0c liveRa=0x13d654 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=17280 pc=0x1003c0 livePc=0x187980 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=17400 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=17520 pc=0x1003c0 livePc=0x23aa40 liveRa=0x187904 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=17640 pc=0x1003c0 livePc=0x13d630 liveRa=0x1878fc liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=17760 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13d654 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=17880 pc=0x1003c0 livePc=0x13dcc8 liveRa=0x13dcb0 liveSp=0x1fffe50 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=18000 pc=0x1003c0 livePc=0x187960 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=18120 pc=0x1003c0 livePc=0x13d9e0 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=18240 pc=0x1003c0 livePc=0x13e090 liveRa=0x13d644 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=18360 pc=0x1003c0 livePc=0x18795c liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=18480 pc=0x1003c0 livePc=0x13d97c liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=18600 pc=0x1003c0 livePc=0x13dc7c liveRa=0x13da58 liveSp=0x1fffdc0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=18720 pc=0x1003c0 livePc=0x187974 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=18840 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=18960 pc=0x1003c0 livePc=0x13dcb0 liveRa=0x13d654 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=19080 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=19200 pc=0x1003c0 livePc=0x13d938 liveRa=0x187928 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=19320 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=19440 pc=0x1003c0 livePc=0x13d934 liveRa=0x187928 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=19560 pc=0x1003c0 livePc=0x13e094 liveRa=0x187910 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=19680 pc=0x1003c0 livePc=0x187888 liveRa=0x118488 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=19800 pc=0x1003c0 livePc=0x23aa40 liveRa=0x187904 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=19920 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=20040 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13da58 liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=20160 pc=0x1003c0 livePc=0x13d928 liveRa=0x187928 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=20280 pc=0x1003c0 livePc=0x187938 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=20400 pc=0x1003c0 livePc=0x13d910 liveRa=0x187928 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=20520 pc=0x1003c0 livePc=0x13dcb8 liveRa=0x13da58 liveSp=0x1fffdc0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=20640 pc=0x1003c0 livePc=0x13e090 liveRa=0x13d644 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=20760 pc=0x1003c0 livePc=0x187878 liveRa=0x11823c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=20880 pc=0x1003c0 livePc=0x100444 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=21000 pc=0x1003c0 livePc=0x187930 liveRa=0x187928 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=21120 pc=0x1003c0 livePc=0x13d940 liveRa=0x187928 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=21240 pc=0x1003c0 livePc=0x100e28 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=21360 pc=0x1003c0 livePc=0x13e090 liveRa=0x13d644 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=21480 pc=0x1003c0 livePc=0x187938 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=21600 pc=0x1003c0 livePc=0x13da18 liveRa=0x18793c liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=21720 pc=0x1003c0 livePc=0x13d634 liveRa=0x1878fc liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=21840 pc=0x1003c0 livePc=0x13d910 liveRa=0x187928 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=21960 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=22080 pc=0x1003c0 livePc=0x13d9f0 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=22200 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=22320 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=22440 pc=0x1003c0 livePc=0x118120 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=22560 pc=0x1003c0 livePc=0x13db00 liveRa=0x13da58 liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=22680 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13d654 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=22800 pc=0x1003c0 livePc=0x13d954 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=22920 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=23040 pc=0x1003c0 livePc=0x13da20 liveRa=0x18793c liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=23160 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=23280 pc=0x1003c0 livePc=0x13e090 liveRa=0x187910 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=23400 pc=0x1003c0 livePc=0x13dcb8 liveRa=0x13da58 liveSp=0x1fffdc0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=23520 pc=0x1003c0 livePc=0x13d974 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=23640 pc=0x1003c0 livePc=0x13dc90 liveRa=0x13d654 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=23760 pc=0x1003c0 livePc=0x80004 liveRa=0x10047c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=23880 pc=0x1003c0 livePc=0x18789c liveRa=0x118368 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=24000 pc=0x1003c0 livePc=0x100e78 liveRa=0x100e7c liveSp=0x1ffff40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=24120 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=24240 pc=0x1003c0 livePc=0x13d910 liveRa=0x187928 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=24360 pc=0x1003c0 livePc=0x13e090 liveRa=0x13d69c liveSp=0x1fffe90 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=24480 pc=0x1003c0 livePc=0x187978 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=24600 pc=0x1003c0 livePc=0x13da10 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=24720 pc=0x1003c0 livePc=0x13e090 liveRa=0x13d644 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=24840 pc=0x1003c0 livePc=0x80004 liveRa=0x10047c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=24960 pc=0x1003c0 livePc=0x187868 liveRa=0x118348 liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=25080 pc=0x1003c0 livePc=0x13d94c liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=25200 pc=0x1003c0 livePc=0x13d978 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=25320 pc=0x1003c0 livePc=0x13db0c liveRa=0x18793c liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=25440 pc=0x1003c0 livePc=0x13de10 liveRa=0x13da58 liveSp=0x1fffdc0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=25560 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=25680 pc=0x1003c0 livePc=0x13d918 liveRa=0x187928 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=25800 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=25920 pc=0x1003c0 livePc=0x13dcb0 liveRa=0x13d654 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=26040 pc=0x1003c0 livePc=0x187954 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=26160 pc=0x1003c0 livePc=0x187960 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=26280 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13d6ac liveSp=0x1fffe90 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=26400 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=26520 pc=0x1003c0 livePc=0x23aa40 liveRa=0x187904 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=26640 pc=0x1003c0 livePc=0x13d910 liveRa=0x187928 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=26760 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=26880 pc=0x1003c0 livePc=0x118218 liveRa=0x11821c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=27000 pc=0x1003c0 livePc=0x13d978 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=27120 pc=0x1003c0 livePc=0x23aa40 liveRa=0x187904 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=27240 pc=0x1003c0 livePc=0x13d634 liveRa=0x1878fc liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=27360 pc=0x1003c0 livePc=0x13d97c liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=27480 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=27600 pc=0x1003c0 livePc=0x13e090 liveRa=0x187910 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=27720 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=27840 pc=0x1003c0 livePc=0x13dc88 liveRa=0x13d954 liveSp=0x1fffda0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=27960 pc=0x1003c0 livePc=0x187970 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=28080 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13d654 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=28200 pc=0x1003c0 livePc=0x13d978 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=28320 pc=0x1003c0 livePc=0x13dc88 liveRa=0x13da58 liveSp=0x1fffdc0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=28440 pc=0x1003c0 livePc=0x23aa40 liveRa=0x187904 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=28560 pc=0x1003c0 livePc=0x13d9d8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=28680 pc=0x1003c0 livePc=0x13dc7c liveRa=0x13d654 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=28800 pc=0x1003c0 livePc=0x13d940 liveRa=0x187928 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=28920 pc=0x1003c0 livePc=0x13e090 liveRa=0x187910 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=29040 pc=0x1003c0 livePc=0x13da58 liveRa=0x13da58 liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=29160 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=29280 pc=0x1003c0 livePc=0x187868 liveRa=0x118348 liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=29400 pc=0x1003c0 livePc=0x187868 liveRa=0x118448 liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=29520 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13da58 liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=29640 pc=0x1003c0 livePc=0x13d97c liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=29760 pc=0x1003c0 livePc=0x187868 liveRa=0x118428 liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=29880 pc=0x1003c0 livePc=0x18789c liveRa=0x11823c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=30000 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=30120 pc=0x1003c0 livePc=0x13d920 liveRa=0x187928 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=30240 pc=0x1003c0 livePc=0x187920 liveRa=0x187928 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=30360 pc=0x1003c0 livePc=0x187928 liveRa=0x187928 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=30480 pc=0x1003c0 livePc=0x1878fc liveRa=0x1878fc liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=30600 pc=0x1003c0 livePc=0x13dcc0 liveRa=0x13da58 liveSp=0x1fffdc0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=30720 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=30840 pc=0x1003c0 livePc=0x1878a4 liveRa=0x118308 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=30960 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=31080 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=31200 pc=0x1003c0 livePc=0x13da24 liveRa=0x18793c liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=31320 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13da58 liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=31440 pc=0x1003c0 livePc=0x118174 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=31560 pc=0x1003c0 livePc=0x13d658 liveRa=0x13d654 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=31680 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=31800 pc=0x1003c0 livePc=0x13e0a0 liveRa=0x13d644 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=31920 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=32040 pc=0x1003c0 livePc=0x23aa44 liveRa=0x187904 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=32160 pc=0x1003c0 livePc=0x80004 liveRa=0x10047c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=32280 pc=0x1003c0 livePc=0x13d92c liveRa=0x187928 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=32400 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=32520 pc=0x1003c0 livePc=0x13e090 liveRa=0x13d644 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=32640 pc=0x1003c0 livePc=0x187958 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=32760 pc=0x1003c0 livePc=0x13d910 liveRa=0x187928 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=32880 pc=0x1003c0 livePc=0x13d918 liveRa=0x187928 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=33000 pc=0x1003c0 livePc=0x18786c liveRa=0x118368 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=33120 pc=0x1003c0 livePc=0x13d9a0 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=33240 pc=0x1003c0 livePc=0x187954 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=33360 pc=0x1003c0 livePc=0x23aa44 liveRa=0x187904 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=33480 pc=0x1003c0 livePc=0x13d630 liveRa=0x1878fc liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=33600 pc=0x1003c0 livePc=0x23aa40 liveRa=0x187904 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=33720 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=33840 pc=0x1003c0 livePc=0x13d914 liveRa=0x187928 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=33960 pc=0x1003c0 livePc=0x18792c liveRa=0x187928 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=34080 pc=0x1003c0 livePc=0x187868 liveRa=0x118408 liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=34200 pc=0x1003c0 livePc=0x13da40 liveRa=0x18793c liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=34320 pc=0x1003c0 livePc=0x187954 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=34440 pc=0x1003c0 livePc=0x1183c4 liveRa=0x1183c8 liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=34560 pc=0x1003c0 livePc=0x13de10 liveRa=0x13d654 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=34680 pc=0x1003c0 livePc=0x13de14 liveRa=0x13d954 liveSp=0x1fffda0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=34800 pc=0x1003c0 livePc=0x187978 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=34920 pc=0x1003c0 livePc=0x13dcc4 liveRa=0x13da58 liveSp=0x1fffdc0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=35040 pc=0x1003c0 livePc=0x187954 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=35160 pc=0x1003c0 livePc=0x13da14 liveRa=0x18793c liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=35280 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=35400 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=35520 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=35640 pc=0x1003c0 livePc=0x13dc90 liveRa=0x13d954 liveSp=0x1fffda0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=35760 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=35880 pc=0x1003c0 livePc=0x1878e0 liveRa=0x1183a8 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=36000 pc=0x1003c0 livePc=0x80004 liveRa=0x10047c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=36120 pc=0x1003c0 livePc=0x187868 liveRa=0x118488 liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=36240 pc=0x1003c0 livePc=0x13db00 liveRa=0x13da58 liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=36360 pc=0x1003c0 livePc=0x13dc80 liveRa=0x13da58 liveSp=0x1fffdc0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=36480 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=36600 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=36720 pc=0x1003c0 livePc=0x187980 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=36840 pc=0x1003c0 livePc=0x13d98c liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=36960 pc=0x1003c0 livePc=0x13e098 liveRa=0x187910 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=37080 pc=0x1003c0 livePc=0x187890 liveRa=0x1181b4 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=37200 pc=0x1003c0 livePc=0x13de10 liveRa=0x13d654 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=37320 pc=0x1003c0 livePc=0x13db08 liveRa=0x13da58 liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=37440 pc=0x1003c0 livePc=0x13dc80 liveRa=0x13da58 liveSp=0x1fffdc0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=37560 pc=0x1003c0 livePc=0x13dc90 liveRa=0x13d6ac liveSp=0x1fffe50 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=37680 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=37800 pc=0x1003c0 livePc=0x13dcb8 liveRa=0x13d954 liveSp=0x1fffda0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=37920 pc=0x1003c0 livePc=0x13d638 liveRa=0x13d644 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=38040 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=38160 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=38280 pc=0x1003c0 livePc=0x13d648 liveRa=0x13d644 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=38400 pc=0x1003c0 livePc=0x187980 liveRa=0x118428 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=38520 pc=0x1003c0 livePc=0x118170 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=38640 pc=0x1003c0 livePc=0x13db18 liveRa=0x100e90 liveSp=0x1ffff40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=38760 pc=0x1003c0 livePc=0x18794c liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=38880 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13d654 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=39000 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13d654 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=39120 pc=0x1003c0 livePc=0x13d9f4 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=39240 pc=0x1003c0 livePc=0x13d974 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=39360 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=39480 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=39600 pc=0x1003c0 livePc=0x13d998 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=39720 pc=0x1003c0 livePc=0x13d974 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=39840 pc=0x1003c0 livePc=0x23aa40 liveRa=0x187904 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=39960 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=40080 pc=0x1003c0 livePc=0x13d978 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=40200 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=40320 pc=0x1003c0 livePc=0x13d998 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=40440 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=40560 pc=0x1003c0 livePc=0x13dc80 liveRa=0x13d6ac liveSp=0x1fffe50 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=40680 pc=0x1003c0 livePc=0x13de0c liveRa=0x13da58 liveSp=0x1fffdc0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=40800 pc=0x1003c0 livePc=0x13e0a4 liveRa=0x13d644 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=40920 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13da58 liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=41040 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=41160 pc=0x1003c0 livePc=0x13d93c liveRa=0x187928 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=41280 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=41400 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=41520 pc=0x1003c0 livePc=0x18789c liveRa=0x118408 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=41640 pc=0x1003c0 livePc=0x23aa40 liveRa=0x187904 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=41760 pc=0x1003c0 livePc=0x13d910 liveRa=0x187928 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=41880 pc=0x1003c0 livePc=0x23aa4c liveRa=0x187904 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=42000 pc=0x1003c0 livePc=0x13dcc4 liveRa=0x13da58 liveSp=0x1fffdc0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=42120 pc=0x1003c0 livePc=0x23aa40 liveRa=0x187904 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=42240 pc=0x1003c0 livePc=0x13dccc liveRa=0x13d654 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=42360 pc=0x1003c0 livePc=0x13d948 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=42480 pc=0x1003c0 livePc=0x187950 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=42600 pc=0x1003c0 livePc=0x187928 liveRa=0x187928 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=42720 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=42840 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=42960 pc=0x1003c0 livePc=0x18795c liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=43080 pc=0x1003c0 livePc=0x13da4c liveRa=0x18793c liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=43200 pc=0x1003c0 livePc=0x13d9a0 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=43320 pc=0x1003c0 livePc=0x13da2c liveRa=0x18793c liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=43440 pc=0x1003c0 livePc=0x13da18 liveRa=0x18793c liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=43560 pc=0x1003c0 livePc=0x13d910 liveRa=0x187928 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=43680 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13d654 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=43800 pc=0x1003c0 livePc=0x13dcbc liveRa=0x13d954 liveSp=0x1fffda0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=43920 pc=0x1003c0 livePc=0x13d9f4 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=44040 pc=0x1003c0 livePc=0x13d910 liveRa=0x187928 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=44160 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=44280 pc=0x1003c0 livePc=0x13e0bc liveRa=0x13d644 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=44400 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=44520 pc=0x1003c0 livePc=0x13d9e4 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=44640 pc=0x1003c0 livePc=0x13de18 liveRa=0x13da58 liveSp=0x1fffdc0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=44760 pc=0x1003c0 livePc=0x13dcc4 liveRa=0x13d954 liveSp=0x1fffda0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=44880 pc=0x1003c0 livePc=0x13da18 liveRa=0x18793c liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=45000 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=45120 pc=0x1003c0 livePc=0x289894 liveRa=0x13dcb0 liveSp=0x1fffe50 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=45240 pc=0x1003c0 livePc=0x13dc88 liveRa=0x13d954 liveSp=0x1fffda0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=45360 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=45480 pc=0x1003c0 livePc=0x187960 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=45600 pc=0x1003c0 livePc=0x187890 liveRa=0x118428 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=45720 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=45840 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13d654 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=45960 pc=0x1003c0 livePc=0x13dc80 liveRa=0x13da58 liveSp=0x1fffdc0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=46080 pc=0x1003c0 livePc=0x23aa40 liveRa=0x187904 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=46200 pc=0x1003c0 livePc=0x13dc90 liveRa=0x13d954 liveSp=0x1fffda0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=46320 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13da58 liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=46440 pc=0x1003c0 livePc=0x187898 liveRa=0x11823c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=46560 pc=0x1003c0 livePc=0x80004 liveRa=0x10047c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=46680 pc=0x1003c0 livePc=0x13dcc4 liveRa=0x13d654 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=46800 pc=0x1003c0 livePc=0x18787c liveRa=0x118408 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=46920 pc=0x1003c0 livePc=0x18794c liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=47040 pc=0x1003c0 livePc=0x13de08 liveRa=0x13da58 liveSp=0x1fffdc0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=47160 pc=0x1003c0 livePc=0x23aa40 liveRa=0x187904 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=47280 pc=0x1003c0 livePc=0x13e090 liveRa=0x187910 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=47400 pc=0x1003c0 livePc=0x13de20 liveRa=0x13d654 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=47520 pc=0x1003c0 livePc=0x13d650 liveRa=0x13d654 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=47640 pc=0x1003c0 livePc=0x1184d0 liveRa=0x1184c0 liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=47760 pc=0x1003c0 livePc=0x18792c liveRa=0x187928 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=47880 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=48000 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=48120 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13d654 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=48240 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13da58 liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=48360 pc=0x1003c0 livePc=0x80004 liveRa=0x10047c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=48480 pc=0x1003c0 livePc=0x13e090 liveRa=0x13d644 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=48600 pc=0x1003c0 livePc=0x13dc90 liveRa=0x13da58 liveSp=0x1fffdc0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=48720 pc=0x1003c0 livePc=0x13de0c liveRa=0x13d654 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=48840 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=48960 pc=0x1003c0 livePc=0x13e0a4 liveRa=0x187910 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=49080 pc=0x1003c0 livePc=0x187910 liveRa=0x187910 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=49200 pc=0x1003c0 livePc=0x13d974 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=49320 pc=0x1003c0 livePc=0x13dc88 liveRa=0x13da58 liveSp=0x1fffdc0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=49440 pc=0x1003c0 livePc=0x13d654 liveRa=0x13d654 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=49560 pc=0x1003c0 livePc=0x13d644 liveRa=0x13d644 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=49680 pc=0x1003c0 livePc=0x13dc90 liveRa=0x13d654 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=49800 pc=0x1003c0 livePc=0x1878e0 liveRa=0x118448 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=49920 pc=0x1003c0 livePc=0x23aa40 liveRa=0x187904 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=50040 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13d654 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=50160 pc=0x1003c0 livePc=0x187868 liveRa=0x11821c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=50280 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=50400 pc=0x1003c0 livePc=0x187938 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=50520 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=50640 pc=0x1003c0 livePc=0x13d9fc liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=50760 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=50880 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=51000 pc=0x1003c0 livePc=0x13d914 liveRa=0x187928 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=51120 pc=0x1003c0 livePc=0x187868 liveRa=0x1182e8 liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=51240 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13d654 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=51360 pc=0x1003c0 livePc=0x13da10 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=51480 pc=0x1003c0 livePc=0x13d938 liveRa=0x187928 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=51600 pc=0x1003c0 livePc=0x13dcc4 liveRa=0x13da58 liveSp=0x1fffdc0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=51720 pc=0x1003c0 livePc=0x1878f4 liveRa=0x1878fc liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=51840 pc=0x1003c0 livePc=0x187890 liveRa=0x1182a8 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=51960 pc=0x1003c0 livePc=0x13e090 liveRa=0x13d644 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=52080 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=52200 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=52320 pc=0x1003c0 livePc=0x18786c liveRa=0x118260 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=52440 pc=0x1003c0 livePc=0x13d654 liveRa=0x13d654 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=52560 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=52680 pc=0x1003c0 livePc=0x13d978 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=52800 pc=0x1003c0 livePc=0x13d9e8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=52920 pc=0x1003c0 livePc=0x13da48 liveRa=0x18793c liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=53040 pc=0x1003c0 livePc=0x18797c liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=53160 pc=0x1003c0 livePc=0x18789c liveRa=0x118448 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=53280 pc=0x1003c0 livePc=0x13d948 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=53400 pc=0x1003c0 livePc=0x13d630 liveRa=0x1878fc liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=53520 pc=0x1003c0 livePc=0x13da28 liveRa=0x18793c liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=53640 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=53760 pc=0x1003c0 livePc=0x13d630 liveRa=0x1878fc liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=53880 pc=0x1003c0 livePc=0x13d954 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=54000 pc=0x1003c0 livePc=0x13dc7c liveRa=0x13d654 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=54120 pc=0x1003c0 livePc=0x13da34 liveRa=0x18793c liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=54240 pc=0x1003c0 livePc=0x118110 liveRa=0x100e7c liveSp=0x1ffff40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=54360 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=54480 pc=0x1003c0 livePc=0x13dc7c liveRa=0x13d954 liveSp=0x1fffda0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=54600 pc=0x1003c0 livePc=0x187980 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=54720 pc=0x1003c0 livePc=0x13d9f4 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=54840 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=54960 pc=0x1003c0 livePc=0x187940 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=55080 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=55200 pc=0x1003c0 livePc=0x13de18 liveRa=0x13d654 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=55320 pc=0x1003c0 livePc=0x13d9d8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=55440 pc=0x1003c0 livePc=0x13e090 liveRa=0x13d644 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=55560 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=55680 pc=0x1003c0 livePc=0x118124 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=55800 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=55920 pc=0x1003c0 livePc=0x13de08 liveRa=0x13d954 liveSp=0x1fffda0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=56040 pc=0x1003c0 livePc=0x13d690 liveRa=0x1184c0 liveSp=0x1fffe90 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=56160 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13d654 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=56280 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=56400 pc=0x1003c0 livePc=0x13e090 liveRa=0x187910 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=56520 pc=0x1003c0 livePc=0x13d9d0 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=56640 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=56760 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=56880 pc=0x1003c0 livePc=0x13e098 liveRa=0x187910 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=57000 pc=0x1003c0 livePc=0x13de18 liveRa=0x13d654 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=57120 pc=0x1003c0 livePc=0x80004 liveRa=0x10047c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=57240 pc=0x1003c0 livePc=0x187950 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=57360 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=57480 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13da58 liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=57600 pc=0x1003c0 livePc=0x23aa4c liveRa=0x187904 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=57720 pc=0x1003c0 livePc=0x13da10 liveRa=0x18793c liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=57840 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=57960 pc=0x1003c0 livePc=0x13db00 liveRa=0x13da58 liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=58080 pc=0x1003c0 livePc=0x13d974 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=58200 pc=0x1003c0 livePc=0x13d630 liveRa=0x1878fc liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=58320 pc=0x1003c0 livePc=0x13db00 liveRa=0x13da58 liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=58440 pc=0x1003c0 livePc=0x13e090 liveRa=0x13d644 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=58560 pc=0x1003c0 livePc=0x1181c4 liveRa=0x1181b4 liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=58680 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=58800 pc=0x1003c0 livePc=0x13d974 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=58920 pc=0x1003c0 livePc=0x13d938 liveRa=0x187928 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=59040 pc=0x1003c0 livePc=0x13d910 liveRa=0x187928 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=59160 pc=0x1003c0 livePc=0x13da44 liveRa=0x18793c liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=59280 pc=0x1003c0 livePc=0x11817c liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=59400 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=59520 pc=0x1003c0 livePc=0x187868 liveRa=0x118284 liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=59640 pc=0x1003c0 livePc=0x13de0c liveRa=0x13da58 liveSp=0x1fffdc0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=59760 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=59880 pc=0x1003c0 livePc=0x1878fc liveRa=0x187904 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=60000 pc=0x1003c0 livePc=0x13d910 liveRa=0x187928 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=60120 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=60240 pc=0x1003c0 livePc=0x13d96c liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=60360 pc=0x1003c0 livePc=0x13db14 liveRa=0x18793c liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=60480 pc=0x1003c0 livePc=0x13d9c8 liveRa=0x13d954 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=60600 pc=0x1003c0 livePc=0x187880 liveRa=0x118284 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=60720 pc=0x1003c0 livePc=0x13dcb8 liveRa=0x13d654 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=60840 pc=0x1003c0 livePc=0x100438 liveRa=0x10048c liveSp=0x1ffff80 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=60960 pc=0x1003c0 livePc=0x118170 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=61080 pc=0x1003c0 livePc=0x18789c liveRa=0x1182a8 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=61200 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=61320 pc=0x1003c0 livePc=0x13dc88 liveRa=0x13d954 liveSp=0x1fffda0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=61440 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=61560 pc=0x1003c0 livePc=0x187930 liveRa=0x187928 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=61680 pc=0x1003c0 livePc=0x187904 liveRa=0x187904 liveSp=0x1fffe40 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=61800 pc=0x1003c0 livePc=0x13d938 liveRa=0x187928 liveSp=0x1fffde0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=61920 pc=0x1003c0 livePc=0x13dc78 liveRa=0x13da58 liveSp=0x1fffe00 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run:tick] tick=62040 pc=0x1003c0 livePc=0x118168 liveRa=0x100e7c liveSp=0x1fffeb0 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run] window close requested, breaking out of loop
+[run] game thread did not stop within timeout; detaching
+[run] guest host threads did not stop within timeout; detaching remaining worker threads
+INFO: TEXTURE: [ID 3] Unloaded texture data from VRAM (GPU)
+INFO: TEXTURE: [ID 2] Unloaded texture data from VRAM (GPU)
+INFO: SHADER: [ID 3] Default shader unloaded successfully
+INFO: TEXTURE: [ID 1] Default texture unloaded successfully
+INFO: Window closed successfully
+[run] exiting loop, activeThreads=1
+[run] warning: 1 guest worker thread(s) still active during shutdown.
+INFO: AUDIO: Device closed successfully
+jogar.sh, linha 29: 265243 Falha de segmentação  (imagem do núcleo gravada) "$EXE" "$ELF"
+cristiano@cristiano:~/Documentos/GitHub/godofwar$ 

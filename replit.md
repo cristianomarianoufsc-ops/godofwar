@@ -310,7 +310,12 @@ para sempre no repositório. Ordem planejada:
      sobrescrever as variáveis globais `CMAKE_CXX_ARCHIVE_*`.
    - Arquivo: `GOD_PC_PORT_FINAL/CMakeLists.txt`.
 
-## Estado atual da depuração (sessão de 2026-04-23)
+## Estado atual da depuração (sessão de 2026-04-23) — PARCIALMENTE SUPERADA
+
+> ⚠️ **VER SEÇÃO 2026-04-24 ABAIXO** — investigação seguinte refinou esse
+> diagnóstico. O loop real **NÃO** está em `sub_00100E28` (que é linear),
+> e sim no **caller** dela: `sub_00100408`. A causa raiz também foi
+> identificada (boot incompleto em `entry_0x100008`).
 
 **Boot avança até:** janela abre, raylib + audio init OK, ELF carrega,
 `Starting execution at address 0x100008`, dispatcha `BOOT#1 pc=0x100008`
@@ -370,6 +375,166 @@ Confirmado por `liveRa=0x100e7c` = exatamente a instrução depois do
 "PC range → função recompilada" — dado um `livePc`, lê os headers
 `// Address: 0xX - 0xY` dos `.cpp` e identifica a função e contexto C++
 (labels, gotos, while loops) próximo. Cortaria 5min por iteração de debug.
+
+## Estado atual da depuração (sessão de 2026-04-24) — DIAGNÓSTICO DEFINITIVO
+
+**Build OK pela primeira vez:** thin archive funcionou, build incremental + link
+em ~30s, executável roda, janela 640x448 abre, raylib/audio/OpenGL OK, ELF
+carrega. Tela preta + loop infinito imediato.
+
+**LOCALIZAÇÃO CORRETA DO LOOP — refinamento da sessão anterior:**
+
+A análise de 2026-04-23 estava errada em um ponto: `sub_00100E28` foi marcada
+como tendo loop interno, mas na verdade ela é LINEAR (entra, faz vtable call,
+chama `func_118110`, chama `func_13DB18`, retorna). O `liveRa=0x100e7c` é
+apenas o post-call address da última `jal` interna.
+
+O LOOP REAL está em **`sub_00100408_0x100408.cpp`** — o **caller único** de
+`sub_00100E28` e a primeira função chamada por `sub_001003C0` (BOOT#2).
+
+Estrutura de `sub_00100408` (iterador de linked list circular):
+```pseudo
+sub_00100408($a0):                    # $a0 = root_struct
+    sentinel = $a0 + 0x20
+    first = [sentinel]
+    if (first == sentinel) return     # lista vazia, sai
+
+label_100438:                         # cabeça do loop
+    current = sp[4]
+    next = [current]                  # current->next
+    [current->prev->next] = next      # remove current da lista
+    [next->prev] = current->prev
+    [current+0] = 0; [current+4] = 0  # limpa current
+
+    vtable_call([current+0x5C]->[+0xC])
+    func_100E28($a0, $s1, current)    # <-- isso fica logando no terminal
+
+    if (sp[4] != sentinel) {
+        cooperativeYield()
+        goto label_100438
+    }
+    return
+```
+
+**Causa raiz: `$a0` chega em `sub_00100408` zerado.** Como tudo é zero:
+- `sentinel = 0 + 0x20 = 0x20`
+- `[0x20] = 0` (RDRAM zerada)
+- `0 != 0x20` → **entra no loop**
+- `current = 0`, leituras de `[0+offset]` retornam 0
+- vtable call em `0` cai no `if (jumpTarget == 0u) skip` (não crasha)
+- `func_100E28(0, 0, 0)` é chamada (o que aparece no log)
+- `sp[4] = [current=0] = 0`. `0 != 0x20` → **loop eterno sem progresso**
+
+Não há SEGFAULT porque cada acesso a `[0+offset]` retorna 0 silenciosamente
+em vez de quebrar.
+
+**Por que `$a0` chega zerado: `entry_0x100008.cpp` tem 2 bugs documentados.**
+
+O entry point do ELF (`entry_0x100008`) faz APENAS:
+1. Zera todos os GPRs (32 registradores) e hi/lo — comportamento de boot
+2. **PULA** o range 0x10008c → 0x1003c0 (~830 bytes) com `ctx->pc = 0x1003c0u;`
+3. Restaura SP manualmente para `PS2_RAM_SIZE - 0x10`
+4. Deixa GP = 0
+5. Não inicializa `$a0` (passado pra `sub_001003C0` → `sub_00100408`)
+
+Os comentários no próprio arquivo já admitem (Bug A + Bug B do
+`HANDOFF_AGENT.md`):
+- **Bug A**: o recompilador não gerou funções no range 0x10008c-0x1003c0,
+  então o entry pula direto pra `sub_001003C0`. Esse buraco normalmente
+  contém o "crt0" do PS2 que:
+  - Configura GP corretamente (do `_gp` do ELF)
+  - Aloca a estrutura raiz (heap manager, scene graph root, etc)
+  - Passa o ponteiro dela em `$a0` antes de chamar `_main` (=`sub_001003C0`)
+- **Bug B**: SP é restaurado mas GP fica em 0 — qualquer acesso a global via
+  GP-relative (ex: `lw $X, offset($gp)`) lê do início do RDRAM em vez do
+  segmento de dados real.
+
+**Provável solução:** investigar o ELF cru no range 0x10008c-0x1003c0 e
+verificar se realmente são dados (padding/jump table) ou código MIPS válido
+que o PS2Recomp pulou por bug. Comando útil:
+```bash
+mipsel-linux-gnu-objdump -d --start-address=0x10008c --stop-address=0x1003c0 \
+    GOD_PC_PORT_FINAL/data/SCUS_973.99 2>/dev/null | head -80
+```
+Ou usar `capstone` (já instalado via `uv`) para desassemblar manualmente lendo
+os bytes do segmento ELF carregado em RDRAM.
+
+**Confirmações cruciais (todas via `rg` no `src/recompiled/`):**
+- `0x32E854` (global lido pela vtable em `sub_00100E28`) é **APENAS LIDO**,
+  nunca escrito por nenhuma função recompilada. Provavelmente é setado
+  por código no buraco 0x10008c-0x1003c0 ou via dados estáticos no ELF
+  que deveriam ter sido carregados mas não foram.
+- Único caller de `sub_00100E28`: `sub_00100408` (confirmado por grep
+  `0x100E28u|sub_00100E28` filtrando register_functions e o próprio arquivo).
+- `entry_100db8_0x100e28.cpp` é função SEPARADA (vai de 0x100db8 a 0x100e27),
+  faz padrão idêntico ao `sub_00100E28` mas chama `func_13DA10` (init) em
+  vez de `func_13DB18` (process). É a função que DEVERIA inicializar o
+  global `0x32E854` mas nunca é chamada (não tem callers no código
+  recompilado — só aparece em `sub_00100EA8` por proximidade de endereço).
+
+**ACHADO DEFINITIVO (via `tools/mips_inspect.py 0x10008c 0x1003c0`):**
+
+O "buraco" 0x10008c-0x1003c0 É CÓDIGO MIPS VÁLIDO — é o **crt0 do PS2**
+inteiro que o PS2Recomp não recompilou. Conteúdo:
+
+1. **0x10008c-0x100118** — zera todos os 32 registradores FPU (`$f0-$f31`),
+   `sync 0x10`, `ctc1 zero, $31`. Continuação direta do init de GPRs do
+   `entry_0x100008`.
+
+2. **0x10011c-0x100144** — **BSS clear loop**: zera RDRAM de `0x002c7080`
+   até `0x0035c1a8` (~580 KB). **O global `0x32E854` está dentro dessa faixa
+   e seria zerado aqui** (RDRAM já começa zerada no nosso runtime, então OK).
+
+3. **0x100148-0x100196** — setup de threading via syscalls PS2:
+   - `syscall 0x3c` (SetupThread) com `a0=0x002cf070, a1=0x01ff8000,
+     a2=0x00008000, a3=0x002c7080, t0=0x000101d8` — define heap, stack, BSS.
+   - `syscall 0x3d` (SetupHeap) com `a0=0x0035c1a8` (BSS end), `a1=0`.
+
+4. **0x100198-0x1001cb** — 4 jal/j críticos:
+   - `jal 0x2994a0` → ✅ recompilada (`sub_002994A0_0x2994a0.cpp`)
+   - `jal 0x293ea0` → ❌ **NÃO RECOMPILADA** (provavelmente C++ ctors / `_init`)
+   - `jal 0x138cb0` → ✅ recompilada (`sub_00138CB0_0x138cb0.cpp`)
+   - `jal 0x138d48` → ✅ recompilada (`sub_00138D48_0x138d48.cpp`),
+     com `a0 = [0x002c7080]` (lê primeiro elemento do BSS)
+   - **`j 0x2996b0`** → ❌ **NÃO RECOMPILADA** — esse é o `_main` REAL
+     do jogo (`sub_001003C0` é só uma função utility, não `_main`).
+
+5. **0x100200-0x1003c0** — função utility separada (~448 bytes) com
+   prólogo `addiu $sp, -0x90`. Chama `0x100ea8`, `0x239210`, `0x175780`,
+   `0x2391e8`, `0x175740`, `0x239200`, `0x239208`. Tem loop interno.
+
+**Conclusão:** o nosso `entry_0x100008` ignora o crt0 INTEIRO e jumpa direto
+pra `sub_001003C0` (que NÃO é `_main`). Por isso `$a0` chega em 0 — quem
+deveria setar `$a0` é o `j 0x2996b0` no fim do crt0, e quem alocaria a
+estrutura raiz seria provavelmente `sub_002994A0` ou a missing `0x293ea0`
+(C++ ctors).
+
+**Próxima ação concreta (ordem):**
+
+1. **Investigar por que o PS2Recomp pulou essas funções** — provavelmente
+   o `.toml` config tem ranges marcados como dados. Procurar ranges que
+   incluam `0x10008c-0x1003c0`, `0x2996b0`, `0x293ea0` no config do
+   PS2Recomp (geralmente `god_of_war.toml` ou similar).
+
+2. **Re-rodar PS2Recomp** com config corrigido para gerar `entry_0x100008`
+   completo (com BSS clear, syscalls, jals e tail jump pra 0x2996b0) +
+   `sub_002996B0` + `sub_00293EA0`. Isso resolve a causa raiz sem hacks.
+
+3. **Solução tática alternativa (se #2 for demorado):** editar
+   `entry_0x100008.cpp` à mão para emular o crt0:
+   - Pular FPU init (nosso runtime já zera FPRs)
+   - Pular BSS clear (RDRAM já zerada)
+   - Stub das syscalls 0x3c/0x3d (registrar como no-op no `ps2_syscalls.cpp`)
+   - Chamar `sub_002994A0`, depois `sub_00138CB0`, depois `sub_00138D48`
+     com `$a0 = [0x002c7080]` e `$a1 = 0x002c7084`
+   - **Bloqueado por:** `sub_002996B0` (e `sub_00293EA0`) precisam ser
+     recompiladas antes — sem `_main`, não há jogo. Logo, #2 é prerequisito.
+
+4. **Bug B (GP zerado) continua pendente** — depois que `_main` rodar,
+   muitas funções vão acessar globais via `lw $X, offset($gp)`. Precisa
+   ler `e_entry` e o symbol `_gp` do ELF header, ou inferir `_gp` como
+   `bss_start + 0x7ff0` (convenção MIPS PIC) — provavelmente
+   `0x002cf070` (que aparece como `a0` da syscall 0x3c acima).
 
 ### Próximas (ordem sugerida)
 
