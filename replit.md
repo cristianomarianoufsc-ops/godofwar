@@ -49,6 +49,15 @@ Caminho do projeto local: `~/Documentos/GitHub/godofwar/`
 >   `rebuild_runtime.sh`, que é ainda mais focado.
 > - O `build.sh` original existe e serve, mas é redundante com `recompilar.sh`
 >   pra mudanças incrementais — prefira sempre `recompilar.sh`.
+>
+> **Se aparecer "porcentagem" (`[X%] Building CXX object ...`) ao rodar
+> `recompilar.sh`**: NÃO é regressão. Significa que algum build anterior
+> foi **cancelado no meio** (Ctrl+C antes de chegar a 100%) e o `make`
+> está terminando os `.o` que ficaram pendentes. Deixe rodar ATÉ O FIM
+> uma única vez — depois disso, todas as próximas execuções serão
+> realmente rápidas (segundos), porque o `build/` finalmente estará
+> 100% completo. Esse problema acontece muito porque agentes anteriores
+> mandam Ctrl+C sem perceber que `make` mantém estado parcial.
 
 ```bash
 cd ~/Documentos/GitHub/godofwar
