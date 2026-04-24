@@ -32,17 +32,41 @@ inclusive com o `data/part1.pak` (~4 GB) já presente.
 
 Caminho do projeto local: `~/Documentos/GitHub/godofwar/`
 
+> 🚨 **AGENTES, LEIAM ANTES DE SUGERIR QUALQUER COMANDO** 🚨
+>
+> - **O build completo JÁ FOI FEITO** no PC do usuário. A pasta `build/` está
+>   populada com CMakeCache.txt, objetos `.o` e o executável `GodOfWarPCPort`.
+> - **NUNCA mande o usuário apagar `build/`, rodar `instalar_linux_mint.sh`,
+>   nem `bash build.sh`** a não ser que tenha certeza absoluta que é necessário
+>   (mudança de CMakeLists, novo arquivo .cpp criado do zero, corrupção do
+>   ccache). Esses comandos disparam recompilação dos 5.626 .cpp do jogo
+>   (~80 minutos de CPU).
+> - **Para qualquer mexida em código existente** (editar `.cpp` ou `.h` de
+>   `src/recompiled/`, `src/main.cpp`, `register_functions.cpp`, runtime, etc),
+>   use **`recompilar.sh`**. Ele roda `make -j$(nproc)` incremental, recompila
+>   só o que mudou, e leva segundos a 1 minuto.
+> - **Para mudanças só no runtime** (`PS2Recomp/ps2xRuntime/`), pode usar
+>   `rebuild_runtime.sh`, que é ainda mais focado.
+> - O `build.sh` original existe e serve, mas é redundante com `recompilar.sh`
+>   pra mudanças incrementais — prefira sempre `recompilar.sh`.
+
 ```bash
 cd ~/Documentos/GitHub/godofwar
 git pull origin main
 
-# Caso A — mudanças apenas no runtime (PS2Recomp/ps2xRuntime/):
-bash rebuild_runtime.sh --run         # segundos a poucos minutos
+# CASO PADRÃO (99% das vezes) — mudou QUALQUER .cpp ou .h existente:
+bash recompilar.sh                     # incremental, segundos a 1 min
 
-# Caso B — mudanças em src/recompiled/ ou src/main.cpp:
-bash build.sh                          # incremental, com ccache fica rápido
+# Caso restrito — mudou só PS2Recomp/ps2xRuntime/*.cpp:
+bash rebuild_runtime.sh --run          # mais focado, segundos
 
-# Rodar manualmente capturando logs:
+# Rodar o jogo (atalho):
+bash jogar.sh
+
+# Rodar com log de rastreamento + captura completa pra mandar pro agente:
+PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_teste.txt
+
+# Rodar manualmente capturando stdout/stderr separados:
 ./build/GodOfWarPCPort GOD_PC_PORT_FINAL/data/SCUS_973.99 \
     > saida_stdout.log 2> saida_stderr.log
 ```
