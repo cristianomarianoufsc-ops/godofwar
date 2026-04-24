@@ -57,6 +57,17 @@ target_compile_definitions(gow_recompiled PRIVATE
     RAYLIB_GRAPHICS
 )
 
+# Thin archive: o .a vira uma lista de referências aos .o em vez de copiar
+# o conteúdo deles. Reduz o .a de ~3 GB para ~10 MB, o `ar` termina em
+# segundos em vez de 10+ min, e elimina o problema de "encher disco
+# durante o link" que ocorre com 5.6k objetos.
+# Funciona normalmente com -Wl,--whole-archive no link final.
+if(NOT MSVC)
+    set_target_properties(gow_recompiled PROPERTIES
+        STATIC_LIBRARY_OPTIONS "rcsT"
+    )
+endif()
+
 # Criar o executável
 add_executable(${PROJECT_NAME}
     src/main.cpp
