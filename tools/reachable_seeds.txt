@@ -1,0 +1,18 @@
+# tools/reachable_seeds.txt
+# Lista de seed addresses (entry points) para o scanner de alcançabilidade.
+#
+# Formato: um endereço por linha, em hex (com ou sem 0x). Comentário com `#`.
+# Use este arquivo para alimentar `tools/reachable_after_boot.py` com pontos de
+# entrada além do entry point principal — funções de menu, VU0/VU1, dispatch
+# de game state, root_func passada pra crt0/SetupThread, etc.
+#
+# Como descobrir endereços novos:
+#   1) Rode com PS2_TRACE=1 e capture o último PC antes do trava/crash em
+#      saida_stderr.log.
+#   2) Rode `python3 tools/mips_inspect.py 0xPC` para confirmar que é função.
+#   3) Adicione aqui com um comentário descritivo.
+#
+# IMPORTANTE: o scanner aceita endereços que apontam pra qualquer instrução
+# dentro de uma função; ele resolve pro start da função automaticamente.
+
+0x100008    # entry point do ELF (crt0 trampoline)
