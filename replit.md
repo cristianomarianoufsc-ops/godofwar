@@ -288,9 +288,11 @@ para sempre no repositório. Ordem planejada:
    identificar busy loops.
    - Arquivo: `PS2Recomp/ps2xRuntime/src/lib/ps2_runtime.cpp` no `run:tick`.
 
-9. ✅ **Thin archive para `libgow_recompiled.a`** — `STATIC_LIBRARY_OPTIONS "rcsT"`
-   no `add_library(gow_recompiled ...)`. O `.a` deixa de copiar os 5.6k `.o`
-   internamente e vira uma lista de referências aos arquivos em disco. Resultado:
+9. ✅ **Thin archive para `libgow_recompiled.a`** — sobrescreve as regras
+   globais `CMAKE_CXX_ARCHIVE_CREATE/APPEND/FINISH` no topo do
+   `GOD_PC_PORT_FINAL/CMakeLists.txt` pra invocar `ar qcsT`. O `.a` deixa
+   de copiar os 5.6k `.o` internamente e vira uma lista de referências aos
+   arquivos em disco. Resultado:
    - `.a` cai de ~3 GB para ~5-10 MB.
    - Etapa do `ar` (que antes levava 10-15 min e travava em "Linking CXX
      static library") agora termina em **segundos**.
@@ -301,6 +303,11 @@ para sempre no repositório. Ordem planejada:
    - **Limitação**: o `.a` thin só funciona quando os `.o` continuam no
      mesmo caminho do `build/`. Se mover o `build/` sem os `.o`, o `.a`
      fica inútil — mas isso nunca é o caso normal.
+   - **NÃO USAR `STATIC_LIBRARY_OPTIONS "rcsT"`** no target — o CMake passa
+     esse valor como argumento posicional do `ar` em vez de injetar como
+     flags, fazendo `ar` interpretar `rcsT` como nome de arquivo e abortar
+     com `"rcsT: Arquivo ou diretório inexistente"`. A forma correta é
+     sobrescrever as variáveis globais `CMAKE_CXX_ARCHIVE_*`.
    - Arquivo: `GOD_PC_PORT_FINAL/CMakeLists.txt`.
 
 ## Estado atual da depuração (sessão de 2026-04-23)

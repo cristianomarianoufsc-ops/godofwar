@@ -12,6 +12,26 @@ if(CCACHE_PROGRAM)
     set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
 endif()
 
+# Thin archive global (Linux/GCC apenas):
+# Sobrescreve as regras padrão do CMake pra criar `.a` como thin archive.
+# Em vez de copiar os 5.6k `.o` pra dentro do `.a` (~3 GB), o `.a` vira uma
+# lista de referências aos `.o` em disco (~5-10 MB). O `ar` termina em
+# segundos em vez de 10-15 min, e elimina o erro "encher disco durante o link".
+# Funciona normalmente com -Wl,--whole-archive no link final do executável.
+# Modificadores do `ar`:
+#   q = quick append (mais rápido que `r` que checa duplicatas)
+#   c = create (silencia warning se .a já existe)
+#   s = cria índice de símbolos (substitui o ranlib)
+#   T = thin archive (referência aos .o em vez de copiar)
+if(NOT MSVC)
+    set(CMAKE_CXX_ARCHIVE_CREATE "<CMAKE_AR> qcsT <TARGET> <OBJECTS>")
+    set(CMAKE_CXX_ARCHIVE_APPEND "<CMAKE_AR> qsT <TARGET> <OBJECTS>")
+    set(CMAKE_CXX_ARCHIVE_FINISH ":")
+    set(CMAKE_C_ARCHIVE_CREATE   "<CMAKE_AR> qcsT <TARGET> <OBJECTS>")
+    set(CMAKE_C_ARCHIVE_APPEND   "<CMAKE_AR> qsT <TARGET> <OBJECTS>")
+    set(CMAKE_C_ARCHIVE_FINISH   ":")
+endif()
+
 # Habilitar instruções SSE4.1 e POPCNT necessárias para o PS2Recomp
 if(MSVC)
     add_compile_options(/arch:AVX2) # Para Windows/Visual Studio
@@ -57,16 +77,11 @@ target_compile_definitions(gow_recompiled PRIVATE
     RAYLIB_GRAPHICS
 )
 
-# Thin archive: o .a vira uma lista de referências aos .o em vez de copiar
-# o conteúdo deles. Reduz o .a de ~3 GB para ~10 MB, o `ar` termina em
-# segundos em vez de 10+ min, e elimina o problema de "encher disco
-# durante o link" que ocorre com 5.6k objetos.
-# Funciona normalmente com -Wl,--whole-archive no link final.
-if(NOT MSVC)
-    set_target_properties(gow_recompiled PROPERTIES
-        STATIC_LIBRARY_OPTIONS "rcsT"
-    )
-endif()
+# Thin archive REMOVIDO daqui — agora é configurado globalmente via
+# CMAKE_CXX_ARCHIVE_CREATE/APPEND/FINISH no início do arquivo (procure por
+# "Thin archive global"). Tentativa via STATIC_LIBRARY_OPTIONS não funcionou
+# porque o CMake passa o valor como argumento posicional do `ar`, fazendo
+# ele interpretar "rcsT" como nome de arquivo.
 
 # Criar o executável
 add_executable(${PROJECT_NAME}
