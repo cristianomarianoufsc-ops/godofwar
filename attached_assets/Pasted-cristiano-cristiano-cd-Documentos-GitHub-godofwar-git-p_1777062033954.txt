@@ -1,0 +1,50 @@
+cristiano@cristiano:~$ cd ~/Documentos/GitHub/godofwar
+git pull origin main
+
+# Limpa o ccache (libera ~5 GB)
+ccache -C
+
+# Apaga o .a antigo (se existir) pra forçar recriação como thin
+rm -f build/libgow_recompiled.a
+
+# Confere espaço
+df -h /
+
+# Dispara o build
+systemd-inhibit --what=idle:sleep:handle-lid-switch \
+    --why="Build God of War" \
+    bash -c 'bash recompilar.sh && PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_teste.txt'
+remote: Enumerating objects: 38, done.
+remote: Counting objects: 100% (38/38), done.
+remote: Compressing objects: 100% (15/15), done.
+remote: Total 32 (delta 20), reused 29 (delta 17), pack-reused 0 (from 0)
+Unpacking objects: 100% (32/32), 311.88 KiB | 1.35 MiB/s, done.
+From https://github.com/cristianomarianoufsc-ops/godofwar
+ * branch            main       -> FETCH_HEAD
+   38c0d8b..a2ceff1  main       -> origin/main
+Updating 38c0d8b..a2ceff1
+Fast-forward
+ GOD_PC_PORT_FINAL/CMakeLists.txt                   |   11 +
+ ...processo-do-ar-consumindo-CPU_1777054150623.txt |   19 +
+ ...ntos-GitHub-godofwar-bash-rec_1777057526495.txt | 4603 ++++++++++++++++++++
+ attached_assets/image_1777041069973.png            |  Bin 0 -> 106115 bytes
+ attached_assets/image_1777042631308.png            |  Bin 0 -> 105405 bytes
+ attached_assets/image_1777060485144.png            |  Bin 0 -> 28749 bytes
+ attached_assets/image_1777060517638.png            |  Bin 0 -> 51541 bytes
+ replit.md                                          |   58 +-
+ tools/map_truncated_functions.py                   |  229 +
+ 9 files changed, 4915 insertions(+), 5 deletions(-)
+ create mode 100644 attached_assets/Pasted-cristiano-cristiano-1-V-o-processo-do-ar-consumindo-CPU_1777054150623.txt
+ create mode 100644 attached_assets/Pasted-cristiano-cristiano-Documentos-GitHub-godofwar-bash-rec_1777057526495.txt
+ create mode 100644 attached_assets/image_1777041069973.png
+ create mode 100644 attached_assets/image_1777042631308.png
+ create mode 100644 attached_assets/image_1777060485144.png
+ create mode 100644 attached_assets/image_1777060517638.png
+ create mode 100644 tools/map_truncated_functions.py
+Clearing... 100.0% [===========================================================]
+Sist. Arq.      Tam. Usado Disp. Uso% Montado em
+/dev/sda3        58G   30G   26G  54% /
+=== Recompilação incremental ===
+Apenas arquivos modificados serão recompilados.
+
+
