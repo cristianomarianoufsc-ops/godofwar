@@ -798,7 +798,8 @@ envolvido**. É puro EE-kernel sendo bypassado pelo patch defensivo.
 
 ### Próximas ações (ordem de prioridade)
 
-A. **🥇 ✅ IMPLEMENTADO** (sessão 04-25 noite). Stub C++ inserido em
+A. **🥇 ✅ IMPLEMENTADO + CONFIRMADO EM RUNTIME** (sessão 04-25 noite).
+   Stub C++ inserido em
    `PS2Recomp/ps2xRuntime/src/lib/ps2_runtime.cpp` dentro do `run()`,
    logo após `initializeGuestKernelState`. Faz manualmente o que o
    patch automático pula:
@@ -826,6 +827,25 @@ A. **🥇 ✅ IMPLEMENTADO** (sessão 04-25 noite). Stub C++ inserido em
    `[DBG 100E28]` aparece poucas vezes (não 40+), `livePc` sai do
    range `0x118110/0x13DB18`, e idealmente algum dos 15 readers de
    `0x32E854` finalmente vê valor != 0.
+
+   **RESULTADO REAL OBSERVADO** (`resumo_1777092942516.pdf`): boot
+   destravou completamente. `[DBG 100E28]` desapareceu. Apareceram
+   coisas que NUNCA tinham acontecido antes:
+   - 3 `CreateSema`, 1 `CreateThread id=2 entry=0x2947c8`.
+   - Múltiplos `[Syscall83:override]` (FindAddress da SCE) — kernel
+     PS2 trabalhando.
+   - Watcher disparou: `[watch:GLOBAL_0x32E854] WRITE32 value=0x0
+     pc=0x17a3d0 ra=0x17a928` — endereço foi tocado (escreveu 0,
+     mas é primeira escrita real).
+   - `PS2 GsPutIMR: Setting IMR=0xff00` + `PS2 GsSetCrt: ...` —
+     **inicialização REAL do GS** (gráfico). Antes nem chegava perto.
+   - Crash com `Morto` (SIGSEGV/SIGKILL) **logo depois** de GsSetCrt.
+     Nova fronteira de boot.
+
+   PS: `0x138d48` ESTAVA registrada (eu errei a previsão). E ela
+   chama 11 sub-funções, várias marcadas como "NAO REGISTRADA - skip"
+   (instrumentação injetada antes pelo usuário/agente). Aceitável
+   por enquanto — boot avança mesmo assim.
 
 A-OLD. **(plano original mantido pra histórico)** Stub C++ no runtime
    chamando manualmente o init pulado.
