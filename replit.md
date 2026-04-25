@@ -844,8 +844,24 @@ A. **🥇 ✅ IMPLEMENTADO + CONFIRMADO EM RUNTIME** (sessão 04-25 noite).
 
    PS: `0x138d48` ESTAVA registrada (eu errei a previsão). E ela
    chama 11 sub-funções, várias marcadas como "NAO REGISTRADA - skip"
-   (instrumentação injetada antes pelo usuário/agente). Aceitável
-   por enquanto — boot avança mesmo assim.
+   (instrumentação injetada antes pelo usuário/agente).
+
+   **REVISÃO POSTERIOR** (`Pasted-...1777126039981.txt`, GDB
+   backtrace): `0x138d48` faz busy-wait via `cooperativeGuestYield`
+   esperando evento que nunca chega no contexto pré-dispatchLoop.
+   Stack do crash:
+   ```
+   sub_0013FAB8 (loop) -> sub_0013FCA8 -> entry_182ff0
+     -> sub_0017A910 -> sub_00138D48 -> PS2Runtime::run
+   ```
+   **REMOVIDA do `kInitChain`** do stub. Agora só chamamos as 3
+   primeiras (`0x2994a0`, `0x293ea0`, `0x138cb0`). A 4ª deve ser
+   chamada naturalmente pelo fluxo do crt0 depois que o dispatchLoop
+   estiver vivo (`j 0x2996B0` -> main wrapper -> ela).
+
+   **Lição genérica**: funções que dependem de scheduler de threads
+   (busy-wait, semáforos, VSync) NÃO podem ser chamadas no stub
+   pré-dispatchLoop. Se uma init futura travar igual, remover dela.
 
 A-OLD. **(plano original mantido pra histórico)** Stub C++ no runtime
    chamando manualmente o init pulado.

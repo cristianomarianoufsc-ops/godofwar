@@ -2202,10 +2202,23 @@ void PS2Runtime::run()
             ps2_syscalls::dispatchNumericSyscall(0x3Du, rdram, &m_cpuContext, this);
 
             // 4) Inits de runtime/libc — JAL original em 0x100198, 0x1001a0,
-            //    0x1001a8, 0x1001c0. Cada uma é candidata a setar a flag
-            //    global 0x32E854 = 1 (ainda não confirmado qual exatamente).
+            //    0x1001a8, 0x1001c0.
+            //
+            // ATENÇÃO: 0x138d48 foi REMOVIDA desta lista após análise de
+            // GDB backtrace (sessão 04-25 noite, resumo_1777126039981.txt):
+            // ela faz busy-wait via cooperativeGuestYield() esperando um
+            // evento (provavelmente sinal de outra thread) que NUNCA chega
+            // porque o scheduler de threads do runtime só começa a rodar
+            // dentro do dispatchLoop. Stack do GDB:
+            //   sub_0013FAB8 (loop) -> sub_0013FCA8 -> entry_182ff0
+            //   -> sub_0017A910 -> sub_00138D48 -> PS2Runtime::run
+            //
+            // 0x138d48 deve ser chamada naturalmente pelo fluxo do crt0
+            // depois que dispatchLoop estiver rodando (j 0x2996B0 -> main).
+            // As 3 inits abaixo são suficientes pra destravar o boot até
+            // GsSetCrt — confirmado em log.
             constexpr uint32_t kInitChain[] = {
-                0x2994a0u, 0x293ea0u, 0x138cb0u, 0x138d48u
+                0x2994a0u, 0x293ea0u, 0x138cb0u
             };
             const uint32_t savedSp = static_cast<uint32_t>(
                 _mm_extract_epi32(m_cpuContext.r[29], 0));
