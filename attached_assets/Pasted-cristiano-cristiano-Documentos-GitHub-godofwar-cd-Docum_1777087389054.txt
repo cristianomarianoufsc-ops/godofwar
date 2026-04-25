@@ -1,0 +1,101 @@
+cristiano@cristiano:~/Documentos/GitHub/godofwar$ cd ~/Documentos/GitHub/godofwar && \
+git pull && \
+bash tools/regen_truncated.sh --only-entry && \
+git diff --stat src/recompiled/ && \
+bash recompilar.sh && \
+PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_teste.txt
+remote: Enumerating objects: 10, done.
+remote: Counting objects: 100% (10/10), done.
+remote: Compressing objects: 100% (2/2), done.
+remote: Total 6 (delta 4), reused 6 (delta 4), pack-reused 0 (from 0)
+Unpacking objects: 100% (6/6), 6.26 KiB | 1.25 MiB/s, done.
+From https://github.com/cristianomarianoufsc-ops/godofwar
+   019cc19..181b43b  main       -> origin/main
+Updating 019cc19..181b43b
+Fast-forward
+ ...ntos-GitHub-godofwar-git-pull_1777086852734.txt | 610 +++++++++++++++++++++
+ tools/regen_truncated.sh                           |   3 +-
+ 2 files changed, 612 insertions(+), 1 deletion(-)
+ create mode 100644 attached_assets/Pasted-cristiano-cristiano-Documentos-GitHub-godofwar-git-pull_1777086852734.txt
+=== [1/5] Gerando CSV de correção ===
+[1/4] Carregando ELF + funções recompiladas...
+      Funções recompiladas: 5625
+[2/4] Decodificando real_end das funções...
+      Funções truncadas (todas): 1612
+      [!] 1 arquivo(s) com hack "Patch: Jump to next entry point":
+          0x00100008  entry_0x100008.cpp
+[3/4] Definindo escopo da correção...
+      Escopo: --only-entry → 1 função(ões)
+[4/4] Escrevendo CSV...
+      → tools/truncation_fixes.csv (1 linha(s))
+
+======================================================================
+CORREÇÕES INCLUÍDAS
+======================================================================
+  0x00100008  entry                    end 0x10008c → 0x1001d0  (+81 ins)  [HACK ATIVO]
+
+======================================================================
+PRÓXIMOS PASSOS
+======================================================================
+  1) Aponte o `ghidra_output` do TOML do recompilador pro CSV:
+        ghidra_output = "/home/cristiano/Documentos/GitHub/godofwar/tools/truncation_fixes.csv"
+     (ou use tools/regen_truncated.sh, que faz tudo)
+  2) Rode o ps2_recomp pra regerar os .cpp afetados.
+  3) Recompile o C++ (`bash recompilar.sh`).
+
+  [!] Atenção: o hack "Patch: Jump to next entry point" será
+      sobrescrito automaticamente quando o .cpp for regerado
+      com o range correto. Se preferir limpar antes pra ver
+      o efeito puro, faça `git diff` depois de regerar.
+
+=== [2/5] Localizando binário ps2_recomp ===
+  → ./build_recomp/ps2xRecomp/ps2_recomp
+
+=== [3/5] Localizando TOML do recompilador ===
+  → ./recompiler.toml
+
+=== [4/5] Injetando ghidra_output no TOML (backup .bak) ===
+  injetado: ghidra_output = "/home/cristiano/Documentos/GitHub/godofwar/tools/truncation_fixes.csv"
+
+=== [5/5] Rodando ps2_recomp ===
+Parsing toml file: ./recompiler.toml
+Loaded 1 functions from Ghidra map
+ELF entry point: 0x100008
+BSS range: 0x2c7080 - 0x35c1a8 (size 0x95128), gp=0x0
+Extracted 1 functions, 0 symbols, 34 sections, 0 relocations.
+Recompiling 1 functions...
+processing function: entry
+Discovered 4077 additional entry point(s) inside existing functions across 5 pass(es).
+Resliced 105 entry function(s) after discovery.
+Recompilation completed successfully.
+Generated function header file: "src/recompiled/ps2_recompiled_functions.h"
+Wrote individual function files to: src/recompiled
+Generated function registration file: "src/recompiled/register_functions.cpp"
+Generated generating header file: "src/recompiled/ps2_recompiled_stubs.h"
+Recompilation completed successfully
+
+=== Diff de arquivos regerados ===
+ src/recompiled/entry_0x100008.cpp        |  324 +-
+ src/recompiled/entry_100db8_0x100e28.cpp |    4 +-
+ src/recompiled/entry_107598_0x107628.cpp |    4 +-
+ src/recompiled/entry_108120_0x108290.cpp |    2 +-
+ src/recompiled/entry_109068_0x109518.cpp |    6 +-
+ src/recompiled/entry_11e3e8_0x11e5e8.cpp |    2 +-
+ src/recompiled/entry_11e8d0_0x11ea98.cpp |    2 +-
+ src/recompiled/entry_12a2a8_0x12a330.cpp |    2 +-
+ src/recompiled/entry_131a58_0x131ac8.cpp |    4 +-
+ src/recompiled/entry_131ac8_0x131ae8.cpp |    2 +-
+ src/recompiled/entry_138e78_0x138f78.cpp |    6 +-
+ src/recompiled/entry_13e2c8_0x13e318.cpp |    2 +-
+ src/recompiled/entry_13f6b8_0x13f730.cpp |    2 +-
+ src/recompiled/entry_140da8_0x140fa8.cpp |   12 +-
+ src/recompiled/entry_143008_0x1431f8.cpp |   10 +-
+ src/recompiled/entry_14a290_0x14a470.cpp |    4 +-
+ src/recompiled/entry_14a8a0_0x14a8d0.cpp |    2 +-
+ src/recompiled/entry_14cfc8_0x14d080.cpp |    2 +-
+ src/recompiled/entry_15b450_0x15b588.cpp |    4 +-
+ src/recompiled/entry_15ddb0_0x15ece8.cpp |   40 +-
+ src/recompiled/entry_169d70_0x169df0.cpp |    4 +-
+ src/recompiled/entry_170260_0x170300.cpp |    8 +-
+ src/recompiled/entry_170588_0x170620.cpp |    2 +-
+:
