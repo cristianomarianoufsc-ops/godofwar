@@ -6,6 +6,9 @@
 #include "ps2_syscalls.h"
 #include "ps2_stubs.h"
 
+#include <cstdio>
+#include <cstdlib>
+
 #ifdef PS2_FUNCTION_LOG_TRACKER
 #include "ps2_log.h"
 #endif
@@ -141,4 +144,35 @@ void entry_0x100008(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtime) {
     // e no disassembly: lui/addiu em 0x100148+0x10015c setam $a0=0x2cf070,
     // depois daddu $gp, $a0, $zero em 0x100170 copia para $gp.
     SET_GPR_VEC(ctx, 28, _mm_set_epi64x(0, static_cast<int64_t>(0x002cf070u)));
+
+    // ---- FIX (Bug "main-a0-zero", sessao 04-26 PARTE 4) ----
+    //
+    // Como pulamos o crt0 inteiro (Bugs A/B/C acima), tambem pulamos a logica
+    // que setaria $a0 com o ponteiro pra struct de boot args que main() espera.
+    //
+    // Confirmado no log: main entra com a0=0, ra=0; faz daddu s0,a0,0; chama
+    // sub_00100408; depois lw $a0, 0x18($s0); beql $a0, $zero -> pula tudo.
+    // Como [0+0x18] le BSS zerado, o branch sempre toma e main vira no-op.
+    //
+    // Configuravel via env var PS2_FORCE_A0=<hex>. Default 0 (mantem o
+    // comportamento atual = no-op pra preservar o boot estavel). Use:
+    //   PS2_FORCE_A0=0x100      pra apontar pro inicio do code segment
+    //   PS2_FORCE_A0=0x2cf070   pra apontar pro _gp area (BSS)
+    //   PS2_FORCE_A0=0x326b40   pra apontar pra stack de thread auxiliar
+    //   etc.
+    {
+        static uint32_t s_forceA0 = []() -> uint32_t {
+            const char* env = std::getenv("PS2_FORCE_A0");
+            if (!env || !*env) return 0u;
+            uint32_t v = (uint32_t)std::strtoul(env, nullptr, 0);
+            std::fprintf(stderr,
+                "[entry_0x100008] PS2_FORCE_A0 ativo: $a0 sera setado para 0x%08x\n",
+                v);
+            std::fflush(stderr);
+            return v;
+        }();
+        if (s_forceA0 != 0u) {
+            SET_GPR_VEC(ctx, 4, _mm_set_epi64x(0, static_cast<int64_t>(s_forceA0)));
+        }
+    }
 }

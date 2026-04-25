@@ -790,6 +790,95 @@ estrutura raiz seria provavelmente `sub_002994A0` ou a missing `0x293ea0`
    `bss_start + 0x7ff0` (convenção MIPS PIC) — provavelmente
    `0x002cf070` (que aparece como `a0` da syscall 0x3c acima).
 
+## Estado atual da depuração (sessão de 2026-04-26 PARTE 4) — HIPÓTESE a0=0 CONFIRMADA + KNOB PS2_FORCE_A0
+
+**Resultado do teste da PARTE 3 (log_main_a0_v3.txt):**
+
+```
+[main:enter] sub_001003C0 a0=0x00000000 ra=0x00000000 sp=0x01fffff0
+[EXIT#2] from=0x1003c0 -> pc=0x0 ra=0x0 ...
+[dispatch:pc-zero] from=0x1003c0 ...
+```
+
+✅ **HIPÓTESE 100% CONFIRMADA.** main entra com `a0=0`, executa
+`s0=a0; jal sub_00100408; lw a0,0x18(s0); beql a0,zero,...` → `[0+0x18]`
+lê BSS zerado → branch toma → main vira no-op → retorna pra `ra=0` →
+dispatch mata. `ExitThread` nunca é chamado. Tela preta explicada.
+
+**Análise do disasm de main (`sub_001003C0`):**
+
+```mips
+0x1003c0  addiu $sp, $sp, -0x20     ; aloca frame
+0x1003c4  sq    $s0, 0x10($sp)
+0x1003c8  sd    $ra, 0x0($sp)
+0x1003cc  jal   func_100408         ; chama com $a0 ORIGINAL
+0x1003d0  daddu $s0, $a0, $zero     ; (delay slot) salva ponteiro em s0
+0x1003d4  lw    $a0, 0x18($s0)      ; *** lê palavra em [a0+0x18] ***
+0x1003d8  beql  $a0, $zero, ...     ; se zero, pula tudo
+0x1003e0  jal   func_131288         ; senao, chama 131288(handler, struct)
+0x1003e4  daddu $a1, $s0, $zero     ; (delay slot) a1 = struct
+```
+
+`$a0` na entrada de `main` **não é argc** — é um **ponteiro pra struct
+de boot args** estilo PS2 SDK, com:
+- `[a0+0x18]` = ponteiro pra função/handler (se 0, nada acontece)
+- `[a0+0x20]` lido por `sub_00100408` (campo de estado)
+- `[a0+0x24]` lido também
+
+`sub_00100408` faz `daddu s2,a0,0; lw v1,0x20(s2); ...` — também trata
+como ponteiro pra struct.
+
+**Análise do crt0 pulado (`entry_2996b0`):**
+
+```mips
+0x2996b0  addiu $sp,-0x20; sd s0; sd ra
+0x2996bc  jal   func_2996A8           ; -> j func_29AA48 (init de TLB/mem)
+0x2996c0  daddu $s0, $a0, $zero       ; preserva a0
+0x2996c4  daddu $a0, $s0, $zero       ; restaura a0
+0x2996d0  j     func_293840           ; tail-call ExitThread
+```
+
+Confirmado: o crt0 **não chama main**. Faz init e tail-calls ExitThread.
+Quem chama main é outro lugar (provavelmente uma das funções de init
+em loop em `sub_0029AA88`, ainda não rastreado). Isso significa que
+restaurar o crt0 (Opção B) sozinho não resolve — main continuaria sem
+ser chamada do jeito certo.
+
+**Fixes aplicados nesta parte:**
+
+1. `GOD_PC_PORT_FINAL/src/recompiled/entry_0x100008.cpp`: nova env var
+   `PS2_FORCE_A0=<hex>` que, se definida e não-zero, sobrescreve `$a0`
+   antes de pular pra main. Default = 0 (no-op, mantém boot estável).
+2. `GOD_PC_PORT_FINAL/src/recompiled/sub_00100408_0x100408.cpp`:
+   instrumentação `[sub_00100408:enter]` que loga `a0` e `[a0+0x00..0x24]`
+   na entrada. Silenciável via `PS2_NO_BOOT_TRACE=1`.
+
+**Próximo passo (testes a fazer no PC local):**
+
+```bash
+git pull origin main
+bash recompilar.sh
+
+# Teste 1 (baseline com instrumentação nova): default a0=0
+PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_a0_baseline.txt
+
+# Teste 2: apontar pra _gp / BSS area (chute educado)
+PS2_FORCE_A0=0x2cf070 PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_a0_gp.txt
+
+# Teste 3: apontar pro topo do data segment (logo após code)
+PS2_FORCE_A0=0x35d100 PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_a0_data.txt
+
+# Teste 4: apontar pra stack da thread aux (que o boot_stub criou)
+PS2_FORCE_A0=0x326b40 PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_a0_stack.txt
+```
+
+Em cada um, mandar grep de `[main:enter]`, `[sub_00100408:enter]`,
+`[dispatch:pc-zero]` e últimas 50 linhas. O importante é ver se algum
+valor de `a0` faz `[a0+0x18]` ler non-zero → main passa do `beql` →
+chama `func_131288` → vemos novo trace.
+
+---
+
 ## Estado atual da depuração (sessão de 2026-04-26 PARTE 2) — BUG DO recompilar.sh
 
 **Fix crítico no `recompilar.sh`:** descobrimos que `git pull` preserva o

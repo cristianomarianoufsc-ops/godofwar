@@ -7,6 +7,7 @@
 #include "ps2_stubs.h"
 
 #include <cstdio>
+#include <cstdlib>
 
 #ifdef PS2_FUNCTION_LOG_TRACKER
 #include "ps2_log.h"
@@ -18,6 +19,31 @@ void sub_00100408_0x100408(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
 #ifdef PS2_FUNCTION_LOG_TRACKER
     PS_LOG_ENTRY("sub_00100408_0x100408");
 #endif
+
+    // [boot-trace sessao 04-26 PARTE 4] Logs do que main passa pra essa func.
+    // Silencie com PS2_NO_BOOT_TRACE=1.
+    {
+        static const bool s_trace = []() {
+            const char* env = std::getenv("PS2_NO_BOOT_TRACE");
+            return !(env && *env && env[0] != '0');
+        }();
+        if (s_trace) {
+            const uint32_t a0 = (uint32_t)GPR_U64(ctx, 4);
+            uint32_t mem18 = 0, mem20 = 0, mem24 = 0, mem00 = 0;
+            if (a0 < (32u * 1024u * 1024u) - 0x40u) {
+                mem00 = *reinterpret_cast<const uint32_t*>(rdram + a0 + 0x00);
+                mem18 = *reinterpret_cast<const uint32_t*>(rdram + a0 + 0x18);
+                mem20 = *reinterpret_cast<const uint32_t*>(rdram + a0 + 0x20);
+                mem24 = *reinterpret_cast<const uint32_t*>(rdram + a0 + 0x24);
+            }
+            std::fprintf(stderr,
+                "[sub_00100408:enter] a0=0x%08x [a0+0x00]=0x%08x [a0+0x18]=0x%08x "
+                "[a0+0x20]=0x%08x [a0+0x24]=0x%08x sp=0x%08x\n",
+                a0, mem00, mem18, mem20, mem24,
+                (uint32_t)GPR_U64(ctx, 29));
+            std::fflush(stderr);
+        }
+    }
 
     ctx->pc = 0x100408u;
 

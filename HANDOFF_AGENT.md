@@ -94,6 +94,67 @@ cadeia de init (`0x2994a0`, `0x293ea0`, `0x138cb0`). Sem isso, mesmo com `$gp` c
 ponteiros de função em BSS ficam 0 e o jogo entra em loop. A cadeia de init também precisa de
 `$gp` correto para funcionar, daí o setup antes do loop de init.
 
+### ✅ HIPÓTESE a0=0 CONFIRMADA + KNOB `PS2_FORCE_A0` — SESSÃO 2026-04-26 PARTE 4
+
+**Resultado do log v3 (após fix do `recompilar.sh` da PARTE 2):**
+
+```
+[main:enter] sub_001003C0 a0=0x00000000 ra=0x00000000 sp=0x01fffff0
+[EXIT#2] from=0x1003c0 -> pc=0x0 ra=0x0 sp=0x1fffff0 ...
+[dispatch:pc-zero] from=0x1003c0 ...
+```
+
+A causa raiz da PARTE 3 está **provada em laboratório**. Sequência:
+
+1. `entry_0x100008` (com fix Bugs A/B/C) salta direto pra `0x1003c0`
+   sem passar pelo crt0 — `$a0` fica zerado.
+2. `main` em `0x1003c0` faz:
+   - `s0 = a0 = 0`
+   - `jal sub_00100408(a0=0)` (chama, mas a0 é ponteiro inválido)
+   - `a0 = lw [s0+0x18] = lw [0x18] = 0` (BSS zerado)
+   - `beql a0, $zero` → branch toma → main vira no-op → `ret`
+3. `ra = 0` → `pc = 0` → `[dispatch:pc-zero]` mata thread.
+4. Loop principal termina, tela preta.
+
+**`$a0` aqui NÃO é argc** — é um **ponteiro pra struct de boot args**
+estilo PS2 SDK (`struct boot_arg { ...; void(*handler)() @ 0x18; ... }`).
+`sub_00100408` também trata como ponteiro (`lw v1,0x20(s2)` etc.).
+
+**Crt0 pulado (`entry_2996b0`) NÃO chama main.** Confirmado lendo o
+disasm: faz init via `0x29AA48` e tail-calls `ExitThread`. Quem chama
+main ainda não foi rastreado (provável: alguma init em `sub_0029AA88`).
+Logo, restaurar o crt0 não basta; precisa entender a chamada de main.
+
+**Fixes aplicados nesta parte:**
+
+1. **`GOD_PC_PORT_FINAL/src/recompiled/entry_0x100008.cpp`**:
+   nova env var `PS2_FORCE_A0=<hex>`. Se definida e não-zero,
+   sobrescreve `$a0` antes do salto pra `0x1003c0`. Default = 0
+   (no-op — preserva boot estável atual). Inclui `<cstdio>`/`<cstdlib>`.
+2. **`GOD_PC_PORT_FINAL/src/recompiled/sub_00100408_0x100408.cpp`**:
+   instrumentação `[sub_00100408:enter]` loga `a0` + `[a0+0x00/0x18/0x20/0x24]`
+   na entrada. Silenciável via `PS2_NO_BOOT_TRACE=1`. Inclui `<cstdlib>`.
+
+**Próximo passo: bateria de testes com PS2_FORCE_A0:**
+
+```bash
+git pull origin main && bash recompilar.sh
+PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_a0_baseline.txt        # default
+PS2_FORCE_A0=0x2cf070 PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_a0_gp.txt
+PS2_FORCE_A0=0x35d100 PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_a0_data.txt
+PS2_FORCE_A0=0x326b40 PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_a0_stack.txt
+```
+
+Em cada um, mandar grep de `[main:enter]`, `[sub_00100408:enter]`,
+`[dispatch:pc-zero]` + últimas 50 linhas. O alvo é ver `[a0+0x18]`
+non-zero → `beql` não toma → main chama `func_131288` → trace novo.
+
+**Se nenhum valor funcionar**, a próxima frente é descobrir QUEM
+chamaria main no fluxo original (rastrear `sub_0029AA88` e seus
+callees pra achar quem faz `jal 0x1003c0` com qual `$a0`).
+
+---
+
 ### 🚨 ARMADILHA DOS DOIS `src/recompiled/` + CAUSA RAIZ DO `a0=0` — SESSÃO 2026-04-26 PARTE 3
 
 **Descoberta nº 1 (CRÍTICA):** o projeto tem **DOIS diretórios paralelos** com
