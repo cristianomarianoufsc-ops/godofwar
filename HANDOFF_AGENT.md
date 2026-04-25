@@ -4,61 +4,80 @@
 
 ---
 
-## 🔴 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-25, agente 4)
+## 🔴 REGRA OBRIGATÓRIA — LEIA ANTES DE QUALQUER COISA 🔴
 
-### Status: GAME LOOP VIVO — janela reabre em loop, tela preta
+**A cada progresso — fix aplicado, bug identificado, teste rodado, causa raiz descoberta — atualize OBRIGATORIAMENTE:**
 
-Com `PS2_FORCE_A0=0x2cf070 PS2_TRACE=1 bash jogar.sh`:
-- A janela Raylib **abre**, fica preta, e quando o usuário fecha, **reabre sozinha** — em loop até Ctrl+C.
-- Isso confirma que `func_238860` (game loop principal) está **executando de verdade**.
-- O loop de objetos em `sub_00100408` relança o ciclo a cada iteração.
-- Antes (sem FORCE_A0): janela abria preta, fechava, **nunca mais voltava** — isso era o crash imediato.
+1. `replit.md` — estado técnico atual, causa raiz, fix aplicado, comando de teste
+2. `HANDOFF_AGENT.md` (este arquivo) — seção "ESTADO ATUAL" com data, o que mudou, próximos passos
 
-### Bloqueador atual: JALR para 0x00080004
+**Os dois sempre. No mesmo commit. Sem exceção.**
+Se você terminar a sessão sem atualizar os dois, o próximo agente vai perder horas repetindo diagnóstico já feito. Isso desperdiça os créditos do usuário.
 
+---
+
+## 🔴 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-25, agente Replit — sessão sentinel+bootloop)
+
+### Status: BOOT COMPLETO — frame renderizado, game loop ativado (aguarda teste)
+
+**Dois fixes aplicados nesta sessão (2026-04-25):**
+
+#### Fix 1 — Sentinel da lista circular (CONFIRMADO FUNCIONANDO)
+`rdram[0x2cf090]` era 0 em vez de apontar para si mesmo (lista vazia). Resultado:
+`sub_00100408` entrava em loop infinito com `current=0` → vtable nula → `jalr_target=0`.
+
+**Fix:** `PS2Recomp/ps2xRuntime/src/lib/ps2_runtime.cpp` — após `kInitChain`, antes de `dispatchLoop`:
+```cpp
+constexpr uint32_t SENTINEL = 0x2cf090u; // a0 + 0x20
+uint32_t* mem = reinterpret_cast<uint32_t*>(rdram + SENTINEL);
+mem[0] = SENTINEL; mem[1] = SENTINEL; // next = prev = self → lista vazia
 ```
-[DBG 100408] JALR alvo nao registrado 0x00080004 -> nop
+**Resultado confirmado no log:** `[a0+0x20]=0x002cf090` ✓, sem mais `[DBG 100E28]`, e o trace mostrou `0x100008 → 0x1003c0 → 0x100408 → 0x238860` — `func_238860` foi chamada pela primeira vez. Um frame foi uploadado: `[frame:upload] idx=0 size=640x448`.
+
+#### Fix 2 — a1=0 impede game loop (APLICADO, AGUARDA TESTE)
+`sub_001003C0` chama `func_238860(a0, a1=0)` — o `a1=0` é hardcoded no delay slot MIPS original. Resultado: `func_238860` vê `a1=0`, pula `func_13D668` e retorna imediatamente. O game thread termina (ra=0 → pc=0 → dispatchLoop sai).
+
+No PS2 real, o BIOS scheduler iniciaria a thread `0x2947c8` que chamaria `func_238860` com `a1=1`. Essa thread está TRUNCADA (só tem `addiu $sp, $sp, -0x80`).
+
+**Fix:** `GOD_PC_PORT_FINAL/src/recompiled/sub_001003C0_0x1003c0.cpp` linha ~129:
+```cpp
+// ANTES (MIPS original): daddu $a1, $zero, $zero → a1=0
+SET_GPR_U64(ctx, 5, 1u); // força a1=1 → func_238860 chama func_13D668
 ```
 
-- O loop de objetos em `sub_00100408` (0x100474) faz `jalr $v0` onde `$v0 = [obj+0x5c+0xC] = 0x00080004`
-- `0x00080004` está **abaixo do range ELF** (que começa em 0x100000) — não é código recompilado
-- **Confirmado por `varredura_a0.py`**: esse endereço não existe em nenhum lugar do ELF como dado
-- É populado em **runtime pelo boot PS2 real** (IOP/kernel EE), que pulamos com o fix Bug A/B/C
-- O Guard Bug D no código transforma o JALR em nop — o loop continua mas sem efeito
-- `global@0x32E854` permanece 0 mesmo após 40+ iterações do loop
+**Cadeia esperada com a1=1:**
+`func_238860(a0, 1)` → `func_13D668(a0)` → `func_13DB98(a0)` → `func_13E1C0(a0)` → ...
 
-### Próximos passos (em ordem de prioridade)
+### Comando para testar Fix 2
 
-**[A] CURTO PRAZO — Stub para 0x00080004** (mais informativo)
-Adicionar em `ps2_runtime.cpp` ou em `game_overrides.cpp` um handler registrado para `0x00080004` que:
-- Logue `$a0, $a1, $ra, $sp` na entrada
-- Retorne normalmente sem crash
-- Isso vai revelar o que o jogo espera que essa função faça
-
-**[B] MÉDIO PRAZO — Candidatos corretos de `$a0`** (o varredura_a0.py rodou)
-`varredura_a0.py` encontrou 30+ candidatos onde `[addr+0x18]` aponta para código válido.
-Top candidato: `PS2_FORCE_A0=0x00100de0` (`[+0x18]=0x00111080, score=15`)
-Com handler != 0, main chamará `func_131288` antes do game loop, potencialmente
-inicializando `global@0x32E854` e `jalr_target`.
-
-Bateria de testes sugerida:
 ```bash
-PS2_FORCE_A0=0x00100de0 PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_a0_100de0.txt
-PS2_FORCE_A0=0x00100dec PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_a0_100dec.txt
-PS2_FORCE_A0=0x00101cd8 PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_a0_101cd8.txt
+git pull origin main
+bash rebuild_runtime.sh
+PS2_FORCE_A0=0x2cf070 PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_bootloop_fix.txt
 ```
 
-**[C] LONGO PRAZO — Entender quem chama main**
-Rastrear `sub_0029AA88` e seus callees para achar o `jal 0x1003c0` com o `$a0` correto.
-Essa é a solução correta que elimina o hack de FORCE_A0.
+**Sinais de sucesso:** chamadas a `func_13D668`, `func_13DB98`, `func_13E1C0` nos logs e/ou frames com `nonBlack > 0`.
+
+**Próximo bloqueador esperado:** alguma syscall não implementada (`WaitSema`, `WaitThread`, etc.) ou função truncada na cadeia `13DB98 → 13E1C0 → ...`.
+
+### Arquitetura de boot confirmada
+
+```
+entry_0x100008
+  └─ sub_001003C0 (0x1003c0)
+       ├─ sub_00100408 → retorna imediatamente (lista vazia ✓)
+       └─ func_238860(a0=0x2cf070, a1=1) [FIX 2]
+            └─ func_13D668(a0)            [se a0 != 0]
+                 └─ func_13DB98(a0)       [se a0 != 0]
+                      └─ func_13E1C0(a0)  [próximo nível]
+```
+
+### PS2_FORCE_A0 ainda necessário
+`PS2_FORCE_A0=0x2cf070` — força `$a0` para a struct root correta.
+Sem isso, `a0=0` → `func_13D668` vê `a0=0` → retorna imediatamente (mesmo fix 2 não adiantaria).
 
 ### Ferramenta criada: `varredura_a0.py`
-
-Script Python na raiz do repo. Analisa o ELF em RAM virtual e:
-- Varre toda a memória carregada procurando candidatos de `$a0` onde `[addr+0x18]` aponta para código
-- Investiga `0x00080004` (confirma que não está no ELF — é runtime)
-- Disassembla a cadeia do JALR em `sub_00100408` com capstone
-
+Script Python na raiz do repo. Analisa o ELF em RAM virtual.
 Uso: `python3 varredura_a0.py [caminho_elf]`
 
 ---

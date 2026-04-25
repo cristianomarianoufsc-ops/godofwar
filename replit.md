@@ -4,6 +4,18 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
 
 ---
 
+## 🔴 REGRA OBRIGATÓRIA PARA TODO AGENTE 🔴
+
+**Sempre que fizer qualquer progresso — fix aplicado, bug identificado, teste rodado, causa raiz descoberta — atualize OBRIGATORIAMENTE os dois arquivos:**
+
+1. `replit.md` — estado técnico atual, causa raiz, fix aplicado, comando de teste
+2. `HANDOFF_AGENT.md` — seção "ESTADO ATUAL" com data, o que mudou, próximos passos
+
+**Não atualize só um. Os dois sempre, no mesmo commit.**
+Se você terminar a sessão sem atualizar os dois, o próximo agente vai perder horas repetindo diagnóstico já feito.
+
+---
+
 ## 🚨🚨 ARMADILHA CRÍTICA: DOIS DIRETÓRIOS `src/recompiled/` 🚨🚨
 
 O projeto tem **DOIS diretórios paralelos** com os mesmos ~5626 `.cpp` recompilados:

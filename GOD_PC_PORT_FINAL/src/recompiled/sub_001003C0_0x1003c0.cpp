@@ -119,7 +119,11 @@ label_1003ec:
     ctx->pc = 0x1003F0u;
     ctx->in_delay_slot = true; ctx->branch_pc = 0x1003ECu;
             // 0x1003f0: 0x282d  daddu       $a1, $zero, $zero (Delay Slot)
-        SET_GPR_U64(ctx, 5, (uint64_t)GPR_U64(ctx, 0) + (uint64_t)GPR_U64(ctx, 0));
+        // PATCH boot-loop: o MIPS original passa a1=0, o que faz func_238860
+        // pular func_13D668 e retornar sem rodar o game loop.
+        // No PS2 real, a1=1 seria passado pela thread do BIOS scheduler (0x2947c8),
+        // que está truncada. Forçamos a1=1 aqui para ativar func_13D668 → func_13DB98.
+        SET_GPR_U64(ctx, 5, 1u);
         ctx->in_delay_slot = false;
     ctx->pc = 0x238860u;
     if (runtime->hasFunction(0x238860u)) {
