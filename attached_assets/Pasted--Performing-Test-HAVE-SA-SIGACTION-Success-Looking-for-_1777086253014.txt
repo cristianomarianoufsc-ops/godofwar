@@ -1,0 +1,258 @@
+ Performing Test HAVE_SA_SIGACTION - Success
+-- Looking for dlopen
+-- Looking for dlopen - found
+-- Performing Test HAVE_O_CLOEXEC
+-- Performing Test HAVE_O_CLOEXEC - Success
+-- Performing Test HAVE_OSS_SYS_SOUNDCARD_H
+-- Performing Test HAVE_OSS_SYS_SOUNDCARD_H - Success
+-- Found ALSA: /usr/lib/x86_64-linux-gnu/libasound.so (found version "1.2.11") 
+-- dynamic libasound -> libasound.so.2
+-- Checking for module 'jack'
+--   Package 'jack', required by 'virtual:world', not found
+-- Checking for module 'libpipewire-0.3>=0.3.20'
+--   Package 'libpipewire-0.3', required by 'virtual:world', not found
+-- Checking for module 'libpulse>=0.9.15'
+--   Package 'libpulse', required by 'virtual:world', not found
+-- Checking for module 'esound'
+--   Package 'esound', required by 'virtual:world', not found
+-- Looking for audio/audiolib.h
+-- Looking for audio/audiolib.h - not found
+-- Checking for module 'sndio'
+--   Package 'sndio', required by 'virtual:world', not found
+-- Checking for modules 'bcm_host;brcmegl'
+--   Package 'bcm_host', required by 'virtual:world', not found
+--   Package 'brcmegl', required by 'virtual:world', not found
+-- Performing Test HAVE_RPI
+-- Performing Test HAVE_RPI - Failed
+-- dynamic libX11 -> libX11.so.6
+-- dynamic libXext -> libXext.so.6
+-- dynamic libXcursor -> libXcursor.so.1
+-- dynamic libXi -> libXi.so.6
+-- dynamic libXfixes -> libXfixes.so.3
+-- dynamic libXrandr -> libXrandr.so.2
+-- dynamic libXrender -> libXrender.so.1
+-- Looking for shmat
+-- Looking for shmat - found
+-- Performing Test HAVE_XGENERICEVENT
+-- Performing Test HAVE_XGENERICEVENT - Success
+-- Looking for XkbKeycodeToKeysym
+-- Looking for XkbKeycodeToKeysym - found
+-- Performing Test HAVE_XINPUT2_MULTITOUCH
+-- Performing Test HAVE_XINPUT2_MULTITOUCH - Success
+-- Performing Test HAVE_XFIXES_H
+-- Performing Test HAVE_XFIXES_H - Success
+-- Checking for module 'egl'
+--   Found egl, version 1.5
+-- Performing Test HAVE_OPENGL_EGL
+-- Performing Test HAVE_OPENGL_EGL - Success
+-- Checking for modules 'libdrm;gbm;egl'
+--   Package 'libdrm', required by 'virtual:world', not found
+--   Package 'gbm', required by 'virtual:world', not found
+-- Performing Test HAVE_OPENGL_GLX
+-- Performing Test HAVE_OPENGL_GLX - Success
+-- Performing Test HAVE_OPENGL
+-- Performing Test HAVE_OPENGL - Success
+-- Performing Test HAVE_OPENGLES_V1
+-- Performing Test HAVE_OPENGLES_V1 - Success
+-- Performing Test HAVE_OPENGLES_V2
+-- Performing Test HAVE_OPENGLES_V2 - Success
+-- Checking for modules 'wayland-client>=1.18;wayland-egl;wayland-cursor;egl;xkbcommon>=0.5.0'
+--   Found wayland-client, version 1.22.0
+--   Found wayland-egl, version 18.1.0
+--   Found wayland-cursor, version 1.22.0
+--   Found egl, version 1.5
+--   Found xkbcommon, version 1.6.0
+-- dynamic libwayland-client -> libwayland-client.so.0
+-- dynamic libwayland-egl -> libwayland-egl.so.1
+-- dynamic libwayland-cursor -> libwayland-cursor.so.0
+-- dynamic libxkbcommon -> libxkbcommon.so.0
+-- Checking for module 'libdecor-0'
+--   Package 'libdecor-0', required by 'virtual:world', not found
+-- Performing Test HAVE_VIVANTE_VDK
+-- Performing Test HAVE_VIVANTE_VDK - Failed
+-- Performing Test HAVE_VIVANTE_EGL_FB
+-- Performing Test HAVE_VIVANTE_EGL_FB - Failed
+-- Performing Test HAVE_LINUX_INPUT_H
+-- Performing Test HAVE_LINUX_INPUT_H - Success
+-- Performing Test HAVE_INPUT_KD
+-- Performing Test HAVE_INPUT_KD - Success
+-- Looking for libudev.h
+-- Looking for libudev.h - not found
+-- Looking for sys/inotify.h
+-- Looking for sys/inotify.h - found
+-- Looking for inotify_init
+-- Looking for inotify_init - found
+-- Looking for inotify_init1
+-- Looking for inotify_init1 - found
+-- Checking for one of the modules 'dbus-1;dbus'
+-- Checking for one of the modules 'ibus-1.0;ibus'
+-- Performing Test LIBC_HAS_WORKING_LIBUNWIND
+-- Performing Test LIBC_HAS_WORKING_LIBUNWIND - Failed
+-- Performing Test LIBUNWIND_HAS_WORKINGLIBUNWIND
+-- Performing Test LIBUNWIND_HAS_WORKINGLIBUNWIND - Failed
+-- Checking for modules 'libunwind;libunwind-generic'
+--   Package 'libunwind', required by 'virtual:world', not found
+--   Package 'libunwind-generic', required by 'virtual:world', not found
+-- Performing Test HAVE_PTHREADS
+-- Performing Test HAVE_PTHREADS - Success
+-- Performing Test HAVE_RECURSIVE_MUTEXES
+-- Performing Test HAVE_RECURSIVE_MUTEXES - Success
+-- Performing Test HAVE_PTHREADS_SEM
+-- Performing Test HAVE_PTHREADS_SEM - Success
+-- Performing Test HAVE_SEM_TIMEDWAIT
+-- Performing Test HAVE_SEM_TIMEDWAIT - Success
+-- Looking for include file pthread.h
+-- Looking for include file pthread.h - found
+-- Looking for include file pthread_np.h
+-- Looking for include file pthread_np.h - not found
+-- Performing Test HAVE_PTHREAD_SETNAME_NP
+-- Performing Test HAVE_PTHREAD_SETNAME_NP - Success
+-- Looking for clock_gettime in c
+-- Looking for clock_gettime in c - found
+-- Looking for linux/version.h
+-- Looking for linux/version.h - found
+-- Performing Test HAVE_ENABLE_NEW_DTAGS
+-- Performing Test HAVE_ENABLE_NEW_DTAGS - Success
+-- Looking for samplerate.h
+-- Looking for samplerate.h - not found
+-- Found Git: /usr/bin/git (found version "2.43.0") 
+-- 
+-- SDL2 was configured with the following options:
+-- 
+-- Platform: Linux-6.14.0-37-generic
+-- 64-bit:   TRUE
+-- Compiler: /usr/bin/cc
+-- Revision: SDL-release-2.30.9-0-gc98c4fbf
+-- 
+-- Subsystems:
+--   Atomic:	ON
+--   Audio:	ON
+--   Video:	ON
+--   Render:	ON
+--   Events:	ON
+--   Joystick:	ON
+--   Haptic:	ON
+--   Hidapi:	ON
+--   Power:	ON
+--   Threads:	ON
+--   Timers:	ON
+--   File:	ON
+--   Loadso:	ON
+--   CPUinfo:	ON
+--   Filesystem:	ON
+--   Sensor:	ON
+--   Locale:	ON
+--   Misc:	ON
+-- 
+-- Options:
+--   SDL2_DISABLE_INSTALL        (Wanted: ON): OFF
+--   SDL2_DISABLE_SDL2MAIN       (Wanted: OFF): OFF
+--   SDL2_DISABLE_UNINSTALL      (Wanted: OFF): OFF
+--   SDL_3DNOW                   (Wanted: ON): ON
+--   SDL_ALSA                    (Wanted: ON): ON
+--   SDL_ALSA_SHARED             (Wanted: ON): ON
+--   SDL_ALTIVEC                 (Wanted: ON): OFF
+--   SDL_ARMNEON                 (Wanted: OFF): OFF
+--   SDL_ARMSIMD                 (Wanted: OFF): OFF
+--   SDL_ARTS                    (Wanted: ON): OFF
+--   SDL_ARTS_SHARED             (Wanted: ON): OFF
+--   SDL_ASAN                    (Wanted: OFF): OFF
+--   SDL_ASSEMBLY                (Wanted: ON): ON
+--   SDL_ASSERTIONS              (Wanted: auto): auto
+--   SDL_BACKGROUNDING_SIGNAL    (Wanted: OFF): OFF
+--   SDL_CCACHE                  (Wanted: ON): ON
+--   SDL_CLOCK_GETTIME           (Wanted: ON): ON
+--   SDL_COCOA                   (Wanted: OFF): OFF
+--   SDL_DBUS                    (Wanted: ON): OFF
+--   SDL_DIRECTFB                (Wanted: OFF): OFF
+--   SDL_DIRECTFB_SHARED         (Wanted: OFF): OFF
+--   SDL_DIRECTX                 (Wanted: OFF): OFF
+--   SDL_DISKAUDIO               (Wanted: ON): ON
+--   SDL_DUMMYAUDIO              (Wanted: ON): ON
+--   SDL_DUMMYVIDEO              (Wanted: ON): ON
+--   SDL_ESD                     (Wanted: ON): OFF
+--   SDL_ESD_SHARED              (Wanted: ON): OFF
+--   SDL_FOREGROUNDING_SIGNAL    (Wanted: OFF): OFF
+--   SDL_FUSIONSOUND             (Wanted: OFF): OFF
+--   SDL_FUSIONSOUND_SHARED      (Wanted: OFF): OFF
+--   SDL_GCC_ATOMICS             (Wanted: ON): ON
+--   SDL_HIDAPI                  (Wanted: ON): ON
+--   SDL_HIDAPI_JOYSTICK         (Wanted: ON): ON
+--   SDL_HIDAPI_LIBUSB           (Wanted: OFF): OFF
+--   SDL_IBUS                    (Wanted: ON): OFF
+--   SDL_INSTALL_TESTS           (Wanted: OFF): OFF
+--   SDL_JACK                    (Wanted: ON): OFF
+--   SDL_JACK_SHARED             (Wanted: ON): OFF
+--   SDL_KMSDRM                  (Wanted: ON): OFF
+--   SDL_KMSDRM_SHARED           (Wanted: ON): OFF
+--   SDL_LASX                    (Wanted: OFF): OFF
+--   SDL_LIBC                    (Wanted: ON): ON
+--   SDL_LIBICONV                (Wanted: OFF): OFF
+--   SDL_LIBSAMPLERATE           (Wanted: ON): OFF
+--   SDL_LIBSAMPLERATE_SHARED    (Wanted: ON): OFF
+--   SDL_LIBUDEV                 (Wanted: ON): OFF
+--   SDL_LSX                     (Wanted: OFF): OFF
+--   SDL_METAL                   (Wanted: OFF): OFF
+--   SDL_MMX                     (Wanted: ON): ON
+--   SDL_NAS                     (Wanted: ON): OFF
+--   SDL_NAS_SHARED              (Wanted: ON): OFF
+--   SDL_OFFSCREEN               (Wanted: ON): ON
+--   SDL_OPENGL                  (Wanted: ON): ON
+--   SDL_OPENGLES                (Wanted: ON): ON
+--   SDL_OSS                     (Wanted: ON): ON
+--   SDL_PIPEWIRE                (Wanted: ON): OFF
+--   SDL_PIPEWIRE_SHARED         (Wanted: ON): OFF
+--   SDL_PTHREADS                (Wanted: ON): ON
+--   SDL_PTHREADS_SEM            (Wanted: ON): ON
+--   SDL_PULSEAUDIO              (Wanted: ON): OFF
+--   SDL_PULSEAUDIO_SHARED       (Wanted: ON): OFF
+--   SDL_RENDER_D3D              (Wanted: OFF): OFF
+--   SDL_RENDER_METAL            (Wanted: OFF): OFF
+--   SDL_RPATH                   (Wanted: ON): ON
+--   SDL_RPI                     (Wanted: ON): OFF
+--   SDL_SNDIO                   (Wanted: ON): OFF
+--   SDL_SNDIO_SHARED            (Wanted: ON): OFF
+--   SDL_SSE                     (Wanted: ON): ON
+--   SDL_SSE2                    (Wanted: ON): ON
+--   SDL_SSE3                    (Wanted: ON): ON
+--   SDL_SSEMATH                 (Wanted: ON): ON
+--   SDL_STATIC_PIC              (Wanted: OFF): OFF
+--   SDL_SYSTEM_ICONV            (Wanted: ON): ON
+--   SDL_TESTS                   (Wanted: OFF): OFF
+--   SDL_VENDOR_INFO             (Wanted: ): OFF
+--   SDL_VIRTUAL_JOYSTICK        (Wanted: ON): ON
+--   SDL_VIVANTE                 (Wanted: ON): OFF
+--   SDL_VULKAN                  (Wanted: ON): ON
+--   SDL_WASAPI                  (Wanted: OFF): OFF
+--   SDL_WAYLAND                 (Wanted: ON): ON
+--   SDL_WAYLAND_LIBDECOR        (Wanted: ON): OFF
+--   SDL_WAYLAND_LIBDECOR_SHARED (Wanted: ON): OFF
+--   SDL_WAYLAND_QT_TOUCH        (Wanted: ON): ON
+--   SDL_WAYLAND_SHARED          (Wanted: ON): ON
+--   SDL_X11                     (Wanted: ON): ON
+--   SDL_X11_SHARED              (Wanted: ON): ON
+--   SDL_X11_XCURSOR             (Wanted: ON): ON
+--   SDL_X11_XDBE                (Wanted: ON): ON
+--   SDL_X11_XFIXES              (Wanted: ON): ON
+--   SDL_X11_XINPUT              (Wanted: ON): ON
+--   SDL_X11_XRANDR              (Wanted: ON): ON
+--   SDL_X11_XSCRNSAVER          (Wanted: ON): OFF
+--   SDL_X11_XSHAPE              (Wanted: ON): ON
+--   SDL_XINPUT                  (Wanted: OFF): OFF
+-- 
+--  CFLAGS:         -idirafter "/home/cristiano/Documentos/GitHub/godofwar/build_recomp/_deps/sdl2-src/src/video/khronos" -DHAVE_LINUX_VERSION_H
+--  EXTRA_CFLAGS:   -Wall -Wundef -fno-strict-aliasing -Wdeclaration-after-statement -fvisibility=hidden -Wshadow -Wno-unused-local-typedefs -mmmx -m3dnow -msse -msse2 -msse3  -isystem/usr/include -D_REENTRANT
+--  EXTRA_LDFLAGS: -pthread -Wl,--no-undefined
+--  EXTRA_LIBS:    m
+-- 
+--  Build Shared Library: ON
+--  Build Static Library: OFF
+-- 
+-- If something was not detected, although the libraries
+-- were installed, then make sure you have set the
+-- CFLAGS and LDFLAGS environment variables correctly.
+-- 
+-- Found OpenGL: /usr/lib/x86_64-linux-gnu/libOpenGL.so   
+-- Configuring done (525.2s)
+-- Generating done (0.3s)
+-- Build files have been written to: /home/cristiano/Documentos/GitHub/god
