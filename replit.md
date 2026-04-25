@@ -536,6 +536,98 @@ estrutura raiz seria provavelmente `sub_002994A0` ou a missing `0x293ea0`
    `bss_start + 0x7ff0` (convenção MIPS PIC) — provavelmente
    `0x002cf070` (que aparece como `a0` da syscall 0x3c acima).
 
+## Estado atual da depuração (sessão de 2026-04-25)
+
+**Toolchain de regen agora funcional end-to-end.** A sessão entregou três
+peças que destravaram o ciclo de iteração:
+
+1. **`tools/fix_truncated.py` + `tools/regen_truncated.sh`** — produzem o
+   CSV `ghidra_output` com ranges corrigidos e regeram os `.cpp` afetados
+   via ps2_recomp em ~30s, sem precisar de rebuild de 80min. Suporta
+   `--only-entry` (só crt0), reachable-from-seeds (default) e `--all`.
+
+2. **Pin do ELFIO no `PS2Recomp/ps2xRecomp/CMakeLists.txt`** corrigido
+   pra `Release_3.12` (commit `8ae6cec5d60495822ecd57d736f66149da9b1830`).
+   O pin antigo `7d30a22f...` foi GC'd upstream e o submódulo não
+   buildava mais. `regen_truncated.sh` agora monta o ps2_recomp via
+   `cmake -S PS2Recomp/ps2xRecomp` (skip raylib 408MiB) com `--build-recomp`.
+
+3. **Touch automático no fim do regen** — sem isso, o `recompilar.sh`
+   (que faz `make` em `build/`) decide se recompila pelo mtime, e o
+   ps2_recomp pode reescrever arquivos preservando mtime → make não
+   recompila → binário antigo continua rodando. O passo `git diff
+   --name-only src/recompiled/ | xargs -r touch` força o rebuild real.
+
+### Resultado funcional pós-regen + touch
+
+Boot avançou substancialmente do estado de 2026-04-24:
+
+| Etapa | Antes (04-24) | Agora (04-25) |
+|---|---|---|
+| crt0 escapa init de FPRs/BSS | Não | Sim (ps2_recomp expandiu entry para 324 linhas, descobriu 4077 entries adicionais) |
+| Thread principal criada | Não (`activeThreads=0`) | Sim (`activeThreads=1`) |
+| SP da thread ≠ default | Não (sempre `0x1fffff0`) | Sim (`liveSp=0x1fffe00..0x1fffe40`) |
+| `dispfb1`/`display1` setados | 0 | `dispfb1=0x1400`, `display1=0x1bf27f00000000` |
+| Loop principal roda muitos ticks | Não | Sim (1200+ ticks com `livePc` oscilando) |
+| Framebuffer renderiza pixels | Não | **Não** — `nonBlack=0` em todas as 60+ amostras |
+
+### NOVA causa raiz identificada — gap 0x1001d0 → 0x100db8
+
+O `[DBG 100E28]` **continua em loop infinito** (40+ iterações com a0/a1/a2
+zerados, mesmo padrão de antes). O log mostra os `[run:tick]` amostrando
+PCs dentro de `func_13DB18`/`func_118110` — são as funções que o crt0
+chama EM LOOP, não a main thread real.
+
+A **prova definitiva** veio do `ps2_missing.log`:
+```
+FUNCTION 8192 calls   1462ms   func_0x10047C  ← chamada 8192x em 2.4s !!!
+FUNCTION    1 call             func_0x80004
+```
+
+`func_0x10047C` **não existe no binário recompilado**. Ela cai no gap
+**0x1001d0 → 0x100db8** que nenhum entry cobre:
+
+| Endereço | Status |
+|---|---|
+| `0x100008` → `0x1001d0` | `entry_0x100008.cpp` (range corrigido na sessão 04-25) |
+| `0x1001d0` → `0x100db8` | **VAZIO** ← 3KB de código não recompilado, contém `0x10047C` |
+| `0x100db8` → `0x100e28` | `entry_100db8_0x100e28.cpp` |
+
+O auto-detect do `scan_function` para no primeiro `jr $ra` que encontra
+(`0x1001d0`), mas tem código vivo depois — provavelmente early-return ou
+sub-função sem header reconhecido. O ps2_recomp tem mecanismo de
+discovery ("Discovered N additional entry point(s)") que fatia o range
+em sub-entries automaticamente, **se** o range total cobrir o código.
+
+### Solução implementada (entregue, aguardando user testar)
+
+Novo arquivo de overrides manuais: **`tools/truncation_overrides.csv`**
+populado com:
+```
+entry,0x100008,0x100db8
+```
+
+E `tools/fix_truncated.py` agora carrega esse CSV automaticamente
+(função `load_overrides`), aplicando os ends forçados após o auto-detect.
+
+**Próxima ação do usuário:**
+```bash
+cd ~/Documentos/GitHub/godofwar && \
+git pull && \
+bash tools/regen_truncated.sh --only-entry && \
+bash recompilar.sh && \
+PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_teste.txt
+```
+
+Esperado no log:
+- Output do regen: `entry  end 0x10008c → 0x100db8  (+876 ins) [HACK ATIVO]`
+- ps2_recomp: "Discovered NN additional entry point(s)" — vai fatiar o gap
+- Vários novos `entry_xxxxxx_0xXXXXXX.cpp` no `src/recompiled/`,
+  incluindo um cobrindo `0x10047C`
+- Log do jogo: `[DBG 100E28]` deve aparecer **MUITO menos** (ou só 1-2
+  vezes, não 40+) e `livePc` deve sair do range 0x118110/0x13DB18
+- `ps2_missing.log` não deve mais ter `func_0x10047C` no topo
+
 ### Próximas (ordem sugerida)
 
 4. ⏳ **Diff de execução vs PCSX2**

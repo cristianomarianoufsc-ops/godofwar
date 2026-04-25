@@ -1,0 +1,25 @@
+# Overrides manuais pra fix_truncated.py.
+#
+# Use isso quando o auto-detect (que para no primeiro `jr $ra`) erra
+# porque a "função" real tem early-returns ou contém múltiplas
+# sub-funções não-listadas no Ghidra. O ps2_recomp tem discovery
+# automático ("Discovered N additional entry point(s)") que vai fatiar
+# o range em entries menores quando o range total é fornecido.
+#
+# Formato: name,start,end
+#   - name : ignorado (só pra leitura humana; o nome real vem do .cpp)
+#   - start: hex (0x...) — endereço inicial da função no ELF
+#   - end  : hex (0x...) — endereço pós-última instrução (exclusivo)
+#
+# O `fix_truncated.py` aplica isso DEPOIS do auto-detect, sobrescrevendo
+# o real_end. Linhas começando com '#' são ignoradas.
+#
+# ----------------------------------------------------------------------
+# Caso 1 — crt0 (entry @ 0x100008)
+#
+# Auto-detect achou jr $ra em 0x1001d0, mas o gap entre 0x1001d0 e
+# 0x100db8 (próximo entry conhecido) contém código vivo, incluindo
+# func_0x10047C (chamada 8192x no boot, evidência: ps2_missing.log).
+# Estender o range faz o ps2_recomp descobrir esses sub-entries via
+# o passo de "Discovered additional entry point(s)".
+entry,0x100008,0x100db8

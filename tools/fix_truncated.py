@@ -54,7 +54,32 @@ TEXT_END = 0x29BBA4
 ENTRY_PC = 0x100008
 DEFAULT_SEEDS_FILE = "tools/reachable_seeds.txt"
 DEFAULT_OUT = "tools/truncation_fixes.csv"
+DEFAULT_OVERRIDES_FILE = "tools/truncation_overrides.csv"
 PATCH_HACK_MARKER = "Patch: Jump to next entry point"
+
+
+def load_overrides(path):
+    """Lê CSV `name,start,end` (linhas '#' ignoradas).
+    Retorna dict {start_pc: forced_end_pc}."""
+    out = {}
+    if not path or not os.path.isfile(path):
+        return out
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.split("#", 1)[0].strip()
+            if not line:
+                continue
+            parts = [p.strip() for p in line.split(",")]
+            if len(parts) < 3:
+                continue
+            try:
+                start = int(parts[1], 0)
+                end = int(parts[2], 0)
+            except ValueError:
+                continue
+            if end > start:
+                out[start] = end
+    return out
 
 
 # ----------------------------------------------------------- ELF I/O
@@ -251,6 +276,10 @@ def main():
     funcs = parse_recompiled_files()
     starts_sorted = sorted(funcs.keys())
     print(f"      Funções recompiladas: {len(funcs)}")
+    overrides = load_overrides(DEFAULT_OVERRIDES_FILE)
+    if overrides:
+        print(f"      Overrides manuais: {len(overrides)} "
+              f"({DEFAULT_OVERRIDES_FILE})")
 
     print("[2/4] Decodificando real_end das funções...")
     scan_cache = {}
@@ -262,6 +291,9 @@ def main():
             hack_files.append((start, info["file"]))
         real_end, jals, js = scan_function(data, start, starts_sorted)
         scan_cache[start] = (real_end, jals, js)
+        # Aplica override manual: força end maior se especificado.
+        if start in overrides and overrides[start] > real_end:
+            real_end = overrides[start]
         if (real_end - start) > (info["end"] - start) and \
                 (real_end - info["end"]) >= 4:
             truncated[start] = (info["end"], real_end, info)
