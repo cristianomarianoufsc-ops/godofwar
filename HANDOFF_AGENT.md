@@ -94,7 +94,39 @@ cadeia de init (`0x2994a0`, `0x293ea0`, `0x138cb0`). Sem isso, mesmo com `$gp` c
 ponteiros de função em BSS ficam 0 e o jogo entra em loop. A cadeia de init também precisa de
 `$gp` correto para funcionar, daí o setup antes do loop de init.
 
-### ✅ Análise da cadeia de boot completa — SESSÃO 2026-04-26 (agente 5)
+### 🔧 Fix do `recompilar.sh` (touch automático pós-pull) — SESSÃO 2026-04-26 PARTE 2
+
+**Bug descoberto durante teste do log:** o usuário rodou
+`git pull && bash recompilar.sh && PS2_TRACE=1 bash jogar.sh` e a
+instrumentação `[main:enter]` que eu havia plantado em
+`sub_001003C0_0x1003c0.cpp` **não apareceu no log**. A causa: `git pull`
+preserva o `mtime` do commit. O `.o` antigo no `build/` local é mais
+recente, então `make` pula a recompilação **silenciosamente**. O log de
+build mostrou só `ps2_syscalls.cpp` sendo recompilado.
+
+**Fix:** `recompilar.sh` agora faz `git diff --name-only HEAD~5 HEAD` e
+`touch` em todos os `.cpp/.h/.hpp/.inl/.c` dos últimos 5 commits. Issoresolve definitivamente o problema, qualquer agente futuro adicionando
+instrumentação tem garantia de que o build vai pegar.
+
+**O log obtido foi inconclusivo, mas tem 1 dado interessante:** o
+programa sai via `[dispatch:pc-zero] from=0x1003c0` (PC virou 0 e o
+dispatcher matou a thread). Isso é diferente do que eu previa
+(`ExitThread` syscall). Pode significar que o `crt0` não roda completo,
+ou que `main` retorna pra um `ra=0` (que era o estado inicial dos GPRs).
+
+**Trace observado:** `0x100008 -> 0x1003c0 -> 0x100408 -> 0x238860`.
+Note que **NÃO aparece `0x1001d0` nem `0x2996B0`** no trace, mas isso
+provavelmente é só porque o trace registra apenas dispatcher boundaries
+(funções chamadas inline via `targetFn(...)` não aparecem). O
+`entry_0x100008` tem patch que chama `entry_1001d0_0x1003c0`
+inline, e essa por sua vez chama `entry_2996b0_0x2996e0` inline com `j
+func_2996B0`.
+
+**Próximo passo:** refazer o teste com o `recompilar.sh` corrigido.
+
+---
+
+### ✅ Análise da cadeia de boot completa — SESSÃO 2026-04-26 PARTE 1 (agente 5)
 
 **Confirmado:** o jogo NÃO está em loop. Está SAINDO LIMPO via `ExitThread`.
 

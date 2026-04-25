@@ -770,7 +770,37 @@ estrutura raiz seria provavelmente `sub_002994A0` ou a missing `0x293ea0`
    `bss_start + 0x7ff0` (convenção MIPS PIC) — provavelmente
    `0x002cf070` (que aparece como `a0` da syscall 0x3c acima).
 
-## Estado atual da depuração (sessão de 2026-04-26) — CADEIA DE BOOT MAPEADA
+## Estado atual da depuração (sessão de 2026-04-26 PARTE 2) — BUG DO recompilar.sh
+
+**Fix crítico no `recompilar.sh`:** descobrimos que `git pull` preserva o
+mtime do commit. Se o `.o` no `build/` local for mais recente que o `.cpp`
+baixado, `make` **pula a recompilação silenciosamente**. Isso fez o teste
+da PARTE 1 (abaixo) ser **inconclusivo**: a instrumentação `[main:enter]`
+foi adicionada em `sub_001003C0_0x1003c0.cpp` mas o `.o` antigo continuou
+sendo linkado.
+
+**Solução aplicada:** `recompilar.sh` agora roda
+`git diff --name-only HEAD~5 HEAD` no início, e faz `touch` em todos os
+`.cpp/.h/.hpp/.inl/.c` alterados nos últimos 5 commits. Isso garante que
+qualquer arquivo vindo de `git pull` recente seja reavaliado pelo `make`.
+
+O `[syscall:ExitThread]` apareceu zero vezes no log, mas isso pode ter sido
+recompilado corretamente (via `ps2_syscalls.cpp` que inclui o `.inl`). Pode
+significar que `ExitThread` realmente NÃO está sendo chamado e o programa
+sai por outro motivo (ex: `ctx->pc=0` no fim de uma função sem `ra` válido,
+o que casa com o `[dispatch:pc-zero]` do log).
+
+**Próximo passo (refazer o teste corretamente):**
+```bash
+git pull origin main
+bash recompilar.sh    # agora vai forcar touch automatico
+PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_main_a0_v2.txt
+```
+Mandar últimas 100 linhas + greps `[main:enter]` e `[syscall:ExitThread]`.
+
+---
+
+## Estado atual da depuração (sessão de 2026-04-26 PARTE 1) — CADEIA DE BOOT MAPEADA
 
 **Diagnóstico definitivo do "tela preta + game thread morre cedo":**
 
