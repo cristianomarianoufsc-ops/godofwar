@@ -1,0 +1,148 @@
+cristiano@cristiano:~/Documentos/GitHub/godofwar$ cd ~/Documentos/GitHub/godofwar && {
+  echo
+  echo '############ [A] TRANSIÇÃO crt0 → main thread ############'
+  grep -nE 'DBG 100E28|SetupThread|SetupHeap|CreateThread|StartThread|RFU|syscall|lookup' log_teste.txt | tail -40
+
+  echo
+  echo '############ [B] GS / Framebuffer / DISPFB ############'
+  grep -nE 'GS |gif|SETREG|SETDISPFB|GsPutIMR|SetGsCrt|ResetGraph|fbp=|frame:|dispfb' log_teste.txt | head -60
+
+  echo
+  echo '############ [C] Faltantes / fallback / stub ############'
+  grep -nE 'lookup|missing|fallback|stub|TODO|WARN|warn:' log_teste.txt | tail -30
+
+  echo
+  echo '############ [D] Tamanhos + Top syscalls faltantes ############'
+  wc -l log_teste.txt ps2_missing.log 2>/dev/null
+  echo '--- top 20 entradas em ps2_missing.log (se existir) ---'
+  sort ps2_missing.log 2>/dev/null | uniq -c | sort -rn | head -20
+} 2>&1 | tee log_diagnostico.txt
+
+############ [A] TRANSIÇÃO crt0 → main thread ############
+328:[DBG 100E28] #33 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+329:[DBG 100E28] #33 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+330:[DBG 100E28] #33 -> calling func_118110(s0=00000000)
+333:[DBG 100E28] #33 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+335:[DBG 100E28] #33 EXIT v0=00000000
+336:[DBG 100E28] #34 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+337:[DBG 100E28] #34 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+338:[DBG 100E28] #34 -> calling func_118110(s0=00000000)
+341:[DBG 100E28] #34 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+343:[DBG 100E28] #34 EXIT v0=00000000
+344:[DBG 100E28] #35 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+345:[DBG 100E28] #35 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+346:[DBG 100E28] #35 -> calling func_118110(s0=00000000)
+349:[DBG 100E28] #35 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+351:[DBG 100E28] #35 EXIT v0=00000000
+352:[DBG 100E28] #36 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+353:[DBG 100E28] #36 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+354:[DBG 100E28] #36 -> calling func_118110(s0=00000000)
+357:[DBG 100E28] #36 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+359:[DBG 100E28] #36 EXIT v0=00000000
+360:[DBG 100E28] #37 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+361:[DBG 100E28] #37 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+362:[DBG 100E28] #37 -> calling func_118110(s0=00000000)
+365:[DBG 100E28] #37 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+367:[DBG 100E28] #37 EXIT v0=00000000
+368:[DBG 100E28] #38 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+369:[DBG 100E28] #38 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+370:[DBG 100E28] #38 -> calling func_118110(s0=00000000)
+373:[DBG 100E28] #38 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+375:[DBG 100E28] #38 EXIT v0=00000000
+376:[DBG 100E28] #39 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+377:[DBG 100E28] #39 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+378:[DBG 100E28] #39 -> calling func_118110(s0=00000000)
+381:[DBG 100E28] #39 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+383:[DBG 100E28] #39 EXIT v0=00000000
+384:[DBG 100E28] #40 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+385:[DBG 100E28] #40 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+386:[DBG 100E28] #40 -> calling func_118110(s0=00000000)
+390:[DBG 100E28] #40 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+392:[DBG 100E28] #40 EXIT v0=00000000
+
+############ [B] GS / Framebuffer / DISPFB ############
+50:INFO: TIMER: Target time per frame: 16.667 milliseconds
+187:[frame:upload] idx=0 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+388:[frame:upload] idx=1 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+393:[frame:upload] idx=2 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+394:[frame:upload] idx=3 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+395:[frame:upload] idx=4 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+396:[frame:upload] idx=5 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+397:[frame:upload] idx=6 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+398:[frame:upload] idx=7 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+399:[frame:upload] idx=8 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+400:[frame:upload] idx=9 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+401:[frame:upload] idx=10 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+402:[frame:upload] idx=11 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+403:[frame:upload] idx=12 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+404:[frame:upload] idx=13 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+405:[frame:upload] idx=14 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+406:[frame:upload] idx=15 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+407:[frame:upload] idx=16 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+408:[frame:upload] idx=17 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+409:[frame:upload] idx=18 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+410:[frame:upload] idx=19 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+411:[frame:upload] idx=20 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+412:[frame:upload] idx=21 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+413:[frame:upload] idx=22 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+414:[frame:upload] idx=23 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+415:[frame:upload] idx=24 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+416:[frame:upload] idx=25 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+417:[frame:upload] idx=26 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+418:[frame:upload] idx=27 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+419:[frame:upload] idx=28 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+420:[frame:upload] idx=29 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+421:[frame:upload] idx=30 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+422:[frame:upload] idx=31 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+423:[frame:upload] idx=32 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+424:[frame:upload] idx=33 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+425:[frame:upload] idx=34 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+426:[frame:upload] idx=35 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+427:[frame:upload] idx=36 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+428:[frame:upload] idx=37 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+429:[frame:upload] idx=38 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+430:[frame:upload] idx=39 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+431:[frame:upload] idx=40 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+432:[frame:upload] idx=41 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+433:[frame:upload] idx=42 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+434:[frame:upload] idx=43 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+435:[frame:upload] idx=44 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+436:[frame:upload] idx=45 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+437:[frame:upload] idx=46 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+438:[frame:upload] idx=47 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+439:[frame:upload] idx=48 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+440:[frame:upload] idx=49 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+441:[frame:upload] idx=50 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+442:[frame:upload] idx=51 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+443:[frame:upload] idx=52 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+444:[frame:upload] idx=53 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+445:[frame:upload] idx=54 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+446:[frame:upload] idx=55 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+447:[frame:upload] idx=56 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+448:[frame:upload] idx=57 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+449:[frame:upload] idx=58 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+
+############ [C] Faltantes / fallback / stub ############
+65:[ps2_missing_report] ativado. Relatorio sera salvo em ./ps2_missing.log ao encerrar (ou Ctrl+C).
+78:[lookup:bios-stub] addr=0x80004 syscallId=1 (assumindo vetor BIOS PS2; retornando v0=0)
+
+############ [D] Tamanhos + Top syscalls faltantes ############
+  517 log_teste.txt
+   17 ps2_missing.log
+  534 total
+--- top 20 entradas em ps2_missing.log (se existir) ---
+      3 ================================================================
+      2 
+      1   Use estes dados para priorizar implementacao de stubs/syscalls.
+      1   Total de chamadas : 8193
+      1   Tempo de execucao : 2451 ms
+      1   PS2 Missing-Functions Report
+      1   Ordem: por contagem decrescente (mais chamados primeiro)
+      1 kind     calls       1stMs   1stPC       1stRA       name (args do 1o call: a0,a1,a2,a3)
+      1   Itens distintos   : 2
+      1 FUNCTION 8192        1462    0x0         0x0         func_0x10047C (0x0,0x0,0x0,0x0)
+      1 FUNCTION 1           1462    0x0         0x0         func_0x80004 (0x0,0x0,0x0,0x0)
+      1 --- fim do relatorio ---
+      1 ------------------------------------------------------------------------
+      1 ----------------------------------------------------------------
+cristiano@cristiano:~/Documentos/GitHub/godofwar$ 
