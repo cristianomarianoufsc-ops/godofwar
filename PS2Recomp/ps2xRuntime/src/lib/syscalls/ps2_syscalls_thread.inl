@@ -532,6 +532,20 @@ void StartThread(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
 
 void ExitThread(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
 {
+    // INSTRUMENTACAO BUG MAIN-A0-ZERO (sessao 04-26):
+    // ExitThread eh chamada pelo wrapper em entry_293840 (slot 0 da tabela
+    // de syscalls = "addiu $v1,$zero,4; syscall 0"). entry_2996b0 termina
+    // com "j 0x293840" -- ou seja, o crt0 do God of War tail-calls
+    // ExitThread no fim. Logamos o $ra do call site pra rastrear quem
+    // pediu pra sair (geralmente entry_2996b0 retornando do __libc_init).
+    {
+        const uint32_t ra = static_cast<uint32_t>(_mm_extract_epi32(ctx->r[31], 0));
+        const uint32_t sp = static_cast<uint32_t>(_mm_extract_epi32(ctx->r[29], 0));
+        std::fprintf(stderr,
+            "[syscall:ExitThread] tid=%d ra=0x%08x sp=0x%08x -- thread vai morrer\n",
+            g_currentThreadId, ra, sp);
+        std::fflush(stderr);
+    }
     runExitHandlersForThread(g_currentThreadId, rdram, ctx, runtime);
     auto info = ensureCurrentThreadInfo(ctx);
     if (info)

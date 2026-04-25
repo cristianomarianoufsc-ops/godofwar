@@ -750,6 +750,74 @@ estrutura raiz seria provavelmente `sub_002994A0` ou a missing `0x293ea0`
    `bss_start + 0x7ff0` (convenção MIPS PIC) — provavelmente
    `0x002cf070` (que aparece como `a0` da syscall 0x3c acima).
 
+## Estado atual da depuração (sessão de 2026-04-26) — CADEIA DE BOOT MAPEADA
+
+**Diagnóstico definitivo do "tela preta + game thread morre cedo":**
+
+A boot sequence completa foi rastreada nesta sessão. O jogo **NÃO está em loop**;
+está saindo limpo via `ExitThread` (syscall 4) porque o `crt0`/`__libc_init`
+chama tail-call `Exit` ao retornar.
+
+**Cadeia mapeada (lendo arquivos recompilados):**
+
+```
+entry_0x100008          (zera todos os 32 GPRs)
+  └→ entry_1001d0       (j 0x2996B0 — vai pro crt0)
+      └→ entry_2996b0   (jal 2996A8; <work>; j 0x293840 = ExitThread!)
+          └→ entry_2996a8 (j 0x29AA48)
+              └→ FUN_0029aa48
+                  ├ syscall 0x7F = GetMemorySize
+                  └ se 32MB: chama sub_0029AA88 (init de TLB Wired)
+                              └ loop: chama 2996B0(a0=1) p/ cada região TLB
+```
+
+**Observações-chave da análise:**
+
+1. `entry_293840_0x293900` é uma **TABELA DE WRAPPERS DE SYSCALL**. Cada
+   entrada de 12 bytes = `addiu $v1,$zero,N; syscall 0; jr $ra`. O slot 0
+   (em `0x293840`) é syscall **N=4** = `Exit`/`ExitThread` no nosso runtime
+   (`PS2Recomp/ps2xRuntime/src/lib/ps2_syscalls.cpp:60`).
+
+2. `entry_2996b0` é o **`__libc_init`** do PS2 SDK. SEMPRE termina com
+   `j 0x293840` = SEMPRE mata a thread. Convenção UNIX: programa exita
+   quando `__libc_init` retorna.
+
+3. O **`main()` real do God of War** está em `sub_001003C0_0x1003c0`
+   (range 0x1003c0–0x100408). É chamado em algum lugar dessa cadeia
+   (provavelmente via `sub_0029AA88`), mas com **`$a0=0`**.
+
+4. Quando `main(a0=0)` roda, o `beql $a0, $zero` em `0x1003D8` toma o
+   branch e pula direto pra `label_1003ec` → `jal func_238860(a0=0,a1=0)`
+   → essa também tem `andi $a1,1; beqz` que retorna early → main retorna
+   imediatamente sem fazer nada útil.
+
+### Instrumentação de log adicionada (2 arquivos):
+
+| Arquivo | O que loga | Pra quê |
+|---|---|---|
+| `src/recompiled/sub_001003C0_0x1003c0.cpp` | `[main:enter] a0=… ra=… sp=…` em toda chamada de main | Confirmar quantas vezes main é chamada e se SEMPRE com `a0=0` |
+| `PS2Recomp/ps2xRuntime/src/lib/syscalls/ps2_syscalls_thread.inl::ExitThread` | `[syscall:ExitThread] tid=… ra=… sp=…` | Identificar quem pediu pra sair (esperado: `ra` perto de `0x29AB04`) |
+
+Para silenciar o trace de main: `PS2_NO_MAIN_TRACE=1 bash jogar.sh`.
+
+### Próxima ação (usuário tem que rodar localmente):
+
+```bash
+git pull origin main
+bash recompilar.sh                                # 30s, 2 .cpp mudaram
+PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_main_a0.txt
+# Mandar pro agente:
+#  - últimas 100 linhas do log
+#  - grep '[main:enter]' log_main_a0.txt
+#  - grep '[syscall:ExitThread]' log_main_a0.txt
+```
+
+Com isso vamos confirmar a hipótese e aí investigar o caller real
+de `0x1003c0` (provavelmente dentro de `sub_0029AA88` ou em outra
+função da cadeia init que ainda não foi auditada).
+
+---
+
 ## Estado atual da depuração (sessão de 2026-04-25)
 
 **Toolchain de regen agora funcional end-to-end.** A sessão entregou três

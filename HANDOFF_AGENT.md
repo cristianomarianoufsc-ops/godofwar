@@ -94,6 +94,64 @@ cadeia de init (`0x2994a0`, `0x293ea0`, `0x138cb0`). Sem isso, mesmo com `$gp` c
 ponteiros de função em BSS ficam 0 e o jogo entra em loop. A cadeia de init também precisa de
 `$gp` correto para funcionar, daí o setup antes do loop de init.
 
+### ✅ Análise da cadeia de boot completa — SESSÃO 2026-04-26 (agente 5)
+
+**Confirmado:** o jogo NÃO está em loop. Está SAINDO LIMPO via `ExitThread`.
+
+**Cadeia de boot mapeada:**
+```
+entry_0x100008          (zera todos registradores)
+  → entry_1001d0         (j 0x2996B0 — tail-call para crt0/__libc_init)
+    → entry_2996b0       (jal 2996A8; <work>; j 0x293840 = ExitThread!)
+      → entry_2996a8     (j 0x29AA48 — tail-call)
+        → FUN_0029aa48   (syscall 0x7F GetMemorySize)
+          → se mem == 32MB:
+            → sub_0029AA88  (init de TLB Wired, loop chamando 0x2996B0
+                             com $a0=1 para cada região configurada)
+```
+
+**Descobertas-chave:**
+1. `entry_293840_0x293900` é uma **TABELA DE WRAPPERS DE SYSCALL** — cada entrada
+   de 12 bytes faz `addiu $v1, $zero, N; syscall 0; jr $ra`. O slot 0 (`0x293840`)
+   é **syscall 4 = `Exit`/`ExitThread`** no nosso runtime
+   (`PS2Recomp/ps2xRuntime/src/lib/ps2_syscalls.cpp:60` mapeia 0x04 → ExitThread).
+2. **`entry_2996b0` SEMPRE termina com `j 0x293840`** = sempre mata a thread no fim.
+   Isso significa que essa função **é o `__libc_init`/`__libc_main`** do PS2 SDK,
+   que por convenção termina o programa quando retorna.
+3. `main()` real do God of War está em **`sub_001003C0_0x1003c0`** (range 0x1003c0-0x100408).
+4. **PROBLEMA REAL:** o log mostra `[BOOT#2] pc=0x1003c0 a0=0x0`. Ou seja, alguém
+   chama `main()` mas com `$a0=0`. O beql em `0x1003D8` então pula direto pro
+   epilogue, fazendo main retornar quase imediatamente sem fazer trabalho útil.
+
+**O QUE ISSO QUER DIZER PRA TELA PRETA:**
+A boot inteira completa em milissegundos:
+- crt0 inicializa TLB e algumas globals
+- main() é chamada (com $a0=0 → vira no-op)
+- crt0 retorna → tail-call ExitThread → game thread morre
+- Nada nunca é desenhado no GS porque nenhum código de gameplay roda.
+
+### 🔬 Instrumentação adicionada nesta sessão
+
+Para o usuário coletar dados precisos no próximo `bash recompilar.sh && PS2_TRACE=1 bash jogar.sh`:
+
+1. **`src/recompiled/sub_001003C0_0x1003c0.cpp`** — `[main:enter]` loga toda
+   chamada a main() com `$a0`, `$ra`, `$sp`. Esperamos ver várias chamadas — se
+   TODAS tiverem `a0=0`, confirma que ninguém passa o ponteiro de world state.
+   Para silenciar: `PS2_NO_MAIN_TRACE=1 bash jogar.sh`.
+
+2. **`PS2Recomp/ps2xRuntime/src/lib/syscalls/ps2_syscalls_thread.inl::ExitThread`**
+   — `[syscall:ExitThread]` loga toda invocação (tid, $ra, $sp). Vai mostrar
+   QUEM pediu pro programa sair (esperamos `ra=0x29AB04` ou similar, vindo do
+   crt0 retornando).
+
+**Comando pro usuário:**
+```bash
+git pull origin main
+bash recompilar.sh                  # incremental, ~30s (3 .cpp mudaram)
+PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_main_a0.txt
+```
+Mandar **as últimas 100 linhas** + grep `[main:enter]` + grep `[syscall:ExitThread]`.
+
 ### ✅ Fix do Bug D (loop infinito + stack overflow) — SESSÃO 2026-04-25 (agente 4)
 
 **Diagnóstico:** após os Bugs A/B/C, o boot_stub já rodava a cadeia de init (`0x2994a0 → 0x293ea0 → 0x138cb0`). Contudo, `0x1003c0` chamava `func_100408(a0=0)` → ponteiro nulo como world pointer → `mem[0x20]` era `0x0` ≠ `0x20` (sentinela da lista duplamente ligada) → loop eterno varrendo lista nula → cada iteração chamava `sub_00100E28` → JALR para `0x35c920` (BSS, não registrado) → retorno prematuro sem epilogue → **stack leak de 0x40 por iteração até SIGSEGV**.
