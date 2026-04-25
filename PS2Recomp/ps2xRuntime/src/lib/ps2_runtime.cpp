@@ -2031,10 +2031,14 @@ void PS2Runtime::dispatchLoop(uint8_t *rdram, R5900Context *ctx)
         ++tl_dispatchCount;
         if (s_bootTraceCount.fetch_add(1u, std::memory_order_relaxed) < kBootTraceLimit)
         {
+            const uint32_t dispatchedGp = static_cast<uint32_t>(_mm_extract_epi32(ctx->r[28], 0));
+            const uint32_t dispatchedA0 = static_cast<uint32_t>(_mm_extract_epi32(ctx->r[4], 0));
             std::cout << "[BOOT#" << std::dec << tl_dispatchCount
                       << "] pc=0x" << std::hex << dispatchedPc
                       << " ra=0x" << dispatchedRa
                       << " sp=0x" << dispatchedSp
+                      << " gp=0x" << dispatchedGp
+                      << " a0=0x" << dispatchedA0
                       << std::dec << std::endl;
         }
 
@@ -2374,28 +2378,28 @@ void PS2Runtime::run()
     ps2_stubs::resetGsSyncVCallbackState();
     ps2_syscalls::initializeGuestKernelState(m_memory.getRDRAM());
 
-    // === BOOT STUB INIT (compensação do patch automático do ps2_recomp) ===
-    // O ps2_recomp tropeça em 5 instruções EE custom dentro do crt0
-    // (em 0x10008c, 0x100110, 0x100170, 0x10017c e 0x1001b0) e injeta
-    // automaticamente o "Patch: Jump to next entry point" em
-    // entry_0x100008.cpp, que pula 81 instruções essenciais entre
-    // 0x10008c e 0x1001d0:
-    //   - clear FPU regs (32 mtc1 $zero)
-    //   - clear BSS (loop original em 0x10011c-0x100144)
-    //   - SetupThread (syscall 0x3C, original em 0x100174)
-    //   - SetupHeap   (syscall 0x3D, original em 0x100190)
-    //   - 4 jal de init de runtime/libc (0x2994a0, 0x293ea0,
-    //     0x138cb0, 0x138d48)
-    //   - ei (enable interrupts) em 0x1001b0
+    // === BOOT STUB INIT — agora OPT-IN (default OFF) ===
     //
-    // Sem isso, a flag global em 0x32E854 nunca é setada e o boot loopa
-    // eterno em entry_100db8 (visto em log_teste2.txt: 7560 ticks sem
-    // escapar). Este stub roda manualmente o equivalente C++ desse trecho
-    // ANTES do dispatchLoop. Idempotente: a BSS já tende a estar zerada
-    // por loadELF, e re-rodar SetupThread/Heap é seguro.
+    // HISTÓRICO: este stub foi criado quando o crt0 (entry_0x100008.cpp)
+    // estava truncado em 132 bytes e o ps2_recomp injetava um "Patch: Jump
+    // to next entry point" pulando 81 instruções essenciais (BSS clear,
+    // setup de $a0/$gp/$sp, syscalls 60/61, jal __libc_init/main).
     //
-    // Endereços e args foram extraídos do disassembly cru do ELF:
-    //   uv run python tools/mips_inspect.py inspect 0x10008c 0x1001d0
+    // SESSÃO 2026-04-25: a regeneração via tools/regen_truncated.sh --all
+    // expandiu entry_0x100008.cpp pro range completo 0x100008-0x100db8
+    // (3504 bytes, todas as 9 instruções críticas presentes — confirmado
+    // por tools/diagnose_crt0.py). O crt0 real agora seta $a0=0x002cf070
+    // sozinho via lui+addiu em 0x100148+0x10015c, e $gp via daddu em
+    // 0x100170. NÃO precisa do kernel pra setar $a0.
+    //
+    // Manter este stub LIGADO sabota o crt0:
+    //   - linha 2476 zera $a0 antes de cada init, deixando o estado sujo
+    //   - chama main()/__libc_init com $gp=0, podendo crashar globals
+    //   - duplica trabalho que o crt0 fará quando dispatchLoop rodar
+    //
+    // Default agora: stub DESLIGADO. Para reativar (debug/regressão):
+    //   PS2_BOOT_STUB=1 bash jogar.sh
+    if (std::getenv("PS2_BOOT_STUB"))
     {
         uint8_t* rdram = m_memory.getRDRAM();
         if (rdram)

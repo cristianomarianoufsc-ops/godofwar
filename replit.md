@@ -125,7 +125,47 @@ Isso re-avalia o GLOB sem perder os `.o` já compilados.
 
 ### 🔬 Estado da investigação (boot loop / segfault)
 
-#### 🆕 SESSÃO 2026-04-25 (B) — ROOT CAUSE IDENTIFICADO: crt0 truncado
+#### 🆕 SESSÃO 2026-04-25 (C) — crt0 OK, mas boot_stub sabotando
+
+Após o regen do crt0 (sessão B abaixo) `tools/diagnose_crt0.py` no PC do
+usuário reportou **OK** — todas as 9 instruções críticas presentes.
+Mas o crash continua **idêntico** (`0x35c920` com `gp=0x0`).
+
+**Investigação no log `log_pos_crt0.txt`**:
+- Disassembly do ELF mostra que o crt0 SETA `$a0` SOZINHO via lui+addiu
+  em 0x100148 + 0x10015c (`$a0 = 0x002cf070`), depois faz
+  `daddu $gp, $a0, $zero` em 0x100170. **NÃO depende do kernel**.
+- Mas `boot_stub` em `ps2_runtime.cpp:2384` faz coisas hostis ao crt0:
+  - Roda `__libc_init`, `init libs` e `main()` ANTES do crt0, com `$gp=0`
+  - Linha 2476 zera `$a0` antes de cada init
+  - Restaura `pc=0x100008` mas com estado sujíssimo (BSS já mexido,
+    SetupThread/Heap chamados, syscalls com handlers em endereços de IOP)
+- O log mostra 4 syscalls 0x83 (LoadDmac) e 6 syscalls 0x5b com handlers
+  em `0x80076000`/`0x80075000` (regiões IOP) caindo em fallback ANTES
+  do crt0 rodar — alimentadas pelo boot_stub.
+
+**Edits desta sessão** (`PS2Recomp/ps2xRuntime/src/lib/ps2_runtime.cpp`):
+1. **Boot_stub virou opt-in** (`PS2_BOOT_STUB=1` reativa). Default OFF
+   agora que o crt0 está completo. Justificativa em comentário inline.
+2. **`[BOOT#N]` log agora inclui `gp=0x...` e `a0=0x...`** pra diagnosticar
+   se o crt0 está realmente setando esses regs.
+
+**Próximo teste no PC**:
+```bash
+cd ~/Documentos/GitHub/godofwar && git pull && bash recompilar.sh
+PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_sem_bootstub.txt
+```
+Cenários esperados:
+- **`gp=0x2cf070` aparece em algum BOOT#N** → crt0 funciona, e o crash
+  passa a outro lugar. Progresso real.
+- **`gp=0x0` em todos BOOT#N até crash em 0x35c920** → o tradutor do
+  ps2_recomp gerou código inválido pra `daddu $gp, $a0, $zero`. Próximo
+  passo: ler `entry_0x100008.cpp` e ver se a linha que traduz 0x100170
+  realmente escreve em `r[28]`.
+
+---
+
+#### Sessão 2026-04-25 (B) — ROOT CAUSE IDENTIFICADO: crt0 truncado
 
 **Causa raiz confirmada**: `src/recompiled/entry_0x100008.cpp` declara range
 `0x100008 - 0x10008c` (132 bytes), mas o crt0 real do ELF vai até `0x100db8`
