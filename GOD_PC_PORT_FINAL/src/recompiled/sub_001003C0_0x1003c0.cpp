@@ -6,6 +6,9 @@
 #include "ps2_syscalls.h"
 #include "ps2_stubs.h"
 
+#include <cstdio>
+#include <cstdlib>
+
 #ifdef PS2_FUNCTION_LOG_TRACKER
 #include "ps2_log.h"
 #endif
@@ -16,6 +19,22 @@ void sub_001003C0_0x1003c0(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
 #ifdef PS2_FUNCTION_LOG_TRACKER
     PS_LOG_ENTRY("sub_001003C0_0x1003c0");
 #endif
+
+    // INSTRUMENTACAO BUG MAIN-A0-ZERO (sessao 04-26 PARTE 3):
+    // Loga TODA entrada em "main" (sub_001003C0) com $a0, $ra e $sp.
+    // Para silenciar: defina PS2_NO_MAIN_TRACE=1 no ambiente.
+    {
+        static bool s_traceEnabled = (std::getenv("PS2_NO_MAIN_TRACE") == nullptr);
+        if (s_traceEnabled) {
+            const uint32_t a0 = GPR_U32(ctx, 4);
+            const uint32_t ra = GPR_U32(ctx, 31);
+            const uint32_t sp = GPR_U32(ctx, 29);
+            std::fprintf(stderr,
+                "[main:enter] sub_001003C0 a0=0x%08x ra=0x%08x sp=0x%08x\n",
+                a0, ra, sp);
+            std::fflush(stderr);
+        }
+    }
 
     ctx->pc = 0x1003c0u;
 

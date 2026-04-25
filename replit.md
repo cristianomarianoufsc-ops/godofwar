@@ -4,6 +4,26 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
 
 ---
 
+## 🚨🚨 ARMADILHA CRÍTICA: DOIS DIRETÓRIOS `src/recompiled/` 🚨🚨
+
+O projeto tem **DOIS diretórios paralelos** com os mesmos ~5626 `.cpp` recompilados:
+
+| Caminho | Status | Para quê |
+|---|---|---|
+| `./GOD_PC_PORT_FINAL/src/recompiled/` | ✅ **USADO PELO BUILD** | É o que `GOD_PC_PORT_FINAL/CMakeLists.txt` linka via `file(GLOB_RECURSE ${PROJECT_SOURCE_DIR}/src/recompiled/*.cpp)` |
+| `./src/recompiled/` | ⚠️ **IGNORADO PELO BUILD** | Provavelmente o destino do regen do `ps2_recomp` (`tools/regen_truncated.sh`). Edições feitas aqui **NÃO TÊM EFEITO**. |
+
+**Os dois NÃO estão totalmente sincronizados.** O `GOD_PC_PORT_FINAL/...` tem patches manuais de fixes de boot (Bugs A/B/C, etc.) que o `./src/recompiled/` não tem.
+
+**SE VOCÊ PRECISAR EDITAR UM ARQUIVO RECOMPILADO PARA INSTRUMENTAÇÃO OU FIX:**
+1. Edite SEMPRE em `GOD_PC_PORT_FINAL/src/recompiled/<arquivo>.cpp`.
+2. NUNCA edite só em `./src/recompiled/`, ou o build vai usar a versão antiga.
+3. Idealmente espelhe a edição em ambos para evitar drift futuro.
+
+Sessões anteriores (incluindo a 04-26 PARTE 1) editaram o arquivo errado e gastaram tempo com testes inconclusivos. Não repita.
+
+---
+
 ## 🚨 OBRIGATÓRIO PARA QUALQUER AGENTE NOVO 🚨
 
 **Antes de tocar em qualquer coisa neste projeto, faça nesta ordem:**

@@ -94,6 +94,73 @@ cadeia de init (`0x2994a0`, `0x293ea0`, `0x138cb0`). Sem isso, mesmo com `$gp` c
 ponteiros de função em BSS ficam 0 e o jogo entra em loop. A cadeia de init também precisa de
 `$gp` correto para funcionar, daí o setup antes do loop de init.
 
+### 🚨 ARMADILHA DOS DOIS `src/recompiled/` + CAUSA RAIZ DO `a0=0` — SESSÃO 2026-04-26 PARTE 3
+
+**Descoberta nº 1 (CRÍTICA):** o projeto tem **DOIS diretórios paralelos** com
+`.cpp` recompilados:
+
+- `./GOD_PC_PORT_FINAL/src/recompiled/` (5626 arquivos) — **USADO PELO BUILD**
+- `./src/recompiled/` (5626 arquivos) — **IGNORADO PELO BUILD**
+
+O `GOD_PC_PORT_FINAL/CMakeLists.txt` linka `${PROJECT_SOURCE_DIR}/src/recompiled/`
+que é `GOD_PC_PORT_FINAL/src/recompiled/` (não a raiz). As edições da PARTE 1
+desta sessão e provavelmente de várias sessões anteriores foram aplicadas
+no diretório errado. **Esta armadilha agora está documentada no topo do
+`replit.md` em destaque.**
+
+**Descoberta nº 2 (resolvedora do mistério):** o `entry_0x100008.cpp` no
+diretório CORRETO tem patches dos "Bugs A/B/C" do agente anterior que
+**bypassam o crt0 inteiro**. Em vez de fazer `pc = 0x1001d0` (que ia chamar
+`entry_2996b0` = `__libc_init` do PS2 SDK), o patch faz:
+
+```cpp
+// ---- FIX (Bug A + Bug B + Bug C) ----
+ctx->pc = 0x1003c0u;                  // pula crt0, vai direto pra main!
+SET_GPR_VEC(ctx, 29, ... PS2_RAM_SIZE - 0x10u);  // seta $sp manualmente
+SET_GPR_VEC(ctx, 28, ... 0x002cf070u);            // seta $gp manualmente
+```
+
+**Isso EXPLICA TUDO:**
+- Trace `0x100008 -> 0x1003c0 -> 0x100408 -> 0x238860` (não passa por 0x2996B0)
+- `[BOOT#2] pc=0x1003c0 a0=0x0` — main entra sem o crt0 ter setado `$a0`
+- `beql $a0, $zero` em 0x1003D8 pula direto pro epilogue
+- main retorna pra `ra=0` (estado inicial do GPR) → `[dispatch:pc-zero]`
+- `ExitThread` nunca é chamado porque main morre antes
+- Tela preta porque nenhum código de gameplay roda
+
+**Causa raiz:** o agente anterior pulou o crt0 para evitar um loop infinito
+que ele observou, mas o crt0 também tinha a função de setar `$a0` (provavelmente
+com `argc=1` ou um ponteiro pra struct de args/env) que main precisa.
+
+**Próximas opções (a decidir após confirmar com o usuário):**
+
+A. **Hack rápido:** setar `$a0=1` manualmente no `entry_0x100008.cpp`
+   logo antes do `pc = 0x1003c0`. Vai fazer main seguir o caminho não-zero.
+   Pode revelar o próximo bug (good progress) ou crashar (bad).
+
+B. **Investigação correta:** descobrir por que o crt0 (entry_2996b0) entrava
+   em loop e consertar. Provavelmente vai exigir muita análise de TLB/heap init.
+
+C. **Híbrido:** restaurar o caminho do crt0 mas instrumentar PS2_TRACE pra
+   ver onde ele trava, e consertar incrementalmente.
+
+**Instrumentação aplicada nesta sessão:**
+- `GOD_PC_PORT_FINAL/src/recompiled/sub_001003C0_0x1003c0.cpp` — `[main:enter]`
+  com `$a0/$ra/$sp` (silenciável via `PS2_NO_MAIN_TRACE=1`).
+- `recompilar.sh` — touch automático em arquivos do `git diff HEAD~5 HEAD`
+  (resolve o problema de mtime preservado pelo `git pull`).
+
+**Próximo passo:**
+```bash
+git pull origin main
+bash recompilar.sh                  # vai recompilar GOD_PC_PORT_FINAL/.../sub_001003C0
+PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_main_a0_v3.txt
+```
+Esperado: ver `[main:enter] sub_001003C0 a0=0x00000000 ra=... sp=...`. Se
+confirmado, aí avaliamos qual das opções A/B/C aplicar.
+
+---
+
 ### 🔧 Fix do `recompilar.sh` (touch automático pós-pull) — SESSÃO 2026-04-26 PARTE 2
 
 **Bug descoberto durante teste do log:** o usuário rodou
