@@ -185,6 +185,20 @@ echo
 echo "=== [5/5] Rodando ps2_recomp ==="
 "$RECOMP_BIN" "$TOML"
 
+# Força mtime "agora" em todos os .cpp que git diff acusa como modificados.
+# Sem isso, o ps2_recomp pode reescrever arquivos com mtime preservado, e
+# então o `make` (incremental, baseado em timestamp) acha que nada mudou e
+# NÃO recompila nada — gerando um binário antigo idêntico, com o crt0 hack
+# ainda dentro. Esse passo garante que `recompilar.sh` recompile de verdade.
+if command -v git >/dev/null 2>&1; then
+    CHANGED=$(git diff --name-only -- src/recompiled/ 2>/dev/null || true)
+    if [[ -n "$CHANGED" ]]; then
+        N_CHANGED=$(printf '%s\n' "$CHANGED" | wc -l)
+        echo "  touch em $N_CHANGED arquivo(s) modificado(s) (forçar rebuild)"
+        printf '%s\n' "$CHANGED" | xargs -r touch
+    fi
+fi
+
 echo
 echo "=== Diff de arquivos regerados ==="
 if command -v git >/dev/null 2>&1; then
