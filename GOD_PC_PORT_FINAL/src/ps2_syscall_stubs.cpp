@@ -206,3 +206,59 @@ void stub_ps2_printf(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime) {
     ctx->pc = ra;
 }
 
+// --- STUB: Handler IOP/kernel em 0x00080004 ---
+// Este endereço fica abaixo do range ELF (0x100000+) e é populado pelo boot
+// PS2 real (IOP/kernel EE via SIF RPC). Como pulamos o boot real, a função
+// nunca é registrada — o runtime a trata como "JALR alvo nao registrado -> nop".
+//
+// Objetivo deste stub: logar $a0/$a1/$ra e o conteúdo da memória apontada,
+// para revelar o que o jogo espera que esta função faça. Retorna v0=0 por ora.
+//
+// O que sabemos até agora (sub_00100E28, iterações 1..N):
+//   - Chamada com $a0 = short lido de [descriptor+0x8] (0x0000 na 1a iter, 0xc7c0 nas seguintes)
+//   - O retorno (v0) é usado como ponteiro de objeto: game lê [v0+0x114] pra decidir próximo passo
+//   - global@0x32E854 permanece 0 enquanto v0=0 (nop/stub zero)
+void stub_iop_callback_00080004(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime) {
+    static int s_count = 0;
+    ++s_count;
+
+    uint32_t a0 = getRegU32(ctx, 4);   // $a0 — "short" de tipo/categoria
+    uint32_t a1 = getRegU32(ctx, 5);   // $a1
+    uint32_t a2 = getRegU32(ctx, 6);   // $a2
+    uint32_t a3 = getRegU32(ctx, 7);   // $a3
+    uint32_t ra = getRegU32(ctx, 31);  // $ra — endereço de retorno
+    uint32_t s0 = getRegU32(ctx, 16);  // $s0 — costuma conter ponteiro de objeto
+    uint32_t v0 = getRegU32(ctx, 2);   // $v0 — valor atual (antes do nosso retorno)
+
+    // Loga as primeiras 5 chamadas e depois 1 a cada 50 para não inundar o log
+    if (s_count <= 5 || (s_count % 50 == 0)) {
+        fprintf(stderr,
+            "[STUB 0x00080004] #%d a0=0x%08x a1=0x%08x a2=0x%08x a3=0x%08x"
+            " ra=0x%08x s0=0x%08x v0_in=0x%08x\n",
+            s_count, a0, a1, a2, a3, ra, s0, v0);
+
+        // Dump dos primeiros 8 words em $a0 se for endereço PS2 válido
+        if (a0 != 0 && a0 < 0x02000000u) {
+            const uint32_t* p = reinterpret_cast<const uint32_t*>(&rdram[a0 & 0x01FFFFFFu]);
+            fprintf(stderr,
+                "[STUB 0x00080004] #%d   mem[a0+00..1c]:"
+                " 0x%08x 0x%08x 0x%08x 0x%08x  0x%08x 0x%08x 0x%08x 0x%08x\n",
+                s_count, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
+        }
+
+        // Dump dos primeiros 8 words em $s0 se for endereço PS2 válido
+        if (s0 != 0 && s0 < 0x02000000u) {
+            const uint32_t* p = reinterpret_cast<const uint32_t*>(&rdram[s0 & 0x01FFFFFFu]);
+            fprintf(stderr,
+                "[STUB 0x00080004] #%d   mem[s0+00..1c]:"
+                " 0x%08x 0x%08x 0x%08x 0x%08x  0x%08x 0x%08x 0x%08x 0x%08x\n",
+                s_count, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
+        }
+    }
+
+    // Retorna v0=0 e desvia para $ra (comportamento idêntico ao nop atual,
+    // mas agora registrado e visível no log)
+    setReturnS32(ctx, 0);
+    ctx->pc = getRegU32(ctx, 31);
+}
+

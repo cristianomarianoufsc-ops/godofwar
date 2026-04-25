@@ -790,6 +790,62 @@ estrutura raiz seria provavelmente `sub_002994A0` ou a missing `0x293ea0`
    `bss_start + 0x7ff0` (convenção MIPS PIC) — provavelmente
    `0x002cf070` (que aparece como `a0` da syscall 0x3c acima).
 
+## Estado atual da depuração (sessão de 2026-04-25, agente 5) — STUB 0x00080004 IMPLEMENTADO
+
+### Mudanças commitadas agora
+
+**`GOD_PC_PORT_FINAL/src/ps2_syscall_stubs.cpp`** — adicionado `stub_iop_callback_00080004`:
+- Loga `$a0, $a1, $a2, $a3, $ra, $s0, $v0_in` nas primeiras 5 chamadas e depois cada 50
+- Dumpa 8 words de memória em `[$a0]` e `[$s0]` se forem endereços PS2 válidos
+- Retorna `v0=0`, `ctx->pc = $ra` (comportamento idêntico ao nop anterior, mas agora loggado)
+
+**`GOD_PC_PORT_FINAL/src/main.cpp`** — registra o stub antes de `runtime.run()`:
+```cpp
+runtime.registerFunction(0x00080004u, stub_iop_callback_00080004);
+```
+
+### Análise completa do log `PS2_FORCE_A0=0x00100de0` (187+199 linhas)
+
+**Novidades vs 0x2cf070:**
+- `[a0+0x18]=0x00111080` → `func_131288` FOI chamada (silenciosamente, sem trace)
+- Iterações 1..40+ do loop de objetos registradas normalmente
+- **SEGFAULT ao final**: `a0=0x00100de0` aponta pra meio do código ELF — bytes de código lidos como ponteiros de lista encadeada → eventually crash
+- Conclusão: **todos os candidatos do scanner são falsos positivos** — a struct real de boot_arg é construída em runtime pelo boot PS2 real, não existe estáticamente no ELF
+
+**Padrão crítico descoberto no loop de objetos (`sub_00100E28`):**
+```
+JALR 0x00080004 → v0 = retorno (objeto ou 0)
+s0 = v0
+flag = [s0 + 0x114]
+se flag == 0:  chama func_118110(s0, a1=struct_ptr)
+senão:         vai direto pra func_13DB18
+```
+- `func_118110` escreve `0x0035ca40` em `rdram[0x114]` (iteração 1)
+- Iterações 2+: flag lida é `0x0035ca40` (não-zero) → pula func_118110
+- `global@0x32E854` nunca é setado enquanto `v0=0`
+
+### Próximo teste a fazer no PC local
+
+```bash
+git pull origin main
+bash recompilar.sh
+
+# Teste com stub ativo e a0=0x2cf070 (estável, sem segfault)
+PS2_FORCE_A0=0x2cf070 PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_stub_test.txt
+```
+
+Importante: fechar a janela após ~5 segundos e mandar:
+```bash
+grep "STUB 0x00080004\|JALR alvo" log_stub_test.txt | head -30
+```
+
+**O que esperamos ver:**
+- `[STUB 0x00080004] #1 a0=0x00000000 ...` — a0 é zero (short lido do descriptor)
+- Dump de memória revelando o que o jogo passa
+- **NÃO** deve aparecer `[DBG 100408] JALR alvo nao registrado` — porque agora está registrado
+
+---
+
 ## Estado atual da depuração (sessão de 2026-04-25, agente 4) — GAME LOOP VIVO + VARREDURA ELF
 
 ### Resultados dos testes com PS2_FORCE_A0 (log fornecido pelo usuário)

@@ -10,6 +10,7 @@ void syscall_rf_open(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime);
 void syscall_rf_read(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime);
 void syscall_rf_lseek(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime);
 void syscall_rf_close(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime);
+void stub_iop_callback_00080004(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime);
 
 int main(int argc, char** argv)
 {
@@ -94,6 +95,12 @@ int main(int argc, char** argv)
     // --- Registra funções recompiladas ---
     std::cout << "Registrando funções recompiladas..." << std::endl;
     register_recompiled_functions(&runtime);
+
+    // --- Registra stubs para endereços fora do ELF (boot PS2 real / IOP) ---
+    // 0x00080004: handler IOP/kernel registrado em runtime pelo boot real.
+    // Logamos os argumentos para entender o que o jogo espera dessa função.
+    runtime.registerFunction(0x00080004u, stub_iop_callback_00080004);
+    std::cout << "[stub] 0x00080004 registrado (handler IOP — modo diagnostico)" << std::endl;
 
     // --- Carrega o ELF ---
     std::cout << "Carregando ELF: " << elfPath << std::endl;
