@@ -12,7 +12,10 @@ include(FetchContent)
 FetchContent_Declare(
     elfio
     GIT_REPOSITORY https://github.com/serge1/ELFIO.git
-    GIT_TAG 7d30a22fc5aac06adfe7887ae57f3701b6b5f913
+    # Pinned to Release_3.12 (commit 8ae6cec) because the original pin
+    # (7d30a22fc5aac06adfe7887ae57f3701b6b5f913) was removed from upstream.
+    # ELFIO 3.x API is stable; elf_parser.cpp builds without changes.
+    GIT_TAG 8ae6cec5d60495822ecd57d736f66149da9b1830
     GIT_SHALLOW TRUE
 )
 FetchContent_MakeAvailable(elfio)
