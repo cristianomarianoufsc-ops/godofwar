@@ -1,0 +1,352 @@
+#!/usr/bin/env python3
+"""fix_truncated.py - Gera CSV de correção pra funções truncadas.
+
+Funções truncadas surgem quando o `// Address: 0xSTART - 0xEND` declarado no
+.cpp gerado pelo PS2Recomp termina ANTES do `jr $ra` real da função no ELF.
+O resultado é que o .cpp tem só uma fração das instruções e o jogo trava
+(ou pior — alguém pode ter aplicado um "patch" manual pulando o miolo).
+
+Esta ferramenta NÃO edita os .cpp. Em vez disso, emite um CSV no formato
+que o `loadGhidraFunctionMap` do PS2Recomp consome (`name,start,end,size`)
+com o range CORRIGIDO. Quando esse CSV é alimentado ao recompilador via
+`ghidra_output` no TOML, ele regera os .cpp truncados com o crt0 (e tudo
+mais) traduzido por inteiro.
+
+A regra usada pra detectar truncamento e o real_end é a mesma do
+`map_truncated_functions.py` (decodifica do start procurando `jr $ra` +
+delay slot, parando no próximo start declarado).
+
+Por padrão emite só correções pras funções TRUNCADAS E ALCANÇÁVEIS pelos
+seeds — porque essas são as que travam o jogo agora. Use `--all` pra
+emitir as 1.6k truncadas; use `--only-entry` pro fix mínimo do crt0.
+
+Também detecta o anti-padrão "Patch: Jump to next entry point" (hack
+manual aplicado em iteração anterior do projeto) e avisa em quais .cpp
+ele aparece — esses arquivos PRECISAM ser regerados, não basta o CSV.
+
+Uso:
+  python3 tools/fix_truncated.py                       # reachable-only
+  python3 tools/fix_truncated.py --only-entry          # só o crt0
+  python3 tools/fix_truncated.py --all                 # tudo (1612 funcs)
+  python3 tools/fix_truncated.py --seeds tools/reachable_seeds.txt
+  python3 tools/fix_truncated.py -o saida.csv          # caminho custom
+  python3 tools/fix_truncated.py --merge tools/discovered_functions.csv
+
+Em seguida:
+  1) Aponte o `ghidra_output` do TOML do recompilador pro CSV gerado
+     (ou use `tools/regen_truncated.sh` que faz tudo automático).
+  2) Rode o recompilador.
+  3) Recompile o C++.
+"""
+
+import argparse
+import os
+import re
+import struct
+import sys
+from collections import deque
+
+ELF_PATH = "GOD_PC_PORT_FINAL/data/SCUS_973.99"
+RECOMP_DIR = "src/recompiled"
+TEXT_VADDR = 0x100000
+TEXT_FOFF = 0x1000
+TEXT_END = 0x29BBA4
+ENTRY_PC = 0x100008
+DEFAULT_SEEDS_FILE = "tools/reachable_seeds.txt"
+DEFAULT_OUT = "tools/truncation_fixes.csv"
+PATCH_HACK_MARKER = "Patch: Jump to next entry point"
+
+
+# ----------------------------------------------------------- ELF I/O
+
+
+def load_elf_text():
+    with open(ELF_PATH, "rb") as f:
+        return f.read()
+
+
+def read_word(data, pc):
+    if pc < TEXT_VADDR or pc >= TEXT_END:
+        return None
+    foff = pc - TEXT_VADDR + TEXT_FOFF
+    if foff + 4 > len(data):
+        return None
+    return struct.unpack_from("<I", data, foff)[0]
+
+
+# ------------------------------------------------- Parse recompiled .cpp
+
+
+_HEADER_ADDR_RE = re.compile(
+    r"//\s*Address:\s*0x([0-9a-fA-F]+)\s*-\s*0x([0-9a-fA-F]+)"
+)
+_HEADER_NAME_RE = re.compile(r"//\s*Function:\s*(\S+)")
+_FILE_NAME_RE = re.compile(r"^(?:entry|sub|FUN)_.*\.cpp$")
+_FILE_FB_RE = re.compile(
+    r"^(?:entry|sub|FUN)_0*([0-9a-fA-F]+)_0x([0-9a-fA-F]+)\.cpp$"
+)
+
+
+def parse_recompiled_files():
+    """start_pc -> dict(end, file, function_name, has_patch_hack)."""
+    funcs = {}
+    if not os.path.isdir(RECOMP_DIR):
+        return funcs
+    for name in os.listdir(RECOMP_DIR):
+        if not _FILE_NAME_RE.match(name):
+            continue
+        path = os.path.join(RECOMP_DIR, name)
+        try:
+            with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                content = f.read()
+        except Exception:
+            continue
+        head = "\n".join(content.splitlines()[:30])
+        m_addr = _HEADER_ADDR_RE.search(head)
+        m_name = _HEADER_NAME_RE.search(head)
+        func_name = m_name.group(1) if m_name else None
+        has_hack = PATCH_HACK_MARKER in content
+        if m_addr:
+            start = int(m_addr.group(1), 16)
+            end = int(m_addr.group(2), 16)
+        else:
+            fb = _FILE_FB_RE.match(name)
+            if not fb:
+                continue
+            start = int(fb.group(1), 16)
+            end = int(fb.group(2), 16)
+        if not func_name:
+            # Fallback: use file basename minus .cpp
+            func_name = name[:-4]
+        funcs[start] = {
+            "end": end,
+            "file": name,
+            "name": func_name,
+            "has_patch_hack": has_hack,
+        }
+    return funcs
+
+
+# ------------------------------------------- MIPS scan: real_end + jal targets
+
+
+def scan_function(data, start_pc, all_starts_sorted, max_instructions=4000):
+    jal_targets = []
+    j_targets = []
+    pc = start_pc
+    next_start = None
+    for s in all_starts_sorted:
+        if s > start_pc:
+            next_start = s
+            break
+    for _ in range(max_instructions):
+        if pc >= TEXT_END:
+            return pc, jal_targets, j_targets
+        if next_start is not None and pc >= next_start:
+            return pc, jal_targets, j_targets
+        word = read_word(data, pc)
+        if word is None:
+            return pc, jal_targets, j_targets
+        op = (word >> 26) & 0x3F
+        funct = word & 0x3F
+        rs = (word >> 21) & 0x1F
+        # jr $ra
+        if op == 0x00 and funct == 0x08 and rs == 31:
+            return pc + 8, jal_targets, j_targets
+        if op == 0x03:
+            jal_targets.append((word & 0x03FFFFFF) << 2)
+        if op == 0x02:
+            t = (word & 0x03FFFFFF) << 2
+            j_targets.append(t)
+            if t < start_pc or (next_start is not None and t >= next_start):
+                return pc + 8, jal_targets, j_targets
+        pc += 4
+    return pc, jal_targets, j_targets
+
+
+# --------------------------------------------------------- BFS por seeds
+
+
+def find_func_start(starts_sorted, pc):
+    lo, hi = 0, len(starts_sorted) - 1
+    result = None
+    while lo <= hi:
+        mid = (lo + hi) // 2
+        if starts_sorted[mid] <= pc:
+            result = starts_sorted[mid]
+            lo = mid + 1
+        else:
+            hi = mid - 1
+    return result
+
+
+def bfs_reachable(seeds, scan_cache):
+    visited = set()
+    queue = deque(seeds)
+    while queue:
+        f = queue.popleft()
+        if f in visited:
+            continue
+        visited.add(f)
+        info = scan_cache.get(f)
+        if info is None:
+            continue
+        _e, jals, js = info
+        for t in jals + js:
+            if TEXT_VADDR <= t < TEXT_END and t in scan_cache:
+                queue.append(t)
+    return visited
+
+
+def load_seeds(args, starts_sorted):
+    raw = []
+    if args.seed:
+        raw.extend(int(s, 0) for s in args.seed)
+    src = args.seeds or (DEFAULT_SEEDS_FILE
+                         if os.path.isfile(DEFAULT_SEEDS_FILE) else None)
+    if src and os.path.isfile(src):
+        with open(src, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.split("#", 1)[0].strip()
+                if not line:
+                    continue
+                try:
+                    raw.append(int(line, 0))
+                except ValueError:
+                    pass
+    if not raw:
+        raw = [ENTRY_PC]
+    seeds = []
+    for s in raw:
+        fs = find_func_start(starts_sorted, s)
+        if fs is not None and fs not in seeds:
+            seeds.append(fs)
+    return seeds
+
+
+# ----------------------------------------------------------------- Main
+
+
+def main():
+    ap = argparse.ArgumentParser(
+        description="Gera CSV de correção pra funções truncadas."
+    )
+    scope = ap.add_mutually_exclusive_group()
+    scope.add_argument("--all", action="store_true",
+                       help="emite correção pra TODAS as truncadas")
+    scope.add_argument("--only-entry", action="store_true",
+                       help="emite correção só pra entry_0x100008 (crt0)")
+    ap.add_argument("--seed", action="append", default=None,
+                    help="seed extra (aplicado quando o escopo é reachable)")
+    ap.add_argument("--seeds", default=None,
+                    help=f"arquivo de seeds (default: {DEFAULT_SEEDS_FILE})")
+    ap.add_argument("-o", "--out", default=DEFAULT_OUT,
+                    help=f"caminho de saída (default: {DEFAULT_OUT})")
+    ap.add_argument("--merge", default=None,
+                    help="mescla com este CSV existente (ex: discovered)")
+    args = ap.parse_args()
+
+    print("[1/4] Carregando ELF + funções recompiladas...")
+    data = load_elf_text()
+    funcs = parse_recompiled_files()
+    starts_sorted = sorted(funcs.keys())
+    print(f"      Funções recompiladas: {len(funcs)}")
+
+    print("[2/4] Decodificando real_end das funções...")
+    scan_cache = {}
+    truncated = {}  # start -> (declared_end, real_end, info)
+    hack_files = []
+    for start in starts_sorted:
+        info = funcs[start]
+        if info["has_patch_hack"]:
+            hack_files.append((start, info["file"]))
+        real_end, jals, js = scan_function(data, start, starts_sorted)
+        scan_cache[start] = (real_end, jals, js)
+        if (real_end - start) > (info["end"] - start) and \
+                (real_end - info["end"]) >= 4:
+            truncated[start] = (info["end"], real_end, info)
+    print(f"      Funções truncadas (todas): {len(truncated)}")
+    if hack_files:
+        print(f"      [!] {len(hack_files)} arquivo(s) com hack "
+              f"\"{PATCH_HACK_MARKER}\":")
+        for s, fn in hack_files:
+            print(f"          0x{s:08X}  {fn}")
+
+    print("[3/4] Definindo escopo da correção...")
+    if args.only_entry:
+        scope_set = {ENTRY_PC} & set(truncated.keys())
+        print(f"      Escopo: --only-entry → {len(scope_set)} função(ões)")
+    elif args.all:
+        scope_set = set(truncated.keys())
+        print(f"      Escopo: --all → {len(scope_set)} funções")
+    else:
+        seeds = load_seeds(args, starts_sorted)
+        reachable = bfs_reachable(seeds, scan_cache)
+        scope_set = set(truncated.keys()) & reachable
+        print(f"      Escopo: reachable from {len(seeds)} seed(s) → "
+              f"{len(scope_set)} truncada(s) alcançável(eis)")
+
+    if not scope_set:
+        print("      (nada a corrigir nesse escopo — tudo bem!)")
+        return 0
+
+    print("[4/4] Escrevendo CSV...")
+    rows = []  # (name, start, end)
+    if args.merge and os.path.isfile(args.merge):
+        with open(args.merge, "r", encoding="utf-8") as f:
+            header = next(f, None)
+            for line in f:
+                parts = [p.strip() for p in line.strip().split(",")]
+                if len(parts) < 4:
+                    continue
+                try:
+                    start = int(parts[1], 16)
+                except ValueError:
+                    continue
+                if start in scope_set:
+                    # nossa correção override
+                    continue
+                rows.append((parts[0], start, int(parts[2], 16)))
+    for start in sorted(scope_set):
+        declared_end, real_end, info = truncated[start]
+        rows.append((info["name"], start, real_end))
+
+    rows.sort(key=lambda r: r[1])
+    os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
+    with open(args.out, "w", encoding="utf-8") as f:
+        f.write("name,start,end,size\n")
+        for name, start, end in rows:
+            f.write(f"{name},0x{start:x},0x{end:x},{end - start}\n")
+    print(f"      → {args.out} ({len(rows)} linha(s))")
+
+    print()
+    print("=" * 70)
+    print("CORREÇÕES INCLUÍDAS")
+    print("=" * 70)
+    for start in sorted(scope_set):
+        dend, rend, info = truncated[start]
+        miss = (rend - dend) // 4
+        tag = "  [HACK ATIVO]" if info["has_patch_hack"] else ""
+        print(f"  0x{start:08X}  {info['name']:<24} "
+              f"end {dend:#x} → {rend:#x}  (+{miss} ins){tag}")
+
+    print()
+    print("=" * 70)
+    print("PRÓXIMOS PASSOS")
+    print("=" * 70)
+    print(f"  1) Aponte o `ghidra_output` do TOML do recompilador pro CSV:")
+    print(f"        ghidra_output = \"{os.path.abspath(args.out)}\"")
+    print(f"     (ou use tools/regen_truncated.sh, que faz tudo)")
+    print(f"  2) Rode o ps2_recomp pra regerar os .cpp afetados.")
+    print(f"  3) Recompile o C++ (`bash recompilar.sh`).")
+    if hack_files:
+        print()
+        print("  [!] Atenção: o hack \"Patch: Jump to next entry point\" será")
+        print("      sobrescrito automaticamente quando o .cpp for regerado")
+        print("      com o range correto. Se preferir limpar antes pra ver")
+        print("      o efeito puro, faça `git diff` depois de regerar.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
