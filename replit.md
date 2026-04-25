@@ -4,6 +4,26 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
 
 ---
 
+## 🚨 OBRIGATÓRIO PARA QUALQUER AGENTE NOVO 🚨
+
+**Antes de tocar em qualquer coisa neste projeto, faça nesta ordem:**
+
+1. **Leia este `replit.md` inteiro** (memória + estado atual da depuração).
+2. **Leia o `HANDOFF_AGENT.md` inteiro** — contém o contexto detalhado das
+   sessões anteriores, estrutura do projeto, bugs conhecidos e raciocínio
+   das decisões.
+3. **Ao terminar qualquer mudança, ATUALIZE OS DOIS arquivos:**
+   - `replit.md` — adicione/atualize a seção "Estado atual da depuração" com
+     a data da sessão e o que descobriu/mudou.
+   - `HANDOFF_AGENT.md` — adicione uma nova subseção "✅ ... — SESSÃO YYYY-MM-DD"
+     descrevendo diagnóstico, fixes aplicados e próximos passos.
+
+**Por quê:** este projeto teve várias sessões em sequência com agentes
+diferentes. Sem leitura + atualização disciplinada dos 2 docs, cada agente
+re-descobre os mesmos bugs e desperdiça créditos do usuário.
+
+---
+
 ## Preferências do projeto
 
 - **Idioma**: toda comunicação no chat **e títulos de commit/checkpoint
