@@ -4,6 +4,16 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
 
 ---
 
+## Preferências do projeto
+
+- **Idioma**: toda comunicação no chat **e títulos de commit/checkpoint
+  gerados pelo Replit** devem ser em **português brasileiro**. Não usar
+  inglês nos títulos automáticos de checkpoint.
+- **Compilação**: feita exclusivamente no PC do usuário (Linux Mint).
+  Ver "FLUXO DE TRABALHO" abaixo.
+
+---
+
 ## ⚡ FLUXO DE TRABALHO (LEIA ANTES DE QUALQUER COISA)
 
 **O Replit NÃO compila nem roda o jogo.** O ambiente Replit serve apenas como
@@ -788,14 +798,37 @@ envolvido**. É puro EE-kernel sendo bypassado pelo patch defensivo.
 
 ### Próximas ações (ordem de prioridade)
 
-A. **🥇 Implementar stub C++ no runtime que executa manualmente o init
-   pulado**: zerar BSS (`memset(rdram + 0x2c7080, 0, 0x95128)`),
-   chamar `handleSyscall(0x3c)` (SetupThread), `handleSyscall(0x3d)`
-   (SetupHeap), e depois `entry_2994a0` / `entry_293ea0` /
-   `entry_138cb0` / `entry_138d48` em sequência **antes** de pular pra
-   `0x1001d0`. Pode ser inserido no fim do `entry_0x100008.cpp` (mas
-   será sobrescrito pelo regen — melhor pôr em um wrapper no
-   `ps2_runtime.cpp` que roda 1 vez antes do entry).
+A. **🥇 ✅ IMPLEMENTADO** (sessão 04-25 noite). Stub C++ inserido em
+   `PS2Recomp/ps2xRuntime/src/lib/ps2_runtime.cpp` dentro do `run()`,
+   logo após `initializeGuestKernelState`. Faz manualmente o que o
+   patch automático pula:
+   1. `memset(rdram + 0x2c7080, 0, 0x95128)` — zera BSS.
+   2. Prepara `$a0..$t0` e chama `ps2_syscalls::SetupThread`
+      (gp=0x2cf070, stack=0x1ff8000, ssize=0x8000, args=0x2c7080,
+      root=0x1001d8). Copia o SP retornado pra `$r29`.
+   3. Prepara `$a0=0x35c1a8`, `$a1=0` e chama `ps2_syscalls::SetupHeap`.
+   4. Loop sobre `{0x2994a0, 0x293ea0, 0x138cb0, 0x138d48}`:
+      `lookupFunction(addr)` + chama dentro de `GuestExecutionScope`
+      com `$ra=0` (sentinela). Se `lookupFunction` falhar (caso
+      `0x138d48` que não tem entry registrada), loga aviso e pula.
+   5. Restaura `pc=0x100008` pro dispatchLoop começar normal.
+
+   Saída esperada nos logs ao rodar:
+   ```
+   [boot_stub] init 0x2994a0
+   [boot_stub] init 0x293ea0
+   [boot_stub] init 0x138cb0
+   [boot_stub] AVISO: init 0x138d48 nao registrado, pulando
+   [boot_stub] init concluido, dispatchLoop a seguir
+   ```
+
+   Como testar: `git pull` + `bash recompilar.sh` + rodar. Sucesso =
+   `[DBG 100E28]` aparece poucas vezes (não 40+), `livePc` sai do
+   range `0x118110/0x13DB18`, e idealmente algum dos 15 readers de
+   `0x32E854` finalmente vê valor != 0.
+
+A-OLD. **(plano original mantido pra histórico)** Stub C++ no runtime
+   chamando manualmente o init pulado.
 
 B. **🥈 Ensinar o ps2_recomp a decodificar as 5 instruções EE custom**
    (`0x10008c`, `0x100110`, `0x100170`, `0x10017c`, `0x1001b0`). Mais

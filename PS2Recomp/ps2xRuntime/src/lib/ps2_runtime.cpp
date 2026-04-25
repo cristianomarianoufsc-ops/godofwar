@@ -2143,6 +2143,106 @@ void PS2Runtime::run()
     ps2_stubs::resetSifState();
     ps2_stubs::resetGsSyncVCallbackState();
     ps2_syscalls::initializeGuestKernelState(m_memory.getRDRAM());
+
+    // === BOOT STUB INIT (compensação do patch automático do ps2_recomp) ===
+    // O ps2_recomp tropeça em 5 instruções EE custom dentro do crt0
+    // (em 0x10008c, 0x100110, 0x100170, 0x10017c e 0x1001b0) e injeta
+    // automaticamente o "Patch: Jump to next entry point" em
+    // entry_0x100008.cpp, que pula 81 instruções essenciais entre
+    // 0x10008c e 0x1001d0:
+    //   - clear FPU regs (32 mtc1 $zero)
+    //   - clear BSS (loop original em 0x10011c-0x100144)
+    //   - SetupThread (syscall 0x3C, original em 0x100174)
+    //   - SetupHeap   (syscall 0x3D, original em 0x100190)
+    //   - 4 jal de init de runtime/libc (0x2994a0, 0x293ea0,
+    //     0x138cb0, 0x138d48)
+    //   - ei (enable interrupts) em 0x1001b0
+    //
+    // Sem isso, a flag global em 0x32E854 nunca é setada e o boot loopa
+    // eterno em entry_100db8 (visto em log_teste2.txt: 7560 ticks sem
+    // escapar). Este stub roda manualmente o equivalente C++ desse trecho
+    // ANTES do dispatchLoop. Idempotente: a BSS já tende a estar zerada
+    // por loadELF, e re-rodar SetupThread/Heap é seguro.
+    //
+    // Endereços e args foram extraídos do disassembly cru do ELF:
+    //   uv run python tools/mips_inspect.py inspect 0x10008c 0x1001d0
+    {
+        uint8_t* rdram = m_memory.getRDRAM();
+        if (rdram)
+        {
+            // 1) Zera BSS (loop original em 0x10011c-0x100144).
+            //    Range: 0x2c7080 (BSS start) -> 0x35c1a8 (BSS end)
+            //    Tamanho: 0x95128 bytes (~600 KB).
+            std::memset(rdram + 0x2c7080u, 0, 0x95128u);
+
+            // 2) SetupThread (syscall 0x3C, original em 0x100174-0x100178).
+            //    Args do disassembly em 0x100148-0x10016c:
+            //      $a0=gp=0x2cf070   $a1=stack=0x1ff8000
+            //      $a2=ssize=0x8000  $a3=args=0x2c7080
+            //      $t0=root=0x1001d8
+            m_cpuContext.r[4] = _mm_set_epi64x(0, 0x2cf070);
+            m_cpuContext.r[5] = _mm_set_epi64x(0, 0x1ff8000);
+            m_cpuContext.r[6] = _mm_set_epi64x(0, 0x8000);
+            m_cpuContext.r[7] = _mm_set_epi64x(0, 0x2c7080);
+            m_cpuContext.r[8] = _mm_set_epi64x(0, 0x1001d8);
+            ps2_syscalls::SetupThread(rdram, &m_cpuContext, this);
+            // SetupThread retorna o novo SP em $v0 ($r2) — copia para $sp ($r29)
+            const int64_t newSp = static_cast<int64_t>(
+                static_cast<uint32_t>(_mm_extract_epi32(m_cpuContext.r[2], 0)));
+            m_cpuContext.r[29] = _mm_set_epi64x(0, newSp);
+
+            // 3) SetupHeap (syscall 0x3D, original em 0x100190-0x100194).
+            //    Args do disassembly em 0x100180-0x10018c:
+            //      $a0=heapBase=0x35c1a8 (=fim de BSS)  $a1=size=0
+            m_cpuContext.r[4] = _mm_set_epi64x(0, 0x35c1a8);
+            m_cpuContext.r[5] = _mm_setzero_si128();
+            ps2_syscalls::SetupHeap(rdram, &m_cpuContext, this);
+
+            // 4) Inits de runtime/libc — JAL original em 0x100198, 0x1001a0,
+            //    0x1001a8, 0x1001c0. Cada uma é candidata a setar a flag
+            //    global 0x32E854 = 1 (ainda não confirmado qual exatamente).
+            constexpr uint32_t kInitChain[] = {
+                0x2994a0u, 0x293ea0u, 0x138cb0u, 0x138d48u
+            };
+            const uint32_t savedSp = static_cast<uint32_t>(
+                _mm_extract_epi32(m_cpuContext.r[29], 0));
+            for (uint32_t initAddr : kInitChain)
+            {
+                RecompiledFunction fn = lookupFunction(initAddr);
+                if (fn)
+                {
+                    m_cpuContext.pc = initAddr;
+                    // RA sentinela: dispatchLoop trata pc=0 como retorno final;
+                    // como aqui chamamos diretamente, o jr $ra final volta a 0
+                    // e o controle volta a este loop sem entrar no dispatchLoop.
+                    m_cpuContext.r[31] = _mm_setzero_si128();
+                    m_cpuContext.r[4]  = _mm_setzero_si128();
+                    std::cout << "[boot_stub] init 0x"
+                              << std::hex << initAddr << std::dec << std::endl;
+                    {
+                        GuestExecutionScope guestExecution(this);
+                        fn(rdram, &m_cpuContext, this);
+                    }
+                    // Restaura SP (cada init pode ter usado stack frame próprio
+                    // mas deveria restaurar; mantemos garantia).
+                    m_cpuContext.r[29] = _mm_set_epi64x(0, savedSp);
+                }
+                else
+                {
+                    std::cerr << "[boot_stub] AVISO: init 0x"
+                              << std::hex << initAddr << std::dec
+                              << " nao registrado, pulando" << std::endl;
+                }
+            }
+
+            // Restaura PC pro entry original (dispatchLoop começa em 0x100008).
+            m_cpuContext.pc = 0x100008u;
+            std::cout << "[boot_stub] init concluido, dispatchLoop a seguir"
+                      << std::endl;
+        }
+    }
+    // === FIM BOOT STUB ====================================================
+
     m_cpuContext.r[4] = _mm_setzero_si128();
     m_cpuContext.r[5] = _mm_setzero_si128();
     m_cpuContext.r[29] = _mm_set_epi64x(0, static_cast<int64_t>(PS2_RAM_SIZE - 0x10u));
