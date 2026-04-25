@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <cstdlib>
 #include <cstring>
 #include <limits>
 #include <chrono>
@@ -166,6 +167,126 @@ namespace
         }
 
         return firstHigh;
+    }
+
+    struct LoopDetector
+    {
+        uint32_t cycleLen = 0u;
+        uint64_t cycleCount = 0u;
+        uint64_t lastReportedCount = 0u;
+        std::array<uint32_t, 8> pattern{};
+    };
+
+    thread_local LoopDetector g_loopDetector;
+
+    uint64_t parseEnvUint64(const char *name, uint64_t fallback)
+    {
+        const char *raw = std::getenv(name);
+        if (!raw || !*raw)
+        {
+            return fallback;
+        }
+        try
+        {
+            return std::stoull(raw);
+        }
+        catch (...)
+        {
+            return fallback;
+        }
+    }
+
+    uint64_t loopReportThreshold()
+    {
+        static const uint64_t v = parseEnvUint64("PS2_LOOP_REPORT_AFTER", 100000ull);
+        return v;
+    }
+
+    uint64_t loopBreakThreshold()
+    {
+        static const uint64_t v = parseEnvUint64("PS2_LOOP_BREAK_AFTER", 0ull);
+        return v;
+    }
+
+    // Detecta se as ultimas L PCs despachadas formam um ciclo (i.e. coincidem
+    // exatamente com as L PCs imediatamente anteriores). Retorna o tamanho L
+    // do menor ciclo encontrado em [2..8], ou 0 se nao ha ciclo.
+    uint32_t detectCycleLength(const DispatchHistory &h)
+    {
+        const uint32_t cap = static_cast<uint32_t>(h.pcs.size());
+        const uint32_t available = h.wrapped ? cap : h.next;
+        if (available < 4u)
+        {
+            return 0u;
+        }
+
+        constexpr uint32_t kMaxLen = 8u;
+        const uint32_t maxLen = std::min(kMaxLen, available / 2u);
+
+        for (uint32_t len = 2u; len <= maxLen; ++len)
+        {
+            bool match = true;
+            for (uint32_t i = 0u; i < len; ++i)
+            {
+                const uint32_t idxA = (h.next + cap - 1u - i) % cap;
+                const uint32_t idxB = (h.next + cap - 1u - i - len) % cap;
+                if (h.pcs[idxA] != h.pcs[idxB])
+                {
+                    match = false;
+                    break;
+                }
+            }
+            if (match)
+            {
+                return len;
+            }
+        }
+        return 0u;
+    }
+
+    // Forward declaration — definicao real esta logo abaixo neste arquivo.
+    uint32_t readGuestU32Wrapped(const uint8_t *rdram, uint32_t addr);
+
+    // Varre a stack do guest a partir de sp procurando palavras u32 que
+    // pareçam ser return addresses validos (apontam para alguma funcao
+    // recompilada no range guest). Retorna ate maxFrames candidatos.
+    std::string formatGuestStackWalk(const PS2Runtime *runtime, const uint8_t *rdram,
+                                     uint32_t sp, uint32_t maxFrames = 16u)
+    {
+        if (!rdram || sp == 0u || !runtime)
+        {
+            return "(no stack)";
+        }
+
+        std::ostringstream oss;
+        uint32_t found = 0u;
+        // Varre ate 4 KiB acima de sp; suficiente pra ver varios frames sem poluir.
+        for (uint32_t off = 0u; off < 0x1000u && found < maxFrames; off += 4u)
+        {
+            const uint32_t val = readGuestU32Wrapped(rdram, sp + off);
+            if (val < 0x00100000u || val >= 0x02000000u)
+            {
+                continue;
+            }
+            // O endereço-alvo do JAL costuma ser word-aligned.
+            const uint32_t aligned = val & ~0x3u;
+            if (!runtime->hasFunction(aligned))
+            {
+                continue;
+            }
+            if (found > 0u)
+            {
+                oss << " <- ";
+            }
+            oss << "[sp+0x" << std::hex << off << "]=0x" << val;
+            ++found;
+        }
+
+        if (found == 0u)
+        {
+            return "(no plausible frames found)";
+        }
+        return oss.str();
     }
 
     uint32_t selectExceptionVector(const R5900Context *ctx, bool tlbRefill)
@@ -1880,6 +2001,80 @@ void PS2Runtime::dispatchLoop(uint8_t *rdram, R5900Context *ctx)
                       << " ra=0x" << dispatchedRa
                       << " sp=0x" << dispatchedSp
                       << std::dec << std::endl;
+        }
+
+        // ----- Detector de ciclo de PCs -----
+        // Diagnostica loops infinitos com 2..8 PCs alternando, que escapam
+        // do detector samePcCount acima (que so pega PC repetido identico).
+        // Camada 1 (sempre ligada): loga padrao + stack walk do guest a cada
+        //   PS2_LOOP_REPORT_AFTER iteracoes do mesmo ciclo (default 100k).
+        // Camada 2 (opt-in via PS2_LOOP_BREAK_AFTER=N): pede stop limpo do
+        //   guest quando o ciclo bate N repeticoes. Default 0 = desligado.
+        {
+            const uint32_t cycleLen = detectCycleLength(g_dispatchHistory);
+            LoopDetector &ld = g_loopDetector;
+
+            if (cycleLen != 0u && (ld.cycleLen == 0u || ld.cycleLen == cycleLen))
+            {
+                if (ld.cycleLen == 0u)
+                {
+                    ld.cycleLen = cycleLen;
+                    const uint32_t cap = static_cast<uint32_t>(g_dispatchHistory.pcs.size());
+                    for (uint32_t i = 0u; i < cycleLen; ++i)
+                    {
+                        const uint32_t idx = (g_dispatchHistory.next + cap - cycleLen + i) % cap;
+                        ld.pattern[i] = g_dispatchHistory.pcs[idx];
+                    }
+                    ld.cycleCount = 1u;
+                    ld.lastReportedCount = 0u;
+                }
+                else
+                {
+                    ++ld.cycleCount;
+                }
+
+                const uint64_t reportThr = loopReportThreshold();
+                if (reportThr > 0u && ld.cycleCount >= reportThr &&
+                    (ld.cycleCount - ld.lastReportedCount) >= reportThr)
+                {
+                    ld.lastReportedCount = ld.cycleCount;
+                    const uint32_t gp = static_cast<uint32_t>(_mm_extract_epi32(ctx->r[28], 0));
+
+                    std::cerr << "[dispatch:cycle-detected] len=" << std::dec << ld.cycleLen
+                              << " repeated=" << ld.cycleCount
+                              << " pattern=";
+                    for (uint32_t i = 0u; i < ld.cycleLen; ++i)
+                    {
+                        if (i > 0u) std::cerr << " -> ";
+                        std::cerr << "0x" << std::hex << ld.pattern[i];
+                    }
+                    std::cerr << std::dec
+                              << " ra=0x" << std::hex << dispatchedRa
+                              << " sp=0x" << dispatchedSp
+                              << " gp=0x" << gp << std::dec
+                              << "\n  guestStackWalk=" << formatGuestStackWalk(this, rdram, dispatchedSp)
+                              << "\n  dispatchHistory=" << formatDispatchHistory()
+                              << std::endl;
+
+                    const uint64_t breakThr = loopBreakThreshold();
+                    if (breakThr > 0u && ld.cycleCount >= breakThr)
+                    {
+                        std::cerr << "[dispatch:cycle-break] threshold PS2_LOOP_BREAK_AFTER="
+                                  << std::dec << breakThr
+                                  << " reached; requesting runtime stop"
+                                  << std::endl;
+                        requestStop();
+                        break;
+                    }
+                }
+            }
+            else if (cycleLen == 0u && ld.cycleLen != 0u)
+            {
+                // Padrao quebrou — reseta detector pra capturar o proximo.
+                ld.cycleLen = 0u;
+                ld.cycleCount = 0u;
+                ld.lastReportedCount = 0u;
+            }
         }
 
         // Registra a chamada de função no tracer (ativado via PS2_TRACE=1)

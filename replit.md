@@ -160,6 +160,48 @@ global em `0x32E854` dispara. Se sim, achamos o inicializador. Se não,
 precisamos implementar manualmente no `stub_hardware_init`
 (`GOD_PC_PORT_FINAL/src/ps2_syscall_stubs.cpp`).
 
+**6. Sessão 2026-04-25 — overlay loader ausente (`0x35c920`)**: depois de
+adicionar `recover-pc` pra função desconhecida, o boot avança até
+`func_100E28` chamar JALR pra `0x35c920`. Esse endereço **não existe no ELF
+principal** (`mips_inspect.py` confirma: está em região `.bss` do segment
+`memsz` mas fora do `filesz` carregado: `0x100000–0x2c7018` é file-backed,
+`0x2c7018–0x35d080` é `.bss` zerado). Logo `0x35c920` é alvo de **overlay
+`.DVP`** que devia ser carregado em runtime via DMA/IOP, mas o loader nunca
+roda — provavelmente porque os syscalls 0x83 (LoadExecPS2 family), 0x5a/0x5b
+caem em `[SyscallOverride:fallback]` no boot. Resultado: dispatcher entra em
+loop infinito `100e28 → 35c920(unknown→recover) → 13db18 → 100e64(unknown→recover)`
+até estourar a stack (`sp` desce ~256 KiB) e dar SIGSEGV. **Próximo passo**:
+rodar `python3 tools/ps2_syscalls.py --report --log saida_stderr.log` pra
+priorizar qual syscall é o overlay loader e implementá-lo.
+
+**7. Detector de ciclo de PCs no dispatcher** (adicionado em
+`ps2_runtime.cpp::dispatchLoop`): além do `samePcCount` antigo (que só pega
+PC repetido idêntico), agora há um detector de **ciclos de 2..8 PCs
+alternando** que:
+- **Camada 1 (sempre ligada)**: a cada `PS2_LOOP_REPORT_AFTER` repetições do
+  mesmo ciclo (default 100000), imprime em stderr
+  `[dispatch:cycle-detected] len=N repeated=M pattern=0x... -> 0x... ra=... sp=... gp=...`
+  seguido de `guestStackWalk=` (varre 4 KiB acima de `sp` listando palavras
+  que sejam endereços de funções recompiladas válidas) e `dispatchHistory=`
+  (últimas 64 PCs).
+- **Camada 2 (opt-in)**: se `PS2_LOOP_BREAK_AFTER=N` for setado e o ciclo
+  bater N repetições, chama `requestStop()` e encerra o runtime limpo (sem
+  esperar `Ctrl+C` nem segfault). Default 0 = desligado, porque busy-wait
+  legítimo (VBlank, semáforos, GS regs) bate facilmente em loops curtos
+  e matar isso quebraria o jogo.
+
+Uso típico no PC do usuário:
+```bash
+# Diagnostico passivo (default — apenas loga):
+PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_teste.txt
+
+# Auto-stop quando ciclo repetir 1M vezes (encerra limpo):
+PS2_LOOP_BREAK_AFTER=1000000 bash jogar.sh 2>&1 | tee log_teste.txt
+
+# Reportar mais cedo (a cada 10k repeticoes em vez de 100k):
+PS2_LOOP_REPORT_AFTER=10000 bash jogar.sh 2>&1 | tee log_teste.txt
+```
+
 ### Regras pro agente Replit
 
 - **NÃO rodar `bash build.sh` no Replit** — só desperdiça CPU.
