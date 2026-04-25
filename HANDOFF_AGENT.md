@@ -4,6 +4,65 @@
 
 ---
 
+## 🔴 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-25, agente 4)
+
+### Status: GAME LOOP VIVO — janela reabre em loop, tela preta
+
+Com `PS2_FORCE_A0=0x2cf070 PS2_TRACE=1 bash jogar.sh`:
+- A janela Raylib **abre**, fica preta, e quando o usuário fecha, **reabre sozinha** — em loop até Ctrl+C.
+- Isso confirma que `func_238860` (game loop principal) está **executando de verdade**.
+- O loop de objetos em `sub_00100408` relança o ciclo a cada iteração.
+- Antes (sem FORCE_A0): janela abria preta, fechava, **nunca mais voltava** — isso era o crash imediato.
+
+### Bloqueador atual: JALR para 0x00080004
+
+```
+[DBG 100408] JALR alvo nao registrado 0x00080004 -> nop
+```
+
+- O loop de objetos em `sub_00100408` (0x100474) faz `jalr $v0` onde `$v0 = [obj+0x5c+0xC] = 0x00080004`
+- `0x00080004` está **abaixo do range ELF** (que começa em 0x100000) — não é código recompilado
+- **Confirmado por `varredura_a0.py`**: esse endereço não existe em nenhum lugar do ELF como dado
+- É populado em **runtime pelo boot PS2 real** (IOP/kernel EE), que pulamos com o fix Bug A/B/C
+- O Guard Bug D no código transforma o JALR em nop — o loop continua mas sem efeito
+- `global@0x32E854` permanece 0 mesmo após 40+ iterações do loop
+
+### Próximos passos (em ordem de prioridade)
+
+**[A] CURTO PRAZO — Stub para 0x00080004** (mais informativo)
+Adicionar em `ps2_runtime.cpp` ou em `game_overrides.cpp` um handler registrado para `0x00080004` que:
+- Logue `$a0, $a1, $ra, $sp` na entrada
+- Retorne normalmente sem crash
+- Isso vai revelar o que o jogo espera que essa função faça
+
+**[B] MÉDIO PRAZO — Candidatos corretos de `$a0`** (o varredura_a0.py rodou)
+`varredura_a0.py` encontrou 30+ candidatos onde `[addr+0x18]` aponta para código válido.
+Top candidato: `PS2_FORCE_A0=0x00100de0` (`[+0x18]=0x00111080, score=15`)
+Com handler != 0, main chamará `func_131288` antes do game loop, potencialmente
+inicializando `global@0x32E854` e `jalr_target`.
+
+Bateria de testes sugerida:
+```bash
+PS2_FORCE_A0=0x00100de0 PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_a0_100de0.txt
+PS2_FORCE_A0=0x00100dec PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_a0_100dec.txt
+PS2_FORCE_A0=0x00101cd8 PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_a0_101cd8.txt
+```
+
+**[C] LONGO PRAZO — Entender quem chama main**
+Rastrear `sub_0029AA88` e seus callees para achar o `jal 0x1003c0` com o `$a0` correto.
+Essa é a solução correta que elimina o hack de FORCE_A0.
+
+### Ferramenta criada: `varredura_a0.py`
+
+Script Python na raiz do repo. Analisa o ELF em RAM virtual e:
+- Varre toda a memória carregada procurando candidatos de `$a0` onde `[addr+0x18]` aponta para código
+- Investiga `0x00080004` (confirma que não está no ELF — é runtime)
+- Disassembla a cadeia do JALR em `sub_00100408` com capstone
+
+Uso: `python3 varredura_a0.py [caminho_elf]`
+
+---
+
 ## 1. Contexto do projeto
 
 ### O que o usuário quer
@@ -14,8 +73,9 @@ Rodar **God of War (PS2, NTSC-U, SCUS_973.99) nativamente no PC** (Linux Mint pr
 - **PS2Recomp é experimental** porque o PS2 tem hardware muito mais complexo (Emotion Engine + 2 Vector Units + GS + IPU + IOP).
 - **Nenhum port estático completo de PS2 existe publicamente.** Este projeto é fronteira da engenharia reversa.
 
-### Status atual: TELA PRETA
-O executável compila e roda, mas mostra tela preta. PC fica preso em `0x100088`, SP/GP/RA = 0, sem atividade DMA/GIF/GS.
+### Status atual: GAME LOOP VIVO — tela preta em loop
+~~TELA PRETA estática~~ → Janela abre, fica preta, fecha, **reabre sozinha em loop** (com PS2_FORCE_A0=0x2cf070).
+Bloqueador atual: `JALR 0x00080004` não registrado → nop → loop sem progressão de estado.
 
 ---
 

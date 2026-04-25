@@ -790,6 +790,66 @@ estrutura raiz seria provavelmente `sub_002994A0` ou a missing `0x293ea0`
    `bss_start + 0x7ff0` (convenção MIPS PIC) — provavelmente
    `0x002cf070` (que aparece como `a0` da syscall 0x3c acima).
 
+## Estado atual da depuração (sessão de 2026-04-25, agente 4) — GAME LOOP VIVO + VARREDURA ELF
+
+### Resultados dos testes com PS2_FORCE_A0 (log fornecido pelo usuário)
+
+**Baseline (a0=0):** como esperado — main vira no-op, crash imediato, janela fecha e nunca reabre.
+
+**PS2_FORCE_A0=0x2cf070:** ✅ **MAIOR PROGRESSO ATÉ HOJE**
+- `func_238860` (game loop principal) **está executando de verdade**
+- Janela Raylib **abre**, fica preta, fecha, **reabre sozinha** — em loop até Ctrl+C
+- Isso confirma que o game loop roda e o loop de objetos relança o ciclo
+- `[0x2cf070+0x18] = 0` → main não chama `func_131288`, vai direto pra `func_238860`
+
+### Bloqueador atual: `JALR 0x00080004`
+
+```
+[DBG 100408] JALR alvo nao registrado 0x00080004 -> nop
+```
+
+- Loop de objetos em `sub_00100408` (0x100474): `jalr $v0` onde `$v0 = [obj+0x5c+0xC] = 0x00080004`
+- `0x00080004` está **abaixo do range ELF** (0x100000+) — não é código recompilado
+- `varredura_a0.py` confirma: não existe em nenhum lugar do ELF como dado estático
+- É populado em runtime pelo boot PS2 real (IOP/kernel EE), que pulamos com Bug A/B/C fix
+- `global@0x32E854` permanece 0 mesmo após 40+ iterações do loop
+- Guard Bug D transforma o JALR em nop — loop continua mas sem progredir estado
+
+### Ferramenta criada: `varredura_a0.py`
+
+Script Python na raiz que analisa o ELF em RAM virtual (32 MB) e:
+- Varre toda memória procurando candidatos onde `[addr+0x18]` aponta pra código válido
+- Investiga `0x00080004` (confirmado: não está no ELF, é runtime do boot PS2)
+- Disassembla a cadeia do JALR em `sub_00100408` com capstone
+
+Top 5 candidatos encontrados (onde `[a0+0x18]` é código válido):
+| Rank | PS2_FORCE_A0 | [+0x18] handler | Score |
+|------|-------------|-----------------|-------|
+| 1 | `0x00100de0` | `0x00111080` | 15 |
+| 2 | `0x00100dec` | `0x00111080` | 15 |
+| 3 | `0x00100e58` | `0x00111080` | 15 |
+| 4 | `0x00101cd8` | `0x00149180` | 15 |
+| 5 | `0x00101ff8` | `0x00121940` | 15 |
+
+### Próximos passos
+
+**[A] CURTO — Stub para 0x00080004** em `game_overrides.cpp`:
+- Logar `$a0, $a1, $ra` na entrada → revelar o que o jogo espera
+- Retornar normalmente → não crash
+
+**[B] MÉDIO — Testar candidatos de $a0** com handler válido:
+```bash
+PS2_FORCE_A0=0x00100de0 PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_a0_100de0.txt
+PS2_FORCE_A0=0x00100dec PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_a0_100dec.txt
+PS2_FORCE_A0=0x00101cd8 PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_a0_101cd8.txt
+```
+Com `[a0+0x18]` != 0, main chamará `func_131288` antes do game loop — pode inicializar
+`global@0x32E854` e destravar o `jalr_target`.
+
+**[C] LONGO — Rastrear `sub_0029AA88`** pra descobrir quem chama main com $a0 correto.
+
+---
+
 ## Estado atual da depuração (sessão de 2026-04-26 PARTE 4) — HIPÓTESE a0=0 CONFIRMADA + KNOB PS2_FORCE_A0
 
 **Resultado do teste da PARTE 3 (log_main_a0_v3.txt):**
