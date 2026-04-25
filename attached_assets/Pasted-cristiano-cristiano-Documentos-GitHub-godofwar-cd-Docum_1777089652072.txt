@@ -1,0 +1,612 @@
+cristiano@cristiano:~/Documentos/GitHub/godofwar$ cd ~/Documentos/GitHub/godofwar && \
+git pull && \
+bash tools/regen_truncated.sh --only-entry && \
+bash recompilar.sh && \
+PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_teste.txt
+remote: Enumerating objects: 20, done.
+remote: Counting objects: 100% (20/20), done.
+remote: Compressing objects: 100% (7/7), done.
+remote: Total 15 (delta 8), reused 15 (delta 8), pack-reused 0 (from 0)
+Unpacking objects: 100% (15/15), 9.80 KiB | 668.00 KiB/s, done.
+From https://github.com/cristianomarianoufsc-ops/godofwar
+   eb42cfc..c6b5491  main       -> origin/main
+Updating eb42cfc..c6b5491
+Fast-forward
+ ...mentos-GitHub-godofwar-cd-Docum_1777088680297.txt | 148 +++++++++++++++++++
+ ...entos-GitHub-godofwar-cd-Docume_1777088177706.txt | 172 ++++++++++++++++++++++
+ replit.md                                            |  92 ++++++++++++
+ tools/fix_truncated.py                               |  32 ++++
+ tools/truncation_overrides.csv                       |  25 ++++
+ 5 files changed, 469 insertions(+)
+ create mode 100644 attached_assets/Pasted-cristiano-cristiano-Documentos-GitHub-godofwar-cd-Docum_1777088680297.txt
+ create mode 100644 attached_assets/Pasted-ristiano-cristiano-Documentos-GitHub-godofwar-cd-Docume_1777088177706.txt
+ create mode 100644 tools/truncation_overrides.csv
+=== [1/5] Gerando CSV de correção ===
+[1/4] Carregando ELF + funções recompiladas...
+      Funções recompiladas: 5702
+      Overrides manuais: 1 (tools/truncation_overrides.csv)
+[2/4] Decodificando real_end das funções...
+      Funções truncadas (todas): 1608
+[3/4] Definindo escopo da correção...
+      Escopo: --only-entry → 1 função(ões)
+[4/4] Escrevendo CSV...
+      → tools/truncation_fixes.csv (1 linha(s))
+
+======================================================================
+CORREÇÕES INCLUÍDAS
+======================================================================
+  0x00100008  entry                    end 0x1001d0 → 0x100db8  (+762 ins)
+
+======================================================================
+PRÓXIMOS PASSOS
+======================================================================
+  1) Aponte o `ghidra_output` do TOML do recompilador pro CSV:
+        ghidra_output = "/home/cristiano/Documentos/GitHub/godofwar/tools/truncation_fixes.csv"
+     (ou use tools/regen_truncated.sh, que faz tudo)
+  2) Rode o ps2_recomp pra regerar os .cpp afetados.
+  3) Recompile o C++ (`bash recompilar.sh`).
+
+=== [2/5] Localizando binário ps2_recomp ===
+  → ./build_recomp/ps2xRecomp/ps2_recomp
+
+=== [3/5] Localizando TOML do recompilador ===
+  → ./recompiler.toml
+
+=== [4/5] Injetando ghidra_output no TOML (backup .bak) ===
+  injetado: ghidra_output = "/home/cristiano/Documentos/GitHub/godofwar/tools/truncation_fixes.csv"
+
+=== [5/5] Rodando ps2_recomp ===
+Parsing toml file: ./recompiler.toml
+Loaded 1 functions from Ghidra map
+ELF entry point: 0x100008
+BSS range: 0x2c7080 - 0x35c1a8 (size 0x95128), gp=0x0
+Extracted 1 functions, 0 symbols, 34 sections, 0 relocations.
+Recompiling 1 functions...
+processing function: entry
+Discovered 4077 additional entry point(s) inside existing functions across 5 pass(es).
+Resliced 33 entry function(s) after discovery.
+Recompilation completed successfully.
+Generated function header file: "src/recompiled/ps2_recompiled_functions.h"
+Wrote individual function files to: src/recompiled
+Generated function registration file: "src/recompiled/register_functions.cpp"
+Generated generating header file: "src/recompiled/ps2_recompiled_stubs.h"
+Recompilation completed successfully
+  touch em 171 arquivo(s) modificado(s) (forçar rebuild)
+
+=== Diff de arquivos regerados ===
+ src/recompiled/entry_0x100008.cpp        | 5605 ++++++++++++++++++++++++-
+ src/recompiled/entry_100db8_0x100e28.cpp |    4 +-
+ src/recompiled/entry_107598_0x107628.cpp |    4 +-
+ src/recompiled/entry_108120_0x108290.cpp |    2 +-
+ src/recompiled/entry_109068_0x109518.cpp |    6 +-
+ src/recompiled/entry_11e3e8_0x11e5e8.cpp |    2 +-
+ src/recompiled/entry_11e8d0_0x11ea98.cpp |    2 +-
+ src/recompiled/entry_12a2a8_0x12a330.cpp |    2 +-
+ src/recompiled/entry_131a58_0x131ac8.cpp |    4 +-
+ src/recompiled/entry_131ac8_0x131ae8.cpp |    2 +-
+ src/recompiled/entry_138e78_0x138f78.cpp |    6 +-
+ src/recompiled/entry_13e2c8_0x13e318.cpp |    2 +-
+ src/recompiled/entry_13f6b8_0x13f730.cpp |    2 +-
+ src/recompiled/entry_140da8_0x140fa8.cpp |   12 +-
+ src/recompiled/entry_143008_0x1431f8.cpp |   10 +-
+ src/recompiled/entry_14a290_0x14a470.cpp |    4 +-
+ src/recompiled/entry_14a8a0_0x14a8d0.cpp |    2 +-
+ src/recompiled/entry_14cfc8_0x14d080.cpp |    2 +-
+ src/recompiled/entry_15b450_0x15b588.cpp |    4 +-
+ src/recompiled/entry_15ddb0_0x15ece8.cpp |   40 +-
+ src/recompiled/entry_169d70_0x169df0.cpp |    4 +-
+ src/recompiled/entry_170260_0x170300.cpp |    8 +-
+ src/recompiled/entry_170588_0x170620.cpp |    2 +-
+
+Pra inspecionar o crt0 corrigido:
+    git diff src/recompiled/entry_0x100008.cpp
+
+Pronto. Recompile o C++ com:  bash recompilar.sh
+=== Recompilação incremental ===
+Apenas arquivos modificados serão recompilados.
+
+[  1%] Built target ps2runtime
+[100%] Built target gow_recompiled
+[100%] Built target GodOfWarPCPort
+
+=== Concluído! Executável atualizado: build/GodOfWarPCPort ===
+=================================================
+  God of War PC Port
+=================================================
+  ELF: /home/cristiano/Documentos/GitHub/godofwar/GOD_PC_PORT_FINAL/data/SCUS_973.99
+
+=================================================
+  God of War PC Port
+=================================================
+[Config] Carregando configurações de config.toml
+ELF: /home/cristiano/Documentos/GitHub/godofwar/GOD_PC_PORT_FINAL/data/SCUS_973.99
+INFO: Initializing raylib 5.5
+INFO: Platform backend: DESKTOP (GLFW)
+INFO: Supported raylib modules:
+INFO:     > rcore:..... loaded (mandatory)
+INFO:     > rlgl:...... loaded (mandatory)
+INFO:     > rshapes:... loaded (optional)
+INFO:     > rtextures:. loaded (optional)
+INFO:     > rtext:..... loaded (optional)
+INFO:     > rmodels:... loaded (optional)
+INFO:     > raudio:.... loaded (optional)
+INFO: DISPLAY: Device initialized successfully
+INFO:     > Display size: 1366 x 768
+INFO:     > Screen size:  640 x 448
+INFO:     > Render size:  640 x 448
+INFO:     > Viewport offsets: 0, 0
+INFO: GLAD: OpenGL extensions loaded successfully
+INFO: GL: Supported extensions count: 207
+INFO: GL: OpenGL device information:
+INFO:     > Vendor:   Intel
+INFO:     > Renderer: Mesa Intel(R) HD Graphics 4000 (IVB GT2)
+INFO:     > Version:  4.2 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.1
+INFO:     > GLSL:     4.20
+INFO: GL: VAO extension detected, VAO functions loaded successfully
+INFO: GL: NPOT textures extension detected, full NPOT textures supported
+INFO: GL: DXT compressed textures supported
+INFO: GL: ETC2/EAC compressed textures supported
+INFO: PLATFORM: DESKTOP (GLFW - X11): Initialized successfully
+INFO: TEXTURE: [ID 1] Texture loaded successfully (1x1 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 1] Default texture loaded successfully
+INFO: SHADER: [ID 1] Vertex shader compiled successfully
+INFO: SHADER: [ID 2] Fragment shader compiled successfully
+INFO: SHADER: [ID 3] Program shader loaded successfully
+INFO: SHADER: [ID 3] Default shader loaded successfully
+INFO: RLGL: Render batch vertex buffers loaded successfully in RAM (CPU)
+INFO: RLGL: Render batch vertex buffers loaded successfully in VRAM (GPU)
+INFO: RLGL: Default OpenGL state initialized successfully
+INFO: TEXTURE: [ID 2] Texture loaded successfully (128x128 | GRAY_ALPHA | 1 mipmaps)
+INFO: FONT: Default font loaded successfully (224 glyphs)
+INFO: SYSTEM: Working Directory: /home/cristiano/Documentos/GitHub/godofwar
+INFO: TIMER: Target time per frame: 16.667 milliseconds
+INFO: AUDIO: Device initialized successfully
+INFO:     > Backend:       miniaudio | PulseAudio
+INFO:     > Format:        32-bit IEEE Floating Point -> 32-bit Signed Integer
+INFO:     > Channels:      2 -> 2
+INFO:     > Sample rate:   48000 -> 48000
+INFO:     > Periods size:  3600
+Janela: 640x448 | FPS: 60
+Registrando funções recompiladas...
+Mapeando 5625 funções recompiladas...
+Carregando ELF: /home/cristiano/Documentos/GitHub/godofwar/GOD_PC_PORT_FINAL/data/SCUS_973.99
+Loading segment: 0x100000 - 0x35d080 (filesz: 0x1c7018, memsz: 0x25d080)
+Registered code region: 100000 - 35d080
+ELF file loaded successfully. Entry point: 0x100008
+Iniciando execução...
+[ps2_missing_report] ativado. Relatorio sera salvo em ./ps2_missing.log ao encerrar (ou Ctrl+C).
+Starting execution at address 0x100008
+INFO: TEXTURE: [ID 3] Texture loaded successfully (640x448 | R8G8B8A8 | 1 mipmaps)
+[BOOT#1] pc=0x100008 ra=0x0 sp=0x1fffff0
+[BOOT#2] pc=0x1003c0 ra=0x0 sp=0x1fffff0
+[DBG 100E28] #1 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=0000
+[DBG 100E28] #1 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #1 -> calling func_118110(s0=00000000)
+[DBG 118110] #1 ENTER a0=00000000 a1=00000000 a2=00000000 a3=00000000
+[DBG 118110] #1 EXIT@1186cc v0=00000000
+[DBG 100E28] #1 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #1 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #1 EXIT v0=00000000
+[lookup:bios-stub] addr=0x80004 syscallId=1 (assumindo vetor BIOS PS2; retornando v0=0)
+[DBG 100E28] #2 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #2 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #2 -> calling func_118110(s0=00000000)
+[DBG 118110] #2 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #2 EXIT@1186cc v0=00000000
+[DBG 100E28] #2 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #2 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #2 EXIT v0=00000000
+[DBG 100E28] #3 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #3 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #3 -> calling func_118110(s0=00000000)
+[DBG 118110] #3 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #3 EXIT@1186cc v0=00000000
+[DBG 100E28] #3 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #3 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #3 EXIT v0=00000000
+[DBG 100E28] #4 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #4 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #4 -> calling func_118110(s0=00000000)
+[DBG 118110] #4 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #4 EXIT@1186cc v0=00000000
+[DBG 100E28] #4 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #4 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #4 EXIT v0=00000000
+[DBG 100E28] #5 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #5 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #5 -> calling func_118110(s0=00000000)
+[DBG 118110] #5 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #5 EXIT@1186cc v0=00000000
+[DBG 100E28] #5 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #5 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #5 EXIT v0=00000000
+[DBG 100E28] #6 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #6 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #6 -> calling func_118110(s0=00000000)
+[DBG 118110] #6 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #6 EXIT@1186cc v0=00000000
+[DBG 100E28] #6 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #6 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #6 EXIT v0=00000000
+[DBG 100E28] #7 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #7 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #7 -> calling func_118110(s0=00000000)
+[DBG 118110] #7 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #7 EXIT@1186cc v0=00000000
+[DBG 100E28] #7 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #7 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #7 EXIT v0=00000000
+[DBG 100E28] #8 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #8 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #8 -> calling func_118110(s0=00000000)
+[DBG 118110] #8 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #8 EXIT@1186cc v0=00000000
+[DBG 100E28] #8 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #8 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #8 EXIT v0=00000000
+[DBG 100E28] #9 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #9 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #9 -> calling func_118110(s0=00000000)
+[DBG 118110] #9 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #9 EXIT@1186cc v0=00000000
+[DBG 100E28] #9 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #9 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #9 EXIT v0=00000000
+[DBG 100E28] #10 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #10 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #10 -> calling func_118110(s0=00000000)
+[DBG 118110] #10 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #10 EXIT@1186cc v0=00000000
+[DBG 100E28] #10 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #10 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #10 EXIT v0=00000000
+[DBG 100E28] #11 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #11 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #11 -> calling func_118110(s0=00000000)
+[DBG 118110] #11 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #11 EXIT@1186cc v0=00000000
+[DBG 100E28] #11 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #11 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #11 EXIT v0=00000000
+[DBG 100E28] #12 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #12 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #12 -> calling func_118110(s0=00000000)
+[DBG 118110] #12 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #12 EXIT@1186cc v0=00000000
+[DBG 100E28] #12 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #12 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #12 EXIT v0=00000000
+[DBG 100E28] #13 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #13 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #13 -> calling func_118110(s0=00000000)
+[DBG 118110] #13 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #13 EXIT@1186cc v0=00000000
+[DBG 100E28] #13 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #13 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #13 EXIT v0=00000000
+[DBG 100E28] #14 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #14 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #14 -> calling func_118110(s0=00000000)
+[DBG 118110] #14 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[frame:upload] idx=0 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[DBG 118110] #14 EXIT@1186cc v0=00000000
+[DBG 100E28] #14 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #14 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #14 EXIT v0=00000000
+[DBG 100E28] #15 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #15 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #15 -> calling func_118110(s0=00000000)
+[DBG 118110] #15 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #15 EXIT@1186cc v0=00000000
+[DBG 100E28] #15 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #15 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #15 EXIT v0=00000000
+[DBG 100E28] #16 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #16 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #16 -> calling func_118110(s0=00000000)
+[DBG 118110] #16 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #16 EXIT@1186cc v0=00000000
+[DBG 100E28] #16 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #16 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #16 EXIT v0=00000000
+[DBG 100E28] #17 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #17 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #17 -> calling func_118110(s0=00000000)
+[DBG 118110] #17 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #17 EXIT@1186cc v0=00000000
+[DBG 100E28] #17 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #17 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #17 EXIT v0=00000000
+[DBG 100E28] #18 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #18 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #18 -> calling func_118110(s0=00000000)
+[DBG 118110] #18 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #18 EXIT@1186cc v0=00000000
+[DBG 100E28] #18 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #18 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #18 EXIT v0=00000000
+[DBG 100E28] #19 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #19 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #19 -> calling func_118110(s0=00000000)
+[DBG 118110] #19 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #19 EXIT@1186cc v0=00000000
+[DBG 100E28] #19 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #19 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #19 EXIT v0=00000000
+[DBG 100E28] #20 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #20 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #20 -> calling func_118110(s0=00000000)
+[DBG 118110] #20 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #20 EXIT@1186cc v0=00000000
+[DBG 100E28] #20 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #20 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #20 EXIT v0=00000000
+[DBG 100E28] #21 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #21 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #21 -> calling func_118110(s0=00000000)
+[DBG 118110] #21 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #21 EXIT@1186cc v0=00000000
+[DBG 100E28] #21 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #21 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #21 EXIT v0=00000000
+[DBG 100E28] #22 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #22 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #22 -> calling func_118110(s0=00000000)
+[DBG 118110] #22 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #22 EXIT@1186cc v0=00000000
+[DBG 100E28] #22 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #22 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #22 EXIT v0=00000000
+[DBG 100E28] #23 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #23 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #23 -> calling func_118110(s0=00000000)
+[DBG 118110] #23 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #23 EXIT@1186cc v0=00000000
+[DBG 100E28] #23 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #23 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #23 EXIT v0=00000000
+[DBG 100E28] #24 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #24 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #24 -> calling func_118110(s0=00000000)
+[DBG 118110] #24 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #24 EXIT@1186cc v0=00000000
+[DBG 100E28] #24 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #24 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #24 EXIT v0=00000000
+[DBG 100E28] #25 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #25 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #25 -> calling func_118110(s0=00000000)
+[DBG 118110] #25 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #25 EXIT@1186cc v0=00000000
+[DBG 100E28] #25 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #25 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #25 EXIT v0=00000000
+[DBG 100E28] #26 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #26 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #26 -> calling func_118110(s0=00000000)
+[DBG 118110] #26 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #26 EXIT@1186cc v0=00000000
+[DBG 100E28] #26 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #26 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #26 EXIT v0=00000000
+[DBG 100E28] #27 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #27 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #27 -> calling func_118110(s0=00000000)
+[DBG 118110] #27 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #27 EXIT@1186cc v0=00000000
+[DBG 100E28] #27 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #27 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #27 EXIT v0=00000000
+[DBG 100E28] #28 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #28 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #28 -> calling func_118110(s0=00000000)
+[DBG 118110] #28 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #28 EXIT@1186cc v0=00000000
+[DBG 100E28] #28 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #28 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #28 EXIT v0=00000000
+[DBG 100E28] #29 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #29 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #29 -> calling func_118110(s0=00000000)
+[DBG 118110] #29 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #29 EXIT@1186cc v0=00000000
+[DBG 100E28] #29 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #29 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #29 EXIT v0=00000000
+[DBG 100E28] #30 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #30 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #30 -> calling func_118110(s0=00000000)
+[DBG 118110] #30 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #30 EXIT@1186cc v0=00000000
+[DBG 100E28] #30 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #30 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #30 EXIT v0=00000000
+[DBG 100E28] #31 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #31 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #31 -> calling func_118110(s0=00000000)
+[DBG 118110] #31 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #31 EXIT@1186cc v0=00000000
+[DBG 100E28] #31 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #31 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #31 EXIT v0=00000000
+[DBG 100E28] #32 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #32 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #32 -> calling func_118110(s0=00000000)
+[DBG 118110] #32 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #32 EXIT@1186cc v0=00000000
+[DBG 100E28] #32 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #32 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #32 EXIT v0=00000000
+[frame:upload] idx=1 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[DBG 100E28] #33 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #33 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #33 -> calling func_118110(s0=00000000)
+[DBG 118110] #33 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #33 EXIT@1186cc v0=00000000
+[DBG 100E28] #33 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #33 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #33 EXIT v0=00000000
+[DBG 100E28] #34 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #34 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #34 -> calling func_118110(s0=00000000)
+[DBG 118110] #34 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #34 EXIT@1186cc v0=00000000
+[DBG 100E28] #34 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #34 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #34 EXIT v0=00000000
+[DBG 100E28] #35 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #35 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #35 -> calling func_118110(s0=00000000)
+[DBG 118110] #35 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #35 EXIT@1186cc v0=00000000
+[DBG 100E28] #35 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #35 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #35 EXIT v0=00000000
+[DBG 100E28] #36 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #36 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #36 -> calling func_118110(s0=00000000)
+[DBG 118110] #36 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #36 EXIT@1186cc v0=00000000
+[DBG 100E28] #36 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #36 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #36 EXIT v0=00000000
+[DBG 100E28] #37 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #37 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #37 -> calling func_118110(s0=00000000)
+[DBG 118110] #37 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #37 EXIT@1186cc v0=00000000
+[DBG 100E28] #37 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #37 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #37 EXIT v0=00000000
+[DBG 100E28] #38 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #38 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #38 -> calling func_118110(s0=00000000)
+[DBG 118110] #38 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #38 EXIT@1186cc v0=00000000
+[DBG 100E28] #38 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #38 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #38 EXIT v0=00000000
+[DBG 100E28] #39 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #39 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #39 -> calling func_118110(s0=00000000)
+[DBG 118110] #39 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #39 EXIT@1186cc v0=00000000
+[DBG 100E28] #39 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #39 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #39 EXIT v0=00000000
+[DBG 100E28] #40 ENTER a0=00000000 a1=00000000 a2=00000000 | global@0x32E854=00000000 | jalr_target=00000000 | short=00e4
+[DBG 100E28] #40 POST_JALR s0(retval)=00000000 | flag@s0+0x114=00000000 (branch_taken=0 -> skips func_118110)
+[DBG 100E28] #40 -> calling func_118110(s0=00000000)
+[DBG 118110] #40 ENTER a0=00000000 a1=00000000 a2=00000000 a3=01010101
+[DBG 118110] #40 EXIT@1186cc v0=00000000
+[DBG 100E28] #40 -> calling func_13DB18 a1=00000000 v0=00000000 (arg loaded next from [v0+0x48])
+[DBG 13DB18] #40 ENTER a0=00000000 a1=00000000 | old_v0=[a0+0x10]=00000000 (will be returned via [a1])
+[DBG 100E28] #40 EXIT v0=00000000
+[frame:upload] idx=2 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=3 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=4 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=5 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=6 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=7 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=8 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=9 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=10 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=11 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=12 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=13 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=14 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=15 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=16 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=17 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=18 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=19 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=20 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=21 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=22 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=23 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=24 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=25 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=26 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=27 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=28 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=29 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=30 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=31 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=32 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=33 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=34 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=35 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=36 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=37 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=38 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=39 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=40 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=41 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=42 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=43 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=44 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=45 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=46 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=47 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=48 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=49 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=50 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=51 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=52 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=53 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=54 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=55 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=56 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=57 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=58 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=59 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=60 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=61 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=62 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=63 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=64 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=65 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=66 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=67 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=68 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=69 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=70 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=71 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=72 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=73 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=74 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=75 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=76 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=77 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=78 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=79 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=80 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=81 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=82 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=83 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=84 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=85 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=86 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=87 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=88 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=89 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=90 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=91 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=92 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=93 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=94 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[frame:upload] idx=95 fbp=0 fbw=10 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+[run:tick] tick=120 pc=0x1003c0 livePc=0x13d644 liveRa=0x13d644 liveSp=0x1fffe20 ra=0x0 sp=0x1fffff0 gp=0x0 dispfb1=0x1400 display1=0x1bf27f00000000 activeThreads=1 dma=0 gif=0 gsw=0 vif=0 sndType=0 sndLvl=0 sndBank=0 getAdrs=0x0 sndMirrorMidi0=0 sndMirrorSe0=0 sndChkMidi=0 sndChkSe=0
+[run] window close requested, breaking out of loop
+[run] game thread did not stop within timeout; detaching
+[run] guest host threads did not stop within timeout; detaching remaining worker threads
+INFO: TEXTURE: [ID 3] Unloaded texture data from VRAM (GPU)
+INFO: TEXTURE: [ID 2] Unloaded texture data from VRAM (GPU)
+INFO: SHADER: [ID 3] Default shader unloaded successfully
+INFO: TEXTURE: [ID 1] Default texture unloaded successfully
+INFO: Window closed successfully
+[run] exiting loop, activeThreads=1
+[run] warning: 1 guest worker thread(s) still active during shutdown.
+INFO: AUDIO: Device closed successfully
+jogar.sh, linha 29: 304787 Falha de segmentação  (imagem do núcleo gravada) "$EXE" "$ELF"
+cristiano@cristiano:~/Documentos/GitHub/godofwar$ 
