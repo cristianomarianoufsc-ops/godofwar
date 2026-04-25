@@ -1,0 +1,162 @@
+cristiano@cristiano:~/Documentos/GitHub/godofwar$ git pull
+remote: Enumerating objects: 8, done.
+remote: Counting objects: 100% (8/8), done.
+remote: Compressing objects: 100% (2/2), done.
+remote: Total 5 (delta 3), reused 5 (delta 3), pack-reused 0 (from 0)
+Unpacking objects: 100% (5/5), 30.18 KiB | 101.00 KiB/s, done.
+From https://github.com/cristianomarianoufsc-ops/godofwar
+   a2af582..0225adb  main       -> origin/main
+Updating a2af582..0225adb
+Fast-forward
+ attached_assets/resumo_1777092942516.pdf | Bin 0 -> 50428 bytes
+ replit.md                                |  22 +++++++++++++++++++++-
+ 2 files changed, 21 insertions(+), 1 deletion(-)
+ create mode 100644 attached_assets/resumo_1777092942516.pdf
+cristiano@cristiano:~/Documentos/GitHub/godofwar$ cd ~/Documentos/GitHub/godofwar
+gdb --args build/GodOfWarPCPort GOD_PC_PORT_FINAL/data/SCUS_973.99
+GNU gdb (Ubuntu 15.0.50.20240403-0ubuntu1) 15.0.50.20240403-git
+Copyright (C) 2024 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+Type "show copying" and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+<https://www.gnu.org/software/gdb/bugs/>.
+Find the GDB manual and other documentation resources online at:
+    <http://www.gnu.org/software/gdb/documentation/>.
+
+For help, type "help".
+Type "apropos word" to search for commands related to "word"...
+Reading symbols from build/GodOfWarPCPort...
+(gdb) run
+Starting program: /home/cristiano/Documentos/GitHub/godofwar/build/GodOfWarPCPort GOD_PC_PORT_FINAL/data/SCUS_973.99
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+=================================================
+  God of War PC Port
+=================================================
+[Config] Carregando configurações de config.toml
+ELF: GOD_PC_PORT_FINAL/data/SCUS_973.99
+INFO: Initializing raylib 5.5
+INFO: Platform backend: DESKTOP (GLFW)
+INFO: Supported raylib modules:
+INFO:     > rcore:..... loaded (mandatory)
+INFO:     > rlgl:...... loaded (mandatory)
+INFO:     > rshapes:... loaded (optional)
+INFO:     > rtextures:. loaded (optional)
+INFO:     > rtext:..... loaded (optional)
+INFO:     > rmodels:... loaded (optional)
+INFO:     > raudio:.... loaded (optional)
+aviso: could not find '.gnu_debugaltlink' file for /lib/x86_64-linux-gnu/libtinfo.so.6
+[New Thread 0x7fffe93ff6c0 (LWP 314899)]
+[New Thread 0x7fffe8bfe6c0 (LWP 314900)]
+INFO: DISPLAY: Device initialized successfully
+INFO:     > Display size: 1366 x 768
+INFO:     > Screen size:  640 x 448
+INFO:     > Render size:  640 x 448
+INFO:     > Viewport offsets: 0, 0
+INFO: GLAD: OpenGL extensions loaded successfully
+INFO: GL: Supported extensions count: 207
+INFO: GL: OpenGL device information:
+INFO:     > Vendor:   Intel
+INFO:     > Renderer: Mesa Intel(R) HD Graphics 4000 (IVB GT2)
+INFO:     > Version:  4.2 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.1
+INFO:     > GLSL:     4.20
+INFO: GL: VAO extension detected, VAO functions loaded successfully
+INFO: GL: NPOT textures extension detected, full NPOT textures supported
+INFO: GL: DXT compressed textures supported
+INFO: GL: ETC2/EAC compressed textures supported
+INFO: PLATFORM: DESKTOP (GLFW - X11): Initialized successfully
+INFO: TEXTURE: [ID 1] Texture loaded successfully (1x1 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 1] Default texture loaded successfully
+INFO: SHADER: [ID 1] Vertex shader compiled successfully
+INFO: SHADER: [ID 2] Fragment shader compiled successfully
+INFO: SHADER: [ID 3] Program shader loaded successfully
+INFO: SHADER: [ID 3] Default shader loaded successfully
+INFO: RLGL: Render batch vertex buffers loaded successfully in RAM (CPU)
+INFO: RLGL: Render batch vertex buffers loaded successfully in VRAM (GPU)
+INFO: RLGL: Default OpenGL state initialized successfully
+INFO: TEXTURE: [ID 2] Texture loaded successfully (128x128 | GRAY_ALPHA | 1 mipmaps)
+INFO: FONT: Default font loaded successfully (224 glyphs)
+INFO: SYSTEM: Working Directory: /home/cristiano/Documentos/GitHub/godofwar
+INFO: TIMER: Target time per frame: 16.667 milliseconds
+aviso: could not find '.gnu_debugaltlink' file for /lib/x86_64-linux-gnu/libpulse.so.0
+aviso: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/pulseaudio/libpulsecommon-16.1.so
+aviso: could not find '.gnu_debugaltlink' file for /lib/x86_64-linux-gnu/libcap.so.2
+[New Thread 0x7fffe39686c0 (LWP 314901)]
+INFO: AUDIO: Device initialized successfully
+INFO:     > Backend:       miniaudio | PulseAudio
+INFO:     > Format:        32-bit IEEE Floating Point -> 32-bit Signed Integer
+INFO:     > Channels:      2 -> 2
+INFO:     > Sample rate:   48000 -> 48000
+INFO:     > Periods size:  3600
+Janela: 640x448 | FPS: 60
+Registrando funções recompiladas...
+Mapeando 5625 funções recompiladas...
+Carregando ELF: GOD_PC_PORT_FINAL/data/SCUS_973.99
+Loading segment: 0x100000 - 0x35d080 (filesz: 0x1c7018, memsz: 0x25d080)
+Registered code region: 100000 - 35d080
+ELF file loaded successfully. Entry point: 0x100008
+Iniciando execução...
+[ps2_missing_report] ativado. Relatorio sera salvo em ./ps2_missing.log ao encerrar (ou Ctrl+C).
+[boot_stub] init 0x2994a0
+[CreateSema] id=1 init=1 max=1
+[CreateSema] id=2 init=1 max=1
+[Syscall83:override] handler=0x299338 invoked=false pc=0x29937c ra=0x2993ec a0=0x80000000 a1=0x80080000 a2=0x299338 a3=0x2c7080 guestRet=0x0 builtinRet=0x8001218c guest-20c=0x0 builtin-20c=0x80011f80 guest-168=0x0 builtin-168=0x80012024 match=false
+[SyscallOverride:fallback] syscall=0x83 handler=0x299338 pc=0x29937c ra=0x2993ec
+[FindAddress:hit] pc=0x29937c start=0x80000000 end=0x80080000 alignedStart=0x80000000 alignedEnd=0x80080000 target=0x299338 targetNorm=0x299338 result=0x8001218c scannedWords=131072 allZero=false aborted=false
+  firstWords: [0x80000000]=0x0 [0x80000004]=0x0 [0x80000008]=0x0 [0x8000000c]=0x0 [0x80000010]=0x0 [0x80000014]=0x0 [0x80000018]=0x0 [0x8000001c]=0x0
+  nonZeroSample: [0x800002f0]=0x8001 [0x800002f8]=0x1f80 [0x800120e8]=0x299300 [0x8001218c]=0x299338
+  matches: [0x8001218c]=0x299338(exact)
+[Syscall83:override] handler=0x299338 invoked=false pc=0x29937c ra=0x299400 a0=0x80000000 a1=0x80080000 a2=0x299300 a3=0x2c7080 guestRet=0x0 builtinRet=0x800120e8 guest-20c=0x0 builtin-20c=0x80011edc guest-168=0x0 builtin-168=0x80011f80 match=false
+[SyscallOverride:fallback] syscall=0x83 handler=0x299338 pc=0x29937c ra=0x299400
+[FindAddress:hit] pc=0x29937c start=0x80000000 end=0x80080000 alignedStart=0x80000000 alignedEnd=0x80080000 target=0x299300 targetNorm=0x299300 result=0x800120e8 scannedWords=131072 allZero=false aborted=false
+  firstWords: [0x80000000]=0x0 [0x80000004]=0x0 [0x80000008]=0x0 [0x8000000c]=0x0 [0x80000010]=0x0 [0x80000014]=0x0 [0x80000018]=0x0 [0x8000001c]=0x0
+  nonZeroSample: [0x800002f0]=0x8001 [0x800002f8]=0x1f80 [0x800120e8]=0x299300 [0x8001218c]=0x299338
+  matches: [0x800120e8]=0x299300(exact)
+[SyscallOverride:fallback] syscall=0x5a handler=0x299700 pc=0x2996f4 ra=0x2997a8
+[SyscallOverride:fallback] syscall=0x5a handler=0x299700 pc=0x2996f4 ra=0x2997c0
+[SyscallOverride:fallback] syscall=0x5b handler=0x80076000 pc=0x29973c ra=0x2997e8
+[SyscallOverride:fallback] syscall=0x5b handler=0x80076000 pc=0x29973c ra=0x2997e8
+[SyscallOverride:fallback] syscall=0x5b handler=0x80076000 pc=0x29973c ra=0x2997e8
+[SyscallOverride:fallback] syscall=0x5b handler=0x80076000 pc=0x29973c ra=0x2997e8
+[SyscallOverride:fallback] syscall=0x5b handler=0x80076000 pc=0x29973c ra=0x2997e8
+[SyscallOverride:fallback] syscall=0x5b handler=0x80076000 pc=0x29973c ra=0x2997e8
+[New Thread 0x7fffe0b646c0 (LWP 314902)]
+[CreateSema] id=3 init=0 max=255
+[CreateThread] id=2 entry=0x2947c8 stack=0x326b40 size=0x400 gp=0x2cf070 prio=1
+[SyscallOverride:fallback] syscall=0x5a handler=0x29a918 pc=0x29a90c ra=0x29a9b8
+[SyscallOverride:fallback] syscall=0x5b handler=0x80075000 pc=0x29a954 ra=0x29a9f0
+[SyscallOverride:fallback] syscall=0x5b handler=0x80075000 pc=0x29a954 ra=0x29a9f0
+[SyscallOverride:fallback] syscall=0x5b handler=0x80075000 pc=0x29a954 ra=0x29a9f0
+[SyscallOverride:fallback] syscall=0x5b handler=0x80075000 pc=0x29a954 ra=0x29a9f0
+[SyscallOverride:fallback] syscall=0x5b handler=0x80075000 pc=0x29a954 ra=0x29a9f0
+[SyscallOverride:fallback] syscall=0x5b handler=0x80075000 pc=0x29a954 ra=0x29aa14
+[boot_stub] init 0x293ea0
+[boot_stub] init 0x138cb0
+[boot_stub] init 0x138d48
+[138D48] ENTRADA a0=0x0 a1=0x1ff0000
+[138D48] JAL [1/11] -> 0x283770
+[138D48] JAL [1/11] 0x283770 NAO REGISTRADA - skip
+[138D48] JAL [1/11] retornou pc=0x138d64
+[138D48] JAL [2/11] -> 0x17aa88
+[138D48] JAL [2/11] retornou pc=0x138d88
+[138D48] JAL [3/11] -> 0x17acb8
+[138D48] JAL [3/11] 0x17acb8 NAO REGISTRADA - skip
+[138D48] JAL [3/11] retornou pc=0x138d90
+[138D48] JAL [4/11] -> 0x138b10
+[138D48] JAL [4/11] 0x138b10 NAO REGISTRADA - skip
+[138D48] JAL [4/11] retornou pc=0x138d98
+[138D48] JAL [5/11] -> 0x1838d0
+[138D48] JAL [5/11] 0x1838d0 NAO REGISTRADA - skip
+[138D48] JAL [5/11] retornou pc=0x138da0
+[138D48] JAL [6/11] -> 0x17a910
+[17A910] ENTRADA
+[17A910] call 1/3 (0x13F8A0) RETORNOU pc=0x17a920
+[watch:GLOBAL_0x32E854] #1 op=WRITE32 addr=0x32e854 size=4 value=0x0 pc=0x17a3d0 ra=0x17a928
+[17A910] call 2/3 (0x17A398) RETORNOU pc=0x17a928
+PS2 GsPutIMR: Setting IMR=0xff00
+PS2 GsSetCrt: interlaced=0, videoMode=0, frameMode=0
+
