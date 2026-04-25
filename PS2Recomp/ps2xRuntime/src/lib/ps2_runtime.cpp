@@ -198,7 +198,11 @@ namespace
 
     uint64_t loopReportThreshold()
     {
-        static const uint64_t v = parseEnvUint64("PS2_LOOP_REPORT_AFTER", 100000ull);
+        // Default 1000: o sistema de recovery em defaultFunction tem teto de
+        // 8192 tentativas antes de matar o runtime. Com ciclos curtos (~4 PCs),
+        // 1000 repeticoes = 4000 dispatches, ainda confortavelmente dentro do
+        // orcamento. Default antigo (100000) nunca disparava em loops fatais.
+        static const uint64_t v = parseEnvUint64("PS2_LOOP_REPORT_AFTER", 1000ull);
         return v;
     }
 
@@ -287,6 +291,33 @@ namespace
             return "(no plausible frames found)";
         }
         return oss.str();
+    }
+
+    // Dumpa o estado atual do detector de ciclo (se ele tiver visto um padrao)
+    // pra stderr. Pode ser chamado de fora do dispatchLoop, ex. no caminho
+    // "Called unimplemented function" antes do runtime morrer. Usa o
+    // thread_local g_loopDetector da thread corrente.
+    void dumpLoopDetectorState(const char *prefix, const PS2Runtime *runtime,
+                               const uint8_t *rdram, uint32_t sp)
+    {
+        const LoopDetector &ld = g_loopDetector;
+        if (ld.cycleLen == 0u || ld.cycleCount < 2u)
+        {
+            return;
+        }
+
+        std::cerr << "[" << prefix << ":cycle-info] len=" << std::dec << ld.cycleLen
+                  << " repeated=" << ld.cycleCount
+                  << " pattern=";
+        for (uint32_t i = 0u; i < ld.cycleLen; ++i)
+        {
+            if (i > 0u) std::cerr << " -> ";
+            std::cerr << "0x" << std::hex << ld.pattern[i];
+        }
+        std::cerr << std::dec
+                  << "\n  guestStackWalk=" << formatGuestStackWalk(runtime, rdram, sp)
+                  << "\n  dispatchHistory=" << formatDispatchHistory()
+                  << std::endl;
     }
 
     uint32_t selectExceptionVector(const R5900Context *ctx, bool tlbRefill)
@@ -1339,6 +1370,10 @@ PS2Runtime::RecompiledFunction PS2Runtime::lookupFunction(uint32_t address)
         {
             std::lock_guard<std::mutex> lock(s_defaultFnLogMutex);
             std::cerr << oss.str() << std::endl;
+            // Dumpa info do detector de ciclo se ele estava acumulando padrao.
+            // Util quando o orcamento de recovery (8192) explode antes do
+            // threshold periodico (PS2_LOOP_REPORT_AFTER) disparar.
+            dumpLoopDetectorState("unimpl-fn", runtime, rdram, sp);
         }
 
         runtime->requestStop();

@@ -179,7 +179,9 @@ priorizar qual syscall é o overlay loader e implementá-lo.
 PC repetido idêntico), agora há um detector de **ciclos de 2..8 PCs
 alternando** que:
 - **Camada 1 (sempre ligada)**: a cada `PS2_LOOP_REPORT_AFTER` repetições do
-  mesmo ciclo (default 100000), imprime em stderr
+  mesmo ciclo (**default 1000** — não 100k! O sistema de recovery em
+  `defaultFunction` mata tudo após 8192 tentativas, então threshold alto
+  nunca dispara em loops fatais), imprime em stderr
   `[dispatch:cycle-detected] len=N repeated=M pattern=0x... -> 0x... ra=... sp=... gp=...`
   seguido de `guestStackWalk=` (varre 4 KiB acima de `sp` listando palavras
   que sejam endereços de funções recompiladas válidas) e `dispatchHistory=`
@@ -189,6 +191,13 @@ alternando** que:
   esperar `Ctrl+C` nem segfault). Default 0 = desligado, porque busy-wait
   legítimo (VBlank, semáforos, GS regs) bate facilmente em loops curtos
   e matar isso quebraria o jogo.
+- **Dump de garantia na saída fatal**: o handler "Called unimplemented
+  function" (em `defaultFunction`) chama `dumpLoopDetectorState("unimpl-fn", ...)`
+  antes do `requestStop()`. Assim, mesmo se o threshold periódico não
+  disparar (loops muito curtos morrem antes), o último estado conhecido
+  do detector aparece logado como `[unimpl-fn:cycle-info] len=N repeated=M
+  pattern=...` na linha de erro final. Não precisa setar env var pra ter
+  esse dump — ele é automático em todo crash de função desconhecida.
 
 Uso típico no PC do usuário:
 ```bash
