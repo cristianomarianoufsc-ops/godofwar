@@ -56,9 +56,10 @@ echo "=== [2/5] Localizando binário ps2_recomp ==="
 RECOMP_BIN="${PS2_RECOMP_BIN:-}"
 if [[ -z "$RECOMP_BIN" ]]; then
     for cand in \
+        ./build_recomp/ps2xRecomp/ps2_recomp \
         ./build_recomp/PS2Recomp/ps2xRecomp/ps2_recomp \
-        ./build/PS2Recomp/ps2xRecomp/ps2_recomp \
         ./build_recomp/ps2_recomp \
+        ./build/PS2Recomp/ps2xRecomp/ps2_recomp \
         ./PS2Recomp/build/ps2xRecomp/ps2_recomp; do
         if [[ -x "$cand" ]]; then
             RECOMP_BIN="$cand"
