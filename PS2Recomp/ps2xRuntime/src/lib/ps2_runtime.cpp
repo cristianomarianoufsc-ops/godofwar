@@ -2194,9 +2194,12 @@ void PS2Runtime::run()
             // 3) SetupHeap (syscall 0x3D, original em 0x100190-0x100194).
             //    Args do disassembly em 0x100180-0x10018c:
             //      $a0=heapBase=0x35c1a8 (=fim de BSS)  $a1=size=0
+            //    SetupHeap não está exportada no header — chamamos via
+            //    dispatchNumericSyscall que é a API pública e respeita
+            //    eventuais overrides registrados pelo jogo.
             m_cpuContext.r[4] = _mm_set_epi64x(0, 0x35c1a8);
             m_cpuContext.r[5] = _mm_setzero_si128();
-            ps2_syscalls::SetupHeap(rdram, &m_cpuContext, this);
+            ps2_syscalls::dispatchNumericSyscall(0x3Du, rdram, &m_cpuContext, this);
 
             // 4) Inits de runtime/libc — JAL original em 0x100198, 0x1001a0,
             //    0x1001a8, 0x1001c0. Cada uma é candidata a setar a flag
