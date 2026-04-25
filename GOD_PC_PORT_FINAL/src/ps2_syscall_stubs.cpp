@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstdio>
+#include <cstdlib>
 #include <map>
 #include <string>
 #include <filesystem>
@@ -209,56 +210,84 @@ void stub_ps2_printf(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime) {
 // --- STUB: Handler IOP/kernel em 0x00080004 ---
 // Este endereço fica abaixo do range ELF (0x100000+) e é populado pelo boot
 // PS2 real (IOP/kernel EE via SIF RPC). Como pulamos o boot real, a função
-// nunca é registrada — o runtime a trata como "JALR alvo nao registrado -> nop".
+// nunca era registrada — o runtime a tratava como "JALR alvo nao registrado -> nop".
 //
-// Objetivo deste stub: logar $a0/$a1/$ra e o conteúdo da memória apontada,
-// para revelar o que o jogo espera que esta função faça. Retorna v0=0 por ora.
+// === DESCOBERTAS (sessão de 2026-04-25) ===
 //
-// O que sabemos até agora (sub_00100E28, iterações 1..N):
-//   - Chamada com $a0 = short lido de [descriptor+0x8] (0x0000 na 1a iter, 0xc7c0 nas seguintes)
-//   - O retorno (v0) é usado como ponteiro de objeto: game lê [v0+0x114] pra decidir próximo passo
-//   - global@0x32E854 permanece 0 enquanto v0=0 (nop/stub zero)
+// Chamada com argumentos SEMPRE IGUAIS:
+//   a0 = 0x0000006c (108 decimal) — tipo/ID do módulo IOP
+//   a1 = 0x00000002 — sub-operação (provavelmente "query status")
+//   a2 = 0x0035ca3c ou 0 — ponteiro de contexto (1ª chamada do ciclo)
+//   a3 = 0x00000004 — tamanho ou flags
+//   ra = 0x0010047c — instrução seguinte ao JALR dentro de sub_00100408
+//
+// O jogo usa o retorno (v0) como "handle do objeto IOP":
+//   s0 = v0
+//   flag = [s0+0x114]   → se 0: chama func_118110 (init); se !=0: skipa
+//
+// BUG DETECTADO: stub retornando v0=0 → jogo fica em polling infinito
+// (190.200+ chamadas observadas). O "JALR nop" original DEIXAVA v0=0x00080004
+// (o próprio endereço da função, inalterado), e o jogo usava isso como handle.
+//
+// CORREÇÃO: NÃO alterar v0 (deixar = 0x00080004, como o nop fazia),
+// OU retornar endereço de objeto fake com [+0x114] != 0 via PS2_FAKE_IOP_OBJ=1.
+//
+// mem[a0=0x6c] contém tabela de ponteiros (populada pelo boot_stub):
+//   [+0x00]=0x0035c7e0 [+0x04]=0x0035c960 [+0x08]=0x0035c9c0 [+0x0c]=0x0035c8a0
+//   [+0x10]=0x0035ca20 [+0x14]=0x00000000 [+0x18]=0x0035c798 [+0x1c]=0x00000000
 void stub_iop_callback_00080004(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime) {
-    static int s_count = 0;
+    static int  s_count      = 0;
+    static bool s_fake_ready = false;
+
+    // Endereço do objeto fake na BSS acima do ELF (segmento termina em 0x35d080)
+    static constexpr uint32_t FAKE_OBJ = 0x00380000u;
+
     ++s_count;
 
-    uint32_t a0 = getRegU32(ctx, 4);   // $a0 — "short" de tipo/categoria
-    uint32_t a1 = getRegU32(ctx, 5);   // $a1
-    uint32_t a2 = getRegU32(ctx, 6);   // $a2
-    uint32_t a3 = getRegU32(ctx, 7);   // $a3
-    uint32_t ra = getRegU32(ctx, 31);  // $ra — endereço de retorno
-    uint32_t s0 = getRegU32(ctx, 16);  // $s0 — costuma conter ponteiro de objeto
-    uint32_t v0 = getRegU32(ctx, 2);   // $v0 — valor atual (antes do nosso retorno)
+    uint32_t a0    = getRegU32(ctx, 4);   // tipo/ID do módulo
+    uint32_t a1    = getRegU32(ctx, 5);
+    uint32_t a2    = getRegU32(ctx, 6);
+    uint32_t a3    = getRegU32(ctx, 7);
+    uint32_t ra    = getRegU32(ctx, 31);
+    uint32_t v0_in = getRegU32(ctx, 2);   // 0x00080004 — valor deixado pelo lw antes do jalr
 
-    // Loga as primeiras 5 chamadas e depois 1 a cada 50 para não inundar o log
-    if (s_count <= 5 || (s_count % 50 == 0)) {
+    // Loga primeiras 5 chamadas + cada 50.000 (log não-verboso para runs longos)
+    if (s_count <= 5 || (s_count % 50000 == 0)) {
         fprintf(stderr,
             "[STUB 0x00080004] #%d a0=0x%08x a1=0x%08x a2=0x%08x a3=0x%08x"
-            " ra=0x%08x s0=0x%08x v0_in=0x%08x\n",
-            s_count, a0, a1, a2, a3, ra, s0, v0);
-
-        // Dump dos primeiros 8 words em $a0 se for endereço PS2 válido
-        if (a0 != 0 && a0 < 0x02000000u) {
-            const uint32_t* p = reinterpret_cast<const uint32_t*>(&rdram[a0 & 0x01FFFFFFu]);
-            fprintf(stderr,
-                "[STUB 0x00080004] #%d   mem[a0+00..1c]:"
-                " 0x%08x 0x%08x 0x%08x 0x%08x  0x%08x 0x%08x 0x%08x 0x%08x\n",
-                s_count, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
-        }
-
-        // Dump dos primeiros 8 words em $s0 se for endereço PS2 válido
-        if (s0 != 0 && s0 < 0x02000000u) {
-            const uint32_t* p = reinterpret_cast<const uint32_t*>(&rdram[s0 & 0x01FFFFFFu]);
-            fprintf(stderr,
-                "[STUB 0x00080004] #%d   mem[s0+00..1c]:"
-                " 0x%08x 0x%08x 0x%08x 0x%08x  0x%08x 0x%08x 0x%08x 0x%08x\n",
-                s_count, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
-        }
+            " ra=0x%08x v0_in=0x%08x\n",
+            s_count, a0, a1, a2, a3, ra, v0_in);
     }
 
-    // Retorna v0=0 e desvia para $ra (comportamento idêntico ao nop atual,
-    // mas agora registrado e visível no log)
-    setReturnS32(ctx, 0);
+    // Inicializa objeto fake na primeira chamada (uma única vez)
+    if (!s_fake_ready) {
+        s_fake_ready = true;
+        uint32_t* obj = reinterpret_cast<uint32_t*>(&rdram[FAKE_OBJ & 0x01FFFFFFu]);
+        obj[0x114 / 4] = 1u;          // [+0x114] = 1  → "módulo pronto"
+        obj[0x048 / 4] = 0x0035c770u; // [+0x048] = 0x35c770 → usado por func_13DB18 via [v0+0x48]
+        fprintf(stderr,
+            "[STUB 0x00080004] objeto fake inicializado em 0x%08x"
+            " ([+0x114]=1 [+0x48]=0x35c770)\n", FAKE_OBJ);
+    }
+
+    // --- Política de retorno (controlada por env var) ---
+    // PS2_IOP_MODE=0 (default): preserva v0=0x00080004 (igual ao nop antigo → game loop roda)
+    // PS2_IOP_MODE=1           : retorna FAKE_OBJ (módulo sempre "pronto", flag [+0x114]=1)
+    const char* mode_env = std::getenv("PS2_IOP_MODE");
+    int mode = (mode_env && mode_env[0] == '1') ? 1 : 0;
+
+    if (mode == 1) {
+        // Objeto fake real: game vê módulo como sempre pronto
+        setReturnU32(ctx, FAKE_OBJ);
+        if (s_count <= 3) {
+            fprintf(stderr, "[STUB 0x00080004] modo FAKE_OBJ: retornando 0x%08x\n", FAKE_OBJ);
+        }
+    } else {
+        // Modo nop-compatível: não altera v0 (deixa 0x00080004 como estava)
+        // O jogo usa isso como handle acidentalmente correto — game loop roda.
+        // (não chamar setReturnU32 preserva v0_in = 0x00080004)
+    }
+
     ctx->pc = getRegU32(ctx, 31);
 }
 

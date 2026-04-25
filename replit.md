@@ -790,59 +790,71 @@ estrutura raiz seria provavelmente `sub_002994A0` ou a missing `0x293ea0`
    `bss_start + 0x7ff0` (convenção MIPS PIC) — provavelmente
    `0x002cf070` (que aparece como `a0` da syscall 0x3c acima).
 
-## Estado atual da depuração (sessão de 2026-04-25, agente 5) — STUB 0x00080004 IMPLEMENTADO
+## Estado atual da depuração (sessão de 2026-04-25, agente 6) — BUG v0=0 ENCONTRADO E CORRIGIDO
 
-### Mudanças commitadas agora
+### Bug crítico confirmado (log de 190.200 chamadas)
 
-**`GOD_PC_PORT_FINAL/src/ps2_syscall_stubs.cpp`** — adicionado `stub_iop_callback_00080004`:
-- Loga `$a0, $a1, $a2, $a3, $ra, $s0, $v0_in` nas primeiras 5 chamadas e depois cada 50
-- Dumpa 8 words de memória em `[$a0]` e `[$s0]` se forem endereços PS2 válidos
-- Retorna `v0=0`, `ctx->pc = $ra` (comportamento idêntico ao nop anterior, mas agora loggado)
+**Root cause do polling infinito:**
+O stub anterior fazia `setReturnS32(ctx, 0)` → `v0=0`. O jogo interpreta `v0=0` como "módulo IOP ainda não pronto" e fica em polling infinito (janela abre mas permanece preta, game loop nunca chamado).
 
-**`GOD_PC_PORT_FINAL/src/main.cpp`** — registra o stub antes de `runtime.run()`:
-```cpp
-runtime.registerFunction(0x00080004u, stub_iop_callback_00080004);
+O "JALR nop" original **DEIXAVA `v0=0x00080004`** (o próprio endereço carregado pelo `lw` antes do JALR, inalterado). O jogo usava esse valor non-zero como "handle do objeto IOP". Com isso, a chamada seguinte via `[v0+0x114] = rdram[0x80118]` tinha um valor não-zero e o game loop rodava.
+
+**Evidência no log:**
+```
+[STUB 0x00080004] #1 ... v0_in=0x00080004   ← v0 estava 0x00080004 antes do stub alterar
+[STUB 0x00080004] #190000 ... (190.000 chamadas, jogo nunca saiu do polling)
+[run] window close requested, breaking out of loop   ← usuário fechou manualmente
 ```
 
-### Análise completa do log `PS2_FORCE_A0=0x00100de0` (187+199 linhas)
+### Correção implementada nesta sessão
 
-**Novidades vs 0x2cf070:**
-- `[a0+0x18]=0x00111080` → `func_131288` FOI chamada (silenciosamente, sem trace)
-- Iterações 1..40+ do loop de objetos registradas normalmente
-- **SEGFAULT ao final**: `a0=0x00100de0` aponta pra meio do código ELF — bytes de código lidos como ponteiros de lista encadeada → eventually crash
-- Conclusão: **todos os candidatos do scanner são falsos positivos** — a struct real de boot_arg é construída em runtime pelo boot PS2 real, não existe estáticamente no ELF
+**`GOD_PC_PORT_FINAL/src/ps2_syscall_stubs.cpp`** — stub reescrito com dois modos via env var:
 
-**Padrão crítico descoberto no loop de objetos (`sub_00100E28`):**
 ```
-JALR 0x00080004 → v0 = retorno (objeto ou 0)
-s0 = v0
-flag = [s0 + 0x114]
-se flag == 0:  chama func_118110(s0, a1=struct_ptr)
-senão:         vai direto pra func_13DB18
+PS2_IOP_MODE=0 (padrão): NÃO altera v0 (deixa 0x00080004 — igual ao nop antigo)
+                          → game loop roda como antes ✓
+PS2_IOP_MODE=1          : retorna FAKE_OBJ=0x00380000 (objeto com [+0x114]=1)
+                          → módulo sempre "pronto", skipa func_118110 desde iter 1
 ```
-- `func_118110` escreve `0x0035ca40` em `rdram[0x114]` (iteração 1)
-- Iterações 2+: flag lida é `0x0035ca40` (não-zero) → pula func_118110
-- `global@0x32E854` nunca é setado enquanto `v0=0`
 
-### Próximo teste a fazer no PC local
+**Objeto fake pré-inicializado** (sempre, independente do modo):
+- `rdram[0x380000 + 0x114] = 1` — flag "módulo pronto"
+- `rdram[0x380000 + 0x048] = 0x0035c770` — campo usado por `func_13DB18` via `[v0+0x48]`
 
+**Log agora menos verboso**: primeiras 5 chamadas + 1 a cada 50.000 (antes era a cada 50, causando log de 8071 linhas para apenas 190k chamadas).
+
+### Argumentos confirmados (100% estáveis ao longo de 190.200 chamadas)
+```
+a0 = 0x0000006c  (108) — ID/tipo do módulo IOP
+a1 = 0x00000002         — sub-operação "query status"
+a2 = 0x0035ca3c ou 0   — ponteiro de contexto (só na 1ª chamada do ciclo)
+a3 = 0x00000004         — flags/tamanho
+ra = 0x0010047c         — instrução seguinte ao JALR em sub_00100408
+```
+
+### Próximos testes no PC local
+
+**Teste A — restaura game loop (modo padrão):**
 ```bash
 git pull origin main
 bash recompilar.sh
-
-# Teste com stub ativo e a0=0x2cf070 (estável, sem segfault)
-PS2_FORCE_A0=0x2cf070 PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_stub_test.txt
+PS2_FORCE_A0=0x2cf070 PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_modo0.txt
 ```
-
-Importante: fechar a janela após ~5 segundos e mandar:
+Aguardar ~10s. Deve ver a janela abrindo/fechando como antes (game loop ativo).
+Depois filtrar:
 ```bash
-grep "STUB 0x00080004\|JALR alvo" log_stub_test.txt | head -30
+grep "STUB 0x00080004\|frame:upload\|global@0x32E854" log_modo0.txt | head -30
 ```
 
-**O que esperamos ver:**
-- `[STUB 0x00080004] #1 a0=0x00000000 ...` — a0 é zero (short lido do descriptor)
-- Dump de memória revelando o que o jogo passa
-- **NÃO** deve aparecer `[DBG 100408] JALR alvo nao registrado` — porque agora está registrado
+**Teste B — módulo sempre pronto (PS2_IOP_MODE=1):**
+```bash
+PS2_IOP_MODE=1 PS2_FORCE_A0=0x2cf070 PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_modo1.txt
+```
+Aguardar ~10s. Fechar a janela. Verificar:
+```bash
+grep "STUB 0x00080004\|frame:upload\|global@0x32E854\|func_118110\|func_13DB18" log_modo1.txt | head -50
+```
+**O que queremos ver:** Se `global@0x32E854` muda de 0, ou se `[frame:upload]` aparece — significa que saímos do polling loop.
 
 ---
 
