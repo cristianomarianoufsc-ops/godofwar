@@ -1,0 +1,162 @@
+cristiano@cristiano:~/Documentos/GitHub/godofwar$ git pull
+remote: Enumerating objects: 6, done.
+remote: Counting objects: 100% (6/6), done.
+remote: Compressing objects: 100% (2/2), done.
+remote: Total 4 (delta 2), reused 4 (delta 2), pack-reused 0 (from 0)
+Unpacking objects: 100% (4/4), 4.96 KiB | 1016.00 KiB/s, done.
+From https://github.com/cristianomarianoufsc-ops/godofwar
+   e2e8d1d..a698de2  main       -> origin/main
+Updating e2e8d1d..a698de2
+Fast-forward
+ ...ntos-GitHub-godofwar-cd-Docum_1777137501548.txt | 540 +++++++++++++++++++++
+ 1 file changed, 540 insertions(+)
+ create mode 100644 attached_assets/Pasted-cristiano-cristiano-Documentos-GitHub-godofwar-cd-Docum_1777137501548.txt
+cristiano@cristiano:~/Documentos/GitHub/godofwar$ cd ~/Documentos/GitHub/godofwar
+wc -l src/recompiled/entry_0x100008.cpp
+echo "---HEAD 60 LINHAS---"
+head -n 60 src/recompiled/entry_0x100008.cpp
+echo "---SETUP a0/gp/sp---"
+grep -nE "0x100148|0x10015c|0x100170|0x10017c|0x1001a8" src/recompiled/entry_0x100008.cpp
+echo "---ESCRITAS r[4], r[28], r[29]---"
+grep -nE "r\[4\] *=|r\[28\] *=|r\[29\] *=" src/recompiled/entry_0x100008.cpp | head -30
+echo "---SALTOS SUSPEITOS / EARLY-RETURNS---"
+grep -nE "0x1003c0|0x10047c|return;|Patch:|TODO|unsupported|unimplemented|goto " src/recompiled/entry_0x100008.cpp | head -30
+echo "---TAIL 30 LINHAS---"
+tail -n 30 src/recompiled/entry_0x100008.cpp
+5720 src/recompiled/entry_0x100008.cpp
+---HEAD 60 LINHAS---
+#include "ps2_runtime_macros.h"
+#include "ps2_runtime.h"
+#include "ps2_recompiled_functions.h"
+#include "ps2_recompiled_stubs.h"
+
+#include "ps2_syscalls.h"
+#include "ps2_stubs.h"
+
+#ifdef PS2_FUNCTION_LOG_TRACKER
+#include "ps2_log.h"
+#endif
+
+// Function: entry
+// Address: 0x100008 - 0x100db8
+void entry_0x100008(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtime) {
+#ifdef PS2_FUNCTION_LOG_TRACKER
+    PS_LOG_ENTRY("entry_0x100008");
+#endif
+
+    ctx->pc = 0x100008u;
+
+    // 0x100008: 0x70000c28  padduw      $at, $zero, $zero
+    ctx->pc = 0x100008u;
+    SET_GPR_VEC(ctx, 1, ps2_paddu32(GPR_VEC(ctx, 0), GPR_VEC(ctx, 0)));
+    // 0x10000c: 0x70001428  padduw      $v0, $zero, $zero
+    ctx->pc = 0x10000cu;
+    SET_GPR_VEC(ctx, 2, ps2_paddu32(GPR_VEC(ctx, 0), GPR_VEC(ctx, 0)));
+    // 0x100010: 0x70001c28  padduw      $v1, $zero, $zero
+    ctx->pc = 0x100010u;
+    SET_GPR_VEC(ctx, 3, ps2_paddu32(GPR_VEC(ctx, 0), GPR_VEC(ctx, 0)));
+    // 0x100014: 0x70002428  padduw      $a0, $zero, $zero
+    ctx->pc = 0x100014u;
+    SET_GPR_VEC(ctx, 4, ps2_paddu32(GPR_VEC(ctx, 0), GPR_VEC(ctx, 0)));
+    // 0x100018: 0x70002c28  padduw      $a1, $zero, $zero
+    ctx->pc = 0x100018u;
+    SET_GPR_VEC(ctx, 5, ps2_paddu32(GPR_VEC(ctx, 0), GPR_VEC(ctx, 0)));
+    // 0x10001c: 0x70003428  padduw      $a2, $zero, $zero
+    ctx->pc = 0x10001cu;
+    SET_GPR_VEC(ctx, 6, ps2_paddu32(GPR_VEC(ctx, 0), GPR_VEC(ctx, 0)));
+    // 0x100020: 0x70003c28  padduw      $a3, $zero, $zero
+    ctx->pc = 0x100020u;
+    SET_GPR_VEC(ctx, 7, ps2_paddu32(GPR_VEC(ctx, 0), GPR_VEC(ctx, 0)));
+    // 0x100024: 0x70004428  padduw      $t0, $zero, $zero
+    ctx->pc = 0x100024u;
+    SET_GPR_VEC(ctx, 8, ps2_paddu32(GPR_VEC(ctx, 0), GPR_VEC(ctx, 0)));
+    // 0x100028: 0x70004c28  padduw      $t1, $zero, $zero
+    ctx->pc = 0x100028u;
+    SET_GPR_VEC(ctx, 9, ps2_paddu32(GPR_VEC(ctx, 0), GPR_VEC(ctx, 0)));
+    // 0x10002c: 0x70005428  padduw      $t2, $zero, $zero
+    ctx->pc = 0x10002cu;
+    SET_GPR_VEC(ctx, 10, ps2_paddu32(GPR_VEC(ctx, 0), GPR_VEC(ctx, 0)));
+    // 0x100030: 0x70005c28  padduw      $t3, $zero, $zero
+    ctx->pc = 0x100030u;
+    SET_GPR_VEC(ctx, 11, ps2_paddu32(GPR_VEC(ctx, 0), GPR_VEC(ctx, 0)));
+    // 0x100034: 0x70006428  padduw      $t4, $zero, $zero
+    ctx->pc = 0x100034u;
+    SET_GPR_VEC(ctx, 12, ps2_paddu32(GPR_VEC(ctx, 0), GPR_VEC(ctx, 0)));
+    // 0x100038: 0x70006c28  padduw      $t5, $zero, $zero
+    ctx->pc = 0x100038u;
+    SET_GPR_VEC(ctx, 13, ps2_paddu32(GPR_VEC(ctx, 0), GPR_VEC(ctx, 0)));
+---SETUP a0/gp/sp---
+273:    ctx->pc = 0x100148u;
+274:    // 0x100148: 0x3c04002d  lui         $a0, 0x2D
+275:    ctx->pc = 0x100148u;
+289:    // 0x10015c: 0x2484f070  addiu       $a0, $a0, -0xF90
+290:    ctx->pc = 0x10015cu;
+304:    // 0x100170: 0x80e02d  daddu       $gp, $a0, $zero
+305:    ctx->pc = 0x100170u;
+313:    // 0x10017c: 0x40e82d  daddu       $sp, $v0, $zero
+314:    ctx->pc = 0x10017cu;
+373:    // 0x1001a8: 0xc04e32c  jal         func_138CB0
+---ESCRITAS r[4], r[28], r[29]---
+---SALTOS SUSPEITOS / EARLY-RETURNS---
+270:            goto label_10012c;
+343:        if (ctx->pc != 0x1001A0u) { return; }
+348:        if (ctx->pc != 0x1001A0u) { return; }
+365:        if (ctx->pc != 0x1001A8u) { return; }
+370:        if (ctx->pc != 0x1001A8u) { return; }
+382:        if (ctx->pc != 0x1001B0u) { return; }
+387:        if (ctx->pc != 0x1001B0u) { return; }
+416:        if (ctx->pc != 0x1001C8u) { return; }
+421:        if (ctx->pc != 0x1001C8u) { return; }
+434:        targetFn(rdram, ctx, runtime); return;
+436:        entry_2996b0_0x2996e0(rdram, ctx, runtime); return;
+449:        targetFn(rdram, ctx, runtime); return;
+451:        entry_2996b0_0x2996e0(rdram, ctx, runtime); return;
+573:        if (ctx->pc != 0x10026Cu) { return; }
+578:        if (ctx->pc != 0x10026Cu) { return; }
+613:        if (ctx->pc != 0x10028Cu) { return; }
+618:        if (ctx->pc != 0x10028Cu) { return; }
+668:            goto label_100390;
+683:            goto label_100368;
+705:        if (ctx->pc != 0x1002D8u) { return; }
+710:        if (ctx->pc != 0x1002D8u) { return; }
+739:            goto label_100364;
+757:            goto label_100368;
+778:        if (ctx->pc != 0x10030Cu) { return; }
+783:        if (ctx->pc != 0x10030Cu) { return; }
+800:            goto label_100350;
+819:        if (ctx->pc != 0x100320u) { return; }
+824:        if (ctx->pc != 0x100320u) { return; }
+853:        if (ctx->pc != 0x100338u) { return; }
+858:        if (ctx->pc != 0x100338u) { return; }
+---TAIL 30 LINHAS---
+            case 0x100A14u: goto label_100a14;
+            case 0x100A2Cu: goto label_100a2c;
+            case 0x100A30u: goto label_100a30;
+            case 0x100A88u: goto label_100a88;
+            case 0x100AA8u: goto label_100aa8;
+            case 0x100AE0u: goto label_100ae0;
+            case 0x100B00u: goto label_100b00;
+            case 0x100B48u: goto label_100b48;
+            case 0x100B68u: goto label_100b68;
+            case 0x100BA8u: goto label_100ba8;
+            case 0x100BDCu: goto label_100bdc;
+            case 0x100C18u: goto label_100c18;
+            case 0x100C38u: goto label_100c38;
+            case 0x100C78u: goto label_100c78;
+            case 0x100C98u: goto label_100c98;
+            case 0x100D18u: goto label_100d18;
+            case 0x100D64u: goto label_100d64;
+            case 0x100D78u: goto label_100d78;
+            default: break;
+        }
+        return;
+    }
+    ctx->pc = 0x100DB0u;
+    // 0x100db0: 0x27bd0020  addiu       $sp, $sp, 0x20
+    ctx->pc = 0x100db0u;
+    SET_GPR_S32(ctx, 29, (int32_t)ADD32(GPR_U32(ctx, 29), 32));
+    // 0x100db4: 0x0  nop
+    ctx->pc = 0x100db4u;
+    // NOP
+}
+cristiano@cristiano:~/Documentos/GitHub/godofwar$ 
