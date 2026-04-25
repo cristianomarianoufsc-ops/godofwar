@@ -125,7 +125,64 @@ Isso re-avalia o GLOB sem perder os `.o` já compilados.
 
 ### 🔬 Estado da investigação (boot loop / segfault)
 
-#### 🆕 SESSÃO 2026-04-25 (C) — crt0 OK, mas boot_stub sabotando
+#### 🆕 SESSÃO 2026-04-25 (D) — Smoking gun: .o stale do crt0
+
+Após desligar o boot_stub e adicionar log `[EXIT#N]` simétrico ao `[BOOT#N]`,
+o log do PC do usuário revelou:
+```
+[BOOT#1] pc=0x100008 ra=0x0 sp=0x1fffff0 gp=0x0 a0=0x0
+[EXIT#1] from=0x100008 -> pc=0x1003c0 ra=0x0 sp=0x1fffff0(was 0x1fffff0)
+                                       gp=0x0(was 0x0) a0=0x0(was 0x0)
+[BOOT#2] pc=0x1003c0 ...
+```
+
+**`entry_0x100008` retorna sem alterar nenhum reg observável**:
+- `gp=0`, `sp=0x1fffff0`, `a0=0`, `ra=0` — TUDO igual à entrada.
+- Saiu pra `pc=0x1003c0`.
+
+**Análise**:
+- O `.cpp` expandido (5720 linhas, range 0x100008-0x100db8) zera `$sp` em
+  `0x100070` (`padduw $sp, $zero, $zero` → `SET_GPR_VEC(ctx, 29, 0)`).
+  Se executasse 1 só instrução depois de zerar GPRs, `sp` viraria 0.
+- O `.cpp` truncado antigo (131 linhas, no Replit ainda) também faz isso.
+- Como `sp` continua 0x1fffff0, **NEM o truncado nem o expandido rodaram**.
+- Macros (`SET_GPR_VEC`, `SET_GPR_U64` etc) confirmados sem side-effects.
+
+**Hipótese**: O `recompilar.sh` é incremental. O regen do `.cpp` (via
+`regen_truncated.sh --all`) reescreveu o arquivo, mas o `.o` no
+`build/CMakeFiles/gow_recompiled.dir/.../entry_0x100008.cpp.o` ficou stale
+— talvez de uma versão MAIS PRIMITIVA que só fazia `pc=0x1003c0; return;`.
+O linker usou esse `.o` antigo.
+
+**Próximo teste no PC** (forçar recompilar entry_0x100008 + provar que está
+sendo executado):
+```bash
+cd ~/Documentos/GitHub/godofwar
+# 1. Confirma .cpp local é o expandido
+echo "--- HEAD ATUAL DO crt0 .cpp ---"
+sed -n '14,22p' src/recompiled/entry_0x100008.cpp
+echo "--- TIMESTAMPS ---"
+ls -la src/recompiled/entry_0x100008.cpp \
+       build/CMakeFiles/gow_recompiled.dir/home/cristiano/Documentos/GitHub/godofwar/src/recompiled/entry_0x100008.cpp.o \
+       2>/dev/null
+# 2. Forca recompilacao do crt0
+find build -name 'entry_0x100008.cpp.o' -delete 2>/dev/null
+bash recompilar.sh
+# 3. Roda e captura
+PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_force_rebuild.txt
+# 4. Cola aqui as linhas com BOOT/EXIT
+grep -E 'BOOT#|EXIT#' log_force_rebuild.txt | head -30
+```
+
+Resultado esperado:
+- Se aparecer `[EXIT#1] -> pc=0x100198 sp=0x... gp=0x2cf070(was 0x0)` →
+  o crt0 expandido executou de verdade. Bug isolado em syscalls 0x3C/0x3D.
+- Se ainda aparecer `gp=0(was 0)` → o `.cpp` ainda não está sendo
+  compilado. Investigar config do CMake.
+
+---
+
+#### Sessão 2026-04-25 (C) — crt0 OK, mas boot_stub sabotando
 
 Após o regen do crt0 (sessão B abaixo) `tools/diagnose_crt0.py` no PC do
 usuário reportou **OK** — todas as 9 instruções críticas presentes.
