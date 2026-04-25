@@ -26,6 +26,7 @@
 #   bash tools/regen_truncated.sh                  # reachable-only (seguro)
 #   bash tools/regen_truncated.sh --only-entry     # só o crt0 (mínimo)
 #   bash tools/regen_truncated.sh --all            # todas as 1612 truncadas
+#   bash tools/regen_truncated.sh --build-recomp   # builda ps2_recomp se faltar
 #   PS2_RECOMP_BIN=/path/to/ps2_recomp \
 #     RECOMP_TOML=/path/to/recompiler.toml \
 #     bash tools/regen_truncated.sh
@@ -35,11 +36,20 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."   # sobe pra raiz do repo
 
-SCOPE_ARGS=("$@")
+# Separa --build-recomp dos args que vão pra fix_truncated.py
+BUILD_RECOMP=0
+SCOPE_ARGS=()
+for arg in "$@"; do
+    if [[ "$arg" == "--build-recomp" ]]; then
+        BUILD_RECOMP=1
+    else
+        SCOPE_ARGS+=("$arg")
+    fi
+done
 CSV_OUT="tools/truncation_fixes.csv"
 
 echo "=== [1/5] Gerando CSV de correção ==="
-python3 tools/fix_truncated.py "${SCOPE_ARGS[@]}" -o "$CSV_OUT"
+python3 tools/fix_truncated.py "${SCOPE_ARGS[@]+"${SCOPE_ARGS[@]}"}" -o "$CSV_OUT"
 
 echo
 echo "=== [2/5] Localizando binário ps2_recomp ==="
@@ -57,17 +67,48 @@ if [[ -z "$RECOMP_BIN" ]]; then
     done
 fi
 if [[ -z "$RECOMP_BIN" || ! -x "$RECOMP_BIN" ]]; then
-    cat <<EOF
-Binário ps2_recomp não encontrado. Para buildar uma vez:
+    if [[ "$BUILD_RECOMP" == "1" ]]; then
+        echo "  Binário ps2_recomp não encontrado — buildando agora (--build-recomp)..."
+        cmake -S PS2Recomp -B build_recomp -DCMAKE_BUILD_TYPE=Release
+        cmake --build build_recomp -j"$(nproc)" --target ps2_recomp
+        for cand in \
+            ./build_recomp/PS2Recomp/ps2xRecomp/ps2_recomp \
+            ./build_recomp/ps2xRecomp/ps2_recomp \
+            ./build_recomp/ps2_recomp; do
+            if [[ -x "$cand" ]]; then
+                RECOMP_BIN="$cand"
+                break
+            fi
+        done
+        if [[ -z "$RECOMP_BIN" || ! -x "$RECOMP_BIN" ]]; then
+            echo "ERRO: build aparentemente concluiu mas binário não foi achado." >&2
+            echo "Procure por 'ps2_recomp' em build_recomp/ e exporte PS2_RECOMP_BIN." >&2
+            exit 2
+        fi
+    else
+        cat <<EOF
+ERRO: binário ps2_recomp não encontrado.
 
-    cmake -S PS2Recomp -B build_recomp -DCMAKE_BUILD_TYPE=Release
-    cmake --build build_recomp -j\$(nproc) --target ps2_recomp
+Você tem duas opções:
 
-Depois reexecute este script (ele localiza automaticamente em
-build_recomp/PS2Recomp/ps2xRecomp/ps2_recomp), ou exporte PS2_RECOMP_BIN
-apontando pro binário.
+  (a) Re-executar este script com --build-recomp pra buildar agora
+      (compila o recompilador uma única vez, ~2-5 min):
+
+          bash tools/regen_truncated.sh ${SCOPE_ARGS[@]+"${SCOPE_ARGS[@]}"} --build-recomp
+
+  (b) Buildar manualmente e depois reexecutar (a partir da raiz do repo):
+
+          cd "$(pwd)"
+          cmake -S PS2Recomp -B build_recomp -DCMAKE_BUILD_TYPE=Release
+          cmake --build build_recomp -j\$(nproc) --target ps2_recomp
+          bash tools/regen_truncated.sh ${SCOPE_ARGS[@]+"${SCOPE_ARGS[@]}"}
+
+ATENÇÃO: NÃO rode 'recompilar.sh' depois deste script abortar — nada foi
+regerado e o build incremental vai compilar o código antigo (com o hack
+"Patch: Jump" ainda ativo).
 EOF
-    exit 2
+        exit 2
+    fi
 fi
 echo "  → $RECOMP_BIN"
 
