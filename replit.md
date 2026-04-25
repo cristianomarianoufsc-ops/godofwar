@@ -1535,3 +1535,71 @@ O log é salvo em `/tmp/ps2_trace.log` com: sequência, timestamp, PC, RA, SP.
 - **Build:** CMake
 - **Recompilador:** PS2Recomp (MIPS R5900 → C++)
 - **Runtime:** ps2xRuntime (emulação de memória PS2, GS, IOP, VU0/VU1, áudio)
+
+---
+
+## Estado atual da depuração (sessão de 2026-04-25, agente Replit) — SENTINEL FIX
+
+### Diagnóstico dos Testes A e B (logs fornecidos pelo Cris)
+
+**Teste A (PS2_IOP_MODE=0, PS2_FORCE_A0=0x2cf070):**
+- Janela preta abriu → boa notícia
+- Loop infinito com 2.2 milhões de chamadas ao STUB 0x00080004
+- `jalr_target=00000000` em 100% das iterações de `sub_00100E28`
+- `global@0x32E854=00000000` permanece 0 para sempre
+
+**Teste B (PS2_IOP_MODE=1):** "Permissão negada" — binário sem bit de execução após o pull
+  - Fix imediato no terminal: `chmod +x build/GodOfWarPCPort`
+
+### Root Cause identificada nesta sessão
+
+O código em `sub_00100408` usa uma lista circular com sentinel:
+```
+sentinel_addr = a0 + 0x20 = 0x2cf070 + 0x20 = 0x2cf090
+first = rdram[0x2cf090]
+if (first == 0x2cf090) → lista vazia → retorna imediatamente ✓
+else                    → entra no loop com current = first
+```
+
+O problema: `rdram[0x2cf090] = 0` (nunca inicializado). Com `0 ≠ 0x2cf090`,
+o código entra no loop com `current = 0` (ponteiro nulo). Daí:
+- `vtable = rdram[0 + 0x5C] = 0`
+- `jalr_target = rdram[0 + 0xA4] = 0`
+- JALR para endereço 0 → nop → `s0=0` → loop infinito
+
+Isso também explica porque `global@0x32E854` é irrelevante: o jalr interno
+de `sub_00100E28` lê `rdram[global@0x32E854 + 0x20 + 0xA4]`, que como
+`global=0` → lê `rdram[0xA4] = 0` → target = 0. Problema derivado, não raiz.
+
+### Fix aplicado
+
+Em `PS2Recomp/ps2xRuntime/src/lib/ps2_runtime.cpp`, após a cadeia kInitChain
+e antes de `m_cpuContext.pc = 0x100008u`, adicionado:
+
+```cpp
+constexpr uint32_t SENTINEL = 0x2cf090u; // a0 + 0x20
+uint32_t* mem = reinterpret_cast<uint32_t*>(rdram + SENTINEL);
+mem[0] = SENTINEL; // next = self → lista vazia
+mem[1] = SENTINEL; // prev = self
+```
+
+**Efeito esperado:** `sub_00100408` verifica `[0x2cf090] == 0x2cf090` → TRUE
+→ branch para `label_1004a0` → retorna imediatamente SEM entrar no loop.
+Então `sub_001003C0` prossegue para `func_238860` (game loop) com `[a0+0x18]=0`.
+
+### Comando para testar (no terminal do Cris)
+
+```bash
+git pull origin main
+bash rebuild_runtime.sh
+PS2_FORCE_A0=0x2cf070 PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_sentinel_fix.txt
+```
+
+Logs esperados de sucesso:
+```
+[boot_stub] sentinel lista circular inicializado em 0x2cf090 -> lista vazia...
+[sub_00100408:enter] a0=0x002cf070 [a0+0x20]=0x002cf090 ...
+```
+E AUSÊNCIA de `[DBG 100E28]` — o loop não deve mais aparecer.
+Se `func_238860` for chamada, esperamos ver logs de GS/frame ou novas
+linhas de boot nunca vistas antes.

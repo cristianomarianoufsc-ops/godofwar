@@ -2539,6 +2539,24 @@ void PS2Runtime::run()
                 }
             }
 
+            // Inicializa o sentinel da lista circular em sub_001003C0 (a0=0x2cf070).
+            // sub_00100408 verifica: se [a0+0x20] == (a0+0x20), lista vazia → retorna.
+            // Sem isso, [0x2cf090]=0 ≠ 0x2cf090, e o loop entra com current=0
+            // (ponteiro nulo) → vtable=0 → jalr_target=0 → loop infinito na tela preta.
+            // Com a lista vazia, sub_00100408 retorna imediatamente e sub_001003C0
+            // prossegue para func_238860 (o game loop real).
+            {
+                constexpr uint32_t A0       = 0x2cf070u;
+                constexpr uint32_t SENTINEL = A0 + 0x20u; // = 0x2cf090
+                uint32_t* mem = reinterpret_cast<uint32_t*>(rdram + (SENTINEL & 0x01FFFFFFu));
+                mem[0] = SENTINEL; // next = self
+                mem[1] = SENTINEL; // prev = self
+                std::cout << "[boot_stub] sentinel lista circular inicializado em 0x"
+                          << std::hex << SENTINEL << std::dec
+                          << " -> lista vazia, sub_00100408 retornara imediatamente"
+                          << std::endl;
+            }
+
             // Restaura PC pro entry original (dispatchLoop começa em 0x100008).
             m_cpuContext.pc = 0x100008u;
             std::cout << "[boot_stub] init concluido, dispatchLoop a seguir"
