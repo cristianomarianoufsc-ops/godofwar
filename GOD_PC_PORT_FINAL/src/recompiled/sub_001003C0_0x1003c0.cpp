@@ -139,7 +139,15 @@ label_1003ec:
         if (ctx->pc != 0x1003F4u) { return; }
     }
     ctx->pc = 0x1003F4u;
-    // 0x1003f4: 0x7bb00010  lq          $s0, 0x10($sp)
+    // PATCH game-loop: no PS2 real, a thread 0x2947c8 (truncada) chamaria
+    // func_238860(a0=struct_root, a1=1) em loop infinito via BIOS scheduler.
+    // Como não temos threads PS2, simulamos o loop aqui.
+    // $s0 é callee-saved → ainda contém 0x2cf070 após func_238860 retornar.
+    // cooperativeGuestYield() permite ao runtime detectar WindowShouldClose.
+    runtime->cooperativeGuestYield();
+    SET_GPR_U64(ctx, 4, GPR_U64(ctx, 16)); // a0 = s0 = 0x2cf070
+    goto label_1003ec;
+    // 0x1003f4: 0x7bb00010  lq          $s0, 0x10($sp)  (nunca alcançado)
     ctx->pc = 0x1003f4u;
     SET_GPR_VEC(ctx, 16, READ128(ADD32(GPR_U32(ctx, 29), 16)));
     // 0x1003f8: 0xdfbf0000  ld          $ra, 0x0($sp)

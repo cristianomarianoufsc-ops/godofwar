@@ -45,20 +45,35 @@ No PS2 real, o BIOS scheduler iniciaria a thread `0x2947c8` que chamaria `func_2
 SET_GPR_U64(ctx, 5, 1u); // força a1=1 → func_238860 chama func_13D668
 ```
 
-**Cadeia esperada com a1=1:**
-`func_238860(a0, 1)` → `func_13D668(a0)` → `func_13DB98(a0)` → `func_13E1C0(a0)` → ...
+**Cadeia confirmada com a1=1 (log do teste):**
+`func_238860(a0, 1)` → `func_13D668(a0)` → `func_13DB98(a0)` → `func_13E1C0(a0)` → retorna
 
-### Comando para testar Fix 2
+`func_13E1C0` = buscador de heap PS2 (lê `rdram[0x29BEB0]`). Retorna NULL pois pool não inicializado → cadeia inteira retorna → `sub_001003C0` retorna (ra=0) → jogo encerra.
+
+`func_13DB98` = `free()` do alocador PS2 (manipula listas de blocos). Opera normalmente e retorna.
+
+#### Fix 3 — sub_001003C0 precisa loopar (APLICADO, AGUARDA TESTE)
+
+`func_238860` NÃO é um loop — é chamada uma vez e retorna. No PS2 real, a thread `0x2947c8` (truncada) a chamaria em loop infinito. **Fix:** após `func_238860` retornar em `sub_001003C0`, restaurar a0=s0 e voltar ao `label_1003ec` com `cooperativeGuestYield()` para o runtime detectar WindowShouldClose.
+
+**Fix:** `GOD_PC_PORT_FINAL/src/recompiled/sub_001003C0_0x1003c0.cpp` — após o bloco de chamada a `func_238860`:
+```cpp
+runtime->cooperativeGuestYield();
+SET_GPR_U64(ctx, 4, GPR_U64(ctx, 16)); // a0 = s0 = 0x2cf070
+goto label_1003ec;
+```
+
+### Comando para testar Fix 3
 
 ```bash
 git pull origin main
 bash rebuild_runtime.sh
-PS2_FORCE_A0=0x2cf070 PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_bootloop_fix.txt
+PS2_FORCE_A0=0x2cf070 PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_gameloop.txt
+python3 tools/analisa_log.py log_gameloop.txt --diff log_bootloop_fix.txt
 ```
 
-**Sinais de sucesso:** chamadas a `func_13D668`, `func_13DB98`, `func_13E1C0` nos logs e/ou frames com `nonBlack > 0`.
-
-**Próximo bloqueador esperado:** alguma syscall não implementada (`WaitSema`, `WaitThread`, etc.) ou função truncada na cadeia `13DB98 → 13E1C0 → ...`.
+**Sinal de sucesso:** janela fica aberta com tela preta (loop rodando), múltiplos `[frame:upload]` nos logs.
+**Próximo bloqueador esperado:** `WaitSema`, `WaitThread` ou `WaitVBlankStart` bloqueando, ou função truncada no caminho de renderização.
 
 ### Arquitetura de boot confirmada
 

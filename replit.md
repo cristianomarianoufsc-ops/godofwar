@@ -1612,6 +1612,27 @@ Logs esperados de sucesso:
 [boot_stub] sentinel lista circular inicializado em 0x2cf090 -> lista vazia...
 [sub_00100408:enter] a0=0x002cf070 [a0+0x20]=0x002cf090 ...
 ```
+
+### Fix 2 — a1=0 impedia o game loop (CONFIRMADO FUNCIONANDO)
+
+`sub_001003C0` hardcodava `a1=0` no delay slot MIPS → `func_238860` pulava `func_13D668`.
+Fix: `SET_GPR_U64(ctx, 5, 1u)` em `sub_001003C0_0x1003c0.cpp`.
+Resultado: trace confirmou `0x238860 → 0x13d668 → 0x13db98 → 0x13e1c0`.
+
+### Fix 3 — sub_001003C0 precisa loopar (APLICADO, AGUARDA TESTE)
+
+`func_238860` é uma chamada única, não um loop. No PS2 real, a thread `0x2947c8`
+(truncada) a chamaria em loop infinito via BIOS scheduler. Fix: após retorno de
+`func_238860`, `cooperativeGuestYield()` + restaura a0=s0 + `goto label_1003ec`.
+
+Arquivo: `GOD_PC_PORT_FINAL/src/recompiled/sub_001003C0_0x1003c0.cpp`
+
+Comando de teste:
+```bash
+git pull origin main && bash rebuild_runtime.sh
+PS2_FORCE_A0=0x2cf070 PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_gameloop.txt
+python3 tools/analisa_log.py log_gameloop.txt --diff log_bootloop_fix.txt
+```
 E AUSÊNCIA de `[DBG 100E28]` — o loop não deve mais aparecer.
 Se `func_238860` for chamada, esperamos ver logs de GS/frame ou novas
 linhas de boot nunca vistas antes.
