@@ -101,7 +101,18 @@ void sub_00100E28_0x100e28(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
             // 0x100e60: 0x642021  addu        $a0, $v1, $a0 (Delay Slot)
         SET_GPR_S32(ctx, 4, (int32_t)ADD32(GPR_U32(ctx, 3), GPR_U32(ctx, 4)));
         ctx->in_delay_slot = false;
-        if (jumpTarget == 0u) {
+        // Guard Bug D: JALR para endereço não registrado (ex: BSS 0x35c920)
+        // causava return prematuro sem restaurar SP → stack leak de 0x40
+        // por iteração até stack overflow.  Tratamos como jumpTarget==0.
+        if (jumpTarget == 0u || !runtime->hasFunction(jumpTarget)) {
+            if (jumpTarget != 0u) {
+                fprintf(stderr,
+                    "[DBG 100E28] #%d JALR alvo nao registrado 0x%08x"
+                    " (global@0x32E854=0x%08x) -> tratado como nop\n",
+                    dbg_call, jumpTarget,
+                    (unsigned)READ32(ADD32(GPR_U32(ctx, 0), 0x32E854u)));
+                fflush(stderr);
+            }
             ctx->pc = 0x100E64u;
         } else {
         ctx->pc = jumpTarget;

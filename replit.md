@@ -125,60 +125,36 @@ Isso re-avalia o GLOB sem perder os `.o` já compilados.
 
 ### 🔬 Estado da investigação (boot loop / segfault)
 
-#### 🆕 SESSÃO 2026-04-25 (D) — Smoking gun: .o stale do crt0
+#### 🆕 SESSÃO 2026-04-25 (E) — Bug D: loop infinito + stack overflow em func_100408 — FIXADO
 
-Após desligar o boot_stub e adicionar log `[EXIT#N]` simétrico ao `[BOOT#N]`,
-o log do PC do usuário revelou:
-```
-[BOOT#1] pc=0x100008 ra=0x0 sp=0x1fffff0 gp=0x0 a0=0x0
-[EXIT#1] from=0x100008 -> pc=0x1003c0 ra=0x0 sp=0x1fffff0(was 0x1fffff0)
-                                       gp=0x0(was 0x0) a0=0x0(was 0x0)
-[BOOT#2] pc=0x1003c0 ...
-```
+**Status atual (após Bugs A/B/C/D corrigidos):**
+- Bugs A/B/C corrigiram o crt0 truncado, o `$gp=0` e o boot stub.
+- **Bug D** (esta sessão): `func_100408(a0=0)` com mundo nulo entrava em loop infinito varrendo lista duplamente ligada em `mem[0x20]` → RDRAM zerado = `mem[0x20]=0` ≠ sentinela `0x20` → iteração sem fim → cada iteração chamava `sub_00100E28` → JALR `0x35c920` (BSS, não registrado) → return prematuro sem epilogue → **stack leak +0x40/iter → SIGSEGV em ~8 segundos**.
 
-**`entry_0x100008` retorna sem alterar nenhum reg observável**:
-- `gp=0`, `sp=0x1fffff0`, `a0=0`, `ra=0` — TUDO igual à entrada.
-- Saiu pra `pc=0x1003c0`.
+**Fixes desta sessão (3 arquivos):**
 
-**Análise**:
-- O `.cpp` expandido (5720 linhas, range 0x100008-0x100db8) zera `$sp` em
-  `0x100070` (`padduw $sp, $zero, $zero` → `SET_GPR_VEC(ctx, 29, 0)`).
-  Se executasse 1 só instrução depois de zerar GPRs, `sp` viraria 0.
-- O `.cpp` truncado antigo (131 linhas, no Replit ainda) também faz isso.
-- Como `sp` continua 0x1fffff0, **NEM o truncado nem o expandido rodaram**.
-- Macros (`SET_GPR_VEC`, `SET_GPR_U64` etc) confirmados sem side-effects.
+1. **`PS2Recomp/ps2xRuntime/src/lib/ps2_runtime.cpp`** (boot stub)
+   - `std::memcpy(rdram + 0x20u, &sentinel, 4)` onde `sentinel = 0x20u` — cria lista vazia antes da cadeia de init.
+   - BSS clear range corrigido: `0x2c7080 → 0x35d080` (era `0x95128`, errado).
 
-**Hipótese**: O `recompilar.sh` é incremental. O regen do `.cpp` (via
-`regen_truncated.sh --all`) reescreveu o arquivo, mas o `.o` no
-`build/CMakeFiles/gow_recompiled.dir/.../entry_0x100008.cpp.o` ficou stale
-— talvez de uma versão MAIS PRIMITIVA que só fazia `pc=0x1003c0; return;`.
-O linker usou esse `.o` antigo.
+2. **`GOD_PC_PORT_FINAL/src/recompiled/sub_00100E28_0x100e28.cpp`** (JALR guard)
+   - `if (!runtime->hasFunction(jumpTarget))` → NOP + log warning; não retorna prematuramente.
 
-**Próximo teste no PC** (forçar recompilar entry_0x100008 + provar que está
-sendo executado):
+3. **`GOD_PC_PORT_FINAL/src/recompiled/sub_00100408_0x100408.cpp`** (JALR guard + include)
+   - Mesmo guard, mais `#include <cstdio>`.
+
+**Próxima ação no PC:**
 ```bash
 cd ~/Documentos/GitHub/godofwar
-# 1. Confirma .cpp local é o expandido
-echo "--- HEAD ATUAL DO crt0 .cpp ---"
-sed -n '14,22p' src/recompiled/entry_0x100008.cpp
-echo "--- TIMESTAMPS ---"
-ls -la src/recompiled/entry_0x100008.cpp \
-       build/CMakeFiles/gow_recompiled.dir/home/cristiano/Documentos/GitHub/godofwar/src/recompiled/entry_0x100008.cpp.o \
-       2>/dev/null
-# 2. Forca recompilacao do crt0
-find build -name 'entry_0x100008.cpp.o' -delete 2>/dev/null
+git pull origin main
 bash recompilar.sh
-# 3. Roda e captura
-PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_force_rebuild.txt
-# 4. Cola aqui as linhas com BOOT/EXIT
-grep -E 'BOOT#|EXIT#' log_force_rebuild.txt | head -30
+PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_bug_d.txt
+tail -50 log_bug_d.txt
 ```
 
-Resultado esperado:
-- Se aparecer `[EXIT#1] -> pc=0x100198 sp=0x... gp=0x2cf070(was 0x0)` →
-  o crt0 expandido executou de verdade. Bug isolado em syscalls 0x3C/0x3D.
-- Se ainda aparecer `gp=0(was 0)` → o `.cpp` ainda não está sendo
-  compilado. Investigar config do CMake.
+**Comportamento esperado:** sem loop, sem stack leak. Jogo avança até PC=0 (soft-loop) ou novo erro. Colar as últimas 50 linhas de `log_bug_d.txt` aqui para o próximo agente analisar.
+
+**Próximo bloqueio provável:** PC=0 após `0x1003c0` retornar → recover-pc entra em soft-loop (sem crash). Para avançar: descobrir `main()` do jogo (último JAL do crt0 = `0x138cb0`). Verificar no Ghidra quem escreve em `0x32E854`.
 
 ---
 

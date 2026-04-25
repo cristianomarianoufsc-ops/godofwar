@@ -94,6 +94,29 @@ cadeia de init (`0x2994a0`, `0x293ea0`, `0x138cb0`). Sem isso, mesmo com `$gp` c
 ponteiros de função em BSS ficam 0 e o jogo entra em loop. A cadeia de init também precisa de
 `$gp` correto para funcionar, daí o setup antes do loop de init.
 
+### ✅ Fix do Bug D (loop infinito + stack overflow) — SESSÃO 2026-04-25 (agente 4)
+
+**Diagnóstico:** após os Bugs A/B/C, o boot_stub já rodava a cadeia de init (`0x2994a0 → 0x293ea0 → 0x138cb0`). Contudo, `0x1003c0` chamava `func_100408(a0=0)` → ponteiro nulo como world pointer → `mem[0x20]` era `0x0` ≠ `0x20` (sentinela da lista duplamente ligada) → loop eterno varrendo lista nula → cada iteração chamava `sub_00100E28` → JALR para `0x35c920` (BSS, não registrado) → retorno prematuro sem epilogue → **stack leak de 0x40 por iteração até SIGSEGV**.
+
+**Fixes aplicados (3 arquivos):**
+
+1. **`ps2_runtime.cpp` (boot stub, linha ~2440)**
+   - Escrita `mem[0x20] = 0x20` ANTES da cadeia de init — cria sentinela de lista vazia (lista duplamente ligada PS2 com `next = self`).
+   - BSS clear corrigido: range `0x2c7080 → 0x35d080` (antes: range errado de `0x95128`).
+
+2. **`sub_00100E28_0x100e28.cpp` (JALR)**
+   - Guard `!runtime->hasFunction(jumpTarget)` antes do dispatch: se o alvo JALR não está registrado, trata como NOP (loga warning em stderr), avança PC ao epilogue — NÃO retorna prematuramente. Evita stack leak independente do sentinela.
+
+3. **`sub_00100408_0x100408.cpp` (JALR + include)**
+   - Mesmo guard acima, mais `#include <cstdio>` necessário para o fprintf do warning.
+
+**Comportamento esperado após os fixes:**
+- `func_100408(0)` vê `mem[0x20] == 0x20` → branch de "lista vazia" → retorna imediatamente (sem loop).
+- `0x1003c0` completa rapidamente, `jr $ra` com `RA=0` → `defaultFunction` aciona recover-pc.
+- **Próximo bloqueio:** PC=0 após `0x1003c0` retornar. O recover-pc entra em soft-loop (sem crash, sem stack leak). Para avançar de verdade, precisamos descobrir onde está o `main()` real do jogo (provavelmente chamado de `0x138cb0`, que é `SceSifInit` ou equivalente — verificar no Ghidra).
+
+---
+
 ### ✅ Sincronização local
 - Usuário tem o mesmo projeto em `~/Documentos/GitHub/godofwar` no Linux Mint
 - Mudanças via git push/pull
@@ -105,10 +128,10 @@ ponteiros de função em BSS ficam 0 e o jogo entra em loop. A cadeia de init ta
 
 Em ordem de prioridade:
 
-1. **🔴 URGENTE: Testar o fix do Bug C ($gp) + boot stub reativado** — fazer git pull e rodar para ver o próximo erro
-2. **🟡 Implementar syscalls/stubs faltantes** (5 em ps2_syscalls.cpp + 21 em ps2_stubs.cpp)
-3. **🟡 Inicializar IOP** para carregar `part1.pak` corretamente
-4. **🟢 Testar e debugar** o boot real do jogo
+1. **🔴 URGENTE: Testar Bug D fixes** — `git pull && bash recompilar.sh && PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_bug_d.txt` e colar as últimas 50 linhas aqui.
+2. **🔴 Descobrir `main()` do jogo** — `0x138cb0` é o último JAL do crt0 e o grande desconhecido. Pode ser `SifInit`, `InitSif`, ou o `main()` C do jogo. Verificar no Ghidra com o plugin EE-Reloaded; procurar a função que escreve em `0x32E854`.
+3. **🟡 Implementar syscalls/stubs faltantes** (5 em ps2_syscalls.cpp + 21 em ps2_stubs.cpp)
+4. **🟡 Inicializar IOP** para carregar `part1.pak` corretamente
 5. **🟢 Implementar Vector Units (VU0/VU1)** se necessário para gráficos
 
 ---

@@ -6,6 +6,8 @@
 #include "ps2_syscalls.h"
 #include "ps2_stubs.h"
 
+#include <cstdio>
+
 #ifdef PS2_FUNCTION_LOG_TRACKER
 #include "ps2_log.h"
 #endif
@@ -120,7 +122,15 @@ label_100438:
             // 0x100478: 0x2042021  addu        $a0, $s0, $a0 (Delay Slot)
         SET_GPR_S32(ctx, 4, (int32_t)ADD32(GPR_U32(ctx, 16), GPR_U32(ctx, 4)));
         ctx->in_delay_slot = false;
-        if (jumpTarget == 0u) {
+        // Guard Bug D (idêntico ao de sub_00100E28): JALR para endereço
+        // não registrado não deve causar return prematuro sem epilogue.
+        if (jumpTarget == 0u || !runtime->hasFunction(jumpTarget)) {
+            if (jumpTarget != 0u) {
+                fprintf(stderr,
+                    "[DBG 100408] JALR alvo nao registrado 0x%08x -> nop\n",
+                    jumpTarget);
+                fflush(stderr);
+            }
             ctx->pc = 0x10047Cu;
         } else {
         ctx->pc = jumpTarget;

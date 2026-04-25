@@ -2436,9 +2436,25 @@ void PS2Runtime::run()
         if (rdram)
         {
             // 1) Zera BSS (loop original em 0x10011c-0x100144).
-            //    Range: 0x2c7080 (BSS start) -> 0x35c1a8 (BSS end)
-            //    Tamanho: 0x95128 bytes (~600 KB).
-            std::memset(rdram + 0x2c7080u, 0, 0x95128u);
+            //    Range: 0x2c7080 (BSS start) -> 0x35d080 (BSS end real do ELF)
+            //    Tamanho corrigido: ELF memsz cobre 0x100000+0x25d080=0x35d080.
+            std::memset(rdram + 0x2c7080u, 0, 0x35d080u - 0x2c7080u);
+
+            // 1b) Sentinela da lista encadeada de eventos em mem[0x20].
+            //
+            // func_100408 recebe $a0=0 no boot e lê a cabeça da lista em
+            // mem[$a0+0x20] = mem[0x20].  A condição de lista vazia é:
+            //   mem[0x20] == ($a0 + 0x20) == 0x20  (ponteiro apontando para si)
+            //
+            // A RDRAM inicia zerada → mem[0x20]=0 ≠ 0x20 → func_100408 entra em
+            // loop infinito iterando ponteiros nulos, chamando sub_00100E28 a cada
+            // iteração com stack leak de 0x40 bytes até stack overflow.
+            //
+            // Corrijo escrevendo a sentinela de lista vazia antes de qualquer init.
+            {
+                uint32_t sentinel = 0x00000020u;
+                std::memcpy(rdram + 0x20u, &sentinel, sizeof(sentinel));
+            }
 
             // 2) SetupThread (syscall 0x3C, original em 0x100174-0x100178).
             //    Args do disassembly em 0x100148-0x10016c:
