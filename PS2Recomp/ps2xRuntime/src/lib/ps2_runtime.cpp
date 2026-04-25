@@ -2119,9 +2119,39 @@ void PS2Runtime::dispatchLoop(uint8_t *rdram, R5900Context *ctx)
         // Registra a chamada de função no tracer (ativado via PS2_TRACE=1)
         g_callTracer.trace(dispatchedPc, dispatchedRa, dispatchedSp);
 
+        // Snapshot do estado ANTES da chamada (pra delta no EXIT log)
+        const bool bootTraceActive =
+            (s_bootTraceCount.load(std::memory_order_relaxed) <= kBootTraceLimit);
+        const uint32_t entryGp = bootTraceActive
+            ? static_cast<uint32_t>(_mm_extract_epi32(ctx->r[28], 0)) : 0u;
+        const uint32_t entrySp = bootTraceActive
+            ? static_cast<uint32_t>(_mm_extract_epi32(ctx->r[29], 0)) : 0u;
+        const uint32_t entryA0 = bootTraceActive
+            ? static_cast<uint32_t>(_mm_extract_epi32(ctx->r[4], 0)) : 0u;
+
         {
             GuestExecutionScope guestExecution(this);
             fn(rdram, ctx, this);
+        }
+
+        // EXIT log: estado APOS a funcao recompilada retornar.
+        // Permite ver se entry saiu cedo (early-return apos jal interno) ou
+        // executou ate o fim, e se gp/sp/a0 foram modificados como esperado.
+        if (bootTraceActive)
+        {
+            const uint32_t exitPc = ctx->pc;
+            const uint32_t exitRa = static_cast<uint32_t>(_mm_extract_epi32(ctx->r[31], 0));
+            const uint32_t exitGp = static_cast<uint32_t>(_mm_extract_epi32(ctx->r[28], 0));
+            const uint32_t exitSp = static_cast<uint32_t>(_mm_extract_epi32(ctx->r[29], 0));
+            const uint32_t exitA0 = static_cast<uint32_t>(_mm_extract_epi32(ctx->r[4], 0));
+            std::cout << "[EXIT#" << std::dec << tl_dispatchCount
+                      << "] from=0x" << std::hex << dispatchedPc
+                      << " -> pc=0x" << exitPc
+                      << " ra=0x" << exitRa
+                      << " sp=0x" << exitSp << "(was 0x" << entrySp << ")"
+                      << " gp=0x" << exitGp << "(was 0x" << entryGp << ")"
+                      << " a0=0x" << exitA0 << "(was 0x" << entryA0 << ")"
+                      << std::dec << std::endl;
         }
 
         if (ctx->pc == 0u)
