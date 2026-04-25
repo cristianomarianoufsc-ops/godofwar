@@ -79,6 +79,21 @@ O executável compila e roda, mas mostra tela preta. PC fica preso em `0x100088`
 ### ✅ Investigação do bug de tela preta (FEITA — leia seção 5)
 Identifiquei a causa raiz do PC preso em 0x100088. Ver seção 5.
 
+### ✅ Fix do Bug C ($gp = 0) — SESSÃO 2026-04-25 (agente 3)
+**Diagnóstico:** após o Bug A/B serem fixados, o jogo avançou para `0x1003c0` e entrou em loop
+infinito em `0x100E28`. Causa: `$gp=0` (global pointer zerado pelo crt0). Todo acesso a variáveis
+globais via `$gp+offset` lia zero, incluindo `global@0x32E854` e `jalr_target`.
+
+**Fixes aplicados:**
+1. `entry_0x100008.cpp` — adicionado `SET_GPR_VEC(ctx, 28, 0x2cf070)` após o bloco de zeragem
+2. `ps2_runtime.cpp` — boot stub reativado por padrão (era opt-in, agora opt-out via `PS2_NO_BOOT_STUB=1`)
+3. `ps2_runtime.cpp` — `$gp=0x2cf070` configurado ANTES da cadeia de init no boot stub
+
+**Raciocínio:** o boot stub precisa rodar para popular globals em BSS (como `0x32E854`) via
+cadeia de init (`0x2994a0`, `0x293ea0`, `0x138cb0`). Sem isso, mesmo com `$gp` correto, os
+ponteiros de função em BSS ficam 0 e o jogo entra em loop. A cadeia de init também precisa de
+`$gp` correto para funcionar, daí o setup antes do loop de init.
+
 ### ✅ Sincronização local
 - Usuário tem o mesmo projeto em `~/Documentos/GitHub/godofwar` no Linux Mint
 - Mudanças via git push/pull
@@ -90,7 +105,7 @@ Identifiquei a causa raiz do PC preso em 0x100088. Ver seção 5.
 
 Em ordem de prioridade:
 
-1. **🔴 URGENTE: Aplicar o fix do bug de PC preso** (ver seção 5 — solução proposta)
+1. **🔴 URGENTE: Testar o fix do Bug C ($gp) + boot stub reativado** — fazer git pull e rodar para ver o próximo erro
 2. **🟡 Implementar syscalls/stubs faltantes** (5 em ps2_syscalls.cpp + 21 em ps2_stubs.cpp)
 3. **🟡 Inicializar IOP** para carregar `part1.pak` corretamente
 4. **🟢 Testar e debugar** o boot real do jogo

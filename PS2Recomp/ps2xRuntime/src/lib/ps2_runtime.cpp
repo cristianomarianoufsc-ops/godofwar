@@ -2427,9 +2427,10 @@ void PS2Runtime::run()
     //   - chama main()/__libc_init com $gp=0, podendo crashar globals
     //   - duplica trabalho que o crt0 fará quando dispatchLoop rodar
     //
-    // Default agora: stub DESLIGADO. Para reativar (debug/regressão):
-    //   PS2_BOOT_STUB=1 bash jogar.sh
-    if (std::getenv("PS2_BOOT_STUB"))
+    // Default agora: stub LIGADO (necessario porque o crt0 truncado nao roda a
+    // cadeia de init). Para desativar (debug/regressao):
+    //   PS2_NO_BOOT_STUB=1 bash jogar.sh
+    if (!std::getenv("PS2_NO_BOOT_STUB"))
     {
         uint8_t* rdram = m_memory.getRDRAM();
         if (rdram)
@@ -2481,6 +2482,13 @@ void PS2Runtime::run()
             // depois que dispatchLoop estiver rodando (j 0x2996B0 -> main).
             // As 3 inits abaixo são suficientes pra destravar o boot até
             // GsSetCrt — confirmado em log.
+            // Configura $gp (global pointer) ANTES de chamar as inits.
+            // Sem isso, qualquer funcao da cadeia que acesse variaveis globais
+            // via $gp+offset le zeros (BSS ou lixo), causando falhas silenciosas.
+            // 0x2cf070 = simbolo _gp do ELF do God of War (confirmado no disassembly).
+            m_cpuContext.r[28] = _mm_set_epi64x(0, static_cast<int64_t>(0x002cf070u));
+            std::cout << "[boot_stub] $gp configurado para 0x2cf070" << std::endl;
+
             constexpr uint32_t kInitChain[] = {
                 0x2994a0u, 0x293ea0u, 0x138cb0u
             };

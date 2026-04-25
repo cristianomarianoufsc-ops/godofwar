@@ -119,21 +119,26 @@ void entry_0x100008(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtime) {
     ctx->pc = 0x100088u;
     ctx->lo1 = GPR_U64(ctx, 0);
 
-    // ---- FIX (Bug A + Bug B do HANDOFF_AGENT.md) ----
-    // Bug A: o recompilador deixou pc=0x100088 (ultima instrucao). Avancamos para
-    // a proxima instrucao valida para que o dispatchLoop nao fique preso.
+    // ---- FIX (Bug A + Bug B + Bug C do HANDOFF_AGENT.md) ----
     //
-    // EXPERIMENTO (Opcao A): o recompilador NAO gerou funcoes entre 0x10008c
-    // e 0x1003c0 (~830 bytes de buraco). Pulando direto para a primeira funcao
-    // real recompilada (sub_001003C0) para ver o que acontece. Se o jogo
-    // progredir, sabemos que esse buraco era padding/dados e nao codigo.
-    // Se travar/crashar diferente, o relatorio dira o proximo passo.
+    // Bug A: o recompilador deixou pc=0x100088 (ultima instrucao executada).
+    // A proxima funcao recompilada disponivel apos o buraco de padding/dados
+    // (0x10008c-0x1003bf) e sub_001003C0. Pulamos direto para ela.
     ctx->pc = 0x1003c0u;
 
-    // Bug B: o ELF original do God of War assume que o kernel da PS2 configura
-    // SP/GP/RA depois deste bloco de boot. Como nao temos kernel, simulamos isso
-    // restaurando o stack pointer aqui (mesmo valor usado em PS2Runtime::run()).
-    // GP fica em 0 por enquanto; se o jogo precisar do _gp do ELF isso aparecera
-    // como o proximo bug a ser corrigido.
+    // Bug B: o ELF assume que o kernel PS2 configura $sp apos o bloco de boot.
+    // Restauramos o stack pointer para o topo da RAM emulada.
+    // Valor padrao do boot stub: 0x01ff8000 (= SetupThread $a1).
+    // Usamos PS2_RAM_SIZE - 0x10 que e equivalente e ja estava no runtime.
     SET_GPR_VEC(ctx, 29, _mm_set_epi64x(0, static_cast<int64_t>(PS2_RAM_SIZE - 0x10u)));
+
+    // Bug C: $gp (global pointer, registrador 28) foi zerado pelo bloco de
+    // padduw acima (0x10006c). O kernel real do PS2 o restauraria para o valor
+    // do simbolo _gp do ELF apos o boot. Sem isso, todo acesso a variaveis
+    // globais (via $gp + offset) le zeros, causando loop infinito em 0x100E28.
+    //
+    // Valor de _gp confirmado nos comentarios do runtime (ps2_runtime.cpp:2444)
+    // e no disassembly: lui/addiu em 0x100148+0x10015c setam $a0=0x2cf070,
+    // depois daddu $gp, $a0, $zero em 0x100170 copia para $gp.
+    SET_GPR_VEC(ctx, 28, _mm_set_epi64x(0, static_cast<int64_t>(0x002cf070u)));
 }
