@@ -162,6 +162,42 @@ precisamos implementar manualmente no `stub_hardware_init`
 
 ---
 
+## 🛠️ INVENTÁRIO DE FERRAMENTAS EM `tools/` — LEIA ANTES DE PROPOR CRIAR QUALQUER COISA NOVA
+
+> 🚨 **AGENTES**: a tabela abaixo é a fonte da verdade do que JÁ EXISTE no
+> diretório `tools/`. Antes de sugerir "vou criar uma ferramenta que…",
+> **bate o olho aqui primeiro**. Vários agentes anteriores perderam ciclos
+> propondo ferramentas que já estavam prontas. Se a ferramenta existe mas
+> nunca foi rodada, **rode-a**, não recrie.
+
+| Arquivo | O que faz | Como invocar | Última saída relevante |
+|---|---|---|---|
+| `mips_inspect.py` | Desmonta MIPS R5900 do ELF; lista gaps; diagnostica buracos. | `python3 tools/mips_inspect.py 0xADDR` / `--list-gaps` / `--gap 0xADDR` | Já catalogou 30 maiores gaps. |
+| `gap_discover.py` | Varre gaps reais entre funções recompiladas, detecta prólogos R5900, gera CSV `name,start,end,size` no formato Ghidra. | `python3 tools/gap_discover.py` → `tools/discovered_functions.csv` | 75 funções novas em `discovered_functions.csv`. |
+| `map_truncated_functions.py` | Compara `// Address: 0xS-0xE` declarado nos `.cpp` vs. o `jr $ra` real no ELF. Lista todas as funções truncadas. | `python3 tools/map_truncated_functions.py` | Sessão 04-25: 1607 funções truncadas. |
+| `fix_truncated.py` | Gera CSV de correção (`tools/truncation_fixes.csv`) com ranges expandidos pra reabilitar via ps2_recomp. Suporta `--only-entry` / `--reachable` (default) / `--all`. Carrega overrides manuais de `truncation_overrides.csv`. | Chamado por `regen_truncated.sh`; raramente standalone. | CSV cobrindo 1607 funções. |
+| `regen_truncated.sh` | **Pipeline completo de 5 passos**: (1) gera CSV de fixes, (2) localiza `ps2_recomp`, (3) localiza TOML, (4) injeta `ghidra_output` no TOML (com `.bak`), (5) roda ps2_recomp e dá `touch` nos arquivos modificados pra forçar rebuild. | `bash tools/regen_truncated.sh [--only-entry\|--all\|--reachable]` | Last run (`--all`): 1607 funções estendidas, 4053 entries adicionais descobertas, 671 funções resliceadas, 1790 arquivos retocados. |
+| `ps2_syscalls.py` | Tabela de ~80 syscalls do BIOS PS2 (EE) com criticidade. Modos: lookup por ID, lookup por endereço, listagem, e **`--report --log build/run.log`** que prioriza syscalls a implementar por (criticidade × frequência). | `python3 tools/ps2_syscalls.py --report --log build/run.log` | — |
+| `reachable_after_boot.py` | BFS de alcançabilidade a partir de seeds (lê `tools/reachable_seeds.txt`), produz tier-report de funções alcançáveis. | `python3 tools/reachable_after_boot.py` | Hoje só tem 1 seed (`0x100008`). Adicionar root_func, VU0/VU1, dispatch de game state quando descobertos. |
+| `find_writer_32E854.py` | Decodificador MIPS manual; varre PT_LOAD do ELF buscando quem **escreve/lê** em `0x32E854` (a flag que o crt0 espera). Idiomas: `lui+sw`. | `python3 tools/find_writer_32E854.py` | **Sessão 04-25 (rodado): 0 escritores, 15 leitores no ELF principal.** |
+| `find_writer_v2.py` | Versão estendida do anterior: rastreia `lui+ori`, `lui+addiu`, `lui+daddiu/daddu` pra computar EA correto através de cadeias de instruções. | `python3 tools/find_writer_v2.py` | **0 escritores, 15 leitores** (confirma o anterior). |
+| `find_writer_32E854_overlays.py` | Igual ao v2, mas escaneia **TODAS** as seções (incluindo overlays `.DVP` com addr=0). | `python3 tools/find_writer_32E854_overlays.py` | **0 escritores, 15 leitores** — overlays também não escrevem. |
+| `discovered_functions.csv` | CSV de funções descobertas pelo `gap_discover.py`. Formato Ghidra: `name,start,end,size`. | Consumido pelo `recompiler.toml` via `ghidra_output=`. | 75 entradas. |
+| `truncation_fixes.csv` | CSV gerado pelo `fix_truncated.py`, injetado no TOML pelo `regen_truncated.sh`. **Não editar à mão** — é regenerado a cada run. | Auto. | Atual: 1607 fixes. |
+| `truncation_overrides.csv` | **Edite à mão** — overrides manuais que vencem o auto-detect quando este erra (early-returns, sub-funções não-listadas). Formato: `name,start,end[,size]`. | Lido por `fix_truncated.py`. | 1 override (`entry,0x100008,0x100db8`). |
+| `reachable_seeds.txt` | Lista de seeds (1 por linha, hex). | Lido por `reachable_after_boot.py`. | 1 seed (`0x100008`). |
+
+**Categorias rápidas**:
+- **Análise estática do ELF**: `mips_inspect`, `gap_discover`, `map_truncated_functions`, `find_writer_*`.
+- **Pipeline de regen**: `fix_truncated` + `regen_truncated.sh` + os 3 CSVs.
+- **Análise de runtime**: `ps2_syscalls.py --report` (lê o log do jogo).
+- **Alcançabilidade**: `reachable_after_boot.py` + `reachable_seeds.txt`.
+
+**Lacunas conhecidas (oportunidades pra novas ferramentas)**:
+- ❌ Não existe scanner de IRX (`*.IRX`) buscando escritores de globals da EE — relevante porque 3 scripts já confirmaram 0 escritores de `0x32E854` no ELF principal, então a flag tem que vir de IRX/DMA. **Próxima tool útil**.
+- ❌ Não existe parser do `ps2_missing.log` que adiciona automaticamente PCs travados como seeds em `reachable_seeds.txt`.
+- ❌ Não existe detector de "boot loop" no runtime que avise quando a mesma função é chamada N vezes seguidas com argumentos idênticos.
+
 ## Visão Geral
 
 Este projeto converte o executável original do PS2 (`SCUS_973.99`) para código C++ nativo usando recompilação estática. São 5.629 funções MIPS traduzidas para C++20, vinculadas ao `ps2xRuntime` que emula o hardware do PS2.
@@ -627,6 +663,93 @@ Esperado no log:
 - Log do jogo: `[DBG 100E28]` deve aparecer **MUITO menos** (ou só 1-2
   vezes, não 40+) e `livePc` deve sair do range 0x118110/0x13DB18
 - `ps2_missing.log` não deve mais ter `func_0x10047C` no topo
+
+### Atualização — `--all` aplicado (log_teste2.txt, sessão 04-25 tarde)
+
+O usuário rodou `bash tools/regen_truncated.sh --all && bash recompilar.sh`,
+estendendo as **1607 funções truncadas** (não só o entry). ps2_recomp processou,
+descobriu **4053 entries adicionais**, resliceou **671 funções**, e retocou
+**1790 arquivos**. Compilação OK.
+
+> ⚠️ O log mostra `Error during output generation: No entry function name
+> available for registration` — é **falso alarme**. O `register_functions.cpp`
+> ficou íntegro (5642 linhas) e o `entry 0x100008` está registrado normalmente
+> na linha 9. O erro é de uma sub-entry resliceada, não do registro principal.
+
+**Avanço observado** vs. `--only-entry`:
+
+| Métrica | `--only-entry` | `--all` |
+|---|---|---|
+| Ticks até user fechar janela | 120 (~2s) | 7560 (~2 min) |
+| `livePc` | Fixo em `0x13d644` | Varia: `0x1878e4`, `0x187880`, `0x13de18`, `0x13da58` |
+| `[DBG 100E28]` loop | 40+ idêntico | Continua idêntico |
+| `nonBlack` em frames | 0 (todos pretos) | 0 (todos pretos) |
+| DMA/GIF/VIF/sound | 0 | 0 |
+
+**Conclusão**: `--all` desbloqueou execução por código novo (livePc se move
+por 4 endereços diferentes), mas **não saiu do loop crt0**. A flag
+`0x32E854` continua zero → branch `branch_taken=0` → boot trava no mesmo
+lugar, só roda mais voltas.
+
+### Causa raiz refinada — `0x32E854` é escrita por algo FORA do ELF principal
+
+Os **3 scripts** `find_writer_32E854.py`, `find_writer_v2.py` e
+`find_writer_32E854_overlays.py` foram rodados (sessão 04-25, agente
+Replit) sobre `GOD_PC_PORT_FINAL/data/SCUS_973.99` e os 3 confirmam:
+
+> **0 escritores, 15 leitores** em `0x32E854` no ELF principal,
+> incluindo overlays `.DVP`.
+
+Os 15 leitores estão distribuídos por:
+```
+0x100DD0  → entry_100db8_0x100e28.cpp
+0x100E48  → (gap não-coberto pelo recompiler)
+0x10183C  → (gap não-coberto pelo recompiler)
+0x108AA0  → FUN_001067a8_0x1067a8.cpp
+0x108B18  → FUN_001067a8_0x1067a8.cpp
+0x10A9C4  → FUN_0010a978_0x10a978.cpp
+0x11137C  → FUN_00111328_0x111328.cpp
+0x117C98  → FUN_00117a50_0x117a50.cpp  (← 0x118110 é a função em loop!)
+0x117D30  → FUN_00117a50_0x117a50.cpp
+0x141F2C  → FUN_00141b78_0x141b78.cpp
+0x153214  → FUN_00152e28_0x152e28.cpp
+0x157AFC  → FUN_00157680_0x157680.cpp
+0x15892C  → FUN_00157680_0x157680.cpp
+0x158EE8  → FUN_00157680_0x157680.cpp
+0x159390  → FUN_00157680_0x157680.cpp
+```
+
+Todos usam o padrão `lui $vN, 0x33` + `lw $vM, -0x17ac($vN)` → `0x32E854`.
+Nenhum usa `sw` no mesmo endereço. Logo, **estender mais funções truncadas
+não vai resolver esse loop**.
+
+**Hipóteses ranqueadas pra quem escreve `0x32E854`**:
+
+1. 🥇 **Módulos IRX no IOP** (`989NOMID.IRX`, `DBCMAN.IRX`, `LIBSD.IRX`,
+   `MC2_S1.IRX`, `SIO2MAN.IRX`, etc. em `GOD_PC_PORT_FINAL/data/`).
+   IRXs rodam no IOP e escrevem na memória da EE via DMA do SIF. O runtime
+   do projeto **não emula IRX-on-IOP** — então qualquer flag que dependa
+   de IRX inicializar nunca é setada.
+2. 🥈 **Inicialização do EE-kernel/crt0** que foi pulada na recompilação
+   (handlers de exceção, init de threads, init do SIF).
+3. 🥉 **Os 2 gaps em readers** (`0x100E48` e `0x10183C` não estão
+   cobertos por nenhum `.cpp` do `src/recompiled/`) — improvável, mas
+   verificar com `tools/mips_inspect.py --gap 0x100E48`.
+
+**Próxima ação recomendada (sem criar tools novas — usar o que já existe)**:
+
+A. **Bypass temporário pra confirmar a hipótese**: forçar `0x32E854 = 1`
+   no início do runtime (hack em `ps2_runtime.cpp` ou patch no
+   `entry_0x100008.cpp`). Se o boot avança, confirma que a flag é o
+   único bloqueador. Se trava em outro lugar, identifica o próximo
+   bloqueio na cadeia. **5 minutos de trabalho, alto valor diagnóstico.**
+B. **Adaptar `find_writer_v2.py` pra escanear arquivos arbitrários
+   (IRX/IMG)** — não é tool nova, é generalização de uma já existente.
+   Se algum IRX escreve em `0x32E854`, identifica qual e a faixa de
+   código a estudar.
+C. **Olhar o disassembly do crt0 estendido** com `mips_inspect.py
+   0x100008 -n 200` pra ver se ele **deveria** chamar uma função
+   IRX-init que está ausente.
 
 ### Próximas (ordem sugerida)
 
