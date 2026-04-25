@@ -736,20 +736,80 @@ não vai resolver esse loop**.
    cobertos por nenhum `.cpp` do `src/recompiled/`) — improvável, mas
    verificar com `tools/mips_inspect.py --gap 0x100E48`.
 
-**Próxima ação recomendada (sem criar tools novas — usar o que já existe)**:
+### 🎯 CAUSA RAIZ DEFINITIVA — patch automático esconde init do EE-kernel
 
-A. **Bypass temporário pra confirmar a hipótese**: forçar `0x32E854 = 1`
-   no início do runtime (hack em `ps2_runtime.cpp` ou patch no
-   `entry_0x100008.cpp`). Se o boot avança, confirma que a flag é o
-   único bloqueador. Se trava em outro lugar, identifica o próximo
-   bloqueio na cadeia. **5 minutos de trabalho, alto valor diagnóstico.**
-B. **Adaptar `find_writer_v2.py` pra escanear arquivos arbitrários
-   (IRX/IMG)** — não é tool nova, é generalização de uma já existente.
-   Se algum IRX escreve em `0x32E854`, identifica qual e a faixa de
-   código a estudar.
-C. **Olhar o disassembly do crt0 estendido** com `mips_inspect.py
-   0x100008 -n 200` pra ver se ele **deveria** chamar uma função
-   IRX-init que está ausente.
+A hipótese-IRX foi **descartada após inspeção direta do disassembly cru
+da região escondida pelo patch** (`mips_inspect.py inspect 0x10008c
+0x1001d0`, sessão 04-25 noite). A região escondida (81 instruções,
+324 bytes) é a **continuação do crt0 PS2** e contém:
+
+| Offset | O que faz |
+|---|---|
+| `0x100090-0x10010c` | Zera **todos os 32 registradores FPU** (`mtc1 $zero, $fX`) |
+| `0x100114` | `sync 0x10` — barreira de memória |
+| `0x100118` | `ctc1 $zero, $31` — zera control reg FPU |
+| `0x10011c-0x100144` | **Loop de zerar BSS** (de `0x2c7080` até `0x35c1a8`, ~600 KB) |
+| `0x100174-0x100178` | `addiu $v1,$zero,0x3c` + `syscall` → **SYSCALL #0x3c = `RFU060_SetupThread`** |
+| `0x100190-0x100194` | `addiu $v1,$zero,0x3d` + `syscall` → **SYSCALL #0x3d = `RFU061_SetupHeap`** |
+| `0x100198` | `jal 0x2994a0` (init runtime/wsg) |
+| `0x1001a0` | `jal 0x293ea0` (init libc) |
+| `0x1001a8` | `jal 0x138cb0` (init libc/atexit) |
+| `0x1001b0` | `38000042` — instrução COP0 `ei` (enable interrupts) |
+| `0x1001c0` | `jal 0x138d48` (init libc/atexit pt.2) |
+| `0x1001c8` | `j 0x2996b0` (pula pro main wrapper) |
+
+**Por que o patch é injetado**: o ps2_recomp tropeça em **5 instruções
+EE custom** marcadas como `.byte` pelo capstone:
+- `0x10008c: 00001904`
+- `0x100110: 18000146`
+- `0x100170: 2de08000` (provável `daddu $sp, $a0, $zero`)
+- `0x10017c: 2de84000` (provável `daddu $sp, $v0, $zero`)
+- `0x1001b0: 38000042` (`ei`)
+
+Quando o ps2_recomp não decodifica essas instruções, ele aborta a função
+e o sistema injeta automaticamente o "Patch: Jump to next entry point",
+que **pula 81 instruções essenciais** — incluindo os 2 syscalls de
+inicialização da main thread e do heap.
+
+**Por que isso explica tudo**:
+
+1. `0x32E854` (a flag em loop) está **dentro do range de BSS**
+   (`0x2c7080 ≤ 0x32E854 ≤ 0x35c1a8`) — não é variável especial, é
+   variável global comum.
+2. Sem **SetupThread** + **SetupHeap**, qualquer init de runtime/libc
+   chamado depois (`0x2994a0`, `0x293ea0`, `0x138cb0`, `0x138d48`) que
+   dependa de thread context ou alocação heap falha em silêncio.
+3. **O setter de `0x32E854` está em algum lugar dentro dessa cadeia
+   de 4 JAL** (cada uma é pequena com 1 filho — precisa descer mais),
+   e nunca é executado.
+
+A hipótese "IRX no IOP" estava errada — **não tem nada de IRX
+envolvido**. É puro EE-kernel sendo bypassado pelo patch defensivo.
+
+### Próximas ações (ordem de prioridade)
+
+A. **🥇 Implementar stub C++ no runtime que executa manualmente o init
+   pulado**: zerar BSS (`memset(rdram + 0x2c7080, 0, 0x95128)`),
+   chamar `handleSyscall(0x3c)` (SetupThread), `handleSyscall(0x3d)`
+   (SetupHeap), e depois `entry_2994a0` / `entry_293ea0` /
+   `entry_138cb0` / `entry_138d48` em sequência **antes** de pular pra
+   `0x1001d0`. Pode ser inserido no fim do `entry_0x100008.cpp` (mas
+   será sobrescrito pelo regen — melhor pôr em um wrapper no
+   `ps2_runtime.cpp` que roda 1 vez antes do entry).
+
+B. **🥈 Ensinar o ps2_recomp a decodificar as 5 instruções EE custom**
+   (`0x10008c`, `0x100110`, `0x100170`, `0x10017c`, `0x1001b0`). Mais
+   correto a longo prazo, mas exige mexer no source C++ do ps2_recomp.
+   As 3 instruções "óbvias" são: `daddu` (×2) e `ei` (COP0).
+
+C. **🥉 Verificar se as syscalls `0x3c`/`0x3d` estão implementadas no
+   `ps2_syscalls.cpp` do runtime** — se não, implementar como stub que
+   pelo menos seta as flags de thread/heap. Sem isso o caminho A não
+   funciona.
+
+D. **Diagnóstico de fundo**: descer a cadeia das 4 JAL pra mapear
+   exatamente qual chama o setter de `0x32E854`. Útil pra confirmar
+   após o caminho A funcionar.
 
 ### Próximas (ordem sugerida)
 
