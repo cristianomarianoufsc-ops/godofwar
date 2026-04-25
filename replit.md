@@ -125,6 +125,49 @@ Isso re-avalia o GLOB sem perder os `.o` já compilados.
 
 ### 🔬 Estado da investigação (boot loop / segfault)
 
+#### 🆕 SESSÃO 2026-04-25 (B) — ROOT CAUSE IDENTIFICADO: crt0 truncado
+
+**Causa raiz confirmada**: `src/recompiled/entry_0x100008.cpp` declara range
+`0x100008 - 0x10008c` (132 bytes), mas o crt0 real do ELF vai até `0x100db8`
+(3504 bytes). Faltam **843 instruções** críticas. O arquivo termina com um
+"Patch: Jump to next entry point" hardcoded que pula direto pra `0x1001d0`,
+saltando todo este código essencial:
+
+| Endereço | O que está faltando |
+|---|---|
+| 0x10012c–0x100144 | **BSS clear loop** (zera 0x2c7080 → 0x35c1a8 — inclui `0x32E854`) |
+| 0x100170 | **`daddu $gp, $a0, $zero`** → setup do `$gp = 0x002cf070` |
+| 0x10017c | **`daddu $sp, $v0, $zero`** → setup do stack pointer |
+| 0x100178, 0x100194 | Syscalls 60 e 61 (init de kernel) |
+| 0x100198 | `jal 0x002994a0` — `__libc_init` |
+| 0x1001a0 | `jal 0x00293ea0` — init libs |
+| 0x1001a8 | **`jal 0x00138cb0` — chamada do `main()`** ← inicializaria `0x32E854` |
+
+Isso explica perfeitamente o crash:
+- `gp=0x0` no log do crash → setup do `$gp` foi pulado
+- `0x32E854` zerado → `main()` nunca rodou (15 leitores no ELF, 0 escritores
+  porque o escritor real está dentro de uma função de init que nunca é
+  alcançada pelo crt0 atual)
+- Boot cai em `sub_00100E28` que segue cadeia de ponteiros
+  (`*0x32E854 → +0x20 → +0xA4`) e tropeça em valor lixo `0x35c920`
+
+**Ferramenta nova**: `tools/diagnose_crt0.py` reporta o estado real do crt0
+do usuário. Exit 0 = OK, exit 1 = falha (com lista de instruções faltando).
+
+**Próximo passo**: usuário precisa rodar `uv run python tools/diagnose_crt0.py`
+no PC dele pra confirmar se *na máquina dele* o crt0 já foi regenerado
+(comportamento esperado se o `regen_truncated.sh --all` da rodada anterior
+funcionou). Possíveis cenários:
+- **Diagnóstico FALHA** (igual ao Replit) → crt0 ainda truncado; rodar
+  `bash tools/regen_truncated.sh --all && bash recompilar.sh` outra vez.
+- **Diagnóstico OK** mas crash continua → `.cpp` foi regenerado mas o
+  tradutor do `ps2_recomp` está gerando código inválido para `daddu $gp,...`,
+  ou o build incremental não recompilou o `.o` (rodar `touch
+  src/recompiled/entry_0x100008.cpp && bash recompilar.sh`).
+
+---
+
+#### Sessão 2026-04-23 (HISTÓRICO)
 Atualizado em 2026-04-23. Já chegamos a rodar o jogo (tela preta) e ele
 crasha com SIGSEGV após ~2,4 s. Resumo dos achados:
 
@@ -243,6 +286,7 @@ PS2_LOOP_REPORT_AFTER=10000 bash jogar.sh 2>&1 | tee log_teste.txt
 | `find_writer_32E854.py` | Decodificador MIPS manual; varre PT_LOAD do ELF buscando quem **escreve/lê** em `0x32E854` (a flag que o crt0 espera). Idiomas: `lui+sw`. | `python3 tools/find_writer_32E854.py` | **Sessão 04-25 (rodado): 0 escritores, 15 leitores no ELF principal.** |
 | `find_writer_v2.py` | Versão estendida do anterior: rastreia `lui+ori`, `lui+addiu`, `lui+daddiu/daddu` pra computar EA correto através de cadeias de instruções. | `python3 tools/find_writer_v2.py` | **0 escritores, 15 leitores** (confirma o anterior). |
 | `find_writer_32E854_overlays.py` | Igual ao v2, mas escaneia **TODAS** as seções (incluindo overlays `.DVP` com addr=0). | `python3 tools/find_writer_32E854_overlays.py` | **0 escritores, 15 leitores** — overlays também não escrevem. |
+| `diagnose_crt0.py` | **Diagnóstico cirúrgico do crt0**: lê o `.cpp` atual de `entry_0x100008` e arquivos adjacentes; verifica se as 9 instruções críticas do crt0 real (BSS clear, setup `$gp`/`$sp`, syscalls 60/61, `jal __libc_init`, `jal main`) foram traduzidas. Reporta em pt-BR claro o que está faltando e exit code 0=ok / 1=falha. | `uv run python tools/diagnose_crt0.py` | Sessão 04-25 (Replit): 5 críticas + 4 altas ausentes, Patch hack presente, range 132 bytes em vez de 3504. |
 | `discovered_functions.csv` | CSV de funções descobertas pelo `gap_discover.py`. Formato Ghidra: `name,start,end,size`. | Consumido pelo `recompiler.toml` via `ghidra_output=`. | 75 entradas. |
 | `truncation_fixes.csv` | CSV gerado pelo `fix_truncated.py`, injetado no TOML pelo `regen_truncated.sh`. **Não editar à mão** — é regenerado a cada run. | Auto. | Atual: 1607 fixes. |
 | `truncation_overrides.csv` | **Edite à mão** — overrides manuais que vencem o auto-detect quando este erra (early-returns, sub-funções não-listadas). Formato: `name,start,end[,size]`. | Lido por `fix_truncated.py`. | 1 override (`entry,0x100008,0x100db8`). |
