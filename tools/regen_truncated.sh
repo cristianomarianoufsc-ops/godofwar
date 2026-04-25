@@ -69,12 +69,14 @@ fi
 if [[ -z "$RECOMP_BIN" || ! -x "$RECOMP_BIN" ]]; then
     if [[ "$BUILD_RECOMP" == "1" ]]; then
         echo "  Binário ps2_recomp não encontrado — buildando agora (--build-recomp)..."
-        cmake -S PS2Recomp -B build_recomp -DCMAKE_BUILD_TYPE=Release
+        # Aponta direto pra ps2xRecomp (não pro PS2Recomp pai), pra NÃO puxar
+        # raylib (408 MiB) e o runtime — só queremos o recompilador estático.
+        cmake -S PS2Recomp/ps2xRecomp -B build_recomp -DCMAKE_BUILD_TYPE=Release
         cmake --build build_recomp -j"$(nproc)" --target ps2_recomp
         for cand in \
+            ./build_recomp/ps2_recomp \
             ./build_recomp/PS2Recomp/ps2xRecomp/ps2_recomp \
-            ./build_recomp/ps2xRecomp/ps2_recomp \
-            ./build_recomp/ps2_recomp; do
+            ./build_recomp/ps2xRecomp/ps2_recomp; do
             if [[ -x "$cand" ]]; then
                 RECOMP_BIN="$cand"
                 break
@@ -99,7 +101,7 @@ Você tem duas opções:
   (b) Buildar manualmente e depois reexecutar (a partir da raiz do repo):
 
           cd "$(pwd)"
-          cmake -S PS2Recomp -B build_recomp -DCMAKE_BUILD_TYPE=Release
+          cmake -S PS2Recomp/ps2xRecomp -B build_recomp -DCMAKE_BUILD_TYPE=Release
           cmake --build build_recomp -j\$(nproc) --target ps2_recomp
           bash tools/regen_truncated.sh ${SCOPE_ARGS[@]+"${SCOPE_ARGS[@]}"}
 
