@@ -216,6 +216,16 @@ inline constexpr uint32_t PS2_GLOBAL_WATCH_BYTES = 4u;
 inline constexpr uint32_t PS2_GLOBAL_WATCH_MAX_LOGS = 64u;
 inline std::atomic<uint32_t> g_ps2GlobalWatchLogCount{0};
 
+// Watchpoint adicionado na PARTE 4 (2026-04-26): sentinela da segunda lista
+// circular em 0x2cbbb0. Fix 6 inicializa essa sentinela no boot, mas o log
+// mostrou que algo zera ela DEPOIS da 1a chamada de sub_0013FAB8. Vamos
+// pegar o autor da corrupcao em flagrante: toda WRITE32 nesse endereco
+// (e os 4 bytes adjacentes do prev) loga PC + RA do escritor.
+inline constexpr uint32_t PS2_GLOBAL_WATCH_2_ADDR = 0x002CBBB0u;
+inline constexpr uint32_t PS2_GLOBAL_WATCH_2_BYTES = 8u; // next + prev = 8 bytes
+inline constexpr uint32_t PS2_GLOBAL_WATCH_2_MAX_LOGS = 256u;
+inline std::atomic<uint32_t> g_ps2GlobalWatch2LogCount{0};
+
 inline uint32_t ps2PathWatchPhysAddr()
 {
     return PS2_PATH_WATCH_ADDR & PS2_RAM_MASK;
@@ -290,6 +300,37 @@ inline void ps2CheckGlobalWatch(uint32_t writeAddr,
     fflush(stderr);
 }
 
+// Verifica se uma escrita toca a sentinela de lista circular em 0x2cbbb0
+// (sentinela de sub_0013FAB8) e loga. Adicionado na PARTE 4 (2026-04-26)
+// para descobrir quem corrompe a sentinela apos a inicializacao do Fix 6.
+inline void ps2CheckGlobalWatch2(uint32_t writeAddr,
+                                 uint32_t size,
+                                 uint64_t valueLo,
+                                 const char *op,
+                                 const R5900Context *ctx)
+{
+    const uint32_t globalAddr = PS2_GLOBAL_WATCH_2_ADDR & PS2_RAM_MASK;
+    const uint64_t writeStart = writeAddr;
+    const uint64_t writeEnd = writeStart + static_cast<uint64_t>(size);
+    if (writeEnd <= globalAddr || writeStart >= globalAddr + PS2_GLOBAL_WATCH_2_BYTES)
+    {
+        return;
+    }
+    const uint32_t logIdx = g_ps2GlobalWatch2LogCount.fetch_add(1, std::memory_order_relaxed);
+    if (logIdx >= PS2_GLOBAL_WATCH_2_MAX_LOGS)
+    {
+        return;
+    }
+    const uint32_t pc = ctx ? ctx->pc : 0u;
+    const uint32_t ra = ctx ? static_cast<uint32_t>(_mm_extract_epi32(ctx->r[31], 0)) : 0u;
+    fprintf(stderr,
+            "[watch:SENTINEL_0x2cbbb0] #%u op=%s addr=0x%x size=%u value=0x%llx pc=0x%x ra=0x%x%s\n",
+            logIdx + 1u, op, writeAddr, size,
+            static_cast<unsigned long long>(valueLo), pc, ra,
+            (valueLo == 0 && writeAddr == globalAddr) ? "  <<< CORRUPCAO PARA ZERO!" : "");
+    fflush(stderr);
+}
+
 inline void ps2TraceGuestWrite(uint8_t *rdram,
                                uint32_t guestAddr,
                                uint32_t size,
@@ -306,6 +347,8 @@ inline void ps2TraceGuestWrite(uint8_t *rdram,
     const uint32_t writeAddr = guestAddr & PS2_RAM_MASK;
     // Vigia da global 0x32E854 — sempre checa, independente do path-watch.
     ps2CheckGlobalWatch(writeAddr, size, valueLo, op, ctx);
+    // Vigia da sentinela 0x2cbbb0 (PARTE 4) — sempre checa.
+    ps2CheckGlobalWatch2(writeAddr, size, valueLo, op, ctx);
 
     if (!ps2PathWatchIntersects(writeAddr, size))
     {

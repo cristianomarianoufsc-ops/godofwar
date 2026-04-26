@@ -93,7 +93,8 @@ que ponto da analogia o projeto está agora.
 | Reposicionou a braçadeira **antes** dos inits + chave de torque limite | Fix 1+6 movidos pra antes do init chain + trava de segurança no `sub_0013FAB8` | ✅ aplicado parte 3 |
 | Motor pegou de novo, ronco contínuo, mas vazamento de óleo voltou após a 1ª aceleração | Sentinela `0x2cbbb0` é zerada DEPOIS da 1ª chamada do `13FAB8` (path de inserção corrompe estrutura) | ✅ identificado parte 4 |
 | Limitador de RPM segurou o motor antes de fundir + carro andou mais 100m até sufocar no carburador | Trava de segurança disparou em 1M iter, jogo continuou até bater em loop de comandos vazios na unidade gráfica VIF1 | ✅ confirmado parte 4 |
-| **Achar a junta que está vazando óleo** | **Investigar quem escreve 0 em `0x2cbbb0` (provável: `label_13fb08` ou `sub_0013DA10`)** | 🟡 **AGORA** |
+| Sensor de vazamento instalado em cima da junta suspeita | Watch em `[0x2cbbb0..0x2cbbb8]`: toda escrita loga PC + RA do escritor (até 256 logs) | ✅ aplicado parte 4 |
+| **Dar partida e ler o sensor pra identificar a junta culpada** | **Testar build, filtrar `[watch:SENTINEL_0x2cbbb0]` no log, identificar o autor** | 🟡 **AGORA** |
 | Carburador, transmissão, suspensão | Subsistemas: GS (gráficos), DMA, áudio, controle | 🔜 depois |
 | Test drive | Jogo rodando até a primeira fase jogável | 🔜 longe |
 
@@ -112,7 +113,8 @@ que ponto da analogia o projeto está agora.
 | Reposicionou o tranquilizante na arma certa + colete à prova de loops | Fix 1+6 movidos pra antes do init chain + trava de 1M iterações no `sub_0013FAB8` | ✅ aplicado parte 3 |
 | Tranquilizante funcionou no 1º guarda; mas um segundo guarda apareceu sabotando o sistema dentro do cofre — revertendo o trabalho do agente | 1ª chamada do `13FAB8` ok, mas algo zera `[0x2cbbb0]` depois dela; chamadas 2-4 já encontram a estrutura corrompida | ✅ identificado parte 4 |
 | Colete de loops absorveu o impacto, agente continuou e chegou no salão de servidores (mas servidor estava em loop de tela vazia) | Trava de segurança disparou em 1M iter sem travar PC; jogo avançou até loop de 159 comandos vazios no VIF1 (unidade gráfica do PS2) | ✅ confirmado parte 4 |
-| **Identificar quem é o sabotador interno (espião dobrado dentro da equipe?)** | **Investigar quem escreve 0 em `0x2cbbb0` (provável: `label_13fb08` ou `sub_0013DA10`)** | 🟡 **AGORA** |
+| Câmera escondida instalada no posto do vigia (`0x2cbbb0`) | Watch silencioso em `ps2_runtime.h`: `ps2CheckGlobalWatch2` loga toda WRITE32 com PC+RA do autor (até 256 logs) | ✅ aplicado parte 4 |
+| **Operador faz nova sondagem; câmera revela rosto e crachá do espião dobrado** | **Testar build, filtrar `[watch:SENTINEL_0x2cbbb0]` no log, identificar PC do autor** | 🟡 **AGORA** |
 | Próximos guardas internos previstos | VIF1/DMA com payloads válidos, `SetupThread`, restantes do init chain, INTC handlers | 🔜 ato 3 |
 | Fuga com o alvo | Jogo rodando até a primeira fase jogável | 🔜 final |
 
@@ -288,6 +290,33 @@ Depois disso a sentinela está zerada.
   endereço, com PC + RA — isso identifica o autor da corrupção em segundos
 - Possível terceira opção: ignorar a corrupção (a trava de segurança já
   resolve o sintoma) e pular pra investigar VIF1/DMA
+
+**🆕 PARTE 4.5 (2026-04-26) — Câmera escondida instalada (Opção A escolhida pelo user):**
+
+Adicionado em `PS2Recomp/ps2xRuntime/include/ps2_runtime.h`:
+- Constante `PS2_GLOBAL_WATCH_2_ADDR = 0x002CBBB0u` (8 bytes vigiados:
+  next + prev da sentinela)
+- Função `ps2CheckGlobalWatch2(...)` análoga ao watch existente do `0x32E854`,
+  com até 256 logs e marcador especial `<<< CORRUPCAO PARA ZERO!` quando
+  detecta uma escrita de zero no endereço exato da sentinela
+- Hook em `ps2TraceGuestWrite` — chama o vigia novo logo após o vigia
+  antigo, então toda WRITE32 que toque `[0x2cbbb0..0x2cbbb8]` é logada
+  com PC + RA do escritor
+
+Formato do log esperado (no próximo teste do user):
+```
+[watch:SENTINEL_0x2cbbb0] #N op=WRITE32 addr=0x2cbbb0 size=4 value=0x0 pc=0x???????? ra=0x????????  <<< CORRUPCAO PARA ZERO!
+```
+
+**Plano de teste para o user (PARTE 5):**
+```bash
+git pull && bash build.sh && PS2_TRACE=1 ./build/GodOfWarPCPort \
+  GOD_PC_PORT_FINAL/data/SCUS_973.99 2>&1 | tee log_watch_part5.txt
+grep "watch:SENTINEL" log_watch_part5.txt
+```
+O `pc=...` da linha com `<<< CORRUPCAO PARA ZERO!` será o endereço exato
+do código sabotador. Daí a gente abre o `sub_<pc>.cpp` correspondente,
+entende o que ele acha que está fazendo, e decide o fix.
 
 ---
 

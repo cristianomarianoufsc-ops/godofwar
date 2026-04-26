@@ -56,9 +56,9 @@ Depois: VIF1/DMA, INTC handlers, fuga com o alvo (jogo rodando).
 
 ---
 
-## 🔴 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-26 PARTE 4, validação + sabotador detectado)
+## 🔴 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-26 PARTE 4.5, câmera escondida instalada)
 
-### Status: PARTE 3 VALIDADA EM PRODUÇÃO — bug mais profundo descoberto
+### Status: PARTE 3 VALIDADA EM PRODUÇÃO — bug mais profundo descoberto + watch instalado pra capturar autor
 
 **O que o teste real provou (log_fix6_part3.txt, 388 linhas):**
 - ✅ `[boot_stub] FIX 1: ...` e `[boot_stub] FIX 6: ...` apareceram ANTES dos inits
