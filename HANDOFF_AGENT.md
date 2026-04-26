@@ -23,16 +23,20 @@ precisar entender MIPS/syscalls/boot stub. **Tabela completa fica em
 `replit.md` na seção "📖 ANALOGIAS DO PROJETO" — fonte da verdade.**
 Aqui só o resumo do ponto atual; mantenha sincronizado.
 
-**Carro:** chassi/combustível/injeção/chave de ignição prontos →
-🟡 **AGORA: dar a primeira partida no motor (rodar build com Fix 4+5)**.
-Depois: carburador (gráficos/áudio/DMA) e test drive (jogo jogável).
+**Carro:** chassi/combustível/injeção/chave de ignição prontos, motor
+deu a 1ª partida e ronca (Fix 4+5 confirmados — janela abriu, GS recebeu
+comandos) → 🟡 **AGORA: motor engasgou na 1ª marcha por causa de uma
+mangueira solta (lista circular #2 não inicializada). Fix 6 aplicado;
+aguardando teste**. Depois: carburador (gráficos/áudio/DMA) e test drive.
 
-**Espionagem:** recrutamento, recon, entrada, sabotagem descoberta e porta
-certa identificada (Fix 5: cofre real é `0x2996b0`) →
-🟡 **AGORA: mão no teclado do cofre, digitando a combinação nova
-(Fix 4 + Fix 5). Próximo log decide se a porta abre (frame `nonBlack>0`)
-ou se o alarme dispara (`ExitThread` em `func_293840`)**.
-Depois: guardas internos do cofre (`SetupThread`, GS, DMA, áudio) e
+**Espionagem:** recrutamento, recon, entrada, sabotagem descoberta, porta
+certa identificada (Fix 5) e **cofre ABERTO** (Fix 4+5 confirmados —
+log mostra `GsPutIMR`, `GsSetCrt`, `SifInit`, janela raylib aberta) →
+🟡 **AGORA: dentro do cofre, o 1º guarda interno foi neutralizado —
+era o mesmo perfil de outro que já caiu no Fix 1 (lista circular vazia
+não inicializada, agora em `0x2cbbb0` em vez de `0x2cf090`). Fix 6
+aplicado; aguardando próxima sondagem do agente**. Depois: outros
+guardas internos previstos (`SetupThread`, restantes do init chain) e
 fuga com o alvo (jogo rodando).
 
 > Estilo de narração padrão no chat com o usuário = **espionagem/ação**.
@@ -41,7 +45,66 @@ fuga com o alvo (jogo rodando).
 
 ---
 
-## 🔴 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-26, sessão crt0-disassembly)
+## 🔴 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-26 PARTE 2, sessão fix-6-sentinel-2)
+
+### Status: BOOT AVANÇOU — Fix 4+5 confirmados, Fix 6 aplicado para destravar 13FAB8
+
+**Confirmado pelo log do user (PC Linux Mint, 2026-04-26):**
+- ✅ Fix 4 funcionou: `[boot_stub] init 0x138d48 (4o init, pre-main)` rodou.
+- ✅ Fix 5 funcionou: entry chegou em `0x2996b0`, chain real do jogo executou.
+- ✅ GS recebeu config: `PS2 GsPutIMR: Setting IMR=0xff00` + `PS2 GsSetCrt`.
+- ✅ SIF inicializou: `279A40 (SifCheckInit?) → 2940B0 (SifInit?)`.
+- ✅ Janela raylib abre instantaneamente (640x448, OpenGL 4.2 Mesa Intel HD 4000).
+- 🚨 Travou em `sub_0013FAB8`: loop infinito (>6.7M iterações) buscando em
+  lista encadeada cujo head em `0x2cbbb0` está zerado.
+
+### Fix 6 — Sentinel lista circular #2 (NOVO, esta sessão)
+
+**Arquivo:** `PS2Recomp/ps2xRuntime/src/lib/ps2_runtime.cpp` (logo após Fix 1).
+**Diff:** inicializa `rdram[0x2cbbb0]` e `rdram[0x2cbbb4]` = `0x2cbbb0`
+(lista duplamente encadeada vazia, head aponta pra si mesmo).
+
+**Por que funciona:** `sub_0013FAB8` faz `if (head == 0x2cbbb0) goto insert_path`
+para detectar lista vazia. Com Fix 6, essa condição é satisfeita imediatamente
+e a função sai do loop e prossegue pra inserção do 1º nó.
+
+**Razão raiz:** quem deveria inicializar essa lista é uma das funções não
+registradas do init chain do `sub_00138D48` — provavelmente
+`0x283770`, `0x17acb8`, `0x138b10` ou `0x1838d0` (todas marcadas como
+`NAO REGISTRADA - skip` no log). Fix 6 contorna isso até essas funções
+serem implementadas.
+
+### Comando para testar Fix 6
+
+```bash
+cd ~/Documentos/GitHub/godofwar
+git pull origin main
+bash build.sh   # incremental, só ps2_runtime.cpp mudou (~30s)
+PS2_TRACE=1 ./build/GodOfWarPCPort GOD_PC_PORT_FINAL/data/SCUS_973.99 2>&1 | tee log_fix6.txt
+```
+
+**Filtrar antes de mandar:**
+```bash
+grep -E "FIX 6|13FAB8|13FCA8|182FF0|frame:upload|nonBlack|ExitThread|SEGV|Segmentation|crash|panic|2996b0|293840" log_fix6.txt | head -150
+wc -l log_fix6.txt
+```
+
+**Sinais de sucesso com Fix 6:**
+- `[boot_stub] FIX 6: sentinel lista circular #2 inicializado em 0x2cbbb0` no boot
+- `[13FAB8] sentinel_addr=0x2cbbb0 READ32(sentinel)=0x2cbbb0` (não `0x0`!)
+- Loop NÃO aparece (ou aparece <10 iterações, não milhões)
+- `13FAB8` retorna, `13FCA8` continua, `182FF0` continua
+- Próximas funções do init aparecem no trace
+
+**Possíveis novos guardas internos a aparecer depois do Fix 6:**
+- Mais funções do init chain de `sub_00138D48` (JALs 6-11/11)
+- `func_2996a8` ou `func_293840` (entry_2996b0 chama essas duas)
+- Algum GS register não emulado
+- Algum SIF callback faltando
+
+---
+
+## 🔴 ESTADO ANTERIOR (mantido para histórico) — sessão crt0-disassembly
 
 ### Status: BOOT REESCRITO — entry point corrigido para 0x2996b0 (real main do jogo)
 

@@ -87,8 +87,10 @@ que ponto da analogia o projeto está agora.
 | Combustível e bateria | ELF carregado, BSS zerada, heap inicializada | ✅ pronto |
 | Sistema de injeção (crt0 + init chain) | Fix 1 (sentinel) + Fix 4 (4o init `sub_00138D48`) | ✅ instalado |
 | Chave de ignição apontando pro lugar certo | Fix 5 (entry `0x100008` → `0x2996b0`) | ✅ corrigido |
-| **Primeira partida do motor** | **Rodar build com Fix 4+5 e ver se sai da tela preta** | 🟡 **AGORA** |
-| Carburador, transmissão, suspensão | Subsistemas: GS (gráficos), DMA, áudio, controle | 🔜 depois do motor pegar |
+| Primeira partida do motor | Build com Fix 4+5: motor RONCOU (janela abriu, GS recebeu config, SIF init) | ✅ confirmado 2026-04-26 |
+| Mangueira solta engasgou na 1ª marcha | Lista circular #2 em `0x2cbbb0` zerada → loop infinito em `sub_0013FAB8` | ✅ Fix 6 aplicado |
+| **Motor pegando ronco contínuo (1ª marcha estável)** | **Testar build com Fix 6 e ver se passa de `13FAB8`** | 🟡 **AGORA** |
+| Carburador, transmissão, suspensão | Subsistemas: GS (gráficos), DMA, áudio, controle | 🔜 depois |
 | Test drive | Jogo rodando até a primeira fase jogável | 🔜 longe |
 
 ### Analogia 2 — História de espionagem/ação (estilo de narração padrão)
@@ -100,9 +102,10 @@ que ponto da analogia o projeto está agora.
 | Entrada pela ventilação | Primeiros boots, identificou loop infinito | ✅ Fix 1 |
 | Sabotagem descoberta na equipe | Fix 2 era um traidor (`a1=1` causava `free` todo frame) | ✅ revertido |
 | Descobriu que arrombou a porta errada | `0x100008` era corredor de serviço, cofre real é `0x2996b0` | ✅ Fix 5 |
-| **Mão no teclado do cofre, digitando combinação nova** | **Aguardando log do build com Fix 4+5** | 🟡 **AGORA** |
-| Click do cofre abrindo OU alarme disparando | Frame renderiza (`nonBlack>0`) OU `ExitThread` em `func_293840` | 🔜 próximo log decide |
-| Guardas internos do cofre | `SetupThread`/`SetupHeap`, GS rendering, DMA, áudio | 🔜 ato 3 |
+| **Cofre ABRIU** — agente entrou no escuro | Fix 4+5 confirmados: janela raylib abriu, `GsPutIMR`+`GsSetCrt`+`SifInit` rodaram | ✅ confirmado 2026-04-26 |
+| 1º guarda interno apareceu (mesmo perfil de outro neutralizado) | Lista circular #2 (`0x2cbbb0`) zerada — bug irmão da do Fix 1 (`0x2cf090`), trava `sub_0013FAB8` | ✅ Fix 6 aplicado |
+| **Sondando se o guarda caiu antes de avançar mais fundo** | **Testar build com Fix 6 e analisar log** | 🟡 **AGORA** |
+| Próximos guardas internos previstos | Restantes do init chain (`sub_00138D48` JALs 6-11), `func_2996a8`, `func_293840`, `SetupThread`, GS rendering | 🔜 ato 3 |
 | Fuga com o alvo | Jogo rodando até a primeira fase jogável | 🔜 final |
 
 ### Como atualizar as analogias
@@ -226,6 +229,83 @@ cmake ../GOD_PC_PORT_FINAL && make -j$(nproc)
 Isso re-avalia o GLOB sem perder os `.o` já compilados.
 
 ### 🔬 Estado da investigação (boot loop / segfault)
+
+#### 🆕 SESSÃO 2026-04-26 PARTE 2 — Fix 6: lista circular #2 (`0x2cbbb0`) — APLICADO
+
+**Status:** boot AVANÇOU muito. Janela do raylib abre instantaneamente.
+GS (Graphics Synthesizer) recebe configuração (`PS2 GsPutIMR: Setting IMR=0xff00`,
+`PS2 GsSetCrt: interlaced=0, videoMode=0, frameMode=0`). SIF inicializa.
+Trava em `sub_0013FAB8` por novo loop infinito numa SEGUNDA lista circular.
+
+**Confirmação Fix 4 + Fix 5 (sessão anterior):**
+- `[boot_stub] init 0x138d48 (4o init, pre-main)` — Fix 4 OK.
+- `[138D48] ENTRADA a0=0x0 a1=0x2c7084` — argumentos corretos.
+- `[138D48] JAL [1/11] -> 0x283770 NAO REGISTRADA - skip` — primeira de 4 JALs
+  faltantes (1, 3, 4, 5 do init chain).
+- Entry chegou em `0x2996b0` (Fix 5 OK), `entry_2996b0` chamou `func_2996a8`
+  e `func_293840`, que iniciou a chain dos subsistemas.
+
+**Diagnóstico Bug E (esta sessão):**
+
+Função `sub_0013FAB8` (em `GOD_PC_PORT_FINAL/src/recompiled/sub_0013FAB8_0x13fab8.cpp`)
+é uma BUSCA EM LISTA DUPLAMENTE ENCADEADA, não spin-wait por hardware:
+
+```
+- $a1 = 0x2D0000 (lui)
+- $v0 = $a1 - 0x4450 = 0x2cbbb0  ← endereço do head (constante)
+- $s0 = READ32(0x2cbbb0)         ← carrega head
+- if (s0 == v0) goto insertion   ← lista vazia se head aponta pra si mesmo
+- senão: percorre s0 = *s0       ← traversa a lista
+```
+
+No log do user: `READ32(0x2cbbb0) = 0` (BSS zerada, nunca inicializada).
+Resultado: `s0=0`, comparação `0 == 0x2cbbb0` falsa → entra no loop com
+current=0 → `s0 = *0 = 0` → loop infinito (>6.7M iterações observadas).
+
+**Bug irmão do Fix 1**: mesmo padrão de sentinela não inicializada em
+endereço diferente. Quem deveria inicializar essa lista é uma das funções
+não-registradas no init chain (`0x283770`, `0x17acb8`, `0x138b10`, ou `0x1838d0`).
+
+**Fix 6 aplicado em** `PS2Recomp/ps2xRuntime/src/lib/ps2_runtime.cpp`
+(logo após Fix 1). Bloco novo inicializa:
+```cpp
+constexpr uint32_t SENTINEL_2 = 0x2cbbb0u;
+mem[0] = SENTINEL_2;  // next = self
+mem[1] = SENTINEL_2;  // prev = self
+```
+
+**Risco:** baixíssimo. Inicialização cosmética de lista vazia. Não muda
+lógica de jogo. Reversível em 3 linhas.
+
+**Comando para testar:**
+```bash
+git pull origin main && bash build.sh
+PS2_TRACE=1 ./build/GodOfWarPCPort GOD_PC_PORT_FINAL/data/SCUS_973.99 \
+  2>&1 | tee log_fix6.txt
+grep -E "FIX 6|13FAB8|frame:upload|ExitThread|SEGV|crash" log_fix6.txt | head -100
+```
+
+**Sinais de sucesso:**
+- `[boot_stub] FIX 6: sentinel lista circular #2 inicializado em 0x2cbbb0`
+- `[13FAB8] sentinel_addr=0x2cbbb0 READ32(sentinel)=0x2cbbb0` (NÃO `0x0`!)
+- Loop não aparece mais (ou <10 iterações)
+- Trace continua para depois de `13FAB8` → `13FCA8` → `182FF0`
+
+**Próximo bloqueador previsto:**
+- Mais funções do init chain (JALs 6-11/11 do `sub_00138D48`)
+- Algum GS register ainda não emulado
+- `func_293840` virando `ExitThread` se nenhuma tarefa for criada
+
+---
+
+#### SESSÃO 2026-04-26 (PARTE 1) — Fix 4 + Fix 5: crt0 disassembly + entry 0x2996b0
+
+Ver `HANDOFF_AGENT.md` para detalhes completos do disassembly do crt0.
+Resumo: o entry point estava errado (`0x100008` → `sub_001003C0` interno),
+quando o crt0 real do PS2 faz `j 0x2996b0` depois de 4 inits. Fix 4
+adicionou o 4º init (`sub_00138D48`), Fix 5 corrigiu o entry para `0x2996b0`.
+
+---
 
 #### 🆕 SESSÃO 2026-04-25 (E) — Bug D: loop infinito + stack overflow em func_100408 — FIXADO
 

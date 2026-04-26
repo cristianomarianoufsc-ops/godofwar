@@ -2597,6 +2597,35 @@ void PS2Runtime::run()
                           << std::endl;
             }
 
+            // -----------------------------------------------------------------
+            // FIX 6 (sessao 2026-04-26 PARTE 2): segunda lista circular vazia.
+            // -----------------------------------------------------------------
+            // sub_0013FAB8 (chamada via 13FCA8 dentro de 182FF0, depois de
+            // GsPutIMR/GsSetCrt) percorre uma lista duplamente encadeada cujo
+            // head fica em 0x2cbbb0. Ela compara `head == 0x2cbbb0` para
+            // detectar lista vazia. Sem inicializacao, *0x2cbbb0 = 0 e a busca
+            // entra em loop infinito (current=0 -> next=*0=0 -> ...) — log
+            // mostrou >6 milhoes de iteracoes sem progresso.
+            //
+            // A inicializacao deveria vir de uma das funcoes do init chain do
+            // 4o init (sub_00138D48), mas as JALs 0x283770 / 0x17acb8 /
+            // 0x138b10 / 0x1838d0 nao estao registradas no runtime e foram
+            // puladas. Inicializar manualmente o sentinel desbloqueia o boot
+            // sem depender dessas funcoes ainda nao implementadas.
+            //
+            // No layout do node: +0 = next, +4 = prev, +8 = ptr para chave.
+            // Sentinel circular vazio: head.next = head.prev = head.
+            {
+                constexpr uint32_t SENTINEL_2 = 0x2cbbb0u;
+                uint32_t* mem = reinterpret_cast<uint32_t*>(rdram + (SENTINEL_2 & 0x01FFFFFFu));
+                mem[0] = SENTINEL_2; // next = self
+                mem[1] = SENTINEL_2; // prev = self
+                std::cout << "[boot_stub] FIX 6: sentinel lista circular #2 inicializado em 0x"
+                          << std::hex << SENTINEL_2 << std::dec
+                          << " -> lista vazia, sub_0013FAB8 nao loopa"
+                          << std::endl;
+            }
+
             // ---------------------------------------------------------------
             // Entry point final: 0x2996b0 (real main do jogo).
             // O crt0 original faz "j 0x2996b0" apos a cadeia de inits.
