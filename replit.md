@@ -234,7 +234,63 @@ Isso re-avalia o GLOB sem perder os `.o` já compilados.
 
 ### 🔬 Estado da investigação (boot loop / segfault)
 
-#### 🆕 SESSÃO 2026-04-26 PARTE 2 — Fix 6: lista circular #2 (`0x2cbbb0`) — APLICADO
+#### 🆕 SESSÃO 2026-04-26 PARTE 3 — Fix 6 reposicionado + trava de segurança no 13FAB8
+
+**Problema descoberto após teste do user:** o Fix 6 (sentinela `0x2cbbb0`)
+estava sintaticamente correto mas posicionado **depois** das chamadas dos
+4 inits no `boot_stub`. Como `sub_00138D48` (4o init) não retorna —
+ela cai no loop de `sub_0013FAB8` antes de retornar — o boot_stub nunca
+chegava nas linhas que inicializam as sentinelas. Galinha-e-ovo.
+
+**Confirmação no log do user (2026-04-26 PARTE 2):**
+- ✅ `[boot_stub] init 0x138d48 (4o init, pre-main)` apareceu
+- ❌ `[boot_stub] FIX 6: sentinel lista circular #2 inicializado` NÃO apareceu
+- ❌ `[boot_stub] sentinel lista circular inicializado em 0x2cf090` (Fix 1) NÃO apareceu
+- ❌ `[boot_stub] init concluido, entry=0x2996b0` NÃO apareceu
+- 🔁 `[13FAB8] sentinel_addr=0x2cbbb0 READ32(sentinel)=0x0` — sentinela ainda zerada
+- 🔁 Loop atingiu >6M iterações de novo
+
+**User também reportou:** janela do raylib ficou "transparente, mostrando
+codigo compilando atrás" — esperado, pois é o X11 não conseguindo redesenhar
+a janela porque a thread principal está presa no loop.
+
+**Fix aplicado (esta sessão):**
+
+1. **`PS2Recomp/ps2xRuntime/src/lib/ps2_runtime.cpp`**:
+   - Movidos os blocos de Fix 1 (`0x2cf090`) e Fix 6 (`0x2cbbb0`) pra
+     **antes** do `kInitChain[]` loop, logo depois de `[boot_stub] $gp configurado`.
+   - Removidos os blocos antigos depois dos inits (substituídos por nota
+     de referência cruzada).
+   - Mensagem do Fix 1 mudou para `[boot_stub] FIX 1: ...` (consistência
+     com o `[boot_stub] FIX 6: ...`).
+
+2. **`GOD_PC_PORT_FINAL/src/recompiled/sub_0013FAB8_0x13fab8.cpp`**:
+   - Trava de segurança no loop `label_13fae8`: se passar de 1.000.000
+     iterações, loga aviso completo (incluindo valor atual de `*0x2cbbb0`)
+     e força saída via `goto label_13fb08` (path "lista vazia").
+   - Reseta o counter para não spammar nas próximas chamadas.
+   - Objetivo: nunca mais travar o PC do user — qualquer loop infinito
+     dessa função vira aviso visível em log em ~1 segundo.
+
+**Comando para testar:**
+```bash
+git pull origin main && bash build.sh
+PS2_TRACE=1 ./build/GodOfWarPCPort GOD_PC_PORT_FINAL/data/SCUS_973.99 \
+  2>&1 | tee log_fix6_part3.txt
+grep -E "FIX 1|FIX 6|13FAB8|init concluido|2996b0|frame:upload|nonBlack|ExitThread|TRAVA|SEGV|crash" log_fix6_part3.txt | head -150
+```
+
+**Sinais de sucesso:**
+- `[boot_stub] FIX 1: sentinel lista circular #1 inicializado em 0x2cf090` ANTES dos inits
+- `[boot_stub] FIX 6: sentinel lista circular #2 inicializado em 0x2cbbb0` ANTES dos inits
+- `[13FAB8] sentinel_addr=0x2cbbb0 READ32(sentinel)=0x2cbbb0` (NÃO `0x0`!)
+- Trace prossegue além do `13FAB8` → `13FCA8` → `182FF0`
+- `[boot_stub] init concluido, entry=0x2996b0` aparece
+- Janela do raylib não trava (responde a fechar/redimensionar)
+
+---
+
+#### SESSÃO 2026-04-26 PARTE 2 — Fix 6: lista circular #2 (`0x2cbbb0`) — APLICADO (mas mal posicionado, ver PARTE 3)
 
 **Status:** boot AVANÇOU muito. Janela do raylib abre instantaneamente.
 GS (Graphics Synthesizer) recebe configuração (`PS2 GsPutIMR: Setting IMR=0xff00`,
