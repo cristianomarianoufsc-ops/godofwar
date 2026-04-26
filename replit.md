@@ -63,6 +63,56 @@ re-descobre os mesmos bugs e desperdiça créditos do usuário.
   inglês nos títulos automáticos de checkpoint.
 - **Compilação**: feita exclusivamente no PC do usuário (Linux Mint).
   Ver "FLUXO DE TRABALHO" abaixo.
+- **Narrativa por analogia (OBRIGATÓRIO para todo agente novo)**:
+  o usuário pediu que o progresso seja explicado também via duas analogias.
+  Atualize ambas a cada avanço significativo (mesmo commit em que atualizar
+  `replit.md` + `HANDOFF_AGENT.md`). Ver seção "📖 ANALOGIAS DO PROJETO"
+  abaixo. Estilo de narração padrão no chat = **espionagem/ação**.
+
+---
+
+## 📖 ANALOGIAS DO PROJETO (manter atualizadas a cada sessão)
+
+O usuário não é engenheiro de baixo nível, então o progresso técnico
+(boot stub, syscalls, MIPS, init chain, etc.) é traduzido para duas
+analogias paralelas. **Toda sessão nova deve ATUALIZAR as duas analogias
+no mesmo commit em que atualiza o resto da documentação**, indicando em
+que ponto da analogia o projeto está agora.
+
+### Analogia 1 — Construção de um carro
+
+| Etapa do carro | Equivalente técnico | Status |
+|---|---|---|
+| Chassi, rodas, carroceria | Toolchain PS2Recomp + 5.626 .cpp gerados | ✅ pronto |
+| Combustível e bateria | ELF carregado, BSS zerada, heap inicializada | ✅ pronto |
+| Sistema de injeção (crt0 + init chain) | Fix 1 (sentinel) + Fix 4 (4o init `sub_00138D48`) | ✅ instalado |
+| Chave de ignição apontando pro lugar certo | Fix 5 (entry `0x100008` → `0x2996b0`) | ✅ corrigido |
+| **Primeira partida do motor** | **Rodar build com Fix 4+5 e ver se sai da tela preta** | 🟡 **AGORA** |
+| Carburador, transmissão, suspensão | Subsistemas: GS (gráficos), DMA, áudio, controle | 🔜 depois do motor pegar |
+| Test drive | Jogo rodando até a primeira fase jogável | 🔜 longe |
+
+### Analogia 2 — História de espionagem/ação (estilo de narração padrão)
+
+| Cena | Equivalente técnico | Status |
+|---|---|---|
+| Recrutamento e pesquisa do alvo | Ghidra, exportar funções, gerar 5.629 .cpp | ✅ feito |
+| Reconhecimento do prédio | Build compila, executável existe | ✅ feito |
+| Entrada pela ventilação | Primeiros boots, identificou loop infinito | ✅ Fix 1 |
+| Sabotagem descoberta na equipe | Fix 2 era um traidor (`a1=1` causava `free` todo frame) | ✅ revertido |
+| Descobriu que arrombou a porta errada | `0x100008` era corredor de serviço, cofre real é `0x2996b0` | ✅ Fix 5 |
+| **Mão no teclado do cofre, digitando combinação nova** | **Aguardando log do build com Fix 4+5** | 🟡 **AGORA** |
+| Click do cofre abrindo OU alarme disparando | Frame renderiza (`nonBlack>0`) OU `ExitThread` em `func_293840` | 🔜 próximo log decide |
+| Guardas internos do cofre | `SetupThread`/`SetupHeap`, GS rendering, DMA, áudio | 🔜 ato 3 |
+| Fuga com o alvo | Jogo rodando até a primeira fase jogável | 🔜 final |
+
+### Como atualizar as analogias
+
+Ao terminar qualquer sessão com progresso:
+1. Mova as marcações `🟡 AGORA` para o ponto novo da jornada.
+2. Marque ✅ o que foi concluído.
+3. Se descobrir uma cena nova que não estava prevista (ex.: novo bug
+   inesperado vira "trama paralela"), adicione uma linha à tabela.
+4. Espelhe a mesma atualização em `HANDOFF_AGENT.md` na seção de analogias.
 
 ---
 

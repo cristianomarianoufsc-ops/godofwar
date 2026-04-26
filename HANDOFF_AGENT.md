@@ -16,6 +16,31 @@ Se você terminar a sessão sem atualizar os dois, o próximo agente vai perder 
 
 ---
 
+## 📖 ANALOGIAS — atualize a cada sessão (estilo de chat = espionagem/ação)
+
+O usuário pediu duas analogias paralelas pra acompanhar o progresso sem
+precisar entender MIPS/syscalls/boot stub. **Tabela completa fica em
+`replit.md` na seção "📖 ANALOGIAS DO PROJETO" — fonte da verdade.**
+Aqui só o resumo do ponto atual; mantenha sincronizado.
+
+**Carro:** chassi/combustível/injeção/chave de ignição prontos →
+🟡 **AGORA: dar a primeira partida no motor (rodar build com Fix 4+5)**.
+Depois: carburador (gráficos/áudio/DMA) e test drive (jogo jogável).
+
+**Espionagem:** recrutamento, recon, entrada, sabotagem descoberta e porta
+certa identificada (Fix 5: cofre real é `0x2996b0`) →
+🟡 **AGORA: mão no teclado do cofre, digitando a combinação nova
+(Fix 4 + Fix 5). Próximo log decide se a porta abre (frame `nonBlack>0`)
+ou se o alarme dispara (`ExitThread` em `func_293840`)**.
+Depois: guardas internos do cofre (`SetupThread`, GS, DMA, áudio) e
+fuga com o alvo (jogo rodando).
+
+> Estilo de narração padrão no chat com o usuário = **espionagem/ação**.
+> Use frases como "abrir o cofre", "alarme disparou", "guarda interno",
+> "trama paralela", "infiltração", quando explicar o que está acontecendo.
+
+---
+
 ## 🔴 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-26, sessão crt0-disassembly)
 
 ### Status: BOOT REESCRITO — entry point corrigido para 0x2996b0 (real main do jogo)
