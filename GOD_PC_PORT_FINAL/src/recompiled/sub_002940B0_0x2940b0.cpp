@@ -19,6 +19,7 @@ void sub_002940B0_0x2940b0(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
 
     ctx->pc = 0x2940b0u;
 
+    fprintf(stderr, "[2940B0] ENTRADA (SifInit?)\n"); fflush(stderr);
     // 0x2940b0: 0x27bdfff0  addiu       $sp, $sp, -0x10
     ctx->pc = 0x2940b0u;
     SET_GPR_S32(ctx, 29, (int32_t)ADD32(GPR_U32(ctx, 29), 4294967280));

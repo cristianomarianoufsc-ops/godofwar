@@ -2505,6 +2505,9 @@ void PS2Runtime::run()
             m_cpuContext.r[28] = _mm_set_epi64x(0, static_cast<int64_t>(0x002cf070u));
             std::cout << "[boot_stub] $gp configurado para 0x2cf070" << std::endl;
 
+            // ---------------------------------------------------------------
+            // Init chain 1-3: identica ao crt0 original (0x100198-0x1001a8).
+            // ---------------------------------------------------------------
             constexpr uint32_t kInitChain[] = {
                 0x2994a0u, 0x293ea0u, 0x138cb0u
             };
@@ -2539,6 +2542,43 @@ void PS2Runtime::run()
                 }
             }
 
+            // ---------------------------------------------------------------
+            // Init chain 4: sub_00138D48 (0x1001c0 no crt0 real).
+            // Chamada com a0 = rdram[0x2c7080] (BSS = 0), a1 = 0x2c7084.
+            // Esta e a ultima funcao chamada pelo crt0 ANTES de j 0x2996b0.
+            // Ela inicializa 11 subsistemas e retorna um handle em v0 ($r2)
+            // que se torna a0 para entry_2996b0 (real game main).
+            // ---------------------------------------------------------------
+            {
+                constexpr uint32_t k138D48 = 0x138d48u;
+                RecompiledFunction fn138d48 = lookupFunction(k138D48);
+                m_cpuContext.r[31] = _mm_setzero_si128();
+                // a0 = rdram[0x2c7080] = 0 (BSS, equivale ao crt0 real)
+                m_cpuContext.r[4]  = _mm_setzero_si128();
+                // a1 = 0x2c7084 (argumento exato do crt0: addiu $a1,$v0,0x4)
+                m_cpuContext.r[5]  = _mm_set_epi64x(0, static_cast<int64_t>(0x2c7084u));
+                m_cpuContext.r[29] = _mm_set_epi64x(0, static_cast<int64_t>(savedSp));
+                std::cout << "[boot_stub] init 0x138d48 (4o init, pre-main)" << std::endl;
+                if (fn138d48)
+                {
+                    m_cpuContext.pc = k138D48;
+                    GuestExecutionScope guestExecution(this);
+                    fn138d48(rdram, &m_cpuContext, this);
+                }
+                else
+                {
+                    std::cerr << "[boot_stub] AVISO: 0x138d48 nao registrada, pulando"
+                              << std::endl;
+                }
+                // v0 (r2) = return value de sub_00138D48 → sera a0 para entry_2996b0
+                // (crt0 real: daddu $a0, $v0, $zero antes do j 0x2996b0)
+                m_cpuContext.r[4] = m_cpuContext.r[2];
+                std::cout << "[boot_stub] 0x138d48 retornou v0=0x"
+                          << std::hex
+                          << static_cast<uint32_t>(_mm_extract_epi32(m_cpuContext.r[2], 0))
+                          << std::dec << ", passando como a0 para entry_2996b0" << std::endl;
+            }
+
             // Inicializa o sentinel da lista circular em sub_001003C0 (a0=0x2cf070).
             // sub_00100408 verifica: se [a0+0x20] == (a0+0x20), lista vazia → retorna.
             // Sem isso, [0x2cf090]=0 ≠ 0x2cf090, e o loop entra com current=0
@@ -2557,9 +2597,16 @@ void PS2Runtime::run()
                           << std::endl;
             }
 
-            // Restaura PC pro entry original (dispatchLoop começa em 0x100008).
-            m_cpuContext.pc = 0x100008u;
-            std::cout << "[boot_stub] init concluido, dispatchLoop a seguir"
+            // ---------------------------------------------------------------
+            // Entry point final: 0x2996b0 (real main do jogo).
+            // O crt0 original faz "j 0x2996b0" apos a cadeia de inits.
+            // NÃO mais 0x100008 → entry_0x100008 → 0x1003c0 (caminho errado).
+            // a0 ja foi setado acima: v0 de sub_00138D48 ou 0 se nao registrada.
+            // ---------------------------------------------------------------
+            m_cpuContext.pc = 0x2996b0u;
+            m_cpuContext.r[29] = _mm_set_epi64x(0, static_cast<int64_t>(savedSp));
+            m_cpuContext.r[31] = _mm_setzero_si128(); // ra sentinela
+            std::cout << "[boot_stub] init concluido, entry=0x2996b0 (real game main)"
                       << std::endl;
         }
     }

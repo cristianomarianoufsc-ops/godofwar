@@ -119,11 +119,11 @@ label_1003ec:
     ctx->pc = 0x1003F0u;
     ctx->in_delay_slot = true; ctx->branch_pc = 0x1003ECu;
             // 0x1003f0: 0x282d  daddu       $a1, $zero, $zero (Delay Slot)
-        // PATCH boot-loop: o MIPS original passa a1=0, o que faz func_238860
-        // pular func_13D668 e retornar sem rodar o game loop.
-        // No PS2 real, a1=1 seria passado pela thread do BIOS scheduler (0x2947c8),
-        // que está truncada. Forçamos a1=1 aqui para ativar func_13D668 → func_13DB98.
-        SET_GPR_U64(ctx, 5, 1u);
+        // ORIGINAL PS2: a1=0 faz func_238860 retornar imediatamente (noop).
+        // Fix 2 REVERTIDO: forçar a1=1 chamava free(struct_root) todo frame → ERRADO.
+        // O jogo chega aqui via entry_2996b0 → func_293840 → scheduler PS2 real.
+        // Se sub_001003C0 ainda for chamado diretamente (path legado), mantemos a1=0.
+        SET_GPR_U64(ctx, 5, 0u);
         ctx->in_delay_slot = false;
     ctx->pc = 0x238860u;
     if (runtime->hasFunction(0x238860u)) {

@@ -17,6 +17,7 @@ void entry_182ff0_0x1830d8(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
     PS_LOG_ENTRY("entry_182ff0_0x1830d8");
 #endif
 
+    fprintf(stderr, "[182FF0] ENTRADA a0=0x%x\n", (uint32_t)GPR_U32(ctx, 4)); fflush(stderr);
     ctx->pc = 0x182ff0u;
 
     // 0x182ff0: 0x27bdffe0  addiu       $sp, $sp, -0x20
@@ -39,6 +40,7 @@ void entry_182ff0_0x1830d8(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
             // 0x183004: 0x202d  daddu       $a0, $zero, $zero (Delay Slot)
         SET_GPR_U64(ctx, 4, (uint64_t)GPR_U64(ctx, 0) + (uint64_t)GPR_U64(ctx, 0));
         ctx->in_delay_slot = false;
+    fprintf(stderr, "[182FF0] JAL 279A40 (1a chamada)\n"); fflush(stderr);
     ctx->pc = 0x279A40u;
     if (runtime->hasFunction(0x279A40u)) {
         auto targetFn = runtime->lookupFunction(0x279A40u);
@@ -52,6 +54,7 @@ void entry_182ff0_0x1830d8(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         if (ctx->pc == __entryPc) { ctx->pc = 0x183008u; }
         if (ctx->pc != 0x183008u) { return; }
     }
+    fprintf(stderr, "[182FF0] 279A40 (1a) RETORNOU v0=0x%x\n", (uint32_t)GPR_U32(ctx, 2)); fflush(stderr);
     ctx->pc = 0x183008u;
     // 0x183008: 0x10400003  beqz        $v0, . + 4 + (0x3 << 2)
     ctx->pc = 0x183008u;
@@ -71,6 +74,7 @@ void entry_182ff0_0x1830d8(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
             // 0x183014: 0x202d  daddu       $a0, $zero, $zero (Delay Slot)
         SET_GPR_U64(ctx, 4, (uint64_t)GPR_U64(ctx, 0) + (uint64_t)GPR_U64(ctx, 0));
         ctx->in_delay_slot = false;
+    fprintf(stderr, "[182FF0] JAL 279A40 (2a chamada)\n"); fflush(stderr);
     ctx->pc = 0x279A40u;
     if (runtime->hasFunction(0x279A40u)) {
         auto targetFn = runtime->lookupFunction(0x279A40u);
@@ -84,6 +88,7 @@ void entry_182ff0_0x1830d8(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         if (ctx->pc == __entryPc) { ctx->pc = 0x183018u; }
         if (ctx->pc != 0x183018u) { return; }
     }
+    fprintf(stderr, "[182FF0] 279A40 (2a) RETORNOU v0=0x%x\n", (uint32_t)GPR_U32(ctx, 2)); fflush(stderr);
     ctx->pc = 0x183018u;
 label_183018:
     // 0x183018: 0xc060c64  jal         func_183190
@@ -94,6 +99,7 @@ label_183018:
             // 0x18301c: 0x200202d  daddu       $a0, $s0, $zero (Delay Slot)
         SET_GPR_U64(ctx, 4, (uint64_t)GPR_U64(ctx, 16) + (uint64_t)GPR_U64(ctx, 0));
         ctx->in_delay_slot = false;
+    fprintf(stderr, "[182FF0] JAL 183190 a0=0x%x\n", (uint32_t)GPR_U32(ctx, 4)); fflush(stderr);
     ctx->pc = 0x183190u;
     if (runtime->hasFunction(0x183190u)) {
         auto targetFn = runtime->lookupFunction(0x183190u);
@@ -107,6 +113,7 @@ label_183018:
         if (ctx->pc == __entryPc) { ctx->pc = 0x183020u; }
         if (ctx->pc != 0x183020u) { return; }
     }
+    fprintf(stderr, "[182FF0] 183190 RETORNOU\n"); fflush(stderr);
     ctx->pc = 0x183020u;
     // 0x183020: 0x24080800  addiu       $t0, $zero, 0x800
     ctx->pc = 0x183020u;
@@ -154,6 +161,7 @@ label_183018:
     ctx->pc = 0x183058u;
     SET_GPR_U32(ctx, 31, 0x183060u);
     ctx->pc = 0x1832E8u;
+    fprintf(stderr, "[182FF0] JAL 1832E8\n"); fflush(stderr);
     if (runtime->hasFunction(0x1832E8u)) {
         auto targetFn = runtime->lookupFunction(0x1832E8u);
         const uint32_t __entryPc = ctx->pc;
@@ -166,6 +174,7 @@ label_183018:
         if (ctx->pc == __entryPc) { ctx->pc = 0x183060u; }
         if (ctx->pc != 0x183060u) { return; }
     }
+    fprintf(stderr, "[182FF0] 1832E8 RETORNOU\n"); fflush(stderr);
     ctx->pc = 0x183060u;
     // 0x183060: 0x3c040005  lui         $a0, 0x5
     ctx->pc = 0x183060u;

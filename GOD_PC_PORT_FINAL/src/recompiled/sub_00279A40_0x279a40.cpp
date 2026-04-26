@@ -19,6 +19,7 @@ void sub_00279A40_0x279a40(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
 
     ctx->pc = 0x279a40u;
 
+    fprintf(stderr, "[279A40] ENTRADA (SifCheckInit?)\n"); fflush(stderr);
     // 0x279a40: 0x27bdffe0  addiu       $sp, $sp, -0x20
     ctx->pc = 0x279a40u;
     SET_GPR_S32(ctx, 29, (int32_t)ADD32(GPR_U32(ctx, 29), 4294967264));
@@ -51,15 +52,18 @@ void sub_00279A40_0x279a40(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
     // 0x279a58: 0x8e020008  lw          $v0, 0x8($s0)
     ctx->pc = 0x279a58u;
     SET_GPR_S32(ctx, 2, (int32_t)READ32(ADD32(GPR_U32(ctx, 16), 8)));
+    fprintf(stderr, "[279A40] sif_struct=0x%x sif+8=0x%x\n", GPR_U32(ctx, 16), GPR_U32(ctx, 2)); fflush(stderr);
     // 0x279a5c: 0x14400010  bnez        $v0, . + 4 + (0x10 << 2)
     ctx->pc = 0x279A5Cu;
     {
         const bool branch_taken_0x279a5c = (GPR_U64(ctx, 2) != GPR_U64(ctx, 0));
         if (branch_taken_0x279a5c) {
+            fprintf(stderr, "[279A40] JA INICIALIZADO -> func_294140\n"); fflush(stderr);
             ctx->pc = 0x279AA0u;
             goto label_279aa0;
         }
     }
+    fprintf(stderr, "[279A40] NAO INICIALIZADO -> func_2940B0 (SifInit?)\n"); fflush(stderr);
     ctx->pc = 0x279A64u;
     // 0x279a64: 0xc0a502c  jal         func_2940B0
     ctx->pc = 0x279A64u;
