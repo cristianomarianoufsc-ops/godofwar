@@ -226,6 +226,19 @@ inline constexpr uint32_t PS2_GLOBAL_WATCH_2_BYTES = 8u; // next + prev = 8 byte
 inline constexpr uint32_t PS2_GLOBAL_WATCH_2_MAX_LOGS = 256u;
 inline std::atomic<uint32_t> g_ps2GlobalWatch2LogCount{0};
 
+// Watchpoint adicionado na PARTE 6 (2026-04-26): ponteiro do pool em
+// 0x2c7910 que sub_0013DA10 le como base da estrutura ($a0 = *0x2c7910).
+// Na PARTE 5 confirmamos que esse pool retorna 0 — ou seja, ninguem ainda
+// inicializou esse global. Esta camera loga toda WRITE32 nesse endereco
+// (4 bytes do ponteiro) com PC + RA do escritor. Se ninguem escrever,
+// confirmamos que o init e' um dos 4 JALs nao-registrados da PARTE 3
+// (0x283770, 0x17acb8, 0x138b10, 0x1838d0) — ou que essa funcao nunca
+// foi chamada no PS2 original (caso em que precisamos de stub C++).
+inline constexpr uint32_t PS2_GLOBAL_WATCH_3_ADDR = 0x002C7910u;
+inline constexpr uint32_t PS2_GLOBAL_WATCH_3_BYTES = 4u; // ponteiro de 32 bits
+inline constexpr uint32_t PS2_GLOBAL_WATCH_3_MAX_LOGS = 256u;
+inline std::atomic<uint32_t> g_ps2GlobalWatch3LogCount{0};
+
 inline uint32_t ps2PathWatchPhysAddr()
 {
     return PS2_PATH_WATCH_ADDR & PS2_RAM_MASK;
@@ -331,6 +344,39 @@ inline void ps2CheckGlobalWatch2(uint32_t writeAddr,
     fflush(stderr);
 }
 
+// Verifica se uma escrita toca o ponteiro do pool em 0x2c7910 (lido por
+// sub_0013DA10) e loga. Adicionado na PARTE 6 (2026-04-26) para descobrir
+// se algum init escreve nesse endereco. Se nenhum log aparecer no teste,
+// confirmamos que a inicializacao nunca acontece — e' um dos 4 JALs nao
+// registrados da PARTE 3 ou um stub que falta.
+inline void ps2CheckGlobalWatch3(uint32_t writeAddr,
+                                 uint32_t size,
+                                 uint64_t valueLo,
+                                 const char *op,
+                                 const R5900Context *ctx)
+{
+    const uint32_t globalAddr = PS2_GLOBAL_WATCH_3_ADDR & PS2_RAM_MASK;
+    const uint64_t writeStart = writeAddr;
+    const uint64_t writeEnd = writeStart + static_cast<uint64_t>(size);
+    if (writeEnd <= globalAddr || writeStart >= globalAddr + PS2_GLOBAL_WATCH_3_BYTES)
+    {
+        return;
+    }
+    const uint32_t logIdx = g_ps2GlobalWatch3LogCount.fetch_add(1, std::memory_order_relaxed);
+    if (logIdx >= PS2_GLOBAL_WATCH_3_MAX_LOGS)
+    {
+        return;
+    }
+    const uint32_t pc = ctx ? ctx->pc : 0u;
+    const uint32_t ra = ctx ? static_cast<uint32_t>(_mm_extract_epi32(ctx->r[31], 0)) : 0u;
+    fprintf(stderr,
+            "[watch:POOL_0x2c7910] #%u op=%s addr=0x%x size=%u value=0x%llx pc=0x%x ra=0x%x%s\n",
+            logIdx + 1u, op, writeAddr, size,
+            static_cast<unsigned long long>(valueLo), pc, ra,
+            (valueLo != 0 && writeAddr == globalAddr) ? "  <<< POOL INICIALIZADO!" : "");
+    fflush(stderr);
+}
+
 inline void ps2TraceGuestWrite(uint8_t *rdram,
                                uint32_t guestAddr,
                                uint32_t size,
@@ -349,6 +395,8 @@ inline void ps2TraceGuestWrite(uint8_t *rdram,
     ps2CheckGlobalWatch(writeAddr, size, valueLo, op, ctx);
     // Vigia da sentinela 0x2cbbb0 (PARTE 4) — sempre checa.
     ps2CheckGlobalWatch2(writeAddr, size, valueLo, op, ctx);
+    // Vigia do pool 0x2c7910 (PARTE 6) — sempre checa.
+    ps2CheckGlobalWatch3(writeAddr, size, valueLo, op, ctx);
 
     if (!ps2PathWatchIntersects(writeAddr, size))
     {

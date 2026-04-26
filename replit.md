@@ -130,7 +130,8 @@ que ponto da analogia o projeto está agora.
 | Limitador de RPM segurou o motor antes de fundir + carro andou mais 100m até sufocar no carburador | Trava de segurança disparou em 1M iter, jogo continuou até bater em loop de comandos vazios na unidade gráfica VIF1 | ✅ confirmado parte 4 |
 | Sensor de vazamento instalado em cima da junta suspeita | Watch em `[0x2cbbb0..0x2cbbb8]`: toda escrita loga PC + RA do escritor (até 256 logs) | ✅ aplicado parte 4 |
 | Sensor confirmou: a bomba de óleo (`sub_0013DA10`) está bombeando AR ZERO em vez de óleo, e o ar zero corrói a junta | PARTE 5: alocador `sub_0013DA10` retorna `$v0=0` (pool não inicializado em `0x2c7910`); `sub_0013FAB8` escreve esse 0 em `[0x2cbbb4]` (PC `0x13fb24`) e `[0x2cbbb0]` (PC `0x13fb3c`) | ✅ identificado parte 5 |
-| **Trocar a bomba de óleo OU encontrar quem deveria abastecer ela na fábrica** | **Stub no `sub_0013DA10` que devolve buffer válido OU achar init que escreve em `[0x2c7910]`** | 🟡 **AGORA** |
+| Trocar a bomba de óleo OU encontrar quem deveria abastecer ela na fábrica | Stub no `sub_0013DA10` que devolve buffer válido OU achar init que escreve em `[0x2c7910]` | ✅ identificado parte 5 |
+| **Sensor instalado no reservatório vazio + válvula de segurança no chamador da bomba** | **PARTE 6: câmera #3 watch em `[0x2c7910]` (loga quem escreve no pool) + blindagem `if ($v0 == 0)` no `sub_0013FAB8` que aborta inserção em vez de corromper a sentinela** | 🟡 **AGORA — aguardando teste** |
 | Carburador, transmissão, suspensão | Subsistemas: GS (gráficos), DMA, áudio, controle | 🔜 depois |
 | Test drive | Jogo rodando até a primeira fase jogável | 🔜 longe |
 
@@ -151,7 +152,8 @@ que ponto da analogia o projeto está agora.
 | Colete de loops absorveu o impacto, agente continuou e chegou no salão de servidores (mas servidor estava em loop de tela vazia) | Trava de segurança disparou em 1M iter sem travar PC; jogo avançou até loop de 159 comandos vazios no VIF1 (unidade gráfica do PS2) | ✅ confirmado parte 4 |
 | Câmera escondida instalada no posto do vigia (`0x2cbbb0`) | Watch silencioso em `ps2_runtime.h`: `ps2CheckGlobalWatch2` loga toda WRITE32 com PC+RA do autor (até 256 logs) | ✅ aplicado parte 4 |
 | Câmera flagrou o sabotador na primeira tomada — e ele estava DENTRO da própria sala que devia proteger: o agente do `13FAB8` foi até o almoxarifado (`13DA10`) pegar uma ficha vazia, recebeu **nada** das mãos do atendente fantasma, voltou pro corredor sem perceber, e **escreveu zeros direto em cima do vigia** achando que era o slot da ficha nova | PARTE 5: PCs `0x13fb24` + `0x13fb3c` confirmados; alocador `sub_0013DA10` retorna 0 porque o pool em `0x2c7910` está vazio (BSS não inicializada por algum init não-registrado) | ✅ identificado parte 5 |
-| **Neutralizar a fonte: ou trocar o atendente por um stub que entrega ficha de verdade, ou achar o gerente que esqueceu de abrir o almoxarifado** | **Opção 1: stub C++ pra `sub_0013DA10` que devolve buffer válido. Opção 2: localizar quem inicializa `[0x2c7910]` (provavelmente um dos 4 JALs não-registrados da PARTE 3)** | 🟡 **AGORA** |
+| Neutralizar a fonte: ou trocar o atendente por um stub que entrega ficha de verdade, ou achar o gerente que esqueceu de abrir o almoxarifado | Opção 1: stub C++ pra `sub_0013DA10` que devolve buffer válido. Opção 2: localizar quem inicializa `[0x2c7910]` (provavelmente um dos 4 JALs não-registrados da PARTE 3) | ✅ analisado parte 5 |
+| **Câmera escondida #3 instalada no almoxarifado E colete de Kevlar no agente** | **PARTE 6 (Opção 2+3): watch em `[0x2c7910]` que loga PC+RA de quem escreve no pool + blindagem no `13FAB8` que aborta a inserção quando recebe ficha vazia (`$v0=0`), em vez de tatuar zeros no posto do vigia** | 🟡 **AGORA — aguardando teste do Agente Cris** |
 | Próximos guardas internos previstos | VIF1/DMA com payloads válidos, `SetupThread`, restantes do init chain, INTC handlers | 🔜 ato 3 |
 | Fuga com o alvo | Jogo rodando até a primeira fase jogável | 🔜 final |
 
@@ -357,6 +359,56 @@ entende o que ele acha que está fazendo, e decide o fix.
 
 ---
 
+#### 🆕 SESSÃO 2026-04-26 PARTE 6 — Câmera #3 + Blindagem aplicadas (Opção 2+3 combinada)
+
+**Status:** PARTE 6 montada e commitada. Aguardando teste do Agente Cris no PC Linux Mint.
+
+**Decisão do Agente Cris:** Opção 2+3 combinada num único build (recomendação do analista da PARTE 5).
+
+**Mudanças aplicadas nesta sessão:**
+
+**1. `PS2Recomp/ps2xRuntime/include/ps2_runtime.h` — Câmera escondida #3 instalada (Opção 2):**
+- Constante nova `PS2_GLOBAL_WATCH_3_ADDR = 0x002C7910u` (4 bytes — o ponteiro do pool que `sub_0013DA10` lê).
+- Função nova `ps2CheckGlobalWatch3(...)` espelha o padrão das câmeras anteriores; loga toda WRITE32 nesse endereço com PC + RA do escritor (até 256 logs).
+- Marcador especial `<<< POOL INICIALIZADO!` quando alguém escreve um valor não-zero no endereço exato.
+- Hook em `ps2TraceGuestWrite` chama o vigia novo logo depois dos vigias #1 (0x32E854) e #2 (0x2cbbb0).
+
+**2. `GOD_PC_PORT_FINAL/src/recompiled/sub_0013FAB8_0x13fab8.cpp` — Blindagem aplicada (Opção 3):**
+- Logo após a chamada `sub_0013DA10_0x13da10(...)` (PC alvo `0x13fb14`), checa `if (GPR_U32(ctx, 2) == 0u)` antes de executar os stores que matavam a sentinela.
+- Se `$v0 == 0`, executa o **epílogo manual** (restaura `$s0`/`$s1`/`$ra` de `sp+32/+16/+0`, bumpa `$sp` em 48) e retorna via `$ra` — nunca toca em `[0x2cbbb4]` (PC `0x13fb24`) nem em `[0x2cbbb0]` (PC `0x13fb3c`).
+- Loga até 16 disparos no formato:
+  ```
+  [13FAB8] BLINDAGEM PARTE 6: sub_0013DA10 retornou $v0=0 (pool 0x2c7910 vazio?) - abortando insercao para nao corromper sentinela 0x2cbbb0. count=N $ra=0x???????? $s0=0x????????
+  ```
+
+**Edição NÃO espelhada em `./src/recompiled/sub_0013FAB8_0x13fab8.cpp`:** o mirror já estava com drift de ~41 linhas em relação à versão do build (faltava a TRAVA DE SEGURANÇA da PARTE 3). Espelhar só essa edição agravaria o drift sem benefício, já que esse mirror é ignorado pelo CMake. Próximo agente que mexer nesse arquivo: regenerar o mirror inteiro a partir do `GOD_PC_PORT_FINAL/...` ou apagar.
+
+**Comando para o Agente Cris testar a PARTE 6:**
+
+```bash
+cd ~/Documentos/GitHub/godofwar
+git pull origin main
+bash recompilar.sh   # incremental — só ps2_runtime.h e sub_0013FAB8 mudaram, ~30s a 1 min
+PS2_TRACE=1 ./build/GodOfWarPCPort GOD_PC_PORT_FINAL/data/SCUS_973.99 2>&1 | tee log_part6.txt
+grep -E "watch:POOL_0x2c7910|BLINDAGEM PARTE 6|watch:SENTINEL_0x2cbbb0|TRAVA|13FAB8|FIX 1|FIX 6|init concluido" log_part6.txt | head -150
+wc -l log_part6.txt
+```
+
+**Cenários esperados no log da PARTE 6:**
+
+| Cenário | Sinais no log | Conclusão |
+|---|---|---|
+| **A — Câmera flagrou um init escrevendo no pool** | `[watch:POOL_0x2c7910] #1 ... pc=0x???????? <<< POOL INICIALIZADO!` aparece **antes** de qualquer `BLINDAGEM PARTE 6` | O `pc=...` é o crachá do init responsável. Abrimos `sub_<pc>.cpp` correspondente e descobrimos por que ele não estava sendo chamado. PARTE 7 = registrar/disparar esse init. |
+| **B — Câmera não flagrou ninguém + blindagem disparou** | Nenhum `[watch:POOL_0x2c7910]` aparece, mas `[13FAB8] BLINDAGEM PARTE 6: ... count=1` (e talvez 2-N) aparece | `[0x2c7910]` realmente nunca é inicializado pelo código recompilado. Causa raiz = falta um stub C++ pra `sub_0013DA10` (Opção 1) OU o pool é inicializado por algum subsistema não-emulado (DMA/SIF/IOP). PARTE 7 = aplicar Opção 1. |
+| **C — Câmera flagrou + blindagem ainda disparou** | Watch loga init, MAS as primeiras chamadas do `13FAB8` ainda recebem `$v0=0` | A inicialização do pool acontece DEPOIS das primeiras chamadas. Race condition / ordem do init chain errada. Investigar se o init precisa rodar antes do `0x2996b0`. |
+| **D — Tudo silencioso, jogo avança** | Nem watch nem blindagem disparam, jogo passa do loop VIF1 anterior | Algo mudou no fluxo (improvável). Ler log inteiro pra ver onde travou agora. |
+
+**Cenário mais provável:** B (câmera silenciosa + blindagem disparando). Isso confirmaria PARTE 5 e nos diz com certeza que o caminho é Opção 1 (stub C++ no `sub_0013DA10`).
+
+**Importante:** com a blindagem funcionando, `[0x2cbbb0]` nunca mais é zerado pelo `13FAB8`, então `[watch:SENTINEL_0x2cbbb0]` não deve mais aparecer com `<<< CORRUPCAO PARA ZERO!`. Se aparecer, há um terceiro sabotador que ainda não conhecemos.
+
+---
+
 #### 🆕 SESSÃO 2026-04-26 PARTE 5 — SABOTADOR IDENTIFICADO (`sub_0013DA10` retorna $v0=0)
 
 **O log da PARTE 5 (Agente Cris executou em 2026-04-26):**
@@ -446,7 +498,7 @@ parente de algum já resolvido.
 | **C** | `v0=0` em retorno de função | SEGV ou comportamento errado | Recompilação setando `$v0` errado em `jal` | Override do retorno | Trace mostra `$v0=0` onde devia ter ponteiro |
 | **D** | Loop infinito + stack overflow em `func_100408` | PC trava | Função recursiva sem base case | Trava de iteração + override | RAM cresce, PC trava, stack >1MB |
 | **1, 6** | **Sentinela de lista circular não inicializada** | Loop infinito em função que percorre lista | Estrutura `head` em BSS com `next/prev = 0` em vez de apontar pra si | Escrever `head.next = head.prev = head` no boot_stub ANTES dos inits | `READ32(sentinel) = 0` no log; loop `iter=Nx100000 s0=0x0` |
-| **F** | **Alocador retorna 0 → corrompe consumidor** | Bug 1/6 retorna depois do fix | Alocador (ex: `13DA10`) lê pool não-inicializado, devolve 0; consumidor escreve em `[0]` que cai em região crítica | (em discussão PARTE 5) | Watchpoint no endereço corrompido; PC do escritor cai dentro de função "que devia ser inocente" |
+| **F** | **Alocador retorna 0 → corrompe consumidor** | Bug 1/6 retorna depois do fix | Alocador (ex: `13DA10`) lê pool não-inicializado, devolve 0; consumidor escreve em `[0]` que cai em região crítica | PARTE 6: blindagem `if ($v0==0) abort` no consumidor + watch no pool pra achar init perdido. Fix definitivo (PARTE 7+) = stub C++ no alocador OU registrar init perdido | Watchpoint no endereço corrompido; PC do escritor cai dentro de função "que devia ser inocente" |
 | **2, 3, 4, 5** | Inits do crt0 não rodados | Várias estruturas vazias depois do boot | Boot stub não chama todos os 4 inits do `crt0` | Adicionar `kInitChain[]` no boot_stub | Várias funções travando logo após o boot |
 
 **Observação clave do analista:** os bugs **1, 6 e F** são todos da mesma

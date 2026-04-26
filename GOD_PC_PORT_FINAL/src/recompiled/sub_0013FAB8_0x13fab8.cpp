@@ -186,6 +186,32 @@ label_13fb0c:
         if (ctx->pc != 0x13FB14u) { return; }
     }
     ctx->pc = 0x13FB14u;
+    // 🛡️ BLINDAGEM PARTE 6 (Opcao 3) — defesa contra alocador-fantasma:
+    // Se sub_0013DA10 retornou $v0=0 (pool 0x2c7910 vazio, conforme PARTE 5),
+    // os stores abaixo nos PCs 0x13fb24 e 0x13fb3c escreveriam zero direto
+    // em [0x2cbbb4] e [0x2cbbb0], destruindo a sentinela do Fix 6 e
+    // condenando as proximas chamadas ao loop infinito.
+    // Em vez disso, aborta a insercao executando manualmente o epilogo
+    // (restaura $s0/$s1/$ra de [sp+32/+16/+0], bumpa $sp, retorna via $ra).
+    if (GPR_U32(ctx, 2) == 0u) {
+        static std::atomic<uint32_t> s_blindagemCount{0};
+        const uint32_t cnt = s_blindagemCount.fetch_add(1u, std::memory_order_relaxed) + 1u;
+        if (cnt <= 16u) {
+            fprintf(stderr,
+                    "[13FAB8] BLINDAGEM PARTE 6: sub_0013DA10 retornou $v0=0 "
+                    "(pool 0x2c7910 vazio?) - abortando insercao para nao "
+                    "corromper sentinela 0x2cbbb0. count=%u $ra=0x%x $s0=0x%x\n",
+                    cnt, GPR_U32(ctx, 31), GPR_U32(ctx, 16));
+            fflush(stderr);
+        }
+        // Epilogo manual (espelha 0x13fb30..0x13fb44, PULANDO o sw em 0x13fb3c):
+        SET_GPR_VEC(ctx, 16, READ128(ADD32(GPR_U32(ctx, 29), 32))); // lq $s0, 0x20($sp)
+        SET_GPR_VEC(ctx, 17, READ128(ADD32(GPR_U32(ctx, 29), 16))); // lq $s1, 0x10($sp)
+        SET_GPR_U64(ctx, 31, READ64(ADD32(GPR_U32(ctx, 29), 0)));   // ld $ra, 0x0($sp)
+        SET_GPR_S32(ctx, 29, (int32_t)ADD32(GPR_U32(ctx, 29), 48)); // addiu $sp, $sp, 0x30
+        ctx->pc = GPR_U32(ctx, 31);
+        return;
+    }
     // 0x13fb14: 0xac400000  sw          $zero, 0x0($v0)
     ctx->pc = 0x13fb14u;
     WRITE32(ADD32(GPR_U32(ctx, 2), 0), GPR_U32(ctx, 0));

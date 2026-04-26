@@ -45,38 +45,94 @@ precisar entender MIPS/syscalls/boot stub. **Tabela completa fica em
 `replit.md` na seção "📖 ANALOGIAS DO PROJETO" — fonte da verdade.**
 Aqui só o resumo do ponto atual; mantenha sincronizado.
 
-**Carro (até PARTE 5):** chassi/combustível/injeção/chave de ignição prontos;
+**Carro (até PARTE 6):** chassi/combustível/injeção/chave de ignição prontos;
 motor deu 1ª partida (Fix 4+5); engasgou na 1ª marcha (lista circular #2);
 braçadeira reposicionada certa + limitador de RPM (parte 3); sensor de
-vazamento instalado em cima da junta (parte 4); 🆕 **PARTE 5: sensor
-identificou que a bomba de óleo (`sub_0013DA10`) está bombeando AR ZERO
-em vez de óleo — porque o reservatório (`[0x2c7910]`) nunca foi abastecido
-na fábrica. O ar zero corrói a junta toda vez que o motor acelera.**
-🟡 **AGORA PARTE 6: trocar a bomba (stub C++) ou achar quem deveria ter
-abastecido o reservatório (init perdido).** Depois: carburador (VIF1/DMA),
-suspensão (INTC handlers), test drive.
+vazamento instalado em cima da junta (parte 4); PARTE 5: sensor identificou
+que a bomba de óleo (`sub_0013DA10`) bombeia AR ZERO porque o reservatório
+(`[0x2c7910]`) nunca foi abastecido. 🆕 **PARTE 6: instalado sensor
+adicional dentro do reservatório vazio (câmera #3 watch em `[0x2c7910]`)
++ válvula de segurança no cano que vai pro carburador (blindagem
+`if ($v0==0) abort` no `sub_0013FAB8`). Próxima rodada do dinamômetro
+do Agente Cris vai dizer se algum operário escreve no reservatório
+(cenário A) ou se ninguém escreve mesmo (cenário B → trocar a bomba
+por um stub C++).** Depois: carburador (VIF1/DMA), suspensão (INTC
+handlers), test drive.
 
-**Espionagem (até PARTE 5):** recrutamento, recon, entrada, porta certa
+**Espionagem (até PARTE 6):** recrutamento, recon, entrada, porta certa
 (Fix 5), cofre ABERTO (Fix 4+5), 1º guarda interno detectado (`0x2cbbb0`),
 tranquilizante reposicionado + colete à prova de loops (parte 3); câmera
-escondida instalada (parte 4); 🆕 **PARTE 5: câmera flagrou o sabotador
+escondida instalada (parte 4); PARTE 5: câmera flagrou o sabotador
 EM FLAGRANTE na primeira tomada — e a reviravolta é digna de filme: o
-sabotador estava DENTRO da própria sala que ele devia proteger. O agente
-do `13FAB8` foi até o almoxarifado (`13DA10`) buscar uma ficha vazia,
-recebeu NADA das mãos do atendente fantasma (`$v0=0`), voltou pro corredor
-sem perceber, e escreveu zeros direto no posto do vigia achando que era
-a ficha nova. Nas chamadas seguintes, o corredor parece infinito de novo.
-PCs flagrados: `0x13fb24` e `0x13fb3c`.** 🟡 **AGORA PARTE 6: neutralizar
-o atendente fantasma (stub) ou achar o gerente que esqueceu de abrir o
-almoxarifado (init de `[0x2c7910]`).** Depois: VIF1/DMA, INTC handlers,
-fuga com o alvo (jogo rodando).
+sabotador estava DENTRO da própria sala que devia proteger. O agente
+do `13FAB8` foi até o almoxarifado (`13DA10`), recebeu NADA do atendente
+fantasma (`$v0=0`), voltou e escreveu zeros direto no posto do vigia.
+PCs flagrados: `0x13fb24` e `0x13fb3c`. 🆕 **PARTE 6: instalada câmera
+escondida #3 dentro do almoxarifado (watch em `[0x2c7910]`) — vai
+flagrar quem deveria abastecer as fichas, se é que alguém aparece. Em
+paralelo, o agente do `13FAB8` recebeu colete de Kevlar e protocolo
+novo: se o atendente entregar ficha vazia, ele NÃO vai mais escrever
+zeros no posto do vigia — vai abandonar a missão de inserção e voltar
+pra base intacto (epílogo manual restaurando `$s0`/`$s1`/`$ra`/`$sp`).
+Aguardando o dossiê de campo do Agente Cris para descobrir se a câmera
+flagrou alguém.** Depois: VIF1/DMA, INTC handlers, fuga com o alvo.
 
 > Estilo de narração padrão = **espionagem/ação**. Three camadas: 🕵️
 > espionagem → 🚗 carro → 🔧 técnico. Veja PROTOCOLO DE COMUNICAÇÃO acima.
 
 ---
 
-## 🔴 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-26 PARTE 5 — SABOTADOR IDENTIFICADO)
+## 🔴 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-26 PARTE 6 — Câmera #3 + Blindagem aplicadas)
+
+### Status: pacote Opção 2+3 aplicado — aguardando teste do Agente Cris
+
+**🎯 Decisão da PARTE 6:** Agente Cris escolheu Opção 2+3 combinada (recomendação do analista da PARTE 5). Câmera escondida #3 + blindagem defensiva num único build incremental.
+
+**O que foi aplicado nesta sessão (2026-04-26 PARTE 6):**
+
+**1. Câmera #3 instalada — `PS2Recomp/ps2xRuntime/include/ps2_runtime.h`:**
+- `PS2_GLOBAL_WATCH_3_ADDR = 0x002C7910u` (4 bytes do ponteiro do pool)
+- Função `ps2CheckGlobalWatch3(...)` espelha o padrão das câmeras #1 e #2
+- Hook em `ps2TraceGuestWrite` chama o vigia novo logo depois dos #1 e #2
+- Marcador especial `<<< POOL INICIALIZADO!` quando alguém escreve valor não-zero
+
+**2. Blindagem aplicada — `GOD_PC_PORT_FINAL/src/recompiled/sub_0013FAB8_0x13fab8.cpp`:**
+- Logo após `sub_0013DA10_0x13da10(...)` retornar (PC alvo `0x13fb14`):
+  - Se `GPR_U32(ctx, 2) == 0u` (`$v0 == 0`):
+    - Loga até 16 disparos: `[13FAB8] BLINDAGEM PARTE 6: ...`
+    - Executa epílogo manual (lq $s0,sp+32; lq $s1,sp+16; ld $ra,sp+0; addiu sp,sp,0x30)
+    - `ctx->pc = $ra; return;`
+- **Resultado:** stores em `[0x2cbbb4]` (PC `0x13fb24`) e `[0x2cbbb0]` (PC `0x13fb3c`) NUNCA executam quando o pool está vazio. Sentinela do Fix 6 fica intacta.
+
+**Mirror não atualizado:** `./src/recompiled/sub_0013FAB8_0x13fab8.cpp` está com drift de ~41 linhas em relação à versão do build (faltava a TRAVA da PARTE 3). Espelhar só essa edição agravaria o drift sem benefício (CMake ignora esse path). Próximo agente: regenerar o mirror inteiro a partir do `GOD_PC_PORT_FINAL/...` ou apagar.
+
+### Comando para o Agente Cris testar a PARTE 6
+
+```bash
+cd ~/Documentos/GitHub/godofwar
+git pull origin main
+bash recompilar.sh   # incremental — só ps2_runtime.h e sub_0013FAB8 mudaram, ~30s a 1 min
+PS2_TRACE=1 ./build/GodOfWarPCPort GOD_PC_PORT_FINAL/data/SCUS_973.99 2>&1 | tee log_part6.txt
+grep -E "watch:POOL_0x2c7910|BLINDAGEM PARTE 6|watch:SENTINEL_0x2cbbb0|TRAVA|13FAB8|FIX 1|FIX 6|init concluido" log_part6.txt | head -150
+wc -l log_part6.txt
+```
+
+### Cenários esperados no log da PARTE 6
+
+| Cenário | Sinais no log | Próxima ação (PARTE 7) |
+|---|---|---|
+| **A — Câmera flagrou init no pool** | `[watch:POOL_0x2c7910] #1 ... pc=0x???????? <<< POOL INICIALIZADO!` aparece **antes** de `BLINDAGEM` | Abrir `sub_<pc>.cpp`, descobrir por que esse init não estava sendo chamado, registrar no chain do boot stub |
+| **B — Câmera silenciosa + blindagem disparou** | Nenhum `[watch:POOL_0x2c7910]`, mas `[13FAB8] BLINDAGEM PARTE 6: ... count=N` aparece | `[0x2c7910]` realmente nunca é inicializado pelo código recompilado. Aplicar Opção 1 (stub C++ no `sub_0013DA10` em `game_overrides.cpp`) |
+| **C — Câmera flagrou + blindagem ainda disparou** | Watch loga init MAS chamadas iniciais do `13FAB8` recebem `$v0=0` | Race condition / ordem do init chain errada. Investigar se o init precisa rodar antes de `0x2996b0` |
+| **D — Tudo silencioso, jogo avança** | Nem watch nem blindagem disparam, jogo passa do loop VIF1 | Algo mudou no fluxo. Ler log inteiro pra ver onde travou |
+
+**Cenário mais provável: B** (câmera silenciosa + blindagem disparando). Confirmaria PARTE 5 e aponta direto pra Opção 1 como Plano A da PARTE 7.
+
+**Importante:** com a blindagem ativa, `[watch:SENTINEL_0x2cbbb0]` NÃO deve mais aparecer com `<<< CORRUPCAO PARA ZERO!`. Se aparecer, há um terceiro sabotador que ainda não conhecemos.
+
+---
+
+## 🟡 ESTADO PARTE 5 (mantido para histórico)
 
 ### Status: câmera flagrou o sabotador — `sub_0013DA10` retorna `$v0=0`, e `sub_0013FAB8` propaga esse 0 destruindo a sentinela
 
@@ -145,7 +201,7 @@ wc -l log_part6.txt
 | **C** | `$v0=0` retorno | SEGV/comportamento errado | Recompilação setando `$v0` errado | Override do retorno |
 | **D** | Loop+stack overflow | PC trava, RAM cresce | Recursão sem base case em `func_100408` | Trava de iter + override |
 | **1, 6** | Sentinela não-inicializada | Loop infinito em função que percorre lista | `head.next/prev = 0` em vez de apontar pra si | Fix 1/6: escrever `head=head.next=head.prev` no boot_stub ANTES dos inits |
-| **F** | Alocador retorna 0 → corrompe consumidor | Bug 1/6 reaparece depois do fix | Alocador (ex: `13DA10`) lê pool vazio, devolve 0; consumidor escreve em `[0+offset]` que cai em região crítica | (em discussão PARTE 5) |
+| **F** | Alocador retorna 0 → corrompe consumidor | Bug 1/6 reaparece depois do fix | Alocador (ex: `13DA10`) lê pool vazio, devolve 0; consumidor escreve em `[0+offset]` que cai em região crítica | PARTE 6: blindagem `if ($v0==0) abort` no consumidor + watch no pool pra achar init perdido. Fix definitivo (PARTE 7+) = stub C++ no alocador OU registrar init perdido |
 | **2-5** | Inits do crt0 não rodados | Várias estruturas vazias após boot | Boot stub não chama todos 4 inits do crt0 | `kInitChain[]` no boot_stub |
 
 **Padrão dominante:** bugs **1, 6 e F** são todos da mesma família —
