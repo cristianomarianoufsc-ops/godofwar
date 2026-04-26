@@ -1,6 +1,28 @@
-# Manual de Transferência — God of War PS2 PC Port
+# Manual de Transferência — God of War PS2 PC Port — 🏛️ OPERAÇÃO ESPARTA
 
-> **Para o próximo agente:** Este documento contém TUDO que você precisa saber para continuar este projeto. Leia até o fim antes de tocar em qualquer código. O usuário fala português brasileiro — responda nele.
+> **Para o próximo analista:** Este documento contém TUDO que você precisa saber para continuar a Operação Esparta. Leia até o fim antes de tocar em qualquer código. O Agente Cris (usuário) fala português brasileiro — responda nele.
+
+---
+
+## 🎬 PROTOCOLO DE COMUNICAÇÃO — OPERAÇÃO ESPARTA 🎬
+
+Toda conversa com o Agente Cris segue **linguagem narrativa de espionagem/ação**.
+A versão completa do protocolo (cast, regras de tom, três camadas de explicação)
+está em `replit.md` — fonte da verdade. **Resumo obrigatório aqui:**
+
+| Papel | Quem é |
+|---|---|
+| **Agente Cris** | O usuário (cristiano), operador de campo no PC Linux Mint |
+| **Analistas** | Vocês, agentes de IA na sala de controle |
+| **Sabotadores** | Bugs, funções que travam, BSS não-inicializada |
+| **Vigias / sentinelas** | Estruturas globais que marcam fim-de-lista (`0x2cbbb0`, `0x2cf090`, `0x32E854`) |
+| **Almoxarifado** | Alocadores (`sub_0013DA10` etc) |
+| **Câmeras escondidas** | Watchpoints (`ps2CheckGlobalWatch*` em `ps2_runtime.h`) |
+| **Cofre / 6000 portas** | Imagem do executável recompilado (~6000 funções `sub_XXXXXX.cpp`) |
+
+**Regra de ouro:** ao explicar um achado novo, sempre as três camadas
+nesta ordem: 🕵️ espionagem → 🚗 carro → 🔧 técnico (código puro).
+Tom: relatório de inteligência calmo, não Hollywood.
 
 ---
 
@@ -23,42 +45,118 @@ precisar entender MIPS/syscalls/boot stub. **Tabela completa fica em
 `replit.md` na seção "📖 ANALOGIAS DO PROJETO" — fonte da verdade.**
 Aqui só o resumo do ponto atual; mantenha sincronizado.
 
-**Carro:** chassi/combustível/injeção/chave de ignição prontos; motor deu
-1ª partida (Fix 4+5); engasgou na 1ª marcha (lista circular #2); braçadeira
-foi instalada no lugar errado (Fix 6 depois dos inits, parte 2); braçadeira
-reposicionada certa + limitador de RPM instalado (parte 3). Teste real
-PROVOU que limitador funciona: motor pegou de novo, andou um pouco mas
-voltou a vazar óleo na 1ª aceleração (`[0x2cbbb0]` zera depois da 1ª uso),
-limitador segurou antes de fundir, carro ainda andou mais 100m até sufocar
-no carburador (loop de 159 comandos vazios na unidade gráfica VIF1) →
-🟡 **AGORA PARTE 4: achar a junta que está vazando óleo (quem escreve 0
-em `0x2cbbb0`)**. Depois: carburador (VIF1/DMA), suspensão (INTC handlers),
-test drive.
+**Carro (até PARTE 5):** chassi/combustível/injeção/chave de ignição prontos;
+motor deu 1ª partida (Fix 4+5); engasgou na 1ª marcha (lista circular #2);
+braçadeira reposicionada certa + limitador de RPM (parte 3); sensor de
+vazamento instalado em cima da junta (parte 4); 🆕 **PARTE 5: sensor
+identificou que a bomba de óleo (`sub_0013DA10`) está bombeando AR ZERO
+em vez de óleo — porque o reservatório (`[0x2c7910]`) nunca foi abastecido
+na fábrica. O ar zero corrói a junta toda vez que o motor acelera.**
+🟡 **AGORA PARTE 6: trocar a bomba (stub C++) ou achar quem deveria ter
+abastecido o reservatório (init perdido).** Depois: carburador (VIF1/DMA),
+suspensão (INTC handlers), test drive.
 
-**Espionagem:** recrutamento, recon, entrada, sabotagem descoberta, porta
-certa (Fix 5), cofre ABERTO (Fix 4+5), 1º guarda interno detectado
-(`0x2cbbb0`), tranquilizante reposicionado na arma certa + colete à prova
-de loops vestido (parte 3). Sondagem real CONFIRMOU: tranquilizante
-funcionou no 1º guarda; mas um SEGUNDO guarda (espião dobrado dentro da
-equipe) sabotou o sistema, revertendo o trabalho — chamadas seguintes
-do `13FAB8` encontram a estrutura corrompida; colete absorveu o impacto
-(trava de segurança disparou em 1M iter, PC do operador NÃO travou),
-agente continuou e chegou no salão de servidores, mas servidor estava em
-loop de tela vazia (159 comandos `vif1:cmd` zerados) → 🟡 **AGORA PARTE 4:
-identificar quem é o sabotador interno — quem escreve 0 em `[0x2cbbb0]`
-depois da 1ª chamada bem-sucedida**. Suspeitos: `label_13fb08` no próprio
-`sub_0013FAB8` (path de inserção) ou `sub_0013DA10` (chamada de lá).
-Depois: VIF1/DMA, INTC handlers, fuga com o alvo (jogo rodando).
+**Espionagem (até PARTE 5):** recrutamento, recon, entrada, porta certa
+(Fix 5), cofre ABERTO (Fix 4+5), 1º guarda interno detectado (`0x2cbbb0`),
+tranquilizante reposicionado + colete à prova de loops (parte 3); câmera
+escondida instalada (parte 4); 🆕 **PARTE 5: câmera flagrou o sabotador
+EM FLAGRANTE na primeira tomada — e a reviravolta é digna de filme: o
+sabotador estava DENTRO da própria sala que ele devia proteger. O agente
+do `13FAB8` foi até o almoxarifado (`13DA10`) buscar uma ficha vazia,
+recebeu NADA das mãos do atendente fantasma (`$v0=0`), voltou pro corredor
+sem perceber, e escreveu zeros direto no posto do vigia achando que era
+a ficha nova. Nas chamadas seguintes, o corredor parece infinito de novo.
+PCs flagrados: `0x13fb24` e `0x13fb3c`.** 🟡 **AGORA PARTE 6: neutralizar
+o atendente fantasma (stub) ou achar o gerente que esqueceu de abrir o
+almoxarifado (init de `[0x2c7910]`).** Depois: VIF1/DMA, INTC handlers,
+fuga com o alvo (jogo rodando).
 
-> Estilo de narração padrão no chat com o usuário = **espionagem/ação**.
-> Use frases como "abrir o cofre", "alarme disparou", "guarda interno",
-> "trama paralela", "infiltração", quando explicar o que está acontecendo.
+> Estilo de narração padrão = **espionagem/ação**. Three camadas: 🕵️
+> espionagem → 🚗 carro → 🔧 técnico. Veja PROTOCOLO DE COMUNICAÇÃO acima.
 
 ---
 
-## 🔴 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-26 PARTE 4.5, câmera escondida instalada)
+## 🔴 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-26 PARTE 5 — SABOTADOR IDENTIFICADO)
 
-### Status: PARTE 3 VALIDADA EM PRODUÇÃO — bug mais profundo descoberto + watch instalado pra capturar autor
+### Status: câmera flagrou o sabotador — `sub_0013DA10` retorna `$v0=0`, e `sub_0013FAB8` propaga esse 0 destruindo a sentinela
+
+**🎯 ACHADO PARTE 5 (log_watch_part5.txt do Agente Cris, 2026-04-26):**
+
+```
+[watch:SENTINEL_0x2cbbb0] #1 op=WRITE32 addr=0x2cbbb4 size=4 value=0x0 pc=0x13fb24 ra=0x13fb14
+[watch:SENTINEL_0x2cbbb0] #2 op=WRITE32 addr=0x2cbbb0 size=4 value=0x0 pc=0x13fb3c ra=0x13fde0  <<< CORRUPCAO PARA ZERO!
+```
+
+**Decifrando** (linhas 162–222 de `GOD_PC_PORT_FINAL/src/recompiled/sub_0013FAB8_0x13fab8.cpp`):
+
+O path `label_13fb0c` (inserir 1º elemento na lista vazia) faz:
+1. `jal func_13DA10` — pede um nó novo pro alocador
+2. **Alocador retorna `$v0 = 0`** (porque o pool em `[0x2c7910]` está vazio/não-inicializado)
+3. Os stores em `$v0+offset` viram escritas inofensivas em `[0x000+offset]`
+4. **MAS**: `sw $v0, 0x4($s0)` no PC `0x13fb24` escreve `0` em `[0x2cbbb4]` (sentinela.prev)
+5. **E**: `sw $v0, 0x0($v1)` no PC `0x13fb3c` escreve `0` em `[0x2cbbb0]` (sentinela.next, porque `$v1` foi carregado de `head.prev` que era `0x2cbbb0` graças ao Fix 6)
+6. Sentinela morre. Próximas chamadas do `13FAB8` caem no loop infinito.
+
+**Causa raiz definitiva:** `sub_0013DA10` é um alocador real, mas depende de
+`$a0` = ponteiro pra estrutura de pool (vinda de `*0x2c7910`, uma global em
+BSS). Como `*0x2c7910 = 0` (BSS não inicializada), o alocador lê de endereço
+inválido (`lw $v0, 0x10($s0)` com `$s0=0`) e devolve 0. Quem inicializa
+`[0x2c7910]` provavelmente é um dos 4 JALs **NÃO REGISTRADOS** detectados
+na PARTE 3: `0x283770`, `0x17acb8`, `0x138b10`, `0x1838d0`.
+
+### 🔄 OPÇÕES PARA PARTE 6 (aguardando decisão do Agente Cris)
+
+**Opção 1 — Stub C++ pra `sub_0013DA10` (rápido, ~5 linhas, curativo):**
+- Em `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp`, override que
+  devolve `malloc(0x10)` zerado. Resolve sintoma imediato.
+- Risco: leaks se o jogo reciclar nós depois.
+
+**Opção 2 — Achar quem deveria inicializar `[0x2c7910]` (causa raiz):**
+- Adicionar 3ª câmera (`PS2_GLOBAL_WATCH_3_ADDR = 0x002C7910u`) e testar
+  de novo. Se ninguém escrever, o init é um dos 4 JALs perdidos.
+- Custo: 1 build longo (~80min) + 1 teste do Agente Cris.
+
+**Opção 3 — Blindar `label_13fb0c` no `sub_0013FAB8` (curativo no chamador):**
+- Editar o `.cpp` recompilado pra checar `if ($v0 == 0) return;` depois
+  do `jal 13DA10`. Mais rápido que Opção 1 mas só protege esse caller.
+
+**Recomendação do analista:** Opção 2 primeiro (instala 3ª câmera, espera
+1 build e 1 teste). Se não pegar autor, cair pra Opção 1 como fallback.
+
+### Comando pra Agente Cris testar a PARTE 6 (após decisão)
+
+```bash
+cd ~/Documentos/GitHub/godofwar
+git pull origin main
+bash build.sh
+PS2_TRACE=1 ./build/GodOfWarPCPort GOD_PC_PORT_FINAL/data/SCUS_973.99 2>&1 | tee log_part6.txt
+grep -E "watch:|FIX|13FAB8|TRAVA|CORRUPCAO" log_part6.txt | head -100
+wc -l log_part6.txt
+```
+
+---
+
+## 📚 BIBLIOTECA DE BUGS CONHECIDOS (consultar ANTES de investigar bug novo)
+
+| # | Família | Sintoma típico | Causa raiz | Fix |
+|---|---|---|---|---|
+| **A** | crt0 truncado | Boot trava antes do main | `crt0` recompilado com instruções faltando | Disassembly + reescrita |
+| **B** | Boot stub sabotando | Boot pula main | `boot_stub` com JAL pra alvo errado | Trocar alvo do JAL |
+| **C** | `$v0=0` retorno | SEGV/comportamento errado | Recompilação setando `$v0` errado | Override do retorno |
+| **D** | Loop+stack overflow | PC trava, RAM cresce | Recursão sem base case em `func_100408` | Trava de iter + override |
+| **1, 6** | Sentinela não-inicializada | Loop infinito em função que percorre lista | `head.next/prev = 0` em vez de apontar pra si | Fix 1/6: escrever `head=head.next=head.prev` no boot_stub ANTES dos inits |
+| **F** | Alocador retorna 0 → corrompe consumidor | Bug 1/6 reaparece depois do fix | Alocador (ex: `13DA10`) lê pool vazio, devolve 0; consumidor escreve em `[0+offset]` que cai em região crítica | (em discussão PARTE 5) |
+| **2-5** | Inits do crt0 não rodados | Várias estruturas vazias após boot | Boot stub não chama todos 4 inits do crt0 | `kInitChain[]` no boot_stub |
+
+**Padrão dominante:** bugs **1, 6 e F** são todos da mesma família —
+"**estrutura global em BSS que depende de inicializador não-recompilado**".
+Quando aparecer um 7º caso parecido, suspeitar dessa família primeiro.
+
+---
+
+## 🟡 ESTADO PARTE 4.5 (mantido para histórico)
+
+### Status: câmera escondida instalada (Opção A escolhida pelo Agente Cris)
 
 **O que o teste real provou (log_fix6_part3.txt, 388 linhas):**
 - ✅ `[boot_stub] FIX 1: ...` e `[boot_stub] FIX 6: ...` apareceram ANTES dos inits

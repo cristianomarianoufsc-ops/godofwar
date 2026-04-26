@@ -357,6 +357,104 @@ entende o que ele acha que está fazendo, e decide o fix.
 
 ---
 
+#### 🆕 SESSÃO 2026-04-26 PARTE 5 — SABOTADOR IDENTIFICADO (`sub_0013DA10` retorna $v0=0)
+
+**O log da PARTE 5 (Agente Cris executou em 2026-04-26):**
+```
+[watch:SENTINEL_0x2cbbb0] #1 op=WRITE32 addr=0x2cbbb4 size=4 value=0x0 pc=0x13fb24 ra=0x13fb14
+[watch:SENTINEL_0x2cbbb0] #2 op=WRITE32 addr=0x2cbbb0 size=4 value=0x0 pc=0x13fb3c ra=0x13fde0  <<< CORRUPCAO PARA ZERO!
+```
+
+**Análise (linhas 162–222 de `GOD_PC_PORT_FINAL/src/recompiled/sub_0013FAB8_0x13fab8.cpp`):**
+
+O path `label_13fb08`/`label_13fb0c` (caminho de "lista vazia → inserir 1º elemento") faz:
+```
+label_13fb0c:
+  jal func_13DA10           ← chama alocador
+  lw $a0, 0x7910($v0)       ← (delay slot) $a0 = *(0x2c7910)
+  // No retorno: $v0 deveria ser ponteiro pra nó novo,
+  // mas RETORNA 0 → todos os stores em $v0 são inofensivos (escreve em [0])
+  sw $zero, 0x0($v0)        // *(0x000+0) = 0
+  sw $zero, 0x4($v0)        // *(0x000+4) = 0
+  sw $s1,   0x8($v0)        // *(0x000+8) = $s1
+  lw $v1,   0x4($s0)        // $v1 = *(0x2cbbb4) = 0x2cbbb0  (Fix 6 deixou prev=head)
+  sw $v0,   0x4($s0)        // *(0x2cbbb4) = $v0 = 0  ← MATA sentinela.prev (PC 0x13fb24)
+  sw $s0,   0x0($v0)        // *(0x000+0) = $s0
+  sw $v1,   0x4($v0)        // *(0x000+4) = $v1
+  ...
+  sw $v0,   0x0($v1)        // *(0x2cbbb0) = $v0 = 0  ← MATA sentinela.next (PC 0x13fb3c)
+```
+
+**Causa raiz definitiva (espionagem):** o agente do `13FAB8` vai até o
+almoxarifado `13DA10` pegar uma "ficha" para arquivar o prisioneiro (o
+elemento que ele acabou de receber via `$a0`). O almoxarifado está aberto,
+mas a sala está vazia (o pool de fichas em `[0x2c7910]` nunca foi inicializado).
+O atendente fantasma entrega `$v0 = 0`. O agente, sem checar, volta pro
+corredor e tenta encadernar a "ficha" no fichário (lista circular). Como
+não tem ficha real, ele acaba escrevendo zeros direto **no posto do vigia
+oficial** que o Fix 6 tinha deixado lá — destrói a placa, e a próxima
+chamada do `13FAB8` cai no loop infinito (sentinela=0).
+
+**Onde está a quebra real:**
+- `sub_0013DA10` (333 linhas) é um alocador real, mas depende de `$a0` =
+  ponteiro pra estrutura de pool. `$a0` vem de `*0x2c7910` (uma global em BSS).
+- Se `*0x2c7910 = 0` (nunca foi escrito), `sub_0013DA10` lê de endereço
+  inválido na linha `lw $v0, 0x10($s0)` (com `$s0=$a0=0`) → retorna 0.
+- O inicializador de `[0x2c7910]` é provavelmente um dos 4 JALs **NÃO
+  REGISTRADOS** detectados na PARTE 3: `0x283770`, `0x17acb8`, `0x138b10`,
+  `0x1838d0`. Investigar qual deles escreve em `[0x2c7910]`.
+
+**Três opções pra próxima sessão (PARTE 6) — aguardando decisão do Agente Cris:**
+
+**Opção 1 — Stub C++ pra `sub_0013DA10` (rápido, curativo, não-invasivo):**
+- Em `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp` ou similar, criar
+  um stub `sub_0013DA10` que devolve um buffer de pool real (ex: `malloc(0x10)`
+  inicializado com zeros). Resolve sintoma em ~5 linhas.
+- Risco: se o jogo usa o ponteiro retornado pra liberar/contar nós depois,
+  pode haver leaks ou bugs sutis.
+
+**Opção 2 — Achar o init que escreve em `[0x2c7910]` (causa raiz):**
+- Adicionar uma 3ª câmera (`PS2_GLOBAL_WATCH_3_ADDR = 0x002C7910u`) e
+  rodar de novo. Se NINGUÉM escrever, o init existe mas está sendo pulado
+  (provavelmente um dos 4 JALs não-registrados da PARTE 3).
+- Se alguém escrever, vamos ver quem é a "fábrica" do almoxarifado.
+- Demora mais 1 build de 80min, mas resolve a fundo.
+
+**Opção 3 — Blindar o `label_13fb0c` (curativo no chamador):**
+- Editar `sub_0013FAB8_0x13fab8.cpp` para checar `if ($v0 == 0) goto bypass`
+  depois do `jal 13DA10`, evitando a corrupção sem corrigir o alocador.
+- Mais rápido que Opção 1, mas só protege esse caller. Outros chamadores
+  de `13DA10` continuariam vulneráveis.
+
+**Recomendação do analista:** **Opção 2** primeiro (instalar 3ª câmera no
+`0x2c7910` enquanto o Agente Cris ainda tem o build em andamento). Se a
+câmera não pegar ninguém, **Opção 1** (stub) como fallback rápido enquanto
+investigamos os JALs perdidos.
+
+---
+
+#### 📚 BIBLIOTECA DE BUGS CONHECIDOS (atualizar a cada novo padrão descoberto)
+
+Catálogo de **padrões de bug** identificados até agora. Quando aparecer um
+bug novo, **antes de investigar do zero**, varrer essa lista pra ver se é
+parente de algum já resolvido.
+
+| # | Família | Sintoma típico | Causa raiz | Fix usado | Como detectar |
+|---|---|---|---|---|---|
+| **A** | crt0 truncado | Boot trava antes do `main` | Função `crt0` recompilada com instruções faltando | Disassembly manual + reescrita | Sem mensagem, freeze no início |
+| **B** | Boot stub sabotando | Boot pula `main` | `boot_stub` chamando função errada | Substituir alvo do JAL | Log para no boot, sem `[main]` |
+| **C** | `v0=0` em retorno de função | SEGV ou comportamento errado | Recompilação setando `$v0` errado em `jal` | Override do retorno | Trace mostra `$v0=0` onde devia ter ponteiro |
+| **D** | Loop infinito + stack overflow em `func_100408` | PC trava | Função recursiva sem base case | Trava de iteração + override | RAM cresce, PC trava, stack >1MB |
+| **1, 6** | **Sentinela de lista circular não inicializada** | Loop infinito em função que percorre lista | Estrutura `head` em BSS com `next/prev = 0` em vez de apontar pra si | Escrever `head.next = head.prev = head` no boot_stub ANTES dos inits | `READ32(sentinel) = 0` no log; loop `iter=Nx100000 s0=0x0` |
+| **F** | **Alocador retorna 0 → corrompe consumidor** | Bug 1/6 retorna depois do fix | Alocador (ex: `13DA10`) lê pool não-inicializado, devolve 0; consumidor escreve em `[0]` que cai em região crítica | (em discussão PARTE 5) | Watchpoint no endereço corrompido; PC do escritor cai dentro de função "que devia ser inocente" |
+| **2, 3, 4, 5** | Inits do crt0 não rodados | Várias estruturas vazias depois do boot | Boot stub não chama todos os 4 inits do `crt0` | Adicionar `kInitChain[]` no boot_stub | Várias funções travando logo após o boot |
+
+**Observação clave do analista:** os bugs **1, 6 e F** são todos da mesma
+família — "**estrutura global em BSS que depende de inicializador não-recompilado**".
+Quando aparecer um 7º caso parecido, primeiro suspeitar dessa família.
+
+---
+
 #### SESSÃO 2026-04-26 PARTE 3 — Fix 6 reposicionado + trava de segurança no 13FAB8
 
 **Problema descoberto após teste do user:** o Fix 6 (sentinela `0x2cbbb0`)
