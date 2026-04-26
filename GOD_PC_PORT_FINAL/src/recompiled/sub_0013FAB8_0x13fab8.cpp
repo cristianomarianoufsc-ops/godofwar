@@ -19,6 +19,7 @@ void sub_0013FAB8_0x13fab8(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
 
     ctx->pc = 0x13fab8u;
 
+    fprintf(stderr, "[13FAB8] ENTRADA a0=0x%x\n", GPR_U32(ctx,4)); fflush(stderr);
     // 0x13fab8: 0x27bdffd0  addiu       $sp, $sp, -0x30
     ctx->pc = 0x13fab8u;
     SET_GPR_S32(ctx, 29, (int32_t)ADD32(GPR_U32(ctx, 29), 4294967248));
@@ -40,6 +41,14 @@ void sub_0013FAB8_0x13fab8(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
     // 0x13fad0: 0x80882d  daddu       $s1, $a0, $zero
     ctx->pc = 0x13fad0u;
     SET_GPR_U64(ctx, 17, (uint64_t)GPR_U64(ctx, 4) + (uint64_t)GPR_U64(ctx, 0));
+    {
+        uint32_t sentinel_addr = ADD32(GPR_U32(ctx,5), 4294949808);
+        fprintf(stderr, "[13FAB8] sentinel_addr=0x%x READ32(sentinel)=0x%x (s0=0x%x)\n",
+            sentinel_addr, GPR_U32(ctx,16), GPR_U32(ctx,16));
+        fprintf(stderr, "[13FAB8] s1(a0)=0x%x, s1+4=0x%x\n",
+            GPR_U32(ctx,17), READ32(ADD32(GPR_U32(ctx,17), 4)));
+        fflush(stderr);
+    }
     // 0x13fad4: 0x1202000c  beq         $s0, $v0, . + 4 + (0xC << 2)
     ctx->pc = 0x13FAD4u;
     {
@@ -73,7 +82,17 @@ void sub_0013FAB8_0x13fab8(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         }
     }
     ctx->pc = 0x13FAE8u;
+    { static int loop_cnt_13fab8 = 0; loop_cnt_13fab8 = 0; }
 label_13fae8:
+    {
+        static int loop_cnt_13fab8 = 0;
+        loop_cnt_13fab8++;
+        if (loop_cnt_13fab8 <= 5 || loop_cnt_13fab8 % 100000 == 0) {
+            fprintf(stderr, "[13FAB8] loop iter=%d s0=0x%x s0+4=0x%x\n",
+                loop_cnt_13fab8, GPR_U32(ctx,16),
+                READ32(ADD32(GPR_U32(ctx,16), 4))); fflush(stderr);
+        }
+    }
     // 0x13fae8: 0x24a2bbb0  addiu       $v0, $a1, -0x4450
     ctx->pc = 0x13fae8u;
     SET_GPR_S32(ctx, 2, (int32_t)ADD32(GPR_U32(ctx, 5), 4294949808));

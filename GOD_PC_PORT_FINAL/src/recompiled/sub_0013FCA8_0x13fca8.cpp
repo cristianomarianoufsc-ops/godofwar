@@ -19,6 +19,8 @@ void sub_0013FCA8_0x13fca8(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
 
     ctx->pc = 0x13fca8u;
 
+    fprintf(stderr, "[13FCA8] ENTRADA a0=0x%x a1=0x%x a2=0x%x a3=0x%x\n",
+        GPR_U32(ctx,4), GPR_U32(ctx,5), GPR_U32(ctx,6), GPR_U32(ctx,7)); fflush(stderr);
     // 0x13fca8: 0x27bdff80  addiu       $sp, $sp, -0x80
     ctx->pc = 0x13fca8u;
     SET_GPR_S32(ctx, 29, (int32_t)ADD32(GPR_U32(ctx, 29), 4294967168));
@@ -66,6 +68,7 @@ void sub_0013FCA8_0x13fca8(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
             // 0x13fce0: 0xe0b02d  daddu       $s6, $a3, $zero (Delay Slot)
         SET_GPR_U64(ctx, 22, (uint64_t)GPR_U64(ctx, 7) + (uint64_t)GPR_U64(ctx, 0));
         ctx->in_delay_slot = false;
+    fprintf(stderr, "[13FCA8] JAL 13D630 a0=0x%x\n", GPR_U32(ctx,4)); fflush(stderr);
     ctx->pc = 0x13D630u;
     if (runtime->hasFunction(0x13D630u)) {
         auto targetFn = runtime->lookupFunction(0x13D630u);
@@ -79,6 +82,7 @@ void sub_0013FCA8_0x13fca8(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         if (ctx->pc == __entryPc) { ctx->pc = 0x13FCE4u; }
         if (ctx->pc != 0x13FCE4u) { return; }
     }
+    fprintf(stderr, "[13FCA8] 13D630 RETORNOU v0=0x%x (s1=v0)\n", GPR_U32(ctx,2)); fflush(stderr);
     ctx->pc = 0x13FCE4u;
     // 0x13fce4: 0x40882d  daddu       $s1, $v0, $zero
     ctx->pc = 0x13fce4u;
@@ -168,6 +172,7 @@ label_13fd18:
             // 0x13fd44: 0x3610ffc0  ori         $s0, $s0, 0xFFC0 (Delay Slot)
         SET_GPR_U64(ctx, 16, GPR_U64(ctx, 16) | (uint64_t)(uint16_t)65472);
         ctx->in_delay_slot = false;
+    fprintf(stderr, "[13FCA8] loop99 completo, JAL 13E090\n"); fflush(stderr);
     ctx->pc = 0x13E090u;
     if (runtime->hasFunction(0x13E090u)) {
         auto targetFn = runtime->lookupFunction(0x13E090u);
@@ -181,6 +186,7 @@ label_13fd18:
         if (ctx->pc == __entryPc) { ctx->pc = 0x13FD48u; }
         if (ctx->pc != 0x13FD48u) { return; }
     }
+    fprintf(stderr, "[13FCA8] 13E090 RETORNOU v0=0x%x\n", GPR_U32(ctx,2)); fflush(stderr);
     ctx->pc = 0x13FD48u;
     // 0x13fd48: 0x24060040  addiu       $a2, $zero, 0x40
     ctx->pc = 0x13fd48u;
@@ -196,6 +202,8 @@ label_13fd18:
             // 0x13fd54: 0x40202d  daddu       $a0, $v0, $zero (Delay Slot)
         SET_GPR_U64(ctx, 4, (uint64_t)GPR_U64(ctx, 2) + (uint64_t)GPR_U64(ctx, 0));
         ctx->in_delay_slot = false;
+    fprintf(stderr, "[13FCA8] JAL 13DC78 a0=v0=0x%x a1=0x%x a2=0x%x\n",
+        GPR_U32(ctx,4), GPR_U32(ctx,5), GPR_U32(ctx,6)); fflush(stderr);
     ctx->pc = 0x13DC78u;
     if (runtime->hasFunction(0x13DC78u)) {
         auto targetFn = runtime->lookupFunction(0x13DC78u);
@@ -236,6 +244,8 @@ label_13fd18:
             // 0x13fd74: 0xae220000  sw          $v0, 0x0($s1) (Delay Slot)
         WRITE32(ADD32(GPR_U32(ctx, 17), 0), GPR_U32(ctx, 2));
         ctx->in_delay_slot = false;
+    fprintf(stderr, "[13FCA8] 13DC78 OK, JAL 23AAB0 a0=0x%x a1=0x%x\n",
+        GPR_U32(ctx,4), GPR_U32(ctx,5)); fflush(stderr);
     ctx->pc = 0x23AAB0u;
     if (runtime->hasFunction(0x23AAB0u)) {
         auto targetFn = runtime->lookupFunction(0x23AAB0u);
@@ -306,6 +316,7 @@ label_13fd18:
             // 0x13fdbc: 0xae200668  sw          $zero, 0x668($s1) (Delay Slot)
         WRITE32(ADD32(GPR_U32(ctx, 17), 1640), GPR_U32(ctx, 0));
         ctx->in_delay_slot = false;
+    fprintf(stderr, "[13FCA8] 23AAB0 OK, JAL 23AB28 a0=0x%x\n", GPR_U32(ctx,4)); fflush(stderr);
     ctx->pc = 0x23AB28u;
     if (runtime->hasFunction(0x23AB28u)) {
         auto targetFn = runtime->lookupFunction(0x23AB28u);
@@ -319,6 +330,7 @@ label_13fd18:
         if (ctx->pc == __entryPc) { ctx->pc = 0x13FDC0u; }
         if (ctx->pc != 0x13FDC0u) { return; }
     }
+    fprintf(stderr, "[13FCA8] 23AB28 OK, JAL 13D630#2 a0=0x10\n"); fflush(stderr);
     ctx->pc = 0x13FDC0u;
     // 0x13fdc0: 0xc04f58c  jal         func_13D630
     ctx->pc = 0x13FDC0u;
@@ -354,6 +366,7 @@ label_13fd18:
     // 0x13fdd4: 0xac56000c  sw          $s6, 0xC($v0)
     ctx->pc = 0x13fdd4u;
     WRITE32(ADD32(GPR_U32(ctx, 2), 12), GPR_U32(ctx, 22));
+    fprintf(stderr, "[13FCA8] 13D630#2 OK, JAL 13FAB8 a0=v0=0x%x\n", GPR_U32(ctx,4)); fflush(stderr);
     // 0x13fdd8: 0xc04feae  jal         func_13FAB8
     ctx->pc = 0x13FDD8u;
     SET_GPR_U32(ctx, 31, 0x13FDE0u);
@@ -375,6 +388,7 @@ label_13fd18:
         if (ctx->pc == __entryPc) { ctx->pc = 0x13FDE0u; }
         if (ctx->pc != 0x13FDE0u) { return; }
     }
+    fprintf(stderr, "[13FCA8] 13FAB8 OK → SAINDO de sub_0013FCA8 v0=s1=0x%x\n", GPR_U32(ctx,17)); fflush(stderr);
     ctx->pc = 0x13FDE0u;
     // 0x13fde0: 0x220102d  daddu       $v0, $s1, $zero
     ctx->pc = 0x13fde0u;
