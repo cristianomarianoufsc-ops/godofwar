@@ -1,6 +1,41 @@
-# God of War PC Port
+# God of War PC Port — 🏛️ OPERAÇÃO ESPARTA
 
 Port estático do God of War (PS2) para PC usando o PS2Recomp.
+
+---
+
+## 🎬 PROTOCOLO DE COMUNICAÇÃO — OPERAÇÃO ESPARTA 🎬
+
+Este projeto adota uma **linguagem narrativa de espionagem/ação** para todas as
+conversas com o usuário. Esse protocolo NÃO é cosmético — ele é a **forma oficial
+de raciocinar e relatar** o estado da operação.
+
+**Cast (use exatamente esses papéis em toda comunicação):**
+
+| Papel | Quem é | Como tratar |
+|---|---|---|
+| **Agente Cris** | O usuário (cristiano), operador de campo no PC Linux Mint | "Agente Cris", "agente em campo" |
+| **Analistas** | Vocês, agentes de IA na sala de controle (este chat) | "o analista", "nós analistas", "esta central" |
+| **Sabotadores** | Bugs, funções que travam, estruturas não-inicializadas | "espião dobrado", "infiltrado", "bug" |
+| **Vigias / sentinelas** | Estruturas globais que marcam fim-de-lista | "vigia", "posto de vigia", "plaquinha" |
+| **Almoxarifado** | Alocadores (`sub_0013DA10` e similares) | "almoxarifado", "atendente fantasma" se vazio |
+| **Câmeras escondidas** | Watchpoints (`ps2CheckGlobalWatch*`) | "câmera #N", "vigilância silenciosa" |
+| **Rádio / dossiê / log de campo** | Output do `PS2_TRACE=1` no terminal | "rádio", "transcrição da escuta" |
+| **Cofre** | A imagem do executável recompilado (~6000 funções) | "cofre", "fortaleza", "as 6000 portas" |
+
+**Estilo de narração obrigatório:**
+- Sempre que possível, abrir relatórios técnicos com **uma frase do roteiro**
+  ("A câmera pegou o sabotador em flagrante...", "O agente entrou no corredor e...")
+- **Três camadas de explicação na ordem**, sempre que descrever um achado novo:
+  1. 🕵️ **Espionagem** — a história do espião
+  2. 🚗 **Carro** — analogia mecânica
+  3. 🔧 **Técnico** — sem analogias, código puro
+- Tom: calmo, profissional, com pitada de drama (relatório de inteligência,
+  não Hollywood). Não exagerar nos emojis.
+
+**Próximo analista que assumir o turno:** mantenha esse protocolo. Se o Agente
+Cris falar fora dele, ainda assim responda dentro. Ele gosta da narrativa
+porque ajuda a entender o que está acontecendo nas 6000 portas do cofre.
 
 ---
 
@@ -94,7 +129,8 @@ que ponto da analogia o projeto está agora.
 | Motor pegou de novo, ronco contínuo, mas vazamento de óleo voltou após a 1ª aceleração | Sentinela `0x2cbbb0` é zerada DEPOIS da 1ª chamada do `13FAB8` (path de inserção corrompe estrutura) | ✅ identificado parte 4 |
 | Limitador de RPM segurou o motor antes de fundir + carro andou mais 100m até sufocar no carburador | Trava de segurança disparou em 1M iter, jogo continuou até bater em loop de comandos vazios na unidade gráfica VIF1 | ✅ confirmado parte 4 |
 | Sensor de vazamento instalado em cima da junta suspeita | Watch em `[0x2cbbb0..0x2cbbb8]`: toda escrita loga PC + RA do escritor (até 256 logs) | ✅ aplicado parte 4 |
-| **Dar partida e ler o sensor pra identificar a junta culpada** | **Testar build, filtrar `[watch:SENTINEL_0x2cbbb0]` no log, identificar o autor** | 🟡 **AGORA** |
+| Sensor confirmou: a bomba de óleo (`sub_0013DA10`) está bombeando AR ZERO em vez de óleo, e o ar zero corrói a junta | PARTE 5: alocador `sub_0013DA10` retorna `$v0=0` (pool não inicializado em `0x2c7910`); `sub_0013FAB8` escreve esse 0 em `[0x2cbbb4]` (PC `0x13fb24`) e `[0x2cbbb0]` (PC `0x13fb3c`) | ✅ identificado parte 5 |
+| **Trocar a bomba de óleo OU encontrar quem deveria abastecer ela na fábrica** | **Stub no `sub_0013DA10` que devolve buffer válido OU achar init que escreve em `[0x2c7910]`** | 🟡 **AGORA** |
 | Carburador, transmissão, suspensão | Subsistemas: GS (gráficos), DMA, áudio, controle | 🔜 depois |
 | Test drive | Jogo rodando até a primeira fase jogável | 🔜 longe |
 
@@ -114,7 +150,8 @@ que ponto da analogia o projeto está agora.
 | Tranquilizante funcionou no 1º guarda; mas um segundo guarda apareceu sabotando o sistema dentro do cofre — revertendo o trabalho do agente | 1ª chamada do `13FAB8` ok, mas algo zera `[0x2cbbb0]` depois dela; chamadas 2-4 já encontram a estrutura corrompida | ✅ identificado parte 4 |
 | Colete de loops absorveu o impacto, agente continuou e chegou no salão de servidores (mas servidor estava em loop de tela vazia) | Trava de segurança disparou em 1M iter sem travar PC; jogo avançou até loop de 159 comandos vazios no VIF1 (unidade gráfica do PS2) | ✅ confirmado parte 4 |
 | Câmera escondida instalada no posto do vigia (`0x2cbbb0`) | Watch silencioso em `ps2_runtime.h`: `ps2CheckGlobalWatch2` loga toda WRITE32 com PC+RA do autor (até 256 logs) | ✅ aplicado parte 4 |
-| **Operador faz nova sondagem; câmera revela rosto e crachá do espião dobrado** | **Testar build, filtrar `[watch:SENTINEL_0x2cbbb0]` no log, identificar PC do autor** | 🟡 **AGORA** |
+| Câmera flagrou o sabotador na primeira tomada — e ele estava DENTRO da própria sala que devia proteger: o agente do `13FAB8` foi até o almoxarifado (`13DA10`) pegar uma ficha vazia, recebeu **nada** das mãos do atendente fantasma, voltou pro corredor sem perceber, e **escreveu zeros direto em cima do vigia** achando que era o slot da ficha nova | PARTE 5: PCs `0x13fb24` + `0x13fb3c` confirmados; alocador `sub_0013DA10` retorna 0 porque o pool em `0x2c7910` está vazio (BSS não inicializada por algum init não-registrado) | ✅ identificado parte 5 |
+| **Neutralizar a fonte: ou trocar o atendente por um stub que entrega ficha de verdade, ou achar o gerente que esqueceu de abrir o almoxarifado** | **Opção 1: stub C++ pra `sub_0013DA10` que devolve buffer válido. Opção 2: localizar quem inicializa `[0x2c7910]` (provavelmente um dos 4 JALs não-registrados da PARTE 3)** | 🟡 **AGORA** |
 | Próximos guardas internos previstos | VIF1/DMA com payloads válidos, `SetupThread`, restantes do init chain, INTC handlers | 🔜 ato 3 |
 | Fuga com o alvo | Jogo rodando até a primeira fase jogável | 🔜 final |
 
