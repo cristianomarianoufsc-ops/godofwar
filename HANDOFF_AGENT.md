@@ -23,27 +23,32 @@ precisar entender MIPS/syscalls/boot stub. **Tabela completa fica em
 `replit.md` na seção "📖 ANALOGIAS DO PROJETO" — fonte da verdade.**
 Aqui só o resumo do ponto atual; mantenha sincronizado.
 
-**Carro:** chassi/combustível/injeção/chave de ignição prontos, motor
-deu a 1ª partida e ronca (Fix 4+5 confirmados — janela abriu, GS recebeu
-comandos), engasgou na 1ª marcha por mangueira solta (lista circular #2),
-mecânico tentou apertar a braçadeira mas instalou no compartimento errado
-(Fix 6 ficou DEPOIS dos inits, não rodava) → 🟡 **AGORA PARTE 3:
-braçadeira reposicionada antes da chave de ignição + chave de torque
-limite instalada (trava de segurança no `13FAB8` evita travar o PC se
-algo der errado). Aguardando próxima partida.** Depois: carburador
-(gráficos/áudio/DMA) e test drive.
+**Carro:** chassi/combustível/injeção/chave de ignição prontos; motor deu
+1ª partida (Fix 4+5); engasgou na 1ª marcha (lista circular #2); braçadeira
+foi instalada no lugar errado (Fix 6 depois dos inits, parte 2); braçadeira
+reposicionada certa + limitador de RPM instalado (parte 3). Teste real
+PROVOU que limitador funciona: motor pegou de novo, andou um pouco mas
+voltou a vazar óleo na 1ª aceleração (`[0x2cbbb0]` zera depois da 1ª uso),
+limitador segurou antes de fundir, carro ainda andou mais 100m até sufocar
+no carburador (loop de 159 comandos vazios na unidade gráfica VIF1) →
+🟡 **AGORA PARTE 4: achar a junta que está vazando óleo (quem escreve 0
+em `0x2cbbb0`)**. Depois: carburador (VIF1/DMA), suspensão (INTC handlers),
+test drive.
 
 **Espionagem:** recrutamento, recon, entrada, sabotagem descoberta, porta
-certa identificada (Fix 5), cofre ABERTO (Fix 4+5 confirmados), 1º guarda
-interno detectado (lista circular #2 zerada em `0x2cbbb0`), agente colocou
-o tranquilizante na arma — mas na arma errada (Fix 6 estava no kit que
-não chega no corredor onde o guarda aparece) → 🟡 **AGORA PARTE 3:
-agente recolocou o tranquilizante na arma certa (Fix 1+6 movidos pra
-ANTES dos inits) e vestiu colete à prova de loops (trava de 1M iterações
-no `sub_0013FAB8` impede o PC do operador de travar se algum guarda novo
-aparecer no futuro). Aguardando nova sondagem.** Depois: outros guardas
-internos previstos (`SetupThread`, restantes do init chain) e fuga com
-o alvo (jogo rodando).
+certa (Fix 5), cofre ABERTO (Fix 4+5), 1º guarda interno detectado
+(`0x2cbbb0`), tranquilizante reposicionado na arma certa + colete à prova
+de loops vestido (parte 3). Sondagem real CONFIRMOU: tranquilizante
+funcionou no 1º guarda; mas um SEGUNDO guarda (espião dobrado dentro da
+equipe) sabotou o sistema, revertendo o trabalho — chamadas seguintes
+do `13FAB8` encontram a estrutura corrompida; colete absorveu o impacto
+(trava de segurança disparou em 1M iter, PC do operador NÃO travou),
+agente continuou e chegou no salão de servidores, mas servidor estava em
+loop de tela vazia (159 comandos `vif1:cmd` zerados) → 🟡 **AGORA PARTE 4:
+identificar quem é o sabotador interno — quem escreve 0 em `[0x2cbbb0]`
+depois da 1ª chamada bem-sucedida**. Suspeitos: `label_13fb08` no próprio
+`sub_0013FAB8` (path de inserção) ou `sub_0013DA10` (chamada de lá).
+Depois: VIF1/DMA, INTC handlers, fuga com o alvo (jogo rodando).
 
 > Estilo de narração padrão no chat com o usuário = **espionagem/ação**.
 > Use frases como "abrir o cofre", "alarme disparou", "guarda interno",
@@ -51,7 +56,72 @@ o alvo (jogo rodando).
 
 ---
 
-## 🔴 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-26 PARTE 3, sessão fix-6-reposicionado)
+## 🔴 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-26 PARTE 4, validação + sabotador detectado)
+
+### Status: PARTE 3 VALIDADA EM PRODUÇÃO — bug mais profundo descoberto
+
+**O que o teste real provou (log_fix6_part3.txt, 388 linhas):**
+- ✅ `[boot_stub] FIX 1: ...` e `[boot_stub] FIX 6: ...` apareceram ANTES dos inits
+- ✅ 1ª chamada `13FAB8`: `READ32(sentinel)=0x2cbbb0` → saiu rápido (path "lista vazia")
+- ✅ `13FCA8`, `13FB48`, `182F68`, `182E88`, `140578` rodaram pela primeira vez
+- ✅ Trava de segurança disparou em 1M iter, PC do user NÃO travou:
+  ```
+  [13FAB8] !!! TRAVA DE SEGURANCA DISPARADA !!!
+  [13FAB8] *0x2cbbb0 = 0x0 (esperado: 0x2cbbb0 para lista vazia)
+  [13FAB8] forcando saida via path 'lista vazia' (label_13fb08)
+  ```
+- ✅ Programa terminou normalmente (volta pro prompt)
+- 🟡 Após trava, jogo avançou e travou em loop de **159 `[vif1:cmd]` vazios**
+  (VIF1 = pipeline gráfica do PS2 lendo DMA stream zerada)
+
+**Bug F descoberto:** algo zera `[0x2cbbb0]` DEPOIS da 1ª chamada bem-sucedida
+do `13FAB8`. As chamadas 2ª, 3ª e 4ª já encontram a sentinela em `0x0`.
+
+| # | a0 | sentinela | s1+4 | resultado |
+|---|---|---|---|---|
+| 1 | 0x4159c8 | 0x2cbbb0 ✓ | 0x1 | OK (insere via label_13fb08) |
+| 2 | 0x416488 | 0x0 ❌ | 0x1 | sai sem loop (sorte) |
+| 3 | 0x416f48 | 0x0 ❌ | 0x0 | sai sem loop (sorte) |
+| 4 | 0x417a08 | 0x0 ❌ | 0x2 | LOOP → trava disparou em 1M |
+
+**Suspeitos do sabotador:**
+1. `label_13fb08` (path de inserção do próprio `13FAB8`) — carrega `$v0=0x2c0000`
+   e usa como base; algum store offset pode cair em `0x2cbbb0`
+2. `sub_0013DA10` (chamada por `label_13fb0c`) — alocador suspeito
+3. Layout de BSS errado — `0x2cbbb0` faz parte de struct maior sobrescrita
+
+### Próxima investigação proposta (NÃO APLICADA AINDA, aguardando user decidir)
+
+**Opção A — investigar a corrupção (resolver causa raiz):**
+- Adicionar WATCH em `[0x2cbbb0]` no runtime (toda WRITE32 nesse endereço
+  loga PC + RA), identifica o autor da corrupção em segundos
+- Ler `sub_0013FAB8_0x13fab8.cpp` (path label_13fb08) e `sub_0013DA10_0x13da10.cpp`
+
+**Opção B — pular pra VIF1/DMA (próximo bloqueador):**
+- A trava de segurança já protege o sintoma. Avançar pra entender por que
+  o VIF1 está recebendo 159 comandos zerados em loop.
+- Procurar quem chama `vif1:cmd` no runtime, ver se é DMA empty ou stream
+  sem terminator.
+
+**Opção C — registrar handlers INTC pulados (`[INTC:skip]` no log):**
+- `cause=2 handler=0x182f28` aparece muitas vezes — handler de interrupção
+  de timer/VBlank? Pode estar relacionado ao loop VIF1.
+
+### Comando para testar (mesma sequência das partes anteriores)
+
+```bash
+cd ~/Documentos/GitHub/godofwar
+git pull origin main
+bash build.sh
+PS2_TRACE=1 ./build/GodOfWarPCPort GOD_PC_PORT_FINAL/data/SCUS_973.99 2>&1 | tee log_fix6_part4.txt
+grep -E "FIX|13FAB8|init concluido|2996b0|frame:upload|nonBlack|ExitThread|TRAVA|SEGV|crash|panic|WATCH" log_fix6_part4.txt | head -200
+wc -l log_fix6_part4.txt
+tail -50 log_fix6_part4.txt
+```
+
+---
+
+## 🔴 ESTADO PARTE 3 (mantido para histórico)
 
 ### Status: Fix 6 reposicionado para ANTES dos inits + trava de segurança em sub_0013FAB8
 

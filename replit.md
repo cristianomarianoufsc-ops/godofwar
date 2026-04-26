@@ -91,7 +91,9 @@ que ponto da analogia o projeto está agora.
 | Mangueira solta engasgou na 1ª marcha | Lista circular #2 em `0x2cbbb0` zerada → loop infinito em `sub_0013FAB8` | ✅ identificado |
 | Apertou a braçadeira mas no local errado | Fix 6 instalado **depois** dos inits, não chegava a rodar (galinha-e-ovo) | ✅ identificado parte 3 |
 | Reposicionou a braçadeira **antes** dos inits + chave de torque limite | Fix 1+6 movidos pra antes do init chain + trava de segurança no `sub_0013FAB8` | ✅ aplicado parte 3 |
-| **Dar nova partida e ver se motor mantém marcha** | **Testar build com Fix 6 reposicionado e analisar log** | 🟡 **AGORA** |
+| Motor pegou de novo, ronco contínuo, mas vazamento de óleo voltou após a 1ª aceleração | Sentinela `0x2cbbb0` é zerada DEPOIS da 1ª chamada do `13FAB8` (path de inserção corrompe estrutura) | ✅ identificado parte 4 |
+| Limitador de RPM segurou o motor antes de fundir + carro andou mais 100m até sufocar no carburador | Trava de segurança disparou em 1M iter, jogo continuou até bater em loop de comandos vazios na unidade gráfica VIF1 | ✅ confirmado parte 4 |
+| **Achar a junta que está vazando óleo** | **Investigar quem escreve 0 em `0x2cbbb0` (provável: `label_13fb08` ou `sub_0013DA10`)** | 🟡 **AGORA** |
 | Carburador, transmissão, suspensão | Subsistemas: GS (gráficos), DMA, áudio, controle | 🔜 depois |
 | Test drive | Jogo rodando até a primeira fase jogável | 🔜 longe |
 
@@ -108,8 +110,10 @@ que ponto da analogia o projeto está agora.
 | 1º guarda interno apareceu (mesmo perfil de outro neutralizado) | Lista circular #2 (`0x2cbbb0`) zerada — bug irmão da do Fix 1 (`0x2cf090`), trava `sub_0013FAB8` | ✅ identificado |
 | Tranquilizante foi colocado na arma errada | Fix 6 instalado **depois** dos inits, mas guarda aparece **durante** os inits — dose nunca chegou a ser disparada | ✅ identificado parte 3 |
 | Reposicionou o tranquilizante na arma certa + colete à prova de loops | Fix 1+6 movidos pra antes do init chain + trava de 1M iterações no `sub_0013FAB8` | ✅ aplicado parte 3 |
-| **Sondar de novo o corredor — guarda caiu agora?** | **Testar build com Fix 6 reposicionado e analisar log** | 🟡 **AGORA** |
-| Próximos guardas internos previstos | Restantes do init chain (`sub_00138D48` JALs 6-11), `func_2996a8`, `func_293840`, `SetupThread`, GS rendering | 🔜 ato 3 |
+| Tranquilizante funcionou no 1º guarda; mas um segundo guarda apareceu sabotando o sistema dentro do cofre — revertendo o trabalho do agente | 1ª chamada do `13FAB8` ok, mas algo zera `[0x2cbbb0]` depois dela; chamadas 2-4 já encontram a estrutura corrompida | ✅ identificado parte 4 |
+| Colete de loops absorveu o impacto, agente continuou e chegou no salão de servidores (mas servidor estava em loop de tela vazia) | Trava de segurança disparou em 1M iter sem travar PC; jogo avançou até loop de 159 comandos vazios no VIF1 (unidade gráfica do PS2) | ✅ confirmado parte 4 |
+| **Identificar quem é o sabotador interno (espião dobrado dentro da equipe?)** | **Investigar quem escreve 0 em `0x2cbbb0` (provável: `label_13fb08` ou `sub_0013DA10`)** | 🟡 **AGORA** |
+| Próximos guardas internos previstos | VIF1/DMA com payloads válidos, `SetupThread`, restantes do init chain, INTC handlers | 🔜 ato 3 |
 | Fuga com o alvo | Jogo rodando até a primeira fase jogável | 🔜 final |
 
 ### Como atualizar as analogias
@@ -234,7 +238,60 @@ Isso re-avalia o GLOB sem perder os `.o` já compilados.
 
 ### 🔬 Estado da investigação (boot loop / segfault)
 
-#### 🆕 SESSÃO 2026-04-26 PARTE 3 — Fix 6 reposicionado + trava de segurança no 13FAB8
+#### 🆕 SESSÃO 2026-04-26 PARTE 4 — TRAVA DE SEGURANÇA VALIDADA + sabotador interno detectado
+
+**Status:** PARTE 3 (Fix 1+6 reposicionados + trava de segurança) **CONFIRMADA
+EM PRODUÇÃO**. Tudo funcionou. Mas o teste revelou um bug mais profundo:
+algo está zerando a sentinela `[0x2cbbb0]` DEPOIS da 1ª chamada do `13FAB8`.
+
+**Evidências do log do user (2026-04-26 PARTE 4, 388 linhas, log_fix6_part3.txt):**
+- ✅ `[boot_stub] FIX 1: sentinel lista circular #1 inicializado em 0x2cf090` — antes dos inits
+- ✅ `[boot_stub] FIX 6: sentinel lista circular #2 inicializado em 0x2cbbb0` — antes dos inits
+- ✅ 1ª chamada `13FAB8`: `READ32(sentinel)=0x2cbbb0` (boa) → saiu rápido pela path "lista vazia"
+- ✅ `13FCA8` retornou normalmente, `13FB48`, `182F68`, `182E88`, `140578` rodaram
+- ❌ 2ª chamada `13FAB8` (`a0=0x416488`): `READ32(sentinel)=0x0` (zerada!)
+- ❌ 3ª chamada `13FAB8` (`a0=0x416f48`): `READ32(sentinel)=0x0`
+- ❌ 4ª chamada `13FAB8` (`a0=0x417a08`): `READ32(sentinel)=0x0` + `s1+4=0x2` → entrou em loop
+- ✅ **Trava de segurança disparou em 1M iterações:**
+  ```
+  [13FAB8] !!! TRAVA DE SEGURANCA DISPARADA !!!
+  [13FAB8] loop excedeu 1M iter — sentinela em 0x2cbbb0 nao inicializada?
+  [13FAB8] *0x2cbbb0 = 0x0 (esperado: 0x2cbbb0 para lista vazia)
+  [13FAB8] forcando saida via path 'lista vazia' (label_13fb08)
+  ```
+- ✅ PC do user **NÃO travou** — programa continuou e voltou pro prompt normalmente
+- 🟡 Após a trava, jogo avançou até nova cena: 159 linhas seguidas de
+  `[vif1:cmd] idx=N opcode=0x0 imm=0x0 num=0 irq=0` (VIF1 = Vector Interface
+  Unit 1 do PS2, parte da pipeline gráfica). Comandos zerados sugerem
+  buffer DMA sendo lido vazio em loop ou stream sem terminator.
+
+**Diagnóstico do sabotador (Bug F):**
+
+A 1ª chamada do `13FAB8` é a única em que sentinela=0x2cbbb0 (saúde inicial).
+Ela pega o path "lista vazia" e executa `label_13fb08` → `label_13fb0c`,
+que faz `jal sub_0013DA10` (provavelmente "alocar nó / inicializar block").
+Depois disso a sentinela está zerada.
+
+**Suspeitos:**
+1. **`label_13fb08` no próprio `sub_0013FAB8`**: o código de inserção carrega
+   `$v0 = 44 << 16 = 0x2c0000` e usa como base. Se um store offset cair em
+   `0x2cbbb0`, sobrescreve a sentinela.
+2. **`sub_0013DA10`**: chamada do path de inserção. Pode ser um alocador
+   que escreve em região global e por engano atinge `0x2cbbb0`.
+3. **Layout da BSS errado**: `0x2cbbb0` pode ser parte de uma estrutura
+   maior que está sendo sobrescrita por outro init.
+
+**Próxima investigação proposta (não aplicada ainda — aguardando user):**
+- Ler o código do path `label_13fb08` em `sub_0013FAB8_0x13fab8.cpp`
+- Ler `sub_0013DA10_0x13da10.cpp`
+- Adicionar um WATCH em `[0x2cbbb0]` no runtime: log de toda WRITE32 nesse
+  endereço, com PC + RA — isso identifica o autor da corrupção em segundos
+- Possível terceira opção: ignorar a corrupção (a trava de segurança já
+  resolve o sintoma) e pular pra investigar VIF1/DMA
+
+---
+
+#### SESSÃO 2026-04-26 PARTE 3 — Fix 6 reposicionado + trava de segurança no 13FAB8
 
 **Problema descoberto após teste do user:** o Fix 6 (sentinela `0x2cbbb0`)
 estava sintaticamente correto mas posicionado **depois** das chamadas dos

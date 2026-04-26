@@ -1,0 +1,109 @@
+cristiano@cristiano:~/Documentos/GitHub/godofwar$ git pull
+remote: Enumerating objects: 6, done.
+remote: Counting objects: 100% (6/6), done.
+remote: Compressing objects: 100% (2/2), done.
+remote: Total 4 (delta 2), reused 4 (delta 2), pack-reused 0 (from 0)
+Unpacking objects: 100% (4/4), 5.24 KiB | 282.00 KiB/s, done.
+From https://github.com/cristianomarianoufsc-ops/godofwar
+   7ba5bba..f479db5  main       -> origin/main
+Updating 7ba5bba..f479db5
+Fast-forward
+ ...ntos-GitHub-godofwar-cd-Docum_1777219505159.txt | 816 ++++++++++++++++++++
+ 1 file changed, 816 insertions(+)
+ create mode 100644 attached_assets/Pasted-cristiano-cristiano-Documentos-GitHub-godofwar-cd-Docum_1777219505159.txt
+cristiano@cristiano:~/Documentos/GitHub/godofwar$ cd ~/Documentos/GitHub/godofwar
+grep -E "FIX 1|FIX 6|13FAB8|init concluido|2996b0|frame:upload|nonBlack|ExitThread|TRAVA|SEGV|Segmentation|crash|panic" log_fix6_part3.txt | head -200
+echo "---"
+wc -l log_fix6_part3.txt
+echo "--- ULTIMAS 50 LINHAS ---"
+tail -50 log_fix6_part3.txt
+[boot_stub] FIX 1: sentinel lista circular #1 inicializado em 0x2cf090 -> lista vazia, sub_00100408 retornara imediatamente
+[boot_stub] FIX 6: sentinel lista circular #2 inicializado em 0x2cbbb0 -> lista vazia, sub_0013FAB8 nao loopa
+[13FCA8] 13D630#2 OK, JAL 13FAB8 a0=v0=0x4159c8
+[13FAB8] ENTRADA a0=0x4159c8
+[13FAB8] sentinel_addr=0x2cbbb0 READ32(sentinel)=0x2cbbb0 (s0=0x2cbbb0)
+[13FAB8] s1(a0)=0x4159c8, s1+4=0x1
+[13FCA8] 13FAB8 OK → SAINDO de sub_0013FCA8 v0=s1=0x35c338
+[13FAB8] ENTRADA a0=0x416488
+[13FAB8] sentinel_addr=0x2cbbb0 READ32(sentinel)=0x0 (s0=0x0)
+[13FAB8] s1(a0)=0x416488, s1+4=0x1
+[13FAB8] ENTRADA a0=0x416f48
+[13FAB8] sentinel_addr=0x2cbbb0 READ32(sentinel)=0x0 (s0=0x0)
+[13FAB8] s1(a0)=0x416f48, s1+4=0x0
+[13FAB8] ENTRADA a0=0x417a08
+[13FAB8] sentinel_addr=0x2cbbb0 READ32(sentinel)=0x0 (s0=0x0)
+[13FAB8] s1(a0)=0x417a08, s1+4=0x2
+[13FAB8] loop iter=1 s0=0x0 s0+4=0x0
+[13FAB8] loop iter=2 s0=0x0 s0+4=0x0
+[13FAB8] loop iter=3 s0=0x0 s0+4=0x0
+[13FAB8] loop iter=4 s0=0x0 s0+4=0x0
+[13FAB8] loop iter=5 s0=0x0 s0+4=0x0
+[13FAB8] loop iter=100000 s0=0x0 s0+4=0x0
+[13FAB8] loop iter=200000 s0=0x0 s0+4=0x0
+[13FAB8] loop iter=300000 s0=0x0 s0+4=0x0
+[13FAB8] loop iter=400000 s0=0x0 s0+4=0x0
+[13FAB8] loop iter=500000 s0=0x0 s0+4=0x0
+[13FAB8] loop iter=600000 s0=0x0 s0+4=0x0
+[13FAB8] loop iter=700000 s0=0x0 s0+4=0x0
+[13FAB8] loop iter=800000 s0=0x0 s0+4=0x0
+[13FAB8] loop iter=900000 s0=0x0 s0+4=0x0
+[13FAB8] loop iter=1000000 s0=0x0 s0+4=0x0
+[13FAB8] !!! TRAVA DE SEGURANCA DISPARADA !!!
+[13FAB8] loop excedeu 1M iter — sentinela em 0x2cbbb0 nao inicializada?
+[13FAB8] *0x2cbbb0 = 0x0 (esperado: 0x2cbbb0 para lista vazia)
+[13FAB8] verificar se Fix 6 do boot_stub esta ativo
+[13FAB8] forcando saida via path 'lista vazia' (label_13fb08)
+---
+388 log_fix6_part3.txt
+--- ULTIMAS 50 LINHAS ---
+[vif1:cmd] idx=110 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=111 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=112 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=113 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=114 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=115 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=116 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=117 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=118 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=119 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=120 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=121 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=122 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=123 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=124 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=125 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=126 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=127 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=128 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=129 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=130 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=131 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=132 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=133 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=134 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=135 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=136 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=137 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=138 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=139 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=140 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=141 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=142 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=143 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=144 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=145 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=146 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=147 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=148 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=149 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=150 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=151 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=152 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=153 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=154 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=155 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=156 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=157 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=158 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=159 opcode=0x0 imm=0x0 num=0 irq=0
+cristiano@cristiano:~/Documentos/GitHub/godofwar$ 
