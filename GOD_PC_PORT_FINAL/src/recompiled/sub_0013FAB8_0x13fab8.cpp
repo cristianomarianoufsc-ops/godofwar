@@ -92,6 +92,28 @@ label_13fae8:
                 loop_cnt_13fab8, GPR_U32(ctx,16),
                 READ32(ADD32(GPR_U32(ctx,16), 4))); fflush(stderr);
         }
+        // -----------------------------------------------------------------
+        // TRAVA DE SEGURANCA (2026-04-26 PARTE 3)
+        // -----------------------------------------------------------------
+        // Se o loop passar de 1 milhao de iteracoes, e provavel que a
+        // sentinela em 0x2cbbb0 nao esteja inicializada (Fix 6 do boot stub
+        // foi pulado, ordem errada, ou um codepath novo escreveu zero ali).
+        // Em vez de travar o PC do usuario indefinidamente, abortamos a
+        // funcao e seguimos como se a lista estivesse vazia (goto path de
+        // insercao no inicio). Isso pode causar bugs sutis depois, mas
+        // permite ver no log onde o problema realmente esta.
+        if (loop_cnt_13fab8 > 1000000) {
+            fprintf(stderr, "\n[13FAB8] !!! TRAVA DE SEGURANCA DISPARADA !!!\n");
+            fprintf(stderr, "[13FAB8] loop excedeu 1M iter — sentinela em 0x2cbbb0 nao inicializada?\n");
+            fprintf(stderr, "[13FAB8] *0x2cbbb0 = 0x%x (esperado: 0x2cbbb0 para lista vazia)\n",
+                    READ32(0x2cbbb0));
+            fprintf(stderr, "[13FAB8] verificar se Fix 6 do boot_stub esta ativo\n");
+            fprintf(stderr, "[13FAB8] forcando saida via path 'lista vazia' (label_13fb08)\n");
+            fflush(stderr);
+            loop_cnt_13fab8 = 0; // reset para nao spammar nas proximas chamadas
+            ctx->pc = 0x13FB08u;
+            goto label_13fb08;
+        }
     }
     // 0x13fae8: 0x24a2bbb0  addiu       $v0, $a1, -0x4450
     ctx->pc = 0x13fae8u;

@@ -88,8 +88,10 @@ que ponto da analogia o projeto está agora.
 | Sistema de injeção (crt0 + init chain) | Fix 1 (sentinel) + Fix 4 (4o init `sub_00138D48`) | ✅ instalado |
 | Chave de ignição apontando pro lugar certo | Fix 5 (entry `0x100008` → `0x2996b0`) | ✅ corrigido |
 | Primeira partida do motor | Build com Fix 4+5: motor RONCOU (janela abriu, GS recebeu config, SIF init) | ✅ confirmado 2026-04-26 |
-| Mangueira solta engasgou na 1ª marcha | Lista circular #2 em `0x2cbbb0` zerada → loop infinito em `sub_0013FAB8` | ✅ Fix 6 aplicado |
-| **Motor pegando ronco contínuo (1ª marcha estável)** | **Testar build com Fix 6 e ver se passa de `13FAB8`** | 🟡 **AGORA** |
+| Mangueira solta engasgou na 1ª marcha | Lista circular #2 em `0x2cbbb0` zerada → loop infinito em `sub_0013FAB8` | ✅ identificado |
+| Apertou a braçadeira mas no local errado | Fix 6 instalado **depois** dos inits, não chegava a rodar (galinha-e-ovo) | ✅ identificado parte 3 |
+| Reposicionou a braçadeira **antes** dos inits + chave de torque limite | Fix 1+6 movidos pra antes do init chain + trava de segurança no `sub_0013FAB8` | ✅ aplicado parte 3 |
+| **Dar nova partida e ver se motor mantém marcha** | **Testar build com Fix 6 reposicionado e analisar log** | 🟡 **AGORA** |
 | Carburador, transmissão, suspensão | Subsistemas: GS (gráficos), DMA, áudio, controle | 🔜 depois |
 | Test drive | Jogo rodando até a primeira fase jogável | 🔜 longe |
 
@@ -103,8 +105,10 @@ que ponto da analogia o projeto está agora.
 | Sabotagem descoberta na equipe | Fix 2 era um traidor (`a1=1` causava `free` todo frame) | ✅ revertido |
 | Descobriu que arrombou a porta errada | `0x100008` era corredor de serviço, cofre real é `0x2996b0` | ✅ Fix 5 |
 | **Cofre ABRIU** — agente entrou no escuro | Fix 4+5 confirmados: janela raylib abriu, `GsPutIMR`+`GsSetCrt`+`SifInit` rodaram | ✅ confirmado 2026-04-26 |
-| 1º guarda interno apareceu (mesmo perfil de outro neutralizado) | Lista circular #2 (`0x2cbbb0`) zerada — bug irmão da do Fix 1 (`0x2cf090`), trava `sub_0013FAB8` | ✅ Fix 6 aplicado |
-| **Sondando se o guarda caiu antes de avançar mais fundo** | **Testar build com Fix 6 e analisar log** | 🟡 **AGORA** |
+| 1º guarda interno apareceu (mesmo perfil de outro neutralizado) | Lista circular #2 (`0x2cbbb0`) zerada — bug irmão da do Fix 1 (`0x2cf090`), trava `sub_0013FAB8` | ✅ identificado |
+| Tranquilizante foi colocado na arma errada | Fix 6 instalado **depois** dos inits, mas guarda aparece **durante** os inits — dose nunca chegou a ser disparada | ✅ identificado parte 3 |
+| Reposicionou o tranquilizante na arma certa + colete à prova de loops | Fix 1+6 movidos pra antes do init chain + trava de 1M iterações no `sub_0013FAB8` | ✅ aplicado parte 3 |
+| **Sondar de novo o corredor — guarda caiu agora?** | **Testar build com Fix 6 reposicionado e analisar log** | 🟡 **AGORA** |
 | Próximos guardas internos previstos | Restantes do init chain (`sub_00138D48` JALs 6-11), `func_2996a8`, `func_293840`, `SetupThread`, GS rendering | 🔜 ato 3 |
 | Fuga com o alvo | Jogo rodando até a primeira fase jogável | 🔜 final |
 

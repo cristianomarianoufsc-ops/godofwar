@@ -2505,6 +2505,51 @@ void PS2Runtime::run()
             m_cpuContext.r[28] = _mm_set_epi64x(0, static_cast<int64_t>(0x002cf070u));
             std::cout << "[boot_stub] $gp configurado para 0x2cf070" << std::endl;
 
+            // -----------------------------------------------------------------
+            // SENTINELAS DE LISTAS CIRCULARES VAZIAS — PRECISAM VIR ANTES DOS INITS.
+            // -----------------------------------------------------------------
+            // Movido pra ca em 2026-04-26 PARTE 3.
+            //
+            // Motivo: as funcoes do init chain (sub_0029a4a0, sub_00138d48,
+            // etc.) ja chamam internamente codigo que percorre essas listas
+            // (ex.: sub_0013FAB8 chamada via 138D48 -> 17A910 -> ... -> 13FCA8).
+            // Se as sentinelas estiverem zeradas durante o init, o codigo do
+            // jogo entra em loop infinito buscando em uma "lista" cujo head=0
+            // e cujo proximo node tambem e 0 — loop nunca termina, init nunca
+            // retorna, boot_stub nunca chega no entry final.
+            //
+            // No PS2 real, esses sentinels seriam escritos pelo BIOS antes do
+            // crt0 rodar, ou por funcoes de init que nao foram registradas no
+            // nosso runtime ainda (ex.: 0x283770, 0x17acb8, 0x138b10, 0x1838d0).
+            // Inicializar manualmente aqui resolve sem depender delas.
+
+            // Fix 1: sentinel da lista circular usada por sub_00100408
+            // (a0=0x2cf070, sentinel em a0+0x20 = 0x2cf090).
+            {
+                constexpr uint32_t A0       = 0x2cf070u;
+                constexpr uint32_t SENTINEL = A0 + 0x20u; // = 0x2cf090
+                uint32_t* mem = reinterpret_cast<uint32_t*>(rdram + (SENTINEL & 0x01FFFFFFu));
+                mem[0] = SENTINEL; // next = self
+                mem[1] = SENTINEL; // prev = self
+                std::cout << "[boot_stub] FIX 1: sentinel lista circular #1 inicializado em 0x"
+                          << std::hex << SENTINEL << std::dec
+                          << " -> lista vazia, sub_00100408 retornara imediatamente"
+                          << std::endl;
+            }
+
+            // Fix 6: sentinel da lista circular usada por sub_0013FAB8
+            // (head em 0x2cbbb0, lista duplamente encadeada, +0=next +4=prev +8=key).
+            {
+                constexpr uint32_t SENTINEL_2 = 0x2cbbb0u;
+                uint32_t* mem = reinterpret_cast<uint32_t*>(rdram + (SENTINEL_2 & 0x01FFFFFFu));
+                mem[0] = SENTINEL_2; // next = self
+                mem[1] = SENTINEL_2; // prev = self
+                std::cout << "[boot_stub] FIX 6: sentinel lista circular #2 inicializado em 0x"
+                          << std::hex << SENTINEL_2 << std::dec
+                          << " -> lista vazia, sub_0013FAB8 nao loopa"
+                          << std::endl;
+            }
+
             // ---------------------------------------------------------------
             // Init chain 1-3: identica ao crt0 original (0x100198-0x1001a8).
             // ---------------------------------------------------------------
@@ -2579,52 +2624,10 @@ void PS2Runtime::run()
                           << std::dec << ", passando como a0 para entry_2996b0" << std::endl;
             }
 
-            // Inicializa o sentinel da lista circular em sub_001003C0 (a0=0x2cf070).
-            // sub_00100408 verifica: se [a0+0x20] == (a0+0x20), lista vazia → retorna.
-            // Sem isso, [0x2cf090]=0 ≠ 0x2cf090, e o loop entra com current=0
-            // (ponteiro nulo) → vtable=0 → jalr_target=0 → loop infinito na tela preta.
-            // Com a lista vazia, sub_00100408 retorna imediatamente e sub_001003C0
-            // prossegue para func_238860 (o game loop real).
-            {
-                constexpr uint32_t A0       = 0x2cf070u;
-                constexpr uint32_t SENTINEL = A0 + 0x20u; // = 0x2cf090
-                uint32_t* mem = reinterpret_cast<uint32_t*>(rdram + (SENTINEL & 0x01FFFFFFu));
-                mem[0] = SENTINEL; // next = self
-                mem[1] = SENTINEL; // prev = self
-                std::cout << "[boot_stub] sentinel lista circular inicializado em 0x"
-                          << std::hex << SENTINEL << std::dec
-                          << " -> lista vazia, sub_00100408 retornara imediatamente"
-                          << std::endl;
-            }
-
-            // -----------------------------------------------------------------
-            // FIX 6 (sessao 2026-04-26 PARTE 2): segunda lista circular vazia.
-            // -----------------------------------------------------------------
-            // sub_0013FAB8 (chamada via 13FCA8 dentro de 182FF0, depois de
-            // GsPutIMR/GsSetCrt) percorre uma lista duplamente encadeada cujo
-            // head fica em 0x2cbbb0. Ela compara `head == 0x2cbbb0` para
-            // detectar lista vazia. Sem inicializacao, *0x2cbbb0 = 0 e a busca
-            // entra em loop infinito (current=0 -> next=*0=0 -> ...) — log
-            // mostrou >6 milhoes de iteracoes sem progresso.
-            //
-            // A inicializacao deveria vir de uma das funcoes do init chain do
-            // 4o init (sub_00138D48), mas as JALs 0x283770 / 0x17acb8 /
-            // 0x138b10 / 0x1838d0 nao estao registradas no runtime e foram
-            // puladas. Inicializar manualmente o sentinel desbloqueia o boot
-            // sem depender dessas funcoes ainda nao implementadas.
-            //
-            // No layout do node: +0 = next, +4 = prev, +8 = ptr para chave.
-            // Sentinel circular vazio: head.next = head.prev = head.
-            {
-                constexpr uint32_t SENTINEL_2 = 0x2cbbb0u;
-                uint32_t* mem = reinterpret_cast<uint32_t*>(rdram + (SENTINEL_2 & 0x01FFFFFFu));
-                mem[0] = SENTINEL_2; // next = self
-                mem[1] = SENTINEL_2; // prev = self
-                std::cout << "[boot_stub] FIX 6: sentinel lista circular #2 inicializado em 0x"
-                          << std::hex << SENTINEL_2 << std::dec
-                          << " -> lista vazia, sub_0013FAB8 nao loopa"
-                          << std::endl;
-            }
+            // NOTA (2026-04-26 PARTE 3): Fix 1 e Fix 6 (sentinelas das listas
+            // circulares) foram MOVIDOS para ANTES do init chain — eles eram
+            // necessarios DURANTE os inits, nao depois. Ver bloco SENTINELAS
+            // logo apos `[boot_stub] $gp configurado` mais acima neste arquivo.
 
             // ---------------------------------------------------------------
             // Entry point final: 0x2996b0 (real main do jogo).
