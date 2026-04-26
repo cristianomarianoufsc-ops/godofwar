@@ -90,34 +90,39 @@ do `13FAB8`. As chamadas 2ª, 3ª e 4ª já encontram a sentinela em `0x0`.
 2. `sub_0013DA10` (chamada por `label_13fb0c`) — alocador suspeito
 3. Layout de BSS errado — `0x2cbbb0` faz parte de struct maior sobrescrita
 
-### Próxima investigação proposta (NÃO APLICADA AINDA, aguardando user decidir)
+### 🆕 PARTE 4.5 — Opção A APLICADA (câmera escondida instalada)
 
-**Opção A — investigar a corrupção (resolver causa raiz):**
-- Adicionar WATCH em `[0x2cbbb0]` no runtime (toda WRITE32 nesse endereço
-  loga PC + RA), identifica o autor da corrupção em segundos
-- Ler `sub_0013FAB8_0x13fab8.cpp` (path label_13fb08) e `sub_0013DA10_0x13da10.cpp`
+**O que mudou em `PS2Recomp/ps2xRuntime/include/ps2_runtime.h`:**
+- Constante nova `PS2_GLOBAL_WATCH_2_ADDR = 0x002CBBB0u` (8 bytes vigiados)
+- Função `ps2CheckGlobalWatch2(...)` espelha o vigia já existente do `0x32E854`
+- Hook em `ps2TraceGuestWrite` chama o vigia novo logo após o antigo
+- Até 256 logs por execução, com marcador `<<< CORRUPCAO PARA ZERO!`
+  quando alguém escreve zero no endereço exato da sentinela
 
-**Opção B — pular pra VIF1/DMA (próximo bloqueador):**
-- A trava de segurança já protege o sintoma. Avançar pra entender por que
-  o VIF1 está recebendo 159 comandos zerados em loop.
-- Procurar quem chama `vif1:cmd` no runtime, ver se é DMA empty ou stream
-  sem terminator.
+**Formato do log esperado:**
+```
+[watch:SENTINEL_0x2cbbb0] #N op=WRITE32 addr=0x2cbbb0 size=4 value=0x0 pc=0x???????? ra=0x????????  <<< CORRUPCAO PARA ZERO!
+```
 
-**Opção C — registrar handlers INTC pulados (`[INTC:skip]` no log):**
-- `cause=2 handler=0x182f28` aparece muitas vezes — handler de interrupção
-  de timer/VBlank? Pode estar relacionado ao loop VIF1.
+**Opção B (VIF1/DMA) e Opção C (INTC handlers) continuam disponíveis** caso
+a câmera não pegue ninguém em flagrante (o que indicaria que a corrupção
+vem de uma rota não rastreada — DMA, fastmem ou stub C++).
 
-### Comando para testar (mesma sequência das partes anteriores)
+### Comando para testar a PARTE 4.5
 
 ```bash
 cd ~/Documentos/GitHub/godofwar
 git pull origin main
 bash build.sh
-PS2_TRACE=1 ./build/GodOfWarPCPort GOD_PC_PORT_FINAL/data/SCUS_973.99 2>&1 | tee log_fix6_part4.txt
-grep -E "FIX|13FAB8|init concluido|2996b0|frame:upload|nonBlack|ExitThread|TRAVA|SEGV|crash|panic|WATCH" log_fix6_part4.txt | head -200
-wc -l log_fix6_part4.txt
-tail -50 log_fix6_part4.txt
+PS2_TRACE=1 ./build/GodOfWarPCPort GOD_PC_PORT_FINAL/data/SCUS_973.99 2>&1 | tee log_watch_part5.txt
+grep "watch:SENTINEL" log_watch_part5.txt
+grep -E "FIX|13FAB8|TRAVA|CORRUPCAO" log_watch_part5.txt | head -100
+wc -l log_watch_part5.txt
 ```
+
+A linha com `<<< CORRUPCAO PARA ZERO!` revela `pc=...` do escritor. Esse
+PC é o crachá do espião — abre `sub_<pc>.cpp` correspondente e a gente
+entende o que ele acha que está fazendo.
 
 ---
 
