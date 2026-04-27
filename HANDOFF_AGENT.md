@@ -82,9 +82,61 @@ flagrou alguém.** Depois: VIF1/DMA, INTC handlers, fuga com o alvo.
 
 ---
 
-## 🔴 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-26 PARTE 6 — Câmera #3 + Blindagem aplicadas)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-26 PARTE 6 — RESULTADOS CONFIRMADOS)
 
-### Status: pacote Opção 2+3 aplicado — aguardando teste do Agente Cris
+### Status: ✅ VITÓRIA TÁTICA — Cenário B confirmado, programa avançou até `entry_182ff0` completa
+
+**🎯 Resumo do log_part6.txt (Agente Cris, 6.062 linhas, 2026-04-26):**
+
+| Sinal | Resultado |
+|---|---|
+| Câmera #3 (`watch:POOL_0x2c7910`) | 🔇 **NUNCA disparou** — pool não é inicializado por nenhum código recompilado |
+| Câmera #2 (`watch:SENTINEL_0x2cbbb0`) | 🔇 NUNCA disparou (blindagem impediu corrupção) |
+| Câmera #1 (`watch:GLOBAL_0x32E854`) | 1 disparo isolado, valor=0x0, pc=0x17a3d0 — informativo |
+| Blindagem `[13FAB8] BLINDAGEM PARTE 6` | ✅ **DISPAROU 4×** com `$ra=0x13fb14` |
+| Programa crashou? | ❌ Não — entrou em loop INTC/VIF1 (Bug G novo) |
+| ccache hit rate | 7.36% (vs 0.09% antes — 80× melhor) |
+
+**🎯 Sequência completa que rodou (boot → entry_182ff0 completa pela primeira vez):**
+- ✅ `boot_stub`: FIX 1 + FIX 6 + 4 inits do crt0
+- ✅ Init [4/4] = `0x138d48` (pre-main): 11 JALs sequenciais (4 "NÃO REGISTRADA — skip": `0x283770`, `0x17acb8`, `0x138b10`, `0x1838d0`)
+- ✅ JAL [6/11] = `0x17a910` chamou `entry_182ff0`:
+  - SifCheckInit + SifInit
+  - GsPutIMR(0xff00) + GsSetCrt
+  - 13FCA8 → 13FAB8 (blindado #1)
+  - 13FB48 → 13FAB8 (blindado #2)
+  - 182F68, 182E88 (GsGetIMR×2, GsPutIMR)
+  - 140578 → 13FAB8 ×2 (blindados #3, #4)
+  - **entry_182ff0 COMPLETA**
+- 🟡 JAL [7/11] = `0x21ff60` — preso em loop infinito de:
+  ```
+  [INTC:skip] cause=2 handler=0x182f28 arg=0x4 → sem função recompilada, pulando!
+  [vif1:cmd] idx=0..159 ... ciclo recomeça
+  ```
+
+**🆕 Bug G identificado:** handler INTC `0x182f28` não foi recompilado. Polling eterno do INTC canal 2.
+
+### 🎯 PLANO PARTE 7 (próxima sessão)
+
+**Plano A (recomendado primeiro):** stub C++ pro `sub_0013DA10` em `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp`. Tempo de build: ~30s com `rebuild_runtime.sh`.
+
+```cpp
+void sub_0013DA10(R5900Context* ctx, uint8_t* rdram) {
+    uint32_t size = GPR_U32(ctx, 4);
+    void* hostBuf = std::malloc(size);
+    uint32_t guestPtr = ps2_alloc_guest_buffer(hostBuf, size);
+    SET_GPR_U32(ctx, 2, guestPtr);
+    ctx->pc = ctx->ra;
+}
+```
+
+**Plano B:** atacar Bug G (handler INTC `0x182f28` não registrado). Pode ser uma das 4 NÃO REGISTRADAS do init pre-main ou uma quinta função.
+
+**Recomendação:** Plano A primeiro (custo de build mínimo, problema histórico documentado), depois Plano B.
+
+---
+
+## 📜 HISTÓRICO PARTE 6 — Câmera #3 + Blindagem (mantido para referência)
 
 **🎯 Decisão da PARTE 6:** Agente Cris escolheu Opção 2+3 combinada (recomendação do analista da PARTE 5). Câmera escondida #3 + blindagem defensiva num único build incremental.
 
@@ -201,7 +253,8 @@ wc -l log_part6.txt
 | **C** | `$v0=0` retorno | SEGV/comportamento errado | Recompilação setando `$v0` errado | Override do retorno |
 | **D** | Loop+stack overflow | PC trava, RAM cresce | Recursão sem base case em `func_100408` | Trava de iter + override |
 | **1, 6** | Sentinela não-inicializada | Loop infinito em função que percorre lista | `head.next/prev = 0` em vez de apontar pra si | Fix 1/6: escrever `head=head.next=head.prev` no boot_stub ANTES dos inits |
-| **F** | Alocador retorna 0 → corrompe consumidor | Bug 1/6 reaparece depois do fix | Alocador (ex: `13DA10`) lê pool vazio, devolve 0; consumidor escreve em `[0+offset]` que cai em região crítica | PARTE 6: blindagem `if ($v0==0) abort` no consumidor + watch no pool pra achar init perdido. Fix definitivo (PARTE 7+) = stub C++ no alocador OU registrar init perdido |
+| **F** | Alocador retorna 0 → corrompe consumidor | Bug 1/6 reaparece depois do fix | Alocador (ex: `13DA10`) lê pool vazio, devolve 0; consumidor escreve em `[0+offset]` que cai em região crítica | ✅ PARTE 6 mitigado: blindagem `if ($v0==0) abort` no consumidor (sintoma controlado, jogo avança). Fix definitivo (PARTE 7+) = stub C++ no alocador em `game_overrides.cpp` |
+| **G** | **Handler de interrupção apontado mas não recompilado → polling infinito** | Programa entra em loop após boot avançado (sem crash) | INTC mapeia handler pra um endereço guest que não está nos `.cpp` recompilados. Loop eterno de `[INTC:skip] cause=N handler=0x... → sem função recompilada` intercalado com `[vif1:cmd]` | (em discussão PARTE 7) Stub C++ pro handler em `game_overrides.cpp` OU adicionar a função à lista de recompilação OU registrá-la manualmente |
 | **2-5** | Inits do crt0 não rodados | Várias estruturas vazias após boot | Boot stub não chama todos 4 inits do crt0 | `kInitChain[]` no boot_stub |
 
 **Padrão dominante:** bugs **1, 6 e F** são todos da mesma família —

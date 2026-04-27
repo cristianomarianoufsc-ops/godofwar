@@ -131,7 +131,8 @@ que ponto da analogia o projeto está agora.
 | Sensor de vazamento instalado em cima da junta suspeita | Watch em `[0x2cbbb0..0x2cbbb8]`: toda escrita loga PC + RA do escritor (até 256 logs) | ✅ aplicado parte 4 |
 | Sensor confirmou: a bomba de óleo (`sub_0013DA10`) está bombeando AR ZERO em vez de óleo, e o ar zero corrói a junta | PARTE 5: alocador `sub_0013DA10` retorna `$v0=0` (pool não inicializado em `0x2c7910`); `sub_0013FAB8` escreve esse 0 em `[0x2cbbb4]` (PC `0x13fb24`) e `[0x2cbbb0]` (PC `0x13fb3c`) | ✅ identificado parte 5 |
 | Trocar a bomba de óleo OU encontrar quem deveria abastecer ela na fábrica | Stub no `sub_0013DA10` que devolve buffer válido OU achar init que escreve em `[0x2c7910]` | ✅ identificado parte 5 |
-| **Sensor instalado no reservatório vazio + válvula de segurança no chamador da bomba** | **PARTE 6: câmera #3 watch em `[0x2c7910]` (loga quem escreve no pool) + blindagem `if ($v0 == 0)` no `sub_0013FAB8` que aborta inserção em vez de corromper a sentinela** | 🟡 **AGORA — aguardando teste** |
+| **Sensor instalado no reservatório vazio + válvula de segurança no chamador da bomba** | **PARTE 6: câmera #3 watch em `[0x2c7910]` (loga quem escreve no pool) + blindagem `if ($v0 == 0)` no `sub_0013FAB8` que aborta inserção em vez de corromper a sentinela** | ✅ **CONFIRMADO 2026-04-26 PARTE 6 — Cenário B: câmera silenciosa, blindagem disparou 4× e o jogo AVANÇOU até `entry_182ff0` completa** |
+| **Computador de bordo pede info do sensor de injeção mas ninguém atende — motor não passa de marcha** | **Bug G: handler INTC `0x182f28` não está registrado nos 5.626 .cpp recompilados → loop infinito de `[INTC:skip]` + `[vif1:cmd]` no JAL 7/11 do `0x138d48`** | 🟡 **NOVO obstáculo identificado PARTE 6 — alvo da PARTE 7** |
 | Carburador, transmissão, suspensão | Subsistemas: GS (gráficos), DMA, áudio, controle | 🔜 depois |
 | Test drive | Jogo rodando até a primeira fase jogável | 🔜 longe |
 
@@ -153,7 +154,8 @@ que ponto da analogia o projeto está agora.
 | Câmera escondida instalada no posto do vigia (`0x2cbbb0`) | Watch silencioso em `ps2_runtime.h`: `ps2CheckGlobalWatch2` loga toda WRITE32 com PC+RA do autor (até 256 logs) | ✅ aplicado parte 4 |
 | Câmera flagrou o sabotador na primeira tomada — e ele estava DENTRO da própria sala que devia proteger: o agente do `13FAB8` foi até o almoxarifado (`13DA10`) pegar uma ficha vazia, recebeu **nada** das mãos do atendente fantasma, voltou pro corredor sem perceber, e **escreveu zeros direto em cima do vigia** achando que era o slot da ficha nova | PARTE 5: PCs `0x13fb24` + `0x13fb3c` confirmados; alocador `sub_0013DA10` retorna 0 porque o pool em `0x2c7910` está vazio (BSS não inicializada por algum init não-registrado) | ✅ identificado parte 5 |
 | Neutralizar a fonte: ou trocar o atendente por um stub que entrega ficha de verdade, ou achar o gerente que esqueceu de abrir o almoxarifado | Opção 1: stub C++ pra `sub_0013DA10` que devolve buffer válido. Opção 2: localizar quem inicializa `[0x2c7910]` (provavelmente um dos 4 JALs não-registrados da PARTE 3) | ✅ analisado parte 5 |
-| **Câmera escondida #3 instalada no almoxarifado E colete de Kevlar no agente** | **PARTE 6 (Opção 2+3): watch em `[0x2c7910]` que loga PC+RA de quem escreve no pool + blindagem no `13FAB8` que aborta a inserção quando recebe ficha vazia (`$v0=0`), em vez de tatuar zeros no posto do vigia** | 🟡 **AGORA — aguardando teste do Agente Cris** |
+| **Câmera escondida #3 instalada no almoxarifado E colete de Kevlar no agente** | **PARTE 6 (Opção 2+3): watch em `[0x2c7910]` que loga PC+RA de quem escreve no pool + blindagem no `13FAB8` que aborta a inserção quando recebe ficha vazia (`$v0=0`), em vez de tatuar zeros no posto do vigia** | ✅ **CONFIRMADO 2026-04-26 PARTE 6 — Câmera silenciosa (NINGUÉM abasteceu o almoxarifado durante todo o boot) + agente sobreviveu às 4 emboscadas com o Kevlar e a operação avançou ATÉ DENTRO do prédio-alvo (entry_182ff0 completa)** |
+| **Operação parou num cruzamento sem semáforo — sinal nunca chega** | **Bug G PARTE 6: handler INTC `0x182f28` não foi recompilado, então o agente fica esperando o sinal verde eterno (loop INTC/VIF1) no JAL 7/11 do init pre-main** | 🟡 **NOVO sabotador identificado — alvo da PARTE 7** |
 | Próximos guardas internos previstos | VIF1/DMA com payloads válidos, `SetupThread`, restantes do init chain, INTC handlers | 🔜 ato 3 |
 | Fuga com o alvo | Jogo rodando até a primeira fase jogável | 🔜 final |
 
@@ -359,11 +361,39 @@ entende o que ele acha que está fazendo, e decide o fix.
 
 ---
 
-#### 🆕 SESSÃO 2026-04-26 PARTE 6 — Câmera #3 + Blindagem aplicadas (Opção 2+3 combinada)
+#### 🆕 SESSÃO 2026-04-26 PARTE 6 — Câmera #3 + Blindagem CONFIRMADAS (Cenário B)
 
-**Status:** PARTE 6 montada e commitada. Aguardando teste do Agente Cris no PC Linux Mint.
+**Status:** ✅ **VITÓRIA TÁTICA SIGNIFICATIVA**. Cenário B confirmado pelo log do Agente Cris. Programa avançou MUITO mais que antes — atravessou `entry_182ff0` completa pela primeira vez. Novo obstáculo identificado: handler INTC `0x182f28` não registrado (Bug G).
 
-**Decisão do Agente Cris:** Opção 2+3 combinada num único build (recomendação do analista da PARTE 5).
+**Resultados do log_part6.txt (6.062 linhas, executado pelo Agente Cris em 2026-04-26):**
+
+| Sinal | Status | Linha do log |
+|---|---|---|
+| `[watch:POOL_0x2c7910]` (Câmera #3) | 🔇 **NUNCA disparou** — pool não é inicializado por nenhum código recompilado | — |
+| `[watch:SENTINEL_0x2cbbb0]` (Câmera #2 PARTE 4) | 🔇 NUNCA disparou (blindagem impediu corrupção) | — |
+| `[watch:GLOBAL_0x32E854]` (Câmera #1 PARTE 4) | 1 disparo isolado, valor=0x0, pc=0x17a3d0 | 5798 |
+| `[13FAB8] BLINDAGEM PARTE 6` | ✅ **DISPAROU 4×** (count=1,2,3,4) — todas com `$ra=0x13fb14` | 5827, 5834, 5851, 5855 |
+| Programa crashou? | ❌ Não | — |
+| ccache hit rate | 7.36% (vs 0.09% anterior — 80× melhor) | 6053 |
+
+**Sequência completa que rodou (boot → entry_182ff0 completa):**
+- ✅ `boot_stub` aplicou FIX 1 + FIX 6 + 4 inits do crt0
+- ✅ Init [4/4] = `0x138d48` (pre-main) executou 11 JALs sequenciais (4 deles "NÃO REGISTRADA — skip": `0x283770`, `0x17acb8`, `0x138b10`, `0x1838d0`)
+- ✅ JAL [6/11] = `0x17a910` chamou `entry_182ff0`:
+  - SifCheckInit + SifInit
+  - GsPutIMR(0xff00), GsSetCrt
+  - 13FCA8 + 13FB48 + 140578 (cada um chama 13FAB8 — todas as 4 chamadas blindadas com sucesso)
+  - GsGetIMR×2, GsPutIMR
+  - **`entry_182ff0` COMPLETA pela primeira vez na história deste port**
+- 🟡 JAL [7/11] = `0x21ff60` — programa entrou em loop infinito de:
+  ```
+  [INTC:skip] cause=2 handler=0x182f28 arg=0x4 → sem função recompilada, pulando!
+  [vif1:cmd] idx=0..159 ... ciclo recomeça
+  ```
+
+**Causa do novo travamento (Bug G):** o handler de interrupção INTC canal 2 está mapeado pra `0x182f28`, mas essa função não foi recompilada nos 5.626 .cpp. O sistema fica em polling eterno aguardando o sinal de "frame pronto" que nunca chega.
+
+#### 🛡️ Mudanças aplicadas na PARTE 6 (mantidas para histórico)
 
 **Mudanças aplicadas nesta sessão:**
 
@@ -403,9 +433,31 @@ wc -l log_part6.txt
 | **C — Câmera flagrou + blindagem ainda disparou** | Watch loga init, MAS as primeiras chamadas do `13FAB8` ainda recebem `$v0=0` | A inicialização do pool acontece DEPOIS das primeiras chamadas. Race condition / ordem do init chain errada. Investigar se o init precisa rodar antes do `0x2996b0`. |
 | **D — Tudo silencioso, jogo avança** | Nem watch nem blindagem disparam, jogo passa do loop VIF1 anterior | Algo mudou no fluxo (improvável). Ler log inteiro pra ver onde travou agora. |
 
-**Cenário mais provável:** B (câmera silenciosa + blindagem disparando). Isso confirmaria PARTE 5 e nos diz com certeza que o caminho é Opção 1 (stub C++ no `sub_0013DA10`).
+**Cenário confirmado: B** ✅. PARTE 5 + Bug F definitivamente provados — pool em `[0x2c7910]` nunca é inicializado pelo código recompilado durante todo o boot. Caminho da PARTE 7 = Opção 1 (stub C++ no `sub_0013DA10`).
 
-**Importante:** com a blindagem funcionando, `[0x2cbbb0]` nunca mais é zerado pelo `13FAB8`, então `[watch:SENTINEL_0x2cbbb0]` não deve mais aparecer com `<<< CORRUPCAO PARA ZERO!`. Se aparecer, há um terceiro sabotador que ainda não conhecemos.
+**Confirmação da blindagem:** `[watch:SENTINEL_0x2cbbb0]` não disparou nenhuma vez no log. Não há terceiro sabotador.
+
+#### 🎯 PLANO DA PARTE 7 (próxima sessão)
+
+**Decisão pendente do Agente Cris:** atacar Bug F (definitivo) ou Bug G (novo travamento)?
+
+**Plano A — Bug F (recomendado primeiro):** stub C++ pro `sub_0013DA10` em `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp`.
+- Esqueleto:
+  ```cpp
+  void sub_0013DA10(R5900Context* ctx, uint8_t* rdram) {
+      uint32_t size = GPR_U32(ctx, 4);  // a0 = tamanho pedido
+      void* hostBuf = std::malloc(size);
+      uint32_t guestPtr = ps2_alloc_guest_buffer(hostBuf, size);
+      SET_GPR_U32(ctx, 2, guestPtr);    // $v0 = ponteiro guest válido
+      ctx->pc = ctx->ra;
+  }
+  ```
+- Tempo de build: **~30s** com `rebuild_runtime.sh` (não toca header).
+- Risco: pequeno — pode ter leak se o jogo reciclar nós, mas resolve o sintoma.
+
+**Plano B — Bug G:** investigar o handler INTC `0x182f28`. Provavelmente é uma das 4 funções "NÃO REGISTRADA" do init pre-main (`0x283770`, `0x17acb8`, `0x138b10`, `0x1838d0`) ou uma quinta função recém-descoberta. Pode precisar de stub C++ ou registro manual.
+
+**Recomendação do analista:** **Plano A primeiro** (resolve o problema histórico que tem rastro completo, custo de build mínimo). Depois ataca Plano B com base limpa.
 
 ---
 
@@ -498,7 +550,8 @@ parente de algum já resolvido.
 | **C** | `v0=0` em retorno de função | SEGV ou comportamento errado | Recompilação setando `$v0` errado em `jal` | Override do retorno | Trace mostra `$v0=0` onde devia ter ponteiro |
 | **D** | Loop infinito + stack overflow em `func_100408` | PC trava | Função recursiva sem base case | Trava de iteração + override | RAM cresce, PC trava, stack >1MB |
 | **1, 6** | **Sentinela de lista circular não inicializada** | Loop infinito em função que percorre lista | Estrutura `head` em BSS com `next/prev = 0` em vez de apontar pra si | Escrever `head.next = head.prev = head` no boot_stub ANTES dos inits | `READ32(sentinel) = 0` no log; loop `iter=Nx100000 s0=0x0` |
-| **F** | **Alocador retorna 0 → corrompe consumidor** | Bug 1/6 retorna depois do fix | Alocador (ex: `13DA10`) lê pool não-inicializado, devolve 0; consumidor escreve em `[0]` que cai em região crítica | PARTE 6: blindagem `if ($v0==0) abort` no consumidor + watch no pool pra achar init perdido. Fix definitivo (PARTE 7+) = stub C++ no alocador OU registrar init perdido | Watchpoint no endereço corrompido; PC do escritor cai dentro de função "que devia ser inocente" |
+| **F** | **Alocador retorna 0 → corrompe consumidor** | Bug 1/6 retorna depois do fix | Alocador (ex: `13DA10`) lê pool não-inicializado, devolve 0; consumidor escreve em `[0]` que cai em região crítica | ✅ **PARTE 6 mitigado:** blindagem `if ($v0==0) abort` no consumidor (sintoma controlado, jogo avança). Fix definitivo (PARTE 7+) = stub C++ no alocador em `game_overrides.cpp` | Watchpoint no endereço corrompido; PC do escritor cai dentro de função "que devia ser inocente" |
+| **G** | **Handler de interrupção apontado mas não recompilado → polling infinito** | Programa entra em loop após boot avançado (sem crash) | INTC mapeia handler pra um endereço guest que não está nos `.cpp` recompilados. Loop eterno de `[INTC:skip] cause=N handler=0x... → sem função recompilada` intercalado com `[vif1:cmd]` | **(em discussão PARTE 7)** Provavelmente: stub C++ pro handler em `game_overrides.cpp` OU adicionar a função à lista de recompilação OU registrá-la manualmente | Log mostra `[INTC:skip] cause=N handler=0xXXXXXX → sem função recompilada` repetindo indefinidamente; jogo "trava silencioso" sem SEGV |
 | **2, 3, 4, 5** | Inits do crt0 não rodados | Várias estruturas vazias depois do boot | Boot stub não chama todos os 4 inits do `crt0` | Adicionar `kInitChain[]` no boot_stub | Várias funções travando logo após o boot |
 
 **Observação clave do analista:** os bugs **1, 6 e F** são todos da mesma
