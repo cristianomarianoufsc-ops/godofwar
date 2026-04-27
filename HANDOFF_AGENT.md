@@ -45,117 +45,189 @@ precisar entender MIPS/syscalls/boot stub. **Tabela completa fica em
 `replit.md` na seção "📖 ANALOGIAS DO PROJETO" — fonte da verdade.**
 Aqui só o resumo do ponto atual; mantenha sincronizado.
 
-**Carro (até PARTE 9):** chassi/combustível/injeção/chave de ignição prontos;
+**Carro (até PARTE 10):** chassi/combustível/injeção/chave de ignição prontos;
 motor deu 1ª partida (Fix 4+5); engasgou (lista circular #2); braçadeira +
 limitador (parte 3); sensor de vazamento (parte 4); PARTE 5: bomba de óleo
 bombeando AR ZERO; PARTE 6: sensor #3 + válvula; **PARTE 7: bomba
 aftermarket — Bug F resolvido**; **PARTE 8: sensor de injeção rebobinado —
-Bug G resolvido (VBlank tick #1..#300 confirmado no dinamômetro do Agente
-Cris, log_part9 baseline)**. 🆕 **PARTE 9 PLANO A APLICADA: motorista
-ficou apertando o botão da chave inglesa pneumática (syscalls 0x79/0x7A/0x7B/0x7D)
-esperando luz verde acender — botão estava DESLIGADO da fonte (4 cases
-faltando no switch do runtime). Mecânico ligou os 4 botões e configurou
-pra responderem "tudo OK" (retorno -1 = 0xFFFFFFFF, qualquer máscara bit
-do retorno produz != 0). Custo no PC: rebuild_runtime ~30s.** Depois:
-test drive (VIF1/DMA com payloads válidos, GS, áudio, controle).
+Bug G resolvido (VBlank tick #1..#300, log_part9 baseline)**; **PARTE 9:
+mecânico ligou os 4 botões pneumáticos da chave inglesa à fonte central —
+Bug H resolvido (stub disparou 1x, Unknown syscallId=0x7a sumiu de 40k+
+hits/12s pra 0, VBlank #960 = +220% vs PARTE 8, log_part9b 2026-04-27)**.
+🆕 **PARTE 10 PLANO A APLICADA: o caminhão de carga entre cofre EE e
+cofre IOP (SIF DMA) tentou sair 8x e a embreagem não pegou — câmera só
+mostrava "tentativa falhou". Mecânico instalou um sensor diagnóstico no
+acoplamento que vai gravar EXATAMENTE qual válvula travou + endereço de
+origem/destino/tamanho/tipo. Não muda comportamento — só ouvinte. Próxima
+rodada de teste vai expor causa raiz pro fix definitivo (PARTE 10 PLANO
+B). Custo no PC: rebuild_runtime ~30s.** Depois: test drive (VIF1/DMA com
+payloads válidos, GS, áudio, controle).
 
-**Espionagem (até PARTE 9):** recrutamento, recon, entrada (Fix 5), cofre
+**Espionagem (até PARTE 10):** recrutamento, recon, entrada (Fix 5), cofre
 ABERTO (Fix 4+5), 1º guarda (`0x2cbbb0`), tranquilizante + colete (parte 3);
 câmera escondida (parte 4); PARTE 5: sabotador `13FAB8` flagrado; PARTE 6:
 câmera #3 + Kevlar; **PARTE 7: agente duplo no almoxarifado — Bug F
 resolvido**; **PARTE 8: agente de tráfego no cruzamento — Bug G resolvido
-(720 piscadas confirmadas no dossiê do Agente Cris)**. 🆕 **PARTE 9 PLANO A
-APLICADA: a próxima sala tinha 4 portas com leitor biométrico (syscalls
-0x79/0x7A/0x7B/0x7D). Os leitores estavam OFFLINE — o switchboard central
-(`ps2_syscalls.cpp`) não tinha entrada pra eles, e o handler default
-respondia "ACESSO NEGADO" (retorno 0). O agente principal ficou martelando
-o leitor da porta 0x7A 130.000 vezes em 12 segundos, esperando luz verde
-no bit 17. Plantamos um operador no switchboard que reconhece os 4
-leitores e responde "TODOS OS BITS OK" pra qualquer pergunta (`setReturnS32(ctx, -1)`).
-Loga só a 1ª chamada de cada um pra rastreabilidade. Aguardando próximo
-dossiê do Agente Cris.** Depois: fuga com o alvo (subsistemas gráficos
-reais, VIF1/DMA com payload, áudio, gamepad).
+(720 piscadas)**; **PARTE 9: operador no switchboard das 4 portas
+biométricas — Bug H resolvido (agente atravessou a sala na 1ª biometria,
+criou 7 crachás auxiliares, chegou no portão de carga do SIF a 16s)**.
+🆕 **PARTE 10 PLANO A APLICADA: o portão de carga do SIF (Sub-system
+Interface entre cofres EE e IOP) tem o sensor de despacho rejeitando
+silenciosamente — agente tentou despachar 8 caminhões e nenhum saiu, mas
+a câmera só mostrava "tentativa falhou", não dizia QUAL válvula nem PRA
+ONDE o caminhão queria ir. Mecânico do portão instalou um sensor
+diagnóstico passivo (`sceSifSetDma` instrumentado) que vai gravar
+EXATAMENTE qual ifguard rejeitou (`entryAddr_fora_da_RAM` /
+`size_maior_que_RAM` / `canCopyGuestByteRange_rejeitou_dest_ou_src` /
+`copyGuestByteRange_falhou_durante_copia`) + endereços src/dest/size/attr
+completos + RA/PC do caller. Limita a 8 combinações únicas pra não
+inundar. Aguardando próximo dossiê.** Depois: fuga com o alvo
+(subsistemas gráficos reais, VIF1/DMA com payload, áudio, gamepad).
 
 > Estilo de narração padrão = **espionagem/ação**. Three camadas: 🕵️
 > espionagem → 🚗 carro → 🔧 técnico. Veja PROTOCOLO DE COMUNICAÇÃO acima.
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-27 PARTE 9 — Bug H syscalls 0x79/0x7A/0x7B/0x7D APLICADO, aguardando teste)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-27 PARTE 10 — Bug I `sceSifSetDma` instrumentado, aguardando teste)
 
-### Status: 🟢 PARTE 9 PLANO A APLICADO — 4 cases novos no switch de syscalls do runtime, AGUARDANDO log_part9b do Agente Cris
+### Status: 🟢 PARTE 10 PLANO A APLICADO — instrumentação cirúrgica em `sceSifSetDma` no runtime, AGUARDANDO log_part10 do Agente Cris
 
-**🎯 Resumo do que foi feito nesta sessão (2026-04-27 PARTE 9):**
+**🎯 Resumo do que foi feito nesta sessão (2026-04-27 PARTE 10):**
 
 | Item | Resultado |
 |---|---|
-| **PARTE 8 confirmada em produção** (log_part9 baseline do Agente Cris, 7.882.220 linhas) | ✅ `[game_overrides] God of War: stub PARTE 8 PLANO A registrado` apareceu, `VBlank tick #1..#300` (5s @ 60Hz), `[INTC:skip]` SUMIU, `[vif1:cmd]` aparece com IRQ no idx=20 (= VIF1 começou a rodar em paralelo) |
-| **Bug H decifrado em 100%** | ✅ Syscall 0x7A (não 0x79) no caller `entry_296518:0x296718` faz `and $v0,$v0,$s0` (= bit 17) seguido de `beqz $v0, -0x4` (loop). Wrappers MIPS confirmados: `entry_294020`(0x79) / `entry_294030`(0x7A) / `entry_294040`(0x7B). Buracos no switch em 0x79/7A/7B/7D entre 0x78 e 0x7C |
-| **3 callers distintos da 0x7A identificados no log** | ✅ RA=0x2966c4 (`$a0=0x80000000`, init/reset), RA=0x296718 (`$a0=0x4`, loop poll bit 17), RA=0x2703412 (`$a0=0x4 $a3=0x32`) — todos cobertos pelo mesmo stub |
-| Stub aplicado em `PS2Recomp/ps2xRuntime/src/lib/ps2_syscalls.cpp` (cases 0x79/0x7A/0x7B/0x7D no switch de `dispatchNumericSyscall`) | ✅ Retorna `-1` (= `0xFFFFFFFF`); qualquer máscara bit-a-bit do retorno produz != 0, destrava poll. Loga 1ª chamada de cada syscall com PC/RA/$a0/$a1/$a3 (padrão `s_unknownCounts` da TODO) |
-| Documentação | ✅ `replit.md` (Bug H na biblioteca, analogias atualizadas, seção PARTE 9 no histórico) + `HANDOFF_AGENT.md` (este arquivo) |
+| **PARTE 9 confirmada em produção** (log_part9b do Agente Cris, 612 linhas) | ✅ `[stub PARTE 9] syscall 0x7a primeira chamada -- retornando -1` apareceu na linha 393, `Unknown syscallId=0x7a` SUMIU (40k+ hits/12s → 0), VBlank avançou pra #960 (16s @ 60Hz, +220% vs PARTE 8), 7 novos `CreateSema id=4..10` criados, jogo entrou em território novo. **Bug H DEFINITIVAMENTE RESOLVIDO** |
+| **Bug I (suspeito) detectado no log_part9b** | ✅ `sceSifSetDma failed dmat=0x1fffed0 count=0x1` repete 8x sem revelar QUAL validação falha. Função existe em `ps2_stubs_misc.inl:3261-3338`, valida descritor 16B (src/dest/size/attr) via 4 ifs (`!entry`, `size>RAM`, `canCopyGuestByteRange`, `copyGuestByteRange`) mas log não diz qual rejeitou nem mostra os endereços que o jogo mandou |
+| **PARTE 10 PLANO A aplicada** em `PS2Recomp/ps2xRuntime/src/lib/stubs/ps2_stubs_misc.inl:3264-3398` | ✅ Variáveis `failIndex` (1..4) + `failReason` (string identificando ifguard) + `failXfer` (struct `Ps2SifDmaTransfer` completa) preenchidas no ponto da falha. Log detalhado via `static std::mutex` + `static std::unordered_set<uint64_t>` chaveado em `(uint64_t(dest)<<32) ^ uint32_t(src)`, máx 8 combinações únicas pra evitar inundar. Log antigo "sceSifSetDma failed dmat= count=" preservado pra contagem total |
+| **Garantia de "não muda comportamento"** | ✅ Instrumentação é puramente OUVINTE: nenhum return modificado, nenhum if invertido, nenhum side-effect novo no caminho de sucesso. Quem passava continua passando, quem falhava continua falhando — a única diferença é que agora a câmera grava o motivo |
+| Includes confirmados disponíveis | ✅ `<mutex>`, `<unordered_set>`, `<iostream>` já presentes via top-level `ps2_stubs.cpp` (que `#include`s os `.inl`) |
+| Documentação | ✅ `replit.md` (Bug I na biblioteca de bugs A-J, analogias 1+2 atualizadas, Bug H marcado ✅ CONFIRMADO) + `HANDOFF_AGENT.md` (este arquivo) |
 | Build no Replit | ⏸️ Não tentado — compilação roda só no PC do Agente Cris |
 | Teste no PC | ⏸️ AGUARDANDO Agente Cris executar `rebuild_runtime.sh` (~30s) |
 
 ### 🔬 Anatomia do bug + da fix
 
-**Caller que estava em loop** (em `entry_296518_0x296798.cpp`, PCs `0x29670c..0x29671c`):
-```mips
-0x29670c: lui   $s0, 0x2                  ; $s0 = 0x00020000 (máscara bit 17)
-0x296710: jal   func_294030               ; chama syscall 0x7A
-          (delay slot: addiu $a0,$zero,0x4) ; $a0 = 4
-0x296718: and   $v0, $v0, $s0             ; mascara retorno com 0x20000
-0x29671c: beqz  $v0, -0x4                 ; se zero, volta pra 0x296710 → LOOP
+**O que aparece no log_part9b atual** (sintoma cego):
+```
+sceSifSetDma failed dmat=0x1fffed0 count=0x1   ← 8x seguidas, nada mais
 ```
 
-**Wrapper MIPS triviais** (3 deles, possivelmente 4):
-- `entry_294020_0x294030.cpp` — `addiu $v1,$zero,0x79; syscall; jr $ra`
-- `entry_294030_0x294050.cpp` — duas entries: `+0x7A` em `0x294030` e `+0x7B` em `0x294040`
-- (entry equivalente para `0x7D` ainda não localizado mas coberto pelo mesmo stub)
+**O que a função fazia em silêncio** (`ps2_stubs_misc.inl:3261-3338`, ANTES da PARTE 10):
+```cpp
+sceSifSetDma(dmat, count) {
+  for (i = 0; i < count; i++) {
+    Ps2SifDmaTransfer xfer = leDescritor16B(dmat + i*16);  // src/dest/size/attr
+    void* entry = getConstMemPtr(xfer.dest);                   // if 1
+    if (!entry) return 0;
+    if (xfer.size > RAM_TOTAL) return 0;                       // if 2
+    if (!canCopyGuestByteRange(xfer.dest, xfer.src, xfer.size)) return 0;  // if 3
+    if (!copyGuestByteRange(xfer.dest, xfer.src, xfer.size)) return 0;     // if 4
+  }
+  return id;
+}
+```
 
-**Por que o stub funciona** (em `ps2_syscalls.cpp:321-363`): o runtime `handleSyscall` despacha por `$v1` quando o `encodedSyscallId` recebido é 0. Como o switch agora tem cases para 0x79/0x7A/0x7B/0x7D **antes** do default `TODO`, qualquer chamada vai cair no stub novo. Retorno `-1` = `0xFFFFFFFF` em U32: `0xFFFFFFFF & 0x20000 = 0x20000 ≠ 0`, então `beqz $v0` no caller AGORA é falso → loop quebra na 1ª iteração.
+**O que a função faz AGORA com PARTE 10 PLANO A**:
+```cpp
+sceSifSetDma(dmat, count) {
+  uint32_t failIndex = 0;
+  const char* failReason = "";
+  Ps2SifDmaTransfer failXfer{};
+  for (i = 0; i < count; i++) {
+    Ps2SifDmaTransfer xfer = leDescritor16B(...);
+    void* entry = getConstMemPtr(xfer.dest);
+    if (!entry)                                       { failIndex=1; failReason="entryAddr_fora_da_RAM"; failXfer=xfer; goto fail; }
+    if (xfer.size > RAM_TOTAL)                        { failIndex=2; failReason="size_maior_que_RAM"; failXfer=xfer; goto fail; }
+    if (!canCopyGuestByteRange(...))                  { failIndex=3; failReason="canCopyGuestByteRange_rejeitou_dest_ou_src"; failXfer=xfer; goto fail; }
+    if (!copyGuestByteRange(...))                     { failIndex=4; failReason="copyGuestByteRange_falhou_durante_copia"; failXfer=xfer; goto fail; }
+  }
+  return id;
+fail:
+  // log antigo preservado
+  std::cerr << "sceSifSetDma failed dmat=0x" << dmat << " count=0x" << count << "\n";
+  // log novo PARTE 10 (mutex + unordered_set, máx 8 únicos)
+  uint64_t key = (uint64_t(failXfer.dest) << 32) ^ uint32_t(failXfer.src);
+  std::lock_guard<std::mutex> lk(s_sifDmaFailMutex);
+  if (s_sifDmaFailKeys.size() < 8 && s_sifDmaFailKeys.insert(key).second) {
+    std::cerr << "[PARTE 10 PLANO A] sceSifSetDma falhou — idxFail=" << failIndex
+              << " motivo='" << failReason << "'"
+              << " xfer.src=0x" << std::hex << failXfer.src
+              << " xfer.dest=0x" << failXfer.dest
+              << " xfer.size=0x" << failXfer.size
+              << " xfer.attr=0x" << failXfer.attr
+              << " ra=0x" << GPR_U32(ctx, 31)
+              << " pc=0x" << ctx.pc << "\n";
+  }
+  return 0;
+}
+```
 
 ### 🧠 LIÇÕES TÉCNICAS DA INVESTIGAÇÃO (não esquecer — vão se repetir)
 
-1. **Família de syscalls "SIF poll" no PS2 EE:** os IDs 0x79/0x7A/0x7B/0x7D ficam num corredor entre `sceSifSetDChain` (0x78) e `GetMemorySize` (0x7F). Documentação Sony é escassa — provavelmente são `sceSif*Stat`/`sceSif*Reg` variants. Quando aparecer outro buraco no switch, primeiro tentar STUB destravante; o nome correto vem depois.
-2. **Convenção PS2 "wrapper de uma instrução":** o jogo gera funções triviais `addiu $v1,N; syscall; jr $ra` pra cada syscall que ele chama. Quando uma syscall é desconhecida, **olhar primeiro pelo arquivo `entry_*.cpp` no range correto** já mostra o ID exato (não confiar só no log — o `pc` no log pode apontar pro `entry` SEGUINTE se a numeração for próxima).
-3. **Pista do "loop infinito sem crash":** quando o jogo não trava o PC nem dá SEGV mas o log explode (40k+ hits da mesma syscall em segundos), é poll-loop esperando bit. Procurar `and $v0,$v0,$sN; beqz $v0,...` perto do RA da syscall — a máscara `$sN` revela qual bit destravante usar. Atalho: `setReturnS32(ctx, -1)` destrava QUALQUER poll bit-mask.
-4. **Cuidado com `pc` no log de syscall:** o `pc=0x294034` no log refere-se à **próxima instrução após a `syscall`** (= delay-slot/depois), não à syscall em si. A syscall é em `pc-4` (0x294030 nesse caso). E os arquivos `entry_X_0xY.cpp` cobrem o range `[X..Y)` — `Y` é exclusivo.
+1. **Stubs SIF do runtime PS2 são ESTRITOS por padrão** — qualquer endereço fora dos 32 MB de RAM EE (IOP RAM, scratchpad EE, kernel space) é rejeitado silenciosamente. Provável que o jogo passe `xfer.dest` apontando pra IOP (0xBC000000+ ou 0x1Cxxxxxx) — nesse caso o stub PARTE 10 PLANO B vai precisar relaxar a validação ou implementar mapping IOP↔EE.
+2. **Padrão "instrumentação antes do fix"** — quando uma falha é repetitiva mas o log não revela causa, NUNCA chutar o fix. Adicionar log primeiro, rodar 1 teste, depois decidir o fix. Custo: 1 ciclo de rebuild_runtime.sh (~30s) — mas economiza 1 ciclo de fix-errado + outro de revert.
+3. **Mutex + `unordered_set` pra deduplicar logs em multithread** — o runtime tem worker threads VBlank/IOP/etc. Sem o mutex, 8 threads podem entrar no log simultaneamente e gerar saída entrelaçada. Sem o set, o log infla pra 100k+ linhas. Padrão `s_unknownCounts` da TODO já estabelecido — replicar.
+4. **`Ps2SifDmaTransfer` no runtime tem layout 16B fixo** (linha 2615-2622): `uint32_t src; uint32_t dest; uint32_t size; uint32_t attr;`. Ordem importa pra debug — `src` é EE/IOP origem, `dest` é EE/IOP destino, `attr` carrega flags de modo (chain/normal/IRQ).
 
-### 📋 Comando pro Agente Cris testar a PARTE 9
+### 📋 Comando pro Agente Cris testar a PARTE 10
 
 ```bash
 cd ~/Documentos/GitHub/godofwar
 git pull origin main
-bash rebuild_runtime.sh                # incremental ~30s (só relinka ps2runtime + GodOfWarPCPort)
-PS2_TRACE=1 ./build/GodOfWarPCPort GOD_PC_PORT_FINAL/data/SCUS_973.99 2>&1 | tee log_part9b.txt
-grep -E "stub PARTE 9|stub PARTE 8|stub:0x182f28|Unknown syscallId=0x7|vif1:cmd|alloc #" log_part9b.txt | head -200
-wc -l log_part9b.txt
+bash rebuild_runtime.sh                # incremental ~30s
+PS2_TRACE=1 ./build/GodOfWarPCPort GOD_PC_PORT_FINAL/data/SCUS_973.99 2>&1 | tee log_part10.txt
+grep -E "PARTE 10 PLANO A|sceSifSetDma|stub PARTE 9|stub:0x182f28|Unknown syscallId|VBlank tick #" log_part10.txt | head -200
+wc -l log_part10.txt
 ```
 
-### 🎯 Cenários esperados no log_part9b.txt
+### 🎯 Cenários esperados no log_part10.txt
 
 | Cenário | Sinais | Próxima ação |
 |---|---|---|
-| **A — Vitória total (esperado)** | `[stub PARTE 9] syscall 0x7a primeira chamada -- retornando -1 ...` aparece UMA vez (e idem pra 0x79/0x7B se forem chamadas), `Unknown syscallId=0x7a hits=...` SUMIU, jogo avança ALÉM do JAL [8/11] do `0x138d48` (próximo bug exposto = Bug I) | Decifrar Bug I (provavelmente outro handler INTC fantasma, mais syscalls SIF, ou primeira parede de DMA/GS) |
-| **B — Loop continua mesmo com stub** | `[stub PARTE 9]` aparece mas `Unknown syscallId=0x7a` ainda continua | Stub registrou, mas o caller espera VALOR diferente de `-1` (talvez bit 17 setado mas resto zerado: 0x20000 puro). Refinar pra `setReturnS32(ctx, 0x20000)` |
-| **C — Stub não dispara** | Nenhum `[stub PARTE 9]` no log + `Unknown syscallId=0x7a` continua | Build não pegou a mudança. Conferir se o `wc -l` cresceu, depois rodar `bash recompilar.sh` cheio (não só `rebuild_runtime.sh`) |
-| **D — Crash novo (SEGV/ASAN)** | Stub dispara mas surge crash | O caller usa o retorno `-1` como ponteiro (improvável dado `and` com bit-mask). Refinar pra `setReturnS32(ctx, 0x20000)` |
-| **E — Vai longe e bate em outra família de syscall** | Stub dispara, jogo avança N segundos, depois novo `Warning: Unimplemented PS2 syscall called. ...` aparece pra ID diferente | ✅ Comportamento ESPERADO. Cada bug exposto = mais um passo. PARTE 10 = analisar a syscall nova |
+| **A — Câmera capturou (esperado)** | `[PARTE 10 PLANO A] sceSifSetDma falhou — idxFail=N motivo='X' xfer.src=0x... xfer.dest=0x... xfer.size=0x... xfer.attr=0x...` aparece 1-8x. `failed dmat=` continua aparecendo 8x (preservado) | Decifrar PARTE 10 PLANO B baseado em `idxFail`/`motivo`/endereços. Ex: se `motivo='entryAddr_fora_da_RAM'` e `xfer.dest=0xBC000000+`, é IOP RAM → relaxar validação OU mapear IOP. Se `motivo='size_maior_que_RAM'`, é descritor lixo → instrumentar leitor do dmat |
+| **B — Câmera silenciosa, sintoma sumiu** | Nenhum log PARTE 10 + nenhum `failed dmat=` no log | O `sceSifSetDma` parou de ser chamado (jogo entrou em outro caminho) ou as 8 falhas anteriores destravaram algo no jogo. Procurar próximo travamento (Unknown syscallId novo, INTC:skip, vif1, etc) |
+| **C — Câmera silenciosa, sintoma persiste** | `failed dmat=` aparece mas nenhum `[PARTE 10 PLANO A]` | Build não pegou a mudança. Conferir se `wc -l` do `ps2_stubs_misc.inl` cresceu, rodar `bash recompilar.sh` cheio |
+| **D — Inunda log mesmo com unordered_set** | `[PARTE 10 PLANO A]` aparece >8x com chaves diferentes | Cada falha tem `(dest, src)` único — o jogo está disparando muitas DMAs novas. Já temos os 8 primeiros, suficiente pra decidir o fix. Se quiser mais, aumentar limite pra 32 |
+| **E — Crash novo** | SEGV/ASAN com stack mostrando `sceSifSetDma` | Improvável (instrumentação é só leitura), mas se acontecer, é provável race no `unordered_set::insert` (não deveria, mutex protege). Investigar com gdb |
 
 ### 📂 Arquivos modificados nesta sessão
-- `PS2Recomp/ps2xRuntime/src/lib/ps2_syscalls.cpp` — adicionados 4 cases (0x79/0x7A/0x7B/0x7D) com stub `setReturnS32(ctx, -1)` + log 1ª chamada (mutex + `unordered_set`)
-- `replit.md` — analogias 1+2 atualizadas, Bug H adicionado na biblioteca, nova seção "PARTE 9" no histórico
-- `HANDOFF_AGENT.md` (este arquivo) — bloco ESTADO ATUAL reescrito (PARTE 8 movida pra histórico) + resumo de analogias atualizado + Bug H na biblioteca
+- `PS2Recomp/ps2xRuntime/src/lib/stubs/ps2_stubs_misc.inl:3264-3398` — instrumentação cirúrgica de `sceSifSetDma` (variáveis `failIndex`/`failReason`/`failXfer` + log mutex+`unordered_set` máx 8 únicos)
+- `replit.md` — Bug H marcado ✅ CONFIRMADO, Bug I adicionado na biblioteca (linha 737), analogias 1+2 atualizadas, nova seção PARTE 10 no histórico (este arquivo)
+- `HANDOFF_AGENT.md` (este arquivo) — bloco ESTADO ATUAL reescrito (PARTE 9 movida pra histórico) + resumo de analogias atualizado + Bug H confirmado + Bug I na tabela
 
-### 🟡 Plano contingencial — se Cenário A falhar
+### 🟡 Plano contingencial — se Cenário A revelar `motivo='entryAddr_fora_da_RAM'`
 
-| Falha | Backup |
-|---|---|
-| Cenário B (loop persiste) | Refinar retorno: `setReturnS32(ctx, 0x20000)` (só bit 17) e re-testar |
-| Cenário C (stub não registra) | Forçar build cheio: `bash recompilar.sh`. Se persistir, `cd build && cmake ../GOD_PC_PORT_FINAL && make -j$(nproc)` |
-| Cenário D (crash) | Mesma refinação do B; se ainda crash, instrumentar dentro do stub pra logar TODAS as chamadas (não só 1ª) e ver padrão de uso real |
-| Cenário E (nova syscall faltando) | Resultado normal — segue o ciclo: identificar, decidir entre stub no switch (se SIF/sistema) ou stub C++ no `game_overrides.cpp` (se função guest perdida pelo PS2Recomp) |
+| Endereço `xfer.dest` | Causa raiz provável | PARTE 10 PLANO B |
+|---|---|---|
+| `0xBC000000..0xBFFFFFFF` | IOP RAM — DMA EE↔IOP normal do PS2 | Adicionar mapping: tratar `0xBC000000+` como aliased pra buffer interno do runtime, ou stubar `sceSifSetDma` pra retornar success sem copiar (jogo provavelmente só polla status depois) |
+| `0x70000000..0x70003FFF` | Scratchpad EE | Mapear pra buffer estático de 16 KB no runtime |
+| `0x80000000..0x9FFFFFFF` | KSEG0 (mirror cacheável da RAM) | Mascarar high bits: `dest & 0x1FFFFFFF` antes de validar |
+| `0x00000000..0x01FFFFFF` mas > tamanho real da RAM | Endereço inválido do jogo (descritor lixo) | Instrumentar quem ESCREVE no `dmat` antes da chamada — provável Bug J = lista DMA construída errado |
+
+---
+
+## 📜 HISTÓRICO PARTE 9 — Família syscalls SIF poll 0x79/0x7A/0x7B/0x7D (Bug H RESOLVIDO)
+
+**Status final:** 🟢 CONFIRMADO em produção (log_part9b do Agente Cris, 612 linhas, 2026-04-27).
+
+**O que foi feito:** 4 cases novos no switch de `dispatchNumericSyscall` em `PS2Recomp/ps2xRuntime/src/lib/ps2_syscalls.cpp:321-363`:
+- `case 0x79`/`case 0x7A`/`case 0x7B`/`case 0x7D` → `setReturnS32(ctx, -1)` + log 1ª chamada via `static std::mutex` + `static std::unordered_set<uint8_t>` (padrão `s_unknownCounts` da TODO).
+- Retorno `-1` = `0xFFFFFFFF` em U32: qualquer máscara bit-a-bit do retorno produz != 0, destrava qualquer poll do tipo `and $v0,$v0,$sN; beqz $v0,-0x4`.
+
+**Por que funcionou:** caller `entry_296518:0x296710` esperava bit 17 (`$s0 = 0x20000`). `0xFFFFFFFF & 0x20000 = 0x20000 ≠ 0` → `beqz $v0` falso → loop quebra na 1ª iteração.
+
+**Confirmação no log_part9b:**
+- Linha 393: `[stub PARTE 9] syscall 0x7a primeira chamada -- retornando -1` apareceu UMA vez.
+- `Unknown syscallId=0x7a hits=...` SUMIU (era 40k+ em 12s no baseline).
+- VBlank tick avançou de #300 (PARTE 8) pra #960 (PARTE 9) — **+220% mais frames executados**.
+- 7 novos `CreateSema id=4..10` criados depois da liberação do poll.
+
+**Lições mantidas pra próximas partes:**
+1. Atalho universal pra spinloop bit-mask: `setReturnS32(ctx, -1)`.
+2. Convenção PS2 "wrapper de 1 instrução" (`addiu $v1,N; syscall; jr $ra`) revela ID exato pelo nome do `entry_*.cpp` — não confiar só no `pc` do log.
+3. Cuidado: `pc` no log de syscall = endereço APÓS o `syscall`, não o do `syscall` em si (delay-slot).
+4. Família 0x79-0x7D fica num corredor de SIF entre `sceSifSetDChain` (0x78) e `GetMemorySize` (0x7F) — provavelmente `sceSif*Stat`/`sceSif*Reg` variants. Documentação Sony escassa.
 
 ---
 
@@ -303,7 +375,8 @@ wc -l log_part6.txt
 | **1, 6** | Sentinela não-inicializada | Loop infinito em função que percorre lista | `head.next/prev = 0` em vez de apontar pra si | Fix 1/6: escrever `head=head.next=head.prev` no boot_stub ANTES dos inits |
 | **F** | Alocador retorna 0 → corrompe consumidor | Bug 1/6 reaparece depois do fix | Alocador (ex: `13DA10`) lê pool vazio, devolve 0; consumidor escreve em `[0+offset]` que cai em região crítica | ✅ PARTE 6 mitigado: blindagem `if ($v0==0) abort` no consumidor (sintoma controlado, jogo avança). Fix definitivo (PARTE 7+) = stub C++ no alocador em `game_overrides.cpp` |
 | **G** | Handler de interrupção apontado mas não recompilado → polling infinito | Programa entra em loop após boot avançado (sem crash) | INTC mapeia handler pra endereço guest que está num `.cpp` recompilado mas órfão (após `jr $ra` em outra função, marcado como código morto pelo detector PS2Recomp) | ✅ **PARTE 8 RESOLVIDO**: `runtime.registerFunction(addr, stub_C++)` em `game_overrides.cpp` replicando as escritas globais do handler original |
-| **H** | **Família de syscalls SIF poll faltando no switch → spinloop bit-mask** | Loop infinito sem crash, log explode com `Unknown syscallId=0xN hits=...` (10k-130k em segundos) | Switch `dispatchNumericSyscall` em `ps2_syscalls.cpp` tinha buracos em 0x79/0x7A/0x7B/0x7D entre `sceSifSetDChain` (0x78) e `GetMemorySize` (0x7F). Caller faz `jal wrapper; and $v0,$v0,$sN; beqz $v0,-0x4` → poll de bit que nunca acende com retorno default 0 | ✅ **PARTE 9 APLICADO**: 4 cases novos no switch retornando `-1` (= `0xFFFFFFFF`, destrava qualquer máscara bit) + log 1ª chamada |
+| **H** | **Família de syscalls SIF poll faltando no switch → spinloop bit-mask** | Loop infinito sem crash, log explode com `Unknown syscallId=0xN hits=...` (10k-130k em segundos) | Switch `dispatchNumericSyscall` em `ps2_syscalls.cpp` tinha buracos em 0x79/0x7A/0x7B/0x7D entre `sceSifSetDChain` (0x78) e `GetMemorySize` (0x7F). Caller faz `jal wrapper; and $v0,$v0,$sN; beqz $v0,-0x4` → poll de bit que nunca acende com retorno default 0 | ✅ **PARTE 9 RESOLVIDO** (confirmado log_part9b 2026-04-27): 4 cases novos no switch retornando `-1` (= `0xFFFFFFFF`, destrava qualquer máscara bit) + log 1ª chamada. Stub disparou 1x, `Unknown syscallId=0x7a` SUMIU (40k+ hits/12s → 0), VBlank #960 |
+| **I** | **Stub SIF DMA EE↔IOP rejeita silenciosamente sem dizer qual validação falhou** | `sceSifSetDma failed dmat=0xN count=0xM` repete 8+ vezes em segundos (não trava o jogo, mas impede transferência EE↔IOP de continuar) | Stub `sceSifSetDma` em `ps2_stubs_misc.inl:3261` valida descritor 16B (src/dest/size/attr) via 4 ifs (`!entry`, `size>RAM`, `canCopyGuestByteRange`, `copyGuestByteRange`). Em falha, retorna 0 sem dizer QUAL if rejeitou nem QUAIS endereços o jogo mandou. Provável causa: `xfer.src` ou `xfer.dest` aponta pra IOP/scratchpad/kernel (fora dos 32 MB de RAM EE) | 🟡 **PARTE 10 PLANO A APLICADO** (instrumentação): variáveis `failIndex`/`failReason`/`failXfer` + log mutex+`unordered_set` chaveado em `(dest<<32)^src`, máx 8 únicos. Comportamento mantido. PARTE 10 PLANO B no próximo round (provável: relaxar validação para ranges IOP) |
 | **2-5** | Inits do crt0 não rodados | Várias estruturas vazias após boot | Boot stub não chama todos 4 inits do crt0 | `kInitChain[]` no boot_stub |
 
 **Padrão dominante:** bugs **1, 6 e F** são todos da mesma família —

@@ -3273,6 +3273,16 @@ void sceSifSetDma(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
     std::array<Ps2SifDmaTransfer, 32u> pending{};
     uint32_t pendingCount = 0u;
     bool ok = true;
+
+    // PARTE 10 PLANO A (Bug I) — instrumentação para identificar a causa raiz
+    // do "sceSifSetDma failed". O log antigo só dizia "failed" sem mostrar
+    // QUAL validação rejeitou nem QUAIS endereços (src/dest/size/attr) o jogo
+    // está mandando. Sem isso, o fix definitivo (PARTE 10 PLANO B) seria chute.
+    // Estes campos são preenchidos no ponto da falha e logados abaixo.
+    uint32_t failIndex = 0u;
+    const char *failReason = nullptr;
+    Ps2SifDmaTransfer failXfer{};
+
     for (uint32_t i = 0; i < count; ++i)
     {
         const uint32_t entryAddr = dmatAddr + (i * static_cast<uint32_t>(sizeof(Ps2SifDmaTransfer)));
@@ -3280,6 +3290,8 @@ void sceSifSetDma(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
         if (!entry)
         {
             ok = false;
+            failIndex = i;
+            failReason = "entryAddr_fora_da_RAM";
             break;
         }
 
@@ -3294,11 +3306,17 @@ void sceSifSetDma(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
         if (sizeBytes > PS2_RAM_SIZE)
         {
             ok = false;
+            failIndex = i;
+            failReason = "size_maior_que_RAM";
+            failXfer = xfer;
             break;
         }
         if (!canCopyGuestByteRange(rdram, xfer.dest, xfer.src, sizeBytes))
         {
             ok = false;
+            failIndex = i;
+            failReason = "canCopyGuestByteRange_rejeitou_dest_ou_src";
+            failXfer = xfer;
             break;
         }
 
@@ -3313,6 +3331,9 @@ void sceSifSetDma(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
             if (!copyGuestByteRange(rdram, xfer.dest, xfer.src, static_cast<uint32_t>(xfer.size)))
             {
                 ok = false;
+                failIndex = i;
+                failReason = "copyGuestByteRange_falhou_durante_copia";
+                failXfer = xfer;
                 break;
             }
         }
@@ -3320,6 +3341,36 @@ void sceSifSetDma(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
 
     if (!ok)
     {
+        // PARTE 10 PLANO A — log detalhado, só primeiras 8 combinações únicas
+        // (dest, src) pra evitar inundação. Mantém também o log compacto antigo
+        // (warnCount<32) pra preservar contagem de tentativas.
+        static std::mutex s_part10Mutex;
+        static std::unordered_set<uint64_t> s_part10Logged;
+        const uint64_t key =
+            (static_cast<uint64_t>(failXfer.dest) << 32) ^ static_cast<uint64_t>(failXfer.src);
+        bool shouldLogDetail = false;
+        {
+            std::lock_guard<std::mutex> lock(s_part10Mutex);
+            if (s_part10Logged.size() < 8u && s_part10Logged.insert(key).second)
+            {
+                shouldLogDetail = true;
+            }
+        }
+        if (shouldLogDetail)
+        {
+            std::cerr << "[PARTE 10 PLANO A] sceSifSetDma falhou — dmat=0x" << std::hex << dmatAddr
+                      << " count=0x" << count
+                      << " idxFail=" << std::dec << failIndex
+                      << " motivo='" << (failReason ? failReason : "?") << "'"
+                      << " xfer.src=0x" << std::hex << failXfer.src
+                      << " xfer.dest=0x" << failXfer.dest
+                      << " xfer.size=0x" << failXfer.size
+                      << " xfer.attr=0x" << failXfer.attr
+                      << " ra=0x" << getRegU32(ctx, 31)
+                      << " pc=0x" << ctx->pc
+                      << std::dec << std::endl;
+        }
+
         static uint32_t warnCount = 0;
         if (warnCount < 32u)
         {
