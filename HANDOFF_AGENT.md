@@ -89,9 +89,35 @@ inundar. Aguardando próximo dossiê.** Depois: fuga com o alvo
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-27 PARTE 10 — Bug I `sceSifSetDma` instrumentado, aguardando teste)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-27 PARTE 10 PLANO A CONFIRMADO — causa raiz do Bug I revelada, aguardando decisão do Agente Cris entre B1/B2/B3)
 
-### Status: 🟢 PARTE 10 PLANO A APLICADO — instrumentação cirúrgica em `sceSifSetDma` no runtime, AGUARDANDO log_part10 do Agente Cris
+### Status: ✅ PARTE 10 PLANO A CONFIRMADO em produção (log_part10.txt 437 linhas, cancelado em VBlank #1680/28s) — câmera capturou `xfer.dest=0xffffffff` em todas as 8 falhas, `motivo='canCopyGuestByteRange_rejeitou_dest_ou_src'`. AGUARDANDO decisão entre PARTE 10 PLANO B1/B2/B3.
+
+**🎯 Achado glorioso da câmera PARTE 10 PLANO A (linhas 379-432 do log_part10.txt):**
+
+```
+[PARTE 10 PLANO A] sceSifSetDma falhou —
+  dmat=0x1fffed0 count=0x1
+  idxFail=0 motivo='canCopyGuestByteRange_rejeitou_dest_ou_src'
+  xfer.src=0x327880  xfer.dest=0xffffffff  xfer.size=0x14  xfer.attr=0x44
+  ra=0x2969ac  pc=0x293fe4
+```
+
+E o padrão repetitivo subsequente (a cada ~5-10s):
+```
+xfer.src=0x20327ac0 (= 0x327ac0 + 0x20000000 = mirror KSEG1 da mesma RAM)
+xfer.dest=0xffffffff
+xfer.size=0x40  xfer.attr=0x44
+```
+
+**Causa raiz forte:** `xfer.dest = 0xffffffff` (sentinela U32 "-1") **NÃO é endereço de RAM** (não é IOP `0xBC...`, não é KSEG0 `0x80...`, não é scratchpad `0x70...`). É o padrão **"stage transfer" do SIF RPC** — o EE manda o pacote sem destino fixo, o IOP decodifica o header (tipicamente `RPC_BIND`/`RPC_CALL`/`RPC_END`) e decide onde gravar. O runtime atual não implementa esse modo — só valida endereço cru via `canCopyGuestByteRange` que (corretamente) rejeita `0xffffffff`.
+
+**Estado do jogo no momento do cancelamento:**
+- VBlank tick #1680 = 28 segundos rodando
+- 17 semáforos criados (`CreateSema id=4..17`)
+- `sceSifSetDma failed` repetindo a cada poucos segundos
+- **Sem crash, sem deadlock — só loop estável de retry no canal SIF**
+- Cancelamento foi OK: programa não ia descobrir nada novo, só ia continuar repetindo
 
 **🎯 Resumo do que foi feito nesta sessão (2026-04-27 PARTE 10):**
 
@@ -181,29 +207,56 @@ grep -E "PARTE 10 PLANO A|sceSifSetDma|stub PARTE 9|stub:0x182f28|Unknown syscal
 wc -l log_part10.txt
 ```
 
-### 🎯 Cenários esperados no log_part10.txt
+### 🎯 Cenários esperados no log_part10.txt — **resultado real:**
 
-| Cenário | Sinais | Próxima ação |
-|---|---|---|
-| **A — Câmera capturou (esperado)** | `[PARTE 10 PLANO A] sceSifSetDma falhou — idxFail=N motivo='X' xfer.src=0x... xfer.dest=0x... xfer.size=0x... xfer.attr=0x...` aparece 1-8x. `failed dmat=` continua aparecendo 8x (preservado) | Decifrar PARTE 10 PLANO B baseado em `idxFail`/`motivo`/endereços. Ex: se `motivo='entryAddr_fora_da_RAM'` e `xfer.dest=0xBC000000+`, é IOP RAM → relaxar validação OU mapear IOP. Se `motivo='size_maior_que_RAM'`, é descritor lixo → instrumentar leitor do dmat |
-| **B — Câmera silenciosa, sintoma sumiu** | Nenhum log PARTE 10 + nenhum `failed dmat=` no log | O `sceSifSetDma` parou de ser chamado (jogo entrou em outro caminho) ou as 8 falhas anteriores destravaram algo no jogo. Procurar próximo travamento (Unknown syscallId novo, INTC:skip, vif1, etc) |
-| **C — Câmera silenciosa, sintoma persiste** | `failed dmat=` aparece mas nenhum `[PARTE 10 PLANO A]` | Build não pegou a mudança. Conferir se `wc -l` do `ps2_stubs_misc.inl` cresceu, rodar `bash recompilar.sh` cheio |
-| **D — Inunda log mesmo com unordered_set** | `[PARTE 10 PLANO A]` aparece >8x com chaves diferentes | Cada falha tem `(dest, src)` único — o jogo está disparando muitas DMAs novas. Já temos os 8 primeiros, suficiente pra decidir o fix. Se quiser mais, aumentar limite pra 32 |
-| **E — Crash novo** | SEGV/ASAN com stack mostrando `sceSifSetDma` | Improvável (instrumentação é só leitura), mas se acontecer, é provável race no `unordered_set::insert` (não deveria, mutex protege). Investigar com gdb |
+| Cenário | Sinais | Próxima ação | Aconteceu? |
+|---|---|---|---|
+| **A — Câmera capturou** | `[PARTE 10 PLANO A] sceSifSetDma falhou — idxFail=N motivo='X' xfer.src=0x... xfer.dest=0x...` aparece 1-8x | Decifrar PARTE 10 PLANO B | ✅ **SIM** — linhas 379-432 |
+| **B — Câmera silenciosa, sintoma sumiu** | — | Procurar próximo travamento | ❌ não |
+| **C — Câmera silenciosa, sintoma persiste** | — | Build não pegou | ❌ não |
+| **D — Inunda log mesmo com unordered_set** | — | Aumentar limite | ❌ não — só 2 chaves únicas, deduplicação funcionou |
+| **E — Crash novo** | — | Investigar | ❌ não — sem crash, loop estável |
+
+### 🟢 PARTE 10 PLANO B — opções na mesa (aguardando decisão do Agente Cris)
+
+A câmera revelou que `xfer.dest = 0xffffffff` em todas as falhas, com `motivo='canCopyGuestByteRange_rejeitou_dest_ou_src'` (if 3 do stub). Nenhum dos endereços previstos no plano contingencial original (IOP `0xBC...`, scratchpad `0x70...`, KSEG0 `0x80...`) — é o **valor sentinela "-1"**, padrão do **SIF RPC stage transfer**: o EE manda o pacote sem destino fixo e o IOP decide pelo header (`RPC_BIND`/`RPC_CALL`/`RPC_END`).
+
+| Opção | O que faz | Custo no PC | Risco | Quando escolher |
+|---|---|---|---|---|
+| **B1 — Stub permissivo** | Quando `dest==0xffffffff`, aceitar o pacote, registrar no log e retornar sucesso fake (não copia nada). Jogo continua, IOP nunca recebe | `rebuild_runtime` ~30s, ~15 linhas | Baixo. Se jogo pollar IOP esperando ACK, trava em outro lugar — **bom**, isso revela o próximo bug | Quando queremos avançar rápido pra mapear próximo travamento |
+| **B2 — Implementar SIF RPC stage** | Decodificar header SIF do pacote, alocar buffer interno, copiar `src→buffer`, simular ACK do IOP corretamente | `rebuild_runtime` ~30s + 200-400 linhas novas | Médio. Exige decifrar protocolo SIF Sony (RPC_BIND/CALL/END, semáforos IOP-side) | Quando confirmamos que B1 trava cedo demais e jogo realmente precisa do IOP funcional |
+| **B3 — Instrumentação extra (dump do pacote)** | Antes do log de falha, ler os 0x14 ou 0x40 bytes em `xfer.src` e dumpar em hex no stderr. Confirma se header começa com `0x80000000+rpc_id` (RPC_BIND) ou outro padrão | `rebuild_runtime` ~30s, ~10 linhas | Zero. Só observação | **PRIMEIRO** — confirma se B1 ou B2 é o caminho certo. Recomendação da central |
+
+**Plano recomendado:** **B3 → analisar log_part10b → decidir entre B1 (atalho) ou B2 (correto).**
+
+#### Esqueleto do PARTE 10 PLANO B3 (se Agente Cris aprovar)
+
+Editar `PS2Recomp/ps2xRuntime/src/lib/stubs/ps2_stubs_misc.inl` dentro do bloco `if (shouldLogDetail)` (linha ~3359), adicionar **antes do `std::endl`**:
+
+```cpp
+// PARTE 10 PLANO B3 — dump dos primeiros bytes do pacote em xfer.src
+// pra revelar se header é SIF RPC (RPC_BIND/CALL/END) ou outra coisa.
+const uint8_t *srcPtr = getConstMemPtr(rdram, failXfer.src);
+if (srcPtr && failXfer.size > 0) {
+    const uint32_t dumpBytes = std::min<uint32_t>(failXfer.size, 64u);
+    std::cerr << "  [PARTE 10 PLANO B3] xfer.src dump (primeiros "
+              << std::dec << dumpBytes << " bytes):\n  ";
+    for (uint32_t k = 0; k < dumpBytes; ++k) {
+        std::cerr << std::hex << std::setw(2) << std::setfill('0')
+                  << static_cast<unsigned>(srcPtr[k]);
+        if ((k & 3) == 3) std::cerr << " ";
+        if ((k & 15) == 15 && k+1 < dumpBytes) std::cerr << "\n  ";
+    }
+    std::cerr << std::setfill(' ') << std::dec << std::endl;
+}
+```
+
+Requer adicionar `#include <iomanip>` no topo do arquivo (provavelmente já existe via outros includes — verificar).
 
 ### 📂 Arquivos modificados nesta sessão
-- `PS2Recomp/ps2xRuntime/src/lib/stubs/ps2_stubs_misc.inl:3264-3398` — instrumentação cirúrgica de `sceSifSetDma` (variáveis `failIndex`/`failReason`/`failXfer` + log mutex+`unordered_set` máx 8 únicos)
-- `replit.md` — Bug H marcado ✅ CONFIRMADO, Bug I adicionado na biblioteca (linha 737), analogias 1+2 atualizadas, nova seção PARTE 10 no histórico (este arquivo)
-- `HANDOFF_AGENT.md` (este arquivo) — bloco ESTADO ATUAL reescrito (PARTE 9 movida pra histórico) + resumo de analogias atualizado + Bug H confirmado + Bug I na tabela
-
-### 🟡 Plano contingencial — se Cenário A revelar `motivo='entryAddr_fora_da_RAM'`
-
-| Endereço `xfer.dest` | Causa raiz provável | PARTE 10 PLANO B |
-|---|---|---|
-| `0xBC000000..0xBFFFFFFF` | IOP RAM — DMA EE↔IOP normal do PS2 | Adicionar mapping: tratar `0xBC000000+` como aliased pra buffer interno do runtime, ou stubar `sceSifSetDma` pra retornar success sem copiar (jogo provavelmente só polla status depois) |
-| `0x70000000..0x70003FFF` | Scratchpad EE | Mapear pra buffer estático de 16 KB no runtime |
-| `0x80000000..0x9FFFFFFF` | KSEG0 (mirror cacheável da RAM) | Mascarar high bits: `dest & 0x1FFFFFFF` antes de validar |
-| `0x00000000..0x01FFFFFF` mas > tamanho real da RAM | Endereço inválido do jogo (descritor lixo) | Instrumentar quem ESCREVE no `dmat` antes da chamada — provável Bug J = lista DMA construída errado |
+- `PS2Recomp/ps2xRuntime/src/lib/stubs/ps2_stubs_misc.inl:3264-3398` — instrumentação cirúrgica de `sceSifSetDma` (PARTE 10 PLANO A)
+- `replit.md` — Bug I marcado ✅ CONFIRMADO com causa raiz revelada (linhas 144, 173, 737), analogias 1+2 atualizadas
+- `HANDOFF_AGENT.md` (este arquivo) — ESTADO ATUAL reescrito com achado da câmera + tabela PARTE 10 PLANO B (B1/B2/B3) com esqueleto de código pronto pra B3
 
 ---
 
