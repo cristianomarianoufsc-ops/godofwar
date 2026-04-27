@@ -315,6 +315,93 @@ namespace
         ctx->pc = GPR_U32(ctx, 31);             // return via $ra
     }
 
+    // ========================================================================
+    // PARTE 8 PLANO A — God of War: handler INTC VBlank em 0x00182F28
+    // ========================================================================
+    // Contexto historico:
+    //   - PARTE 7 destravou bomba de oleo (sub_0013DA10) e o jogo avancou
+    //     ate a injecao de inicializacao terminar. Trava nova: sub_0021FF60
+    //     (JAL [7/11] do tabuleiro de boot) entra em loop esperando contadores
+    //     globais que normalmente sao incrementados pelo handler de VBlank.
+    //   - O jogo registra (via AddIntcHandler syscall) o endereco 0x00182F28
+    //     como handler para INTC cause=2 (kIntcVblankStart). O dispatcher
+    //     em ps2_syscalls_interrupt.inl chama runtime->hasFunction(0x00182F28)
+    //     -> false -> loga "[INTC:skip]" e nao executa nada. Resultado: o
+    //     worker thread dispara VBlank a 60 Hz, mas os contadores do JOGO
+    //     (nao os do runtime) nunca avancam, e sub_0021FF60 trava esperando-os.
+    //
+    // Por que o PS2Recomp perdeu este entry:
+    //   - As instrucoes em [0x182f28..0x182f60] FORAM transcritas: estao em
+    //     sub_00182EE8_0x182ee8.cpp, linhas ~134-196. Mas elas vem APOS um
+    //     "jr $ra" em 0x182f20. O detector de funcoes do PS2Recomp parou
+    //     ali, marcando 0x182f24 em diante como "codigo morto/fall-through"
+    //     da sub_00182EE8. Sem entry point, runtime->hasFunction() retorna
+    //     false e o INTC dispatcher nao consegue chamar.
+    //
+    // Anatomia exata do handler (transcrita do disassembly):
+    //   0x182f28: lui   $v1, 0x2A                    ; $v1 = 0x002A0000
+    //   0x182f2c: lui   $a0, 0x2A                    ; $a0 = 0x002A0000
+    //   0x182f30: lw    $v0, -0x3828($v1)            ; $v0 = [0x29C7D8]
+    //   0x182f34: lui   $a1, 0x33                    ; $a1 = 0x00330000
+    //   0x182f38: xori  $v0, $v0, 0x1                ; toggle bit 0
+    //   0x182f3c: sw    $v0, -0x3828($v1)            ; [0x29C7D8] ^= 1   <-- flag VBlank
+    //   0x182f40: lw    $v0, -0x382C($a0)            ; $v0 = [0x29C7D4]
+    //   0x182f44: addiu $v0, $v0, 0x1                ; ++
+    //   0x182f48: sw    $v0, -0x382C($a0)            ; [0x29C7D4] += 1   <-- frame counter principal
+    //   0x182f4c: lw    $v0, 0x4F58($a1)             ; $v0 = [0x334F58]
+    //   0x182f50: addiu $v0, $v0, 0x1                ; ++
+    //   0x182f54: sw    $v0, 0x4F58($a1)             ; [0x334F58] += 1   <-- contador secundario
+    //   0x182f58: sync                                ; barreira (no-op no host)
+    //   0x182f5c: ei                                  ; enable interrupts (no-op aqui)
+    //   0x182f60: jr    $ra                           ; return
+    //
+    // Mecanismo VSync ja existente no runtime (descoberto na PARTE 8):
+    //   - g_vsync_tick_counter: contador interno do RUNTIME (60 Hz)
+    //   - signalVSyncFlag(): escreve em [flagAddr]/[tickAddr] registrados
+    //     pelo guest via SetVSyncFlag syscall. NAO toca os 3 contadores acima.
+    //   - dispatchIntcHandlersForCause(cause=2): chama os handlers INTC. Se
+    //     nenhum handler estiver registrado em runtime.functionTable para
+    //     o endereco 0x00182F28, loga "[INTC:skip]".
+    //   - Conclusao: precisamos preencher essa lacuna registrando uma
+    //     funcao em 0x00182F28 que toque os 3 contadores do JOGO.
+    // ========================================================================
+    constexpr uint32_t kGowVblankFlagAddr        = 0x0029C7D8u;
+    constexpr uint32_t kGowVblankFrameCountAddr  = 0x0029C7D4u;
+    constexpr uint32_t kGowVblankAltCountAddr    = 0x00334F58u;
+
+    std::atomic<uint64_t> g_gowVblankTickCount{0u};
+
+    void gow_intc_handler_0x182f28(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime)
+    {
+        // Replica fiel do MIPS em 0x182f28..0x182f60:
+        const uint32_t flag = READ32(kGowVblankFlagAddr);
+        WRITE32(kGowVblankFlagAddr, flag ^ 1u);
+
+        const uint32_t frameCount = READ32(kGowVblankFrameCountAddr);
+        WRITE32(kGowVblankFrameCountAddr, frameCount + 1u);
+
+        const uint32_t altCount = READ32(kGowVblankAltCountAddr);
+        WRITE32(kGowVblankAltCountAddr, altCount + 1u);
+
+        // sync + ei sao no-op no host: o dispatcher ja serializa handlers
+        // via mutex e o cop0_status->ie nao tem efeito real no recompilado.
+
+        const uint64_t tick = g_gowVblankTickCount.fetch_add(1u, std::memory_order_relaxed) + 1u;
+        if (tick <= 4u || (tick % 60u) == 0u)
+        {
+            std::cerr << "[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #" << std::dec << tick
+                      << " — frameCount=" << (frameCount + 1u)
+                      << " flag=" << ((flag ^ 1u) & 1u)
+                      << " altCount=" << (altCount + 1u)
+                      << std::endl;
+        }
+
+        // Termina o handler retornando ao chamador. O loop em
+        // dispatchIntcHandlersForCause (linha 141 de ps2_syscalls_interrupt.inl)
+        // sai quando ctx->pc == 0, e $ra foi setado a 0 antes da chamada.
+        ctx->pc = GPR_U32(ctx, 31);
+    }
+
     void apply_god_of_war_overrides(PS2Runtime& runtime)
     {
         runtime.registerFunction(0x0013DA10u, gow_stub_sub_0013DA10);
@@ -324,6 +411,12 @@ namespace
                   << std::hex << kGowStubHeapBase << "..0x"
                   << (kGowStubHeapBase + kGowStubHeapSize) << "]"
                   << std::dec << std::endl;
+
+        runtime.registerFunction(0x00182F28u, gow_intc_handler_0x182f28);
+        std::cout << "[game_overrides] God of War: stub PARTE 8 PLANO A registrado em 0x00182F28 "
+                  << "(handler INTC VBlank — replica fiel das 8 instrucoes em sub_00182EE8 "
+                  << "que o detector PS2Recomp perdeu por estarem apos um jr $ra)"
+                  << std::endl;
     }
 }
 
