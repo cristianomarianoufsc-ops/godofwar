@@ -81,86 +81,106 @@ reais, VIF1/DMA com payload, áudio, gamepad).
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-27 PARTE 8 — handler INTC VBlank stub APLICADO, aguardando teste)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-27 PARTE 9 — Bug H syscalls 0x79/0x7A/0x7B/0x7D APLICADO, aguardando teste)
 
-### Status: 🟢 PARTE 8 PLANO A APLICADO — stub do handler INTC VBlank `0x00182F28` registrado, build incremental ok, AGUARDANDO dossiê de campo do Agente Cris
+### Status: 🟢 PARTE 9 PLANO A APLICADO — 4 cases novos no switch de syscalls do runtime, AGUARDANDO log_part9b do Agente Cris
 
-**🎯 Resumo do que foi feito nesta sessão (2026-04-27 PARTE 8):**
+**🎯 Resumo do que foi feito nesta sessão (2026-04-27 PARTE 9):**
 
 | Item | Resultado |
 |---|---|
-| Investigação prévia (15 min, sem custo pro PC) | ✅ Mapeou anatomia COMPLETA do handler + mecanismo VSync do runtime + razão técnica do PS2Recomp ter perdido o entry |
-| Stub aplicado em `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp` (após o stub PARTE 7) | ✅ `gow_intc_handler_0x182f28` + `runtime.registerFunction(0x00182F28u, ...)` em `apply_god_of_war_overrides` |
-| Replica fiel das 3 escritas do MIPS original | ✅ toggle `[0x29C7D8]^=1`, `[0x29C7D4]+=1`, `[0x334F58]+=1` |
-| Documentação | ✅ `replit.md` (analogias atualizadas, biblioteca de bugs Bug G atualizada, nova seção "PARTE 8" no histórico com TODAS as descobertas técnicas) + `HANDOFF_AGENT.md` (este arquivo) |
+| **PARTE 8 confirmada em produção** (log_part9 baseline do Agente Cris, 7.882.220 linhas) | ✅ `[game_overrides] God of War: stub PARTE 8 PLANO A registrado` apareceu, `VBlank tick #1..#300` (5s @ 60Hz), `[INTC:skip]` SUMIU, `[vif1:cmd]` aparece com IRQ no idx=20 (= VIF1 começou a rodar em paralelo) |
+| **Bug H decifrado em 100%** | ✅ Syscall 0x7A (não 0x79) no caller `entry_296518:0x296718` faz `and $v0,$v0,$s0` (= bit 17) seguido de `beqz $v0, -0x4` (loop). Wrappers MIPS confirmados: `entry_294020`(0x79) / `entry_294030`(0x7A) / `entry_294040`(0x7B). Buracos no switch em 0x79/7A/7B/7D entre 0x78 e 0x7C |
+| **3 callers distintos da 0x7A identificados no log** | ✅ RA=0x2966c4 (`$a0=0x80000000`, init/reset), RA=0x296718 (`$a0=0x4`, loop poll bit 17), RA=0x2703412 (`$a0=0x4 $a3=0x32`) — todos cobertos pelo mesmo stub |
+| Stub aplicado em `PS2Recomp/ps2xRuntime/src/lib/ps2_syscalls.cpp` (cases 0x79/0x7A/0x7B/0x7D no switch de `dispatchNumericSyscall`) | ✅ Retorna `-1` (= `0xFFFFFFFF`); qualquer máscara bit-a-bit do retorno produz != 0, destrava poll. Loga 1ª chamada de cada syscall com PC/RA/$a0/$a1/$a3 (padrão `s_unknownCounts` da TODO) |
+| Documentação | ✅ `replit.md` (Bug H na biblioteca, analogias atualizadas, seção PARTE 9 no histórico) + `HANDOFF_AGENT.md` (este arquivo) |
 | Build no Replit | ⏸️ Não tentado — compilação roda só no PC do Agente Cris |
-| Teste no PC | ⏸️ AGUARDANDO Agente Cris executar o comando abaixo |
+| Teste no PC | ⏸️ AGUARDANDO Agente Cris executar `rebuild_runtime.sh` (~30s) |
 
-### 🔬 Anatomia do handler que o stub replica (transcrita do disassembly em `sub_00182EE8.cpp` linhas 134-196):
+### 🔬 Anatomia do bug + da fix
 
+**Caller que estava em loop** (em `entry_296518_0x296798.cpp`, PCs `0x29670c..0x29671c`):
 ```mips
-0x182f28: lui   $v1, 0x2A
-0x182f2c: lui   $a0, 0x2A
-0x182f30: lw    $v0, -0x3828($v1)        ; lê [0x29C7D8] (flag VBlank)
-0x182f34: lui   $a1, 0x33
-0x182f38: xori  $v0, $v0, 0x1
-0x182f3c: sw    $v0, -0x3828($v1)        ; [0x29C7D8] ^= 1   ← FLAG VBLANK
-0x182f40: lw    $v0, -0x382C($a0)        ; lê [0x29C7D4] (frame counter)
-0x182f44: addiu $v0, $v0, 0x1
-0x182f48: sw    $v0, -0x382C($a0)        ; [0x29C7D4] += 1   ← FRAME COUNTER PRINCIPAL
-0x182f4c: lw    $v0, 0x4F58($a1)         ; lê [0x334F58] (counter alt)
-0x182f50: addiu $v0, $v0, 0x1
-0x182f54: sw    $v0, 0x4F58($a1)         ; [0x334F58] += 1   ← CONTADOR SECUNDÁRIO
-0x182f58: sync                            ; barreira (no-op no host)
-0x182f5c: ei                              ; enable interrupts (no-op aqui)
-0x182f60: jr    $ra                       ; return
+0x29670c: lui   $s0, 0x2                  ; $s0 = 0x00020000 (máscara bit 17)
+0x296710: jal   func_294030               ; chama syscall 0x7A
+          (delay slot: addiu $a0,$zero,0x4) ; $a0 = 4
+0x296718: and   $v0, $v0, $s0             ; mascara retorno com 0x20000
+0x29671c: beqz  $v0, -0x4                 ; se zero, volta pra 0x296710 → LOOP
 ```
+
+**Wrapper MIPS triviais** (3 deles, possivelmente 4):
+- `entry_294020_0x294030.cpp` — `addiu $v1,$zero,0x79; syscall; jr $ra`
+- `entry_294030_0x294050.cpp` — duas entries: `+0x7A` em `0x294030` e `+0x7B` em `0x294040`
+- (entry equivalente para `0x7D` ainda não localizado mas coberto pelo mesmo stub)
+
+**Por que o stub funciona** (em `ps2_syscalls.cpp:321-363`): o runtime `handleSyscall` despacha por `$v1` quando o `encodedSyscallId` recebido é 0. Como o switch agora tem cases para 0x79/0x7A/0x7B/0x7D **antes** do default `TODO`, qualquer chamada vai cair no stub novo. Retorno `-1` = `0xFFFFFFFF` em U32: `0xFFFFFFFF & 0x20000 = 0x20000 ≠ 0`, então `beqz $v0` no caller AGORA é falso → loop quebra na 1ª iteração.
 
 ### 🧠 LIÇÕES TÉCNICAS DA INVESTIGAÇÃO (não esquecer — vão se repetir)
 
-1. **Por que o PS2Recomp perdeu o entry de `0x182f28`:** o detector de funções tem 2 modos — (a) descoberta via JAL direto (b) entrada na tabela do ELF. Quando um handler vem APÓS um `jr $ra` dentro de outra função, é marcado como "fall-through morto". `0x182f24` é o `jr $ra` de `sub_00182EE8`, então `0x182f28..0x182f60` ficou inacessível via `runtime.lookupFunction()` mesmo estando transcrito.
-2. **Padrão suspeito:** as 4 funções "NÃO REGISTRADA" do init pre-main (`0x283770`, `0x17acb8`, `0x138b10`, `0x1838d0`) provavelmente sofrem da mesma doença. Quando virar problema, **primeiro** procurar essas instruções dentro de outros `sub_*.cpp` — a chance de já estarem transcritas é alta.
-3. **Mecanismo VSync do runtime já está completo** em `PS2Recomp/ps2xRuntime/src/lib/syscalls/ps2_syscalls_interrupt.inl`:
-   - `g_vsync_tick_counter` (linha 23): contador atômico do RUNTIME (60 Hz, `kVblankPeriod = 16667 µs`)
-   - `interruptWorkerMain` (linha 274): worker thread que dispara VBlank
-   - `dispatchIntcHandlersForCause` (linha 77): chama handlers INTC; se `runtime->hasFunction(handler)` é false, loga `[INTC:skip]` (linha 121)
-   - `signalVSyncFlag` (linha 251): escreve em `[flagAddr]`/`[tickAddr]` registrados pelo guest via syscall `SetVSyncFlag`. **NÃO toca os 3 contadores do JOGO** — esse era o elo perdido.
-   - `AddIntcHandler` syscall (linha 431): jogo registra handler INTC.
-   - **Padrão pra próximo handler INTC fantasma:** registrar via `runtime.registerFunction(addr, stub)` dentro de `apply_god_of_war_overrides`. Não precisa mexer em `AddIntcHandler` syscall — o jogo já registra o endereço, basta o runtime achar a função.
+1. **Família de syscalls "SIF poll" no PS2 EE:** os IDs 0x79/0x7A/0x7B/0x7D ficam num corredor entre `sceSifSetDChain` (0x78) e `GetMemorySize` (0x7F). Documentação Sony é escassa — provavelmente são `sceSif*Stat`/`sceSif*Reg` variants. Quando aparecer outro buraco no switch, primeiro tentar STUB destravante; o nome correto vem depois.
+2. **Convenção PS2 "wrapper de uma instrução":** o jogo gera funções triviais `addiu $v1,N; syscall; jr $ra` pra cada syscall que ele chama. Quando uma syscall é desconhecida, **olhar primeiro pelo arquivo `entry_*.cpp` no range correto** já mostra o ID exato (não confiar só no log — o `pc` no log pode apontar pro `entry` SEGUINTE se a numeração for próxima).
+3. **Pista do "loop infinito sem crash":** quando o jogo não trava o PC nem dá SEGV mas o log explode (40k+ hits da mesma syscall em segundos), é poll-loop esperando bit. Procurar `and $v0,$v0,$sN; beqz $v0,...` perto do RA da syscall — a máscara `$sN` revela qual bit destravante usar. Atalho: `setReturnS32(ctx, -1)` destrava QUALQUER poll bit-mask.
+4. **Cuidado com `pc` no log de syscall:** o `pc=0x294034` no log refere-se à **próxima instrução após a `syscall`** (= delay-slot/depois), não à syscall em si. A syscall é em `pc-4` (0x294030 nesse caso). E os arquivos `entry_X_0xY.cpp` cobrem o range `[X..Y)` — `Y` é exclusivo.
 
-### 📋 Comando pro Agente Cris testar a PARTE 8
+### 📋 Comando pro Agente Cris testar a PARTE 9
 
 ```bash
 cd ~/Documentos/GitHub/godofwar
 git pull origin main
 bash rebuild_runtime.sh                # incremental ~30s (só relinka ps2runtime + GodOfWarPCPort)
-PS2_TRACE=1 ./build/GodOfWarPCPort GOD_PC_PORT_FINAL/data/SCUS_973.99 2>&1 | tee log_part8.txt
-grep -E "stub PARTE 8|stub:0x182f28|INTC:skip|vif1:cmd|13FAB8|entry_182ff0|alloc #" log_part8.txt | head -200
-wc -l log_part8.txt
+PS2_TRACE=1 ./build/GodOfWarPCPort GOD_PC_PORT_FINAL/data/SCUS_973.99 2>&1 | tee log_part9b.txt
+grep -E "stub PARTE 9|stub PARTE 8|stub:0x182f28|Unknown syscallId=0x7|vif1:cmd|alloc #" log_part9b.txt | head -200
+wc -l log_part9b.txt
 ```
 
-### 🎯 Cenários esperados no log_part8.txt
+### 🎯 Cenários esperados no log_part9b.txt
 
 | Cenário | Sinais | Próxima ação |
 |---|---|---|
-| **A — Vitória total (esperado)** | `[game_overrides] God of War: stub PARTE 8 PLANO A registrado em 0x00182F28` aparece + `[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #N` aparece N vezes (1, 2, 3, 4, 60, 120, ...) + `[INTC:skip] cause=2 handler=0x182f28` SUMIU + jogo avança PRA ALÉM do `sub_0021ff60` (próximo travamento exposto) | Decifrar próximo travamento. PARTE 9 = atacar Bug H (provável próxima função fantasma ou subsistema VIF1/DMA/GS faltando) |
-| **B — Stub dispara mas sub_0021ff60 ainda trava** | `[stub:0x182f28] tick #N` aparece, mas `sub_0021ff60` continua em loop | Precisamos de MAIS contadores. Investigar com watchpoint nos endereços lidos pelo `sub_0021ff60` (a função tem `lui $a0, 0x2A` + `lw $v0, -0x382C($a0)` em vários pontos — ela TAMBÉM lê `[0x29C7D4]`). Possível handler real toca outros endereços que disassembly não mostrou |
-| **C — Stub não dispara** | `[INTC:skip] cause=2 handler=0x182f28` continua aparecendo | Build não pegou a nova função. Verificar se `[game_overrides] God of War: stub PARTE 8 PLANO A registrado` aparece no início do log. Se NÃO aparece → `rebuild_runtime.sh` não relinkou direito; rodar `bash recompilar.sh` cheio |
-| **D — Crash novo (SEGV ou ASAN)** | Stub dispara, mas surge crash logo depois | Provável: tocar um dos 3 endereços é prematuro (BSS não inicializada). Solução: condicionar primeira escrita ao `g_gowVblankTickCount > 0` ou aguardar `signalVSyncFlag` ter `flagAddr != 0` |
+| **A — Vitória total (esperado)** | `[stub PARTE 9] syscall 0x7a primeira chamada -- retornando -1 ...` aparece UMA vez (e idem pra 0x79/0x7B se forem chamadas), `Unknown syscallId=0x7a hits=...` SUMIU, jogo avança ALÉM do JAL [8/11] do `0x138d48` (próximo bug exposto = Bug I) | Decifrar Bug I (provavelmente outro handler INTC fantasma, mais syscalls SIF, ou primeira parede de DMA/GS) |
+| **B — Loop continua mesmo com stub** | `[stub PARTE 9]` aparece mas `Unknown syscallId=0x7a` ainda continua | Stub registrou, mas o caller espera VALOR diferente de `-1` (talvez bit 17 setado mas resto zerado: 0x20000 puro). Refinar pra `setReturnS32(ctx, 0x20000)` |
+| **C — Stub não dispara** | Nenhum `[stub PARTE 9]` no log + `Unknown syscallId=0x7a` continua | Build não pegou a mudança. Conferir se o `wc -l` cresceu, depois rodar `bash recompilar.sh` cheio (não só `rebuild_runtime.sh`) |
+| **D — Crash novo (SEGV/ASAN)** | Stub dispara mas surge crash | O caller usa o retorno `-1` como ponteiro (improvável dado `and` com bit-mask). Refinar pra `setReturnS32(ctx, 0x20000)` |
+| **E — Vai longe e bate em outra família de syscall** | Stub dispara, jogo avança N segundos, depois novo `Warning: Unimplemented PS2 syscall called. ...` aparece pra ID diferente | ✅ Comportamento ESPERADO. Cada bug exposto = mais um passo. PARTE 10 = analisar a syscall nova |
 
 ### 📂 Arquivos modificados nesta sessão
-- `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp` — adicionado `gow_intc_handler_0x182f28` + registro em `apply_god_of_war_overrides`
-- `replit.md` — analogias 1+2 atualizadas (linhas 139-140, 164-165), Bug G atualizado na biblioteca (linha ~621), nova seção "PARTE 8" no histórico
-- `HANDOFF_AGENT.md` (este arquivo) — bloco ESTADO ATUAL reescrito + resumo de analogias atualizado
+- `PS2Recomp/ps2xRuntime/src/lib/ps2_syscalls.cpp` — adicionados 4 cases (0x79/0x7A/0x7B/0x7D) com stub `setReturnS32(ctx, -1)` + log 1ª chamada (mutex + `unordered_set`)
+- `replit.md` — analogias 1+2 atualizadas, Bug H adicionado na biblioteca, nova seção "PARTE 9" no histórico
+- `HANDOFF_AGENT.md` (este arquivo) — bloco ESTADO ATUAL reescrito (PARTE 8 movida pra histórico) + resumo de analogias atualizado + Bug H na biblioteca
 
 ### 🟡 Plano contingencial — se Cenário A falhar
 
 | Falha | Backup |
 |---|---|
-| Cenário B (stub dispara mas trava) | Adicionar instrumentação dentro do stub que monitora os PCs do `sub_0021ff60` que estão em loop. Comparar com offsets `lui 0x2A`/`lui 0x33` da função |
-| Cenário C (stub não registra) | Forçar `cmake` re-glob: `cd build && cmake ../GOD_PC_PORT_FINAL && make -j$(nproc)` |
-| Cenário D (crash) | Wrappar escritas em `if (READ32(addr) != 0)` ou em "só escrever após primeiro tick" |
-| Tudo falha | Escalar pra Opção B8 (disassemblar bytes do ELF + reescrever função em C++ regenerando via PS2Recomp). Custo: ~80min build |
+| Cenário B (loop persiste) | Refinar retorno: `setReturnS32(ctx, 0x20000)` (só bit 17) e re-testar |
+| Cenário C (stub não registra) | Forçar build cheio: `bash recompilar.sh`. Se persistir, `cd build && cmake ../GOD_PC_PORT_FINAL && make -j$(nproc)` |
+| Cenário D (crash) | Mesma refinação do B; se ainda crash, instrumentar dentro do stub pra logar TODAS as chamadas (não só 1ª) e ver padrão de uso real |
+| Cenário E (nova syscall faltando) | Resultado normal — segue o ciclo: identificar, decidir entre stub no switch (se SIF/sistema) ou stub C++ no `game_overrides.cpp` (se função guest perdida pelo PS2Recomp) |
+
+---
+
+## 📜 HISTÓRICO PARTE 8 — Handler INTC VBlank stub (Bug G RESOLVIDO)
+
+**Status final:** 🟢 CONFIRMADO em produção (log_part9 baseline do Agente Cris, 7.882.220 linhas). VBlank tick #1..#300 (5s @ 60Hz), `[INTC:skip]` sumiu, `[vif1:cmd]` apareceu com IRQ no idx=20.
+
+**O que foi feito:** stub C++ `gow_intc_handler_0x182f28` em `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp` registrado via `runtime.registerFunction(0x00182F28u, ...)` em `apply_god_of_war_overrides`. Replica fiel das 8 instruções MIPS perdidas pelo detector PS2Recomp (estavam em `sub_00182EE8.cpp` linhas 134-196, mas após `jr $ra` em 0x182f20 → marcado como código morto).
+
+**MIPS replicado:**
+```mips
+0x182f28: lui $v1,0x2A; lui $a0,0x2A
+0x182f30: lw $v0,-0x3828($v1)            ; lê [0x29C7D8]
+0x182f34: lui $a1,0x33
+0x182f38: xori $v0,$v0,0x1
+0x182f3c: sw $v0,-0x3828($v1)            ; [0x29C7D8] ^= 1
+0x182f40: lw $v0,-0x382C($a0); addiu; sw ; [0x29C7D4] += 1
+0x182f4c: lw $v0,0x4F58($a1); addiu; sw  ; [0x334F58] += 1
+0x182f58: sync; ei; jr $ra
+```
+
+**Lições mantidas pra próximas partes:**
+1. Detector PS2Recomp tem 2 modos (JAL direto / tabela ELF). Funções após `jr $ra` em outra função ficam órfãs.
+2. As 4 funções "NÃO REGISTRADA" do init pre-main (`0x283770`, `0x17acb8`, `0x138b10`, `0x1838d0`) provavelmente sofrem da mesma doença.
+3. Mecanismo VSync do runtime já existia em `ps2_syscalls_interrupt.inl` (`g_vsync_tick_counter`, `interruptWorkerMain`, `dispatchIntcHandlersForCause`, `signalVSyncFlag`, `AddIntcHandler` syscall). Padrão pra próximo handler INTC fantasma: `runtime.registerFunction(addr, stub)` em `apply_god_of_war_overrides`.
 
 ---
 
@@ -282,7 +302,8 @@ wc -l log_part6.txt
 | **D** | Loop+stack overflow | PC trava, RAM cresce | Recursão sem base case em `func_100408` | Trava de iter + override |
 | **1, 6** | Sentinela não-inicializada | Loop infinito em função que percorre lista | `head.next/prev = 0` em vez de apontar pra si | Fix 1/6: escrever `head=head.next=head.prev` no boot_stub ANTES dos inits |
 | **F** | Alocador retorna 0 → corrompe consumidor | Bug 1/6 reaparece depois do fix | Alocador (ex: `13DA10`) lê pool vazio, devolve 0; consumidor escreve em `[0+offset]` que cai em região crítica | ✅ PARTE 6 mitigado: blindagem `if ($v0==0) abort` no consumidor (sintoma controlado, jogo avança). Fix definitivo (PARTE 7+) = stub C++ no alocador em `game_overrides.cpp` |
-| **G** | **Handler de interrupção apontado mas não recompilado → polling infinito** | Programa entra em loop após boot avançado (sem crash) | INTC mapeia handler pra um endereço guest que não está nos `.cpp` recompilados. Loop eterno de `[INTC:skip] cause=N handler=0x... → sem função recompilada` intercalado com `[vif1:cmd]` | (em discussão PARTE 7) Stub C++ pro handler em `game_overrides.cpp` OU adicionar a função à lista de recompilação OU registrá-la manualmente |
+| **G** | Handler de interrupção apontado mas não recompilado → polling infinito | Programa entra em loop após boot avançado (sem crash) | INTC mapeia handler pra endereço guest que está num `.cpp` recompilado mas órfão (após `jr $ra` em outra função, marcado como código morto pelo detector PS2Recomp) | ✅ **PARTE 8 RESOLVIDO**: `runtime.registerFunction(addr, stub_C++)` em `game_overrides.cpp` replicando as escritas globais do handler original |
+| **H** | **Família de syscalls SIF poll faltando no switch → spinloop bit-mask** | Loop infinito sem crash, log explode com `Unknown syscallId=0xN hits=...` (10k-130k em segundos) | Switch `dispatchNumericSyscall` em `ps2_syscalls.cpp` tinha buracos em 0x79/0x7A/0x7B/0x7D entre `sceSifSetDChain` (0x78) e `GetMemorySize` (0x7F). Caller faz `jal wrapper; and $v0,$v0,$sN; beqz $v0,-0x4` → poll de bit que nunca acende com retorno default 0 | ✅ **PARTE 9 APLICADO**: 4 cases novos no switch retornando `-1` (= `0xFFFFFFFF`, destrava qualquer máscara bit) + log 1ª chamada |
 | **2-5** | Inits do crt0 não rodados | Várias estruturas vazias após boot | Boot stub não chama todos 4 inits do crt0 | `kInitChain[]` no boot_stub |
 
 **Padrão dominante:** bugs **1, 6 e F** são todos da mesma família —
