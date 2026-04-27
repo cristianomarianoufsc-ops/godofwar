@@ -315,6 +315,49 @@ namespace ps2_syscalls
         case static_cast<uint32_t>(-0x78):
             ps2_stubs::sceSifSetDChain(rdram, ctx, runtime);
             return true;
+        case 0x79:
+        case 0x7A:
+        case 0x7B:
+        case 0x7D:
+        {
+            // PARTE 9 (Bug H) — stubs para a "família SIF poll" que estava deixando o
+            // jogo em loop infinito após a PARTE 8.
+            //
+            // Contexto: entry_294020/entry_294030/entry_294040 (e provavelmente um quarto
+            // entry para 0x7D) são wrappers triviais "addiu $v1,$zero,N; syscall; jr $ra"
+            // que o God of War usa como helpers de poll. O caller principal
+            // (entry_296518 em 0x296710) faz:
+            //     jal func_294030       ; syscall 0x7A
+            //     and  $v0,$v0,$s0      ; mascara com 0x20000 (bit 17)
+            //     beqz $v0, -0x4        ; se zero, refaz a chamada → loop infinito
+            // Como o handler default da TODO devolvia 0, o bit nunca subia → 130k+ hits
+            // observados no log_part9 baseline (Agente Cris).
+            //
+            // Solução: devolver -1 (= 0xFFFFFFFF). Qualquer máscara bit-a-bit do retorno
+            // produz != 0, destravando o poll. Isto é STUB temporário; quando o
+            // próximo sintoma surgir saberemos refinar pra o valor real esperado.
+            //
+            // Loga só a 1ª chamada de cada syscall pra não poluir o log (igual o padrão
+            // s_unknownCounts da TODO). Mantém rastreabilidade do PC/RA/$a0 do 1º caller.
+            static std::mutex s_gowPart9Mutex;
+            static std::unordered_set<uint32_t> s_gowPart9Logged;
+            {
+                std::lock_guard<std::mutex> lock(s_gowPart9Mutex);
+                if (s_gowPart9Logged.insert(syscallNumber).second)
+                {
+                    std::cerr << "[stub PARTE 9] syscall 0x" << std::hex << syscallNumber
+                              << " primeira chamada -- retornando -1 (0xFFFFFFFF, destrava polls bit-mask)"
+                              << " pc=0x" << ctx->pc
+                              << " ra=0x" << getRegU32(ctx, 31)
+                              << " a0=0x" << getRegU32(ctx, 4)
+                              << " a1=0x" << getRegU32(ctx, 5)
+                              << " a3=0x" << getRegU32(ctx, 7)
+                              << std::dec << std::endl;
+                }
+            }
+            setReturnS32(ctx, -1);
+            return true;
+        }
         case 0x7C:
         case 0x7E:
         case 0x80:

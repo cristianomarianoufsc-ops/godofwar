@@ -45,46 +45,36 @@ precisar entender MIPS/syscalls/boot stub. **Tabela completa fica em
 `replit.md` na seção "📖 ANALOGIAS DO PROJETO" — fonte da verdade.**
 Aqui só o resumo do ponto atual; mantenha sincronizado.
 
-**Carro (até PARTE 8):** chassi/combustível/injeção/chave de ignição prontos;
-motor deu 1ª partida (Fix 4+5); engasgou na 1ª marcha (lista circular #2);
-braçadeira reposicionada certa + limitador de RPM (parte 3); sensor de
-vazamento instalado em cima da junta (parte 4); PARTE 5: sensor identificou
-bomba de óleo (`sub_0013DA10`) bombeando AR ZERO; PARTE 6: sensor #3 +
-válvula de segurança; **PARTE 7: trocada a bomba inteira por bomba
-aftermarket com reservatório próprio (stub C++ `gow_stub_sub_0013DA10`,
-1 MB livre em `[0x01000000..0x01100000]`). Bug F DEFINITIVAMENTE RESOLVIDO**:
-4 allocs reais, lista circular real montada, blindagem PARTE 6 nunca mais
-disparou. Próximo travamento exposto = sensor de injeção sem cabo (Bug G
-= handler INTC `0x182f28` não detectado pelo PS2Recomp). 🆕 **PARTE 8
-PLANO A APLICADO: rebobinado o sensor de injeção — recrutamos uma
-centralinha auxiliar (stub C++ `gow_intc_handler_0x182f28`) que replica
-fielmente as 3 escritas que o sensor original fazia a cada VBlank
-(toggle flag `[0x29C7D8]`, +1 em `[0x29C7D4]` e em `[0x334F58]`). Worker
-thread de VBlank do runtime (60 Hz, já existia) agora dispara essa
-centralinha. Aguardando dinamômetro do Agente Cris.** Depois: carburador
-(VIF1/DMA com payloads válidos), test drive.
+**Carro (até PARTE 9):** chassi/combustível/injeção/chave de ignição prontos;
+motor deu 1ª partida (Fix 4+5); engasgou (lista circular #2); braçadeira +
+limitador (parte 3); sensor de vazamento (parte 4); PARTE 5: bomba de óleo
+bombeando AR ZERO; PARTE 6: sensor #3 + válvula; **PARTE 7: bomba
+aftermarket — Bug F resolvido**; **PARTE 8: sensor de injeção rebobinado —
+Bug G resolvido (VBlank tick #1..#300 confirmado no dinamômetro do Agente
+Cris, log_part9 baseline)**. 🆕 **PARTE 9 PLANO A APLICADA: motorista
+ficou apertando o botão da chave inglesa pneumática (syscalls 0x79/0x7A/0x7B/0x7D)
+esperando luz verde acender — botão estava DESLIGADO da fonte (4 cases
+faltando no switch do runtime). Mecânico ligou os 4 botões e configurou
+pra responderem "tudo OK" (retorno -1 = 0xFFFFFFFF, qualquer máscara bit
+do retorno produz != 0). Custo no PC: rebuild_runtime ~30s.** Depois:
+test drive (VIF1/DMA com payloads válidos, GS, áudio, controle).
 
-**Espionagem (até PARTE 8):** recrutamento, recon, entrada, porta certa
-(Fix 5), cofre ABERTO (Fix 4+5), 1º guarda interno (`0x2cbbb0`),
-tranquilizante + colete (parte 3); câmera escondida (parte 4); PARTE 5:
-sabotador `13FAB8` flagrado escrevendo zeros no posto do vigia; PARTE 6:
-câmera #3 + Kevlar (Cenário B confirmado); **PARTE 7: plantamos agente
-duplo no balcão do almoxarifado (stub C++) — entrega fichas de verdade.
-Bug F DEFINITIVAMENTE RESOLVIDO**: 4 fichas reais entregues, fichário
-circular montado, supervisor percorreu fila (3 iterações) sem incidente.
-Operação avançou até o cruzamento sem semáforo (Bug G). 🆕 **PARTE 8
-PLANO A APLICADO: investigação prévia revelou TWIST — o sinaleiro
-original NÃO sumiu, ele estava na pasta errada do arquivo. As 8 instruções
-do handler `0x182f28` estão transcritas dentro de `sub_00182EE8.cpp`
-(linhas 134-196), mas vêm depois de um `jr $ra` em `0x182f20`, então o
-detector PS2Recomp marcou como "código morto" e nunca criou entry.
-Recrutamos um agente de tráfego com o mesmo crachá (`runtime.registerFunction(0x00182F28, gow_intc_handler_0x182f28)`)
-que replica fielmente as 3 escritas globais do sinaleiro original.
-Worker thread de VBlank do runtime (já existia, descoberta da PARTE 8
-em `ps2_syscalls_interrupt.inl`) dispara o agente a 60 Hz. Aguardando
-dossiê do Agente Cris pra confirmar que o `[INTC:skip]` sumiu e
-`sub_0021ff60` finalmente avançou.** Depois: VIF1/DMA com payloads válidos,
-fuga com o alvo.
+**Espionagem (até PARTE 9):** recrutamento, recon, entrada (Fix 5), cofre
+ABERTO (Fix 4+5), 1º guarda (`0x2cbbb0`), tranquilizante + colete (parte 3);
+câmera escondida (parte 4); PARTE 5: sabotador `13FAB8` flagrado; PARTE 6:
+câmera #3 + Kevlar; **PARTE 7: agente duplo no almoxarifado — Bug F
+resolvido**; **PARTE 8: agente de tráfego no cruzamento — Bug G resolvido
+(720 piscadas confirmadas no dossiê do Agente Cris)**. 🆕 **PARTE 9 PLANO A
+APLICADA: a próxima sala tinha 4 portas com leitor biométrico (syscalls
+0x79/0x7A/0x7B/0x7D). Os leitores estavam OFFLINE — o switchboard central
+(`ps2_syscalls.cpp`) não tinha entrada pra eles, e o handler default
+respondia "ACESSO NEGADO" (retorno 0). O agente principal ficou martelando
+o leitor da porta 0x7A 130.000 vezes em 12 segundos, esperando luz verde
+no bit 17. Plantamos um operador no switchboard que reconhece os 4
+leitores e responde "TODOS OS BITS OK" pra qualquer pergunta (`setReturnS32(ctx, -1)`).
+Loga só a 1ª chamada de cada um pra rastreabilidade. Aguardando próximo
+dossiê do Agente Cris.** Depois: fuga com o alvo (subsistemas gráficos
+reais, VIF1/DMA com payload, áudio, gamepad).
 
 > Estilo de narração padrão = **espionagem/ação**. Three camadas: 🕵️
 > espionagem → 🚗 carro → 🔧 técnico. Veja PROTOCOLO DE COMUNICAÇÃO acima.
