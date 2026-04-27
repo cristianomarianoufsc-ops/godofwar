@@ -89,9 +89,19 @@ inundar. Aguardando próximo dossiê.** Depois: fuga com o alvo
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-27 PARTE 10 PLANO A CONFIRMADO — causa raiz do Bug I revelada, aguardando decisão do Agente Cris entre B1/B2/B3)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-27 PARTE 10 PLANO B3 APLICADO — instrumentação extra de dump em hex, aguardando log_part10b do Agente Cris)
 
-### Status: ✅ PARTE 10 PLANO A CONFIRMADO em produção (log_part10.txt 437 linhas, cancelado em VBlank #1680/28s) — câmera capturou `xfer.dest=0xffffffff` em todas as 8 falhas, `motivo='canCopyGuestByteRange_rejeitou_dest_ou_src'`. AGUARDANDO decisão entre PARTE 10 PLANO B1/B2/B3.
+### Status: ✅ PARTE 10 PLANO A CONFIRMADO + 🟡 PARTE 10 PLANO B3 APLICADO no runtime — Agente Cris delegou a decisão pra central; central escolheu B3 como mais viável (zero risco, decide entre B1 atalho e B2 fix completo). AGUARDANDO log_part10b com dump em hex do pacote SIF.
+
+**Comando do próximo round (Agente Cris no PC local):**
+```bash
+cd ~/Documentos/GitHub/godofwar
+git pull origin main
+bash rebuild_runtime.sh                # incremental ~30s
+PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_part10b.txt
+# Pode cancelar com Ctrl+C após ~30s — basta confirmar que o dump apareceu
+grep -E "PARTE 10 PLANO (A|B3)|sceSifSetDma" log_part10b.txt | head -50
+```
 
 **🎯 Achado glorioso da câmera PARTE 10 PLANO A (linhas 379-432 do log_part10.txt):**
 
@@ -225,33 +235,51 @@ A câmera revelou que `xfer.dest = 0xffffffff` em todas as falhas, com `motivo='
 |---|---|---|---|---|
 | **B1 — Stub permissivo** | Quando `dest==0xffffffff`, aceitar o pacote, registrar no log e retornar sucesso fake (não copia nada). Jogo continua, IOP nunca recebe | `rebuild_runtime` ~30s, ~15 linhas | Baixo. Se jogo pollar IOP esperando ACK, trava em outro lugar — **bom**, isso revela o próximo bug | Quando queremos avançar rápido pra mapear próximo travamento |
 | **B2 — Implementar SIF RPC stage** | Decodificar header SIF do pacote, alocar buffer interno, copiar `src→buffer`, simular ACK do IOP corretamente | `rebuild_runtime` ~30s + 200-400 linhas novas | Médio. Exige decifrar protocolo SIF Sony (RPC_BIND/CALL/END, semáforos IOP-side) | Quando confirmamos que B1 trava cedo demais e jogo realmente precisa do IOP funcional |
-| **B3 — Instrumentação extra (dump do pacote)** | Antes do log de falha, ler os 0x14 ou 0x40 bytes em `xfer.src` e dumpar em hex no stderr. Confirma se header começa com `0x80000000+rpc_id` (RPC_BIND) ou outro padrão | `rebuild_runtime` ~30s, ~10 linhas | Zero. Só observação | **PRIMEIRO** — confirma se B1 ou B2 é o caminho certo. Recomendação da central |
+| **B3 — Instrumentação extra (dump do pacote)** ✅ **APLICADO 2026-04-27** | Antes do log de falha, ler os 0x14 ou 0x40 bytes em `xfer.src` e dumpar em hex no stderr. Confirma se header começa com `0x80000000+rpc_id` (RPC_BIND) ou outro padrão | `rebuild_runtime` ~30s, ~30 linhas adicionadas | Zero. Só observação | ✅ **APLICADO PRIMEIRO** — central escolheu pelo Agente Cris após delegação ("escolha o que ache mais viável") |
 
-**Plano recomendado:** **B3 → analisar log_part10b → decidir entre B1 (atalho) ou B2 (correto).**
+**Plano recomendado:** **B3 (✅ aplicado) → analisar log_part10b → decidir entre B1 (atalho) ou B2 (correto).**
 
-#### Esqueleto do PARTE 10 PLANO B3 (se Agente Cris aprovar)
+#### Implementação aplicada do PARTE 10 PLANO B3
 
-Editar `PS2Recomp/ps2xRuntime/src/lib/stubs/ps2_stubs_misc.inl` dentro do bloco `if (shouldLogDetail)` (linha ~3359), adicionar **antes do `std::endl`**:
+**Arquivos modificados:**
+- `PS2Recomp/ps2xRuntime/src/lib/ps2_stubs.cpp:27` — adicionado `#include <iomanip>` (não existia, precisa pra `std::setw`/`std::setfill`)
+- `PS2Recomp/ps2xRuntime/src/lib/stubs/ps2_stubs_misc.inl:3376-3402` — bloco de dump em hex dentro do `if (shouldLogDetail)`, depois do log PARTE 10 PLANO A
 
+**Código aplicado** (em `ps2_stubs_misc.inl`):
 ```cpp
-// PARTE 10 PLANO B3 — dump dos primeiros bytes do pacote em xfer.src
-// pra revelar se header é SIF RPC (RPC_BIND/CALL/END) ou outra coisa.
 const uint8_t *srcPtr = getConstMemPtr(rdram, failXfer.src);
 if (srcPtr && failXfer.size > 0) {
-    const uint32_t dumpBytes = std::min<uint32_t>(failXfer.size, 64u);
+    const uint32_t dumpBytes = std::min<uint32_t>(static_cast<uint32_t>(failXfer.size), 64u);
     std::cerr << "  [PARTE 10 PLANO B3] xfer.src dump (primeiros "
-              << std::dec << dumpBytes << " bytes):\n  ";
+              << std::dec << dumpBytes << " bytes em 0x"
+              << std::hex << failXfer.src << "):\n  ";
     for (uint32_t k = 0; k < dumpBytes; ++k) {
         std::cerr << std::hex << std::setw(2) << std::setfill('0')
                   << static_cast<unsigned>(srcPtr[k]);
-        if ((k & 3) == 3) std::cerr << " ";
-        if ((k & 15) == 15 && k+1 < dumpBytes) std::cerr << "\n  ";
+        if ((k & 3u) == 3u) std::cerr << " ";
+        if ((k & 15u) == 15u && (k + 1u) < dumpBytes) std::cerr << "\n  ";
     }
     std::cerr << std::setfill(' ') << std::dec << std::endl;
+} else {
+    std::cerr << "  [PARTE 10 PLANO B3] xfer.src=0x" << std::hex << failXfer.src
+              << " sem ponteiro válido na RAM (getConstMemPtr=nullptr) — pula dump"
+              << std::dec << std::endl;
 }
 ```
 
-Requer adicionar `#include <iomanip>` no topo do arquivo (provavelmente já existe via outros includes — verificar).
+**Garantias:**
+- Comportamento NÃO muda (puro observador, sem `setReturn` novo, sem if invertido)
+- Reaproveita o `static std::mutex` + `static std::unordered_set<uint64_t>` da PARTE 10 PLANO A → máx 8 dumps únicos `(dest,src)`, nenhum risco de inundar
+- `getConstMemPtr` é a mesma função que `canCopyGuestByteRange` usa internamente; se ela retornar nullptr, log diz isso explicitamente
+- Limite de 64 bytes por dump cobre os 2 padrões observados (`size=0x14`=20B e `size=0x40`=64B)
+
+**Como interpretar o resultado:**
+
+| Padrão do header (primeiros 4 bytes em little-endian) | Diagnóstico | Próximo passo |
+|---|---|---|
+| `0x00 0x00 0x00 0x80` (= `0x80000000`) ou `0x?? 0x?? 0x?? 0x80`+ | Header **SIF RPC** Sony (RPC_BIND/RPC_CALL/RPC_END) | **B2 ganha** — implementar SIF RPC stage de verdade. Decodificar opcode + alocar buffer interno + simular ACK IOP |
+| Padrão de bytes "razoáveis" (não-zero, não-sentinela), ASCII ou ponteiros plausíveis | Provável estrutura de dados própria do God of War (ex: comando pra audio thread) | **B1 ganha** — stub permissivo aceita `dest==0xffffffff`, retorna sucesso fake; jogo segue, próximo travamento revela próximo bug |
+| Tudo zero ou tudo `0xff` | Buffer não-inicializado ou já liberado (jogo tá enviando lixo) | Investigar quem ESCREVE no `xfer.src` antes da chamada — provável Bug J = construção do descritor errada. PARTE 11 |
 
 ### 📂 Arquivos modificados nesta sessão
 - `PS2Recomp/ps2xRuntime/src/lib/stubs/ps2_stubs_misc.inl:3264-3398` — instrumentação cirúrgica de `sceSifSetDma` (PARTE 10 PLANO A)

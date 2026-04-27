@@ -3369,6 +3369,34 @@ void sceSifSetDma(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
                       << " ra=0x" << getRegU32(ctx, 31)
                       << " pc=0x" << ctx->pc
                       << std::dec << std::endl;
+
+            // PARTE 10 PLANO B3 — dump em hex dos primeiros bytes do pacote em xfer.src.
+            // Objetivo: revelar se o header é SIF RPC (RPC_BIND/CALL/END típicos da Sony,
+            // que começam com 0x80000000+rpc_id). Isso decide entre PARTE 10 PLANO B1
+            // (stub permissivo simples) e PLANO B2 (implementar SIF RPC stage de verdade).
+            // Comportamento NÃO muda — só observação. Limitado a 64 bytes pra não inundar.
+            const uint8_t *srcPtr = getConstMemPtr(rdram, failXfer.src);
+            if (srcPtr && failXfer.size > 0)
+            {
+                const uint32_t dumpBytes = std::min<uint32_t>(static_cast<uint32_t>(failXfer.size), 64u);
+                std::cerr << "  [PARTE 10 PLANO B3] xfer.src dump (primeiros "
+                          << std::dec << dumpBytes << " bytes em 0x"
+                          << std::hex << failXfer.src << "):\n  ";
+                for (uint32_t k = 0; k < dumpBytes; ++k)
+                {
+                    std::cerr << std::hex << std::setw(2) << std::setfill('0')
+                              << static_cast<unsigned>(srcPtr[k]);
+                    if ((k & 3u) == 3u) std::cerr << " ";
+                    if ((k & 15u) == 15u && (k + 1u) < dumpBytes) std::cerr << "\n  ";
+                }
+                std::cerr << std::setfill(' ') << std::dec << std::endl;
+            }
+            else
+            {
+                std::cerr << "  [PARTE 10 PLANO B3] xfer.src=0x" << std::hex << failXfer.src
+                          << " sem ponteiro válido na RAM (getConstMemPtr=nullptr) — pula dump"
+                          << std::dec << std::endl;
+            }
         }
 
         static uint32_t warnCount = 0;

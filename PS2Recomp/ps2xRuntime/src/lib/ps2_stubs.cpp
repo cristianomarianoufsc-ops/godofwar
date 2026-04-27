@@ -21,6 +21,7 @@
 #include <mutex>
 #include <atomic>
 #include <limits>
+#include <iomanip>
 
 #include "raylib.h"
 #include "stubs/helpers/ps2_stubs_helpers.inl"
