@@ -82,57 +82,57 @@ flagrou alguém.** Depois: VIF1/DMA, INTC handlers, fuga com o alvo.
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-26 PARTE 6 — RESULTADOS CONFIRMADOS)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-27 PARTE 7 — VITÓRIA TOTAL Cenário A)
 
-### Status: ✅ VITÓRIA TÁTICA — Cenário B confirmado, programa avançou até `entry_182ff0` completa
+### Status: 🏆 BUG F DEFINITIVAMENTE RESOLVIDO — stub do alocador funcionando, lista circular real montada, blindagem PARTE 6 nem precisou disparar
 
-**🎯 Resumo do log_part6.txt (Agente Cris, 6.062 linhas, 2026-04-26):**
+**🎯 Resumo do log_part7.txt (Agente Cris, 382 linhas em 2 execuções concatenadas, 2026-04-27):**
 
 | Sinal | Resultado |
 |---|---|
-| Câmera #3 (`watch:POOL_0x2c7910`) | 🔇 **NUNCA disparou** — pool não é inicializado por nenhum código recompilado |
-| Câmera #2 (`watch:SENTINEL_0x2cbbb0`) | 🔇 NUNCA disparou (blindagem impediu corrupção) |
-| Câmera #1 (`watch:GLOBAL_0x32E854`) | 1 disparo isolado, valor=0x0, pc=0x17a3d0 — informativo |
-| Blindagem `[13FAB8] BLINDAGEM PARTE 6` | ✅ **DISPAROU 4×** com `$ra=0x13fb14` |
-| Programa crashou? | ❌ Não — entrou em loop INTC/VIF1 (Bug G novo) |
-| ccache hit rate | 7.36% (vs 0.09% antes — 80× melhor) |
+| `[game_overrides] God of War: stub PARTE 7 PLANO A registrado em 0x0013DA10` | ✅ Disparou nas 2 execuções |
+| `[stub:sub_0013DA10] alloc #N` | ✅ **4 disparos**: guestPtr 0x1000000, 0x1000040, 0x1000080, 0x10000c0 |
+| `[BLINDAGEM PARTE 6]` | ✅ **ZERO disparos** (stub fornece $v0 válido — blindagem virou rede de segurança inativa) |
+| `[13FAB8] loop iter=N` | ✅ **3 iterações** (s0=0x1000040 → 0x1000000 → 0x2cbbb0) — primeira vez que esse loop completa NORMALMENTE percorrendo lista real |
+| `[watch:SENTINEL_0x2cbbb0]` | ✅ **5 escritas com VALORES VÁLIDOS** (não-zero): prev=0x1000000, next=0x1000000, next=0x1000040, next=0x1000080, prev=0x10000c0 — lista circular real montada |
+| `entry_182ff0 COMPLETA` | ✅ Mantido da PARTE 6 (mas agora com estruturas internas reais) |
+| Tempo de build | ~30s com `rebuild_runtime.sh` (só relinkou ps2runtime + GodOfWarPCPort, NÃO recompilou os 5.625 .cpp) |
 
-**🎯 Sequência completa que rodou (boot → entry_182ff0 completa pela primeira vez):**
-- ✅ `boot_stub`: FIX 1 + FIX 6 + 4 inits do crt0
-- ✅ Init [4/4] = `0x138d48` (pre-main): 11 JALs sequenciais (4 "NÃO REGISTRADA — skip": `0x283770`, `0x17acb8`, `0x138b10`, `0x1838d0`)
-- ✅ JAL [6/11] = `0x17a910` chamou `entry_182ff0`:
-  - SifCheckInit + SifInit
-  - GsPutIMR(0xff00) + GsSetCrt
-  - 13FCA8 → 13FAB8 (blindado #1)
-  - 13FB48 → 13FAB8 (blindado #2)
-  - 182F68, 182E88 (GsGetIMR×2, GsPutIMR)
-  - 140578 → 13FAB8 ×2 (blindados #3, #4)
-  - **entry_182ff0 COMPLETA**
-- 🟡 JAL [7/11] = `0x21ff60` — preso em loop infinito de:
-  ```
-  [INTC:skip] cause=2 handler=0x182f28 arg=0x4 → sem função recompilada, pulando!
-  [vif1:cmd] idx=0..159 ... ciclo recomeça
-  ```
+**🎯 O stub C++ aplicado em `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp` (linhas 253-340):**
+- Bump allocator atômico em região reservada `[0x01000000..0x01100000]` da RAM PS2 emulada (1 MB livre, longe do ELF e da stack)
+- 16.384 nós de 64 bytes (overestimativa segura)
+- Cada chamada: `g_gowStubHeapOffset.fetch_add(64)` → zera o nó com `WRITE32` → seta `$v0=guestPtr` → `pc=$ra`
+- Loga primeiros 16 disparos
+- Heap esgotado → retorna 0 (blindagem PARTE 6 cuida)
+- Registrado via `PS2_REGISTER_GAME_OVERRIDE("GodOfWarPCPort:sub_0013DA10", "SCUS_973.99", 0, 0, apply_god_of_war_overrides)` — ativa só quando o ELF for o do God of War
 
-**🆕 Bug G identificado:** handler INTC `0x182f28` não foi recompilado. Polling eterno do INTC canal 2.
-
-### 🎯 PLANO PARTE 7 (próxima sessão)
-
-**Plano A (recomendado primeiro):** stub C++ pro `sub_0013DA10` em `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp`. Tempo de build: ~30s com `rebuild_runtime.sh`.
-
-```cpp
-void sub_0013DA10(R5900Context* ctx, uint8_t* rdram) {
-    uint32_t size = GPR_U32(ctx, 4);
-    void* hostBuf = std::malloc(size);
-    uint32_t guestPtr = ps2_alloc_guest_buffer(hostBuf, size);
-    SET_GPR_U32(ctx, 2, guestPtr);
-    ctx->pc = ctx->ra;
-}
+**🟡 Bug G permanece (próximo alvo — PARTE 8):** depois do `entry_182ff0` completo, JAL [7/11] = `0x21ff60` cai em loop infinito:
+```
+[INTC:skip] cause=2 handler=0x182f28 arg=0x4 → sem função recompilada, pulando!
+[vif1:cmd] idx=0..159 ... ciclo recomeça
 ```
 
-**Plano B:** atacar Bug G (handler INTC `0x182f28` não registrado). Pode ser uma das 4 NÃO REGISTRADAS do init pre-main ou uma quinta função.
+**Diagnóstico Bug G refinado (PARTE 7 confirmou):**
+- `ls GOD_PC_PORT_FINAL/src/recompiled/sub_*0x182f28*.cpp` → **NÃO EXISTE**
+- `cause=2` no INTC do PS2 = **VBlank Start** (sincronização de quadro)
+- Handler é alcançado via tabela de handlers (não via JAL direto), então o PS2Recomp não o identificou como função → ficou de fora dos 5.625 .cpp
+- `sub_0021ff60.cpp` (o JAL 7/11) **EXISTE** — está aguardando o contador de VBlank avançar pra prosseguir; como ninguém atende a interrupção, contador nunca muda
+- As 4 funções "NÃO REGISTRADA" do init pre-main (`0x283770`, `0x17acb8`, `0x138b10`, `0x1838d0`) também NÃO existem — mesma falha sistemática de detecção pelo PS2Recomp
 
-**Recomendação:** Plano A primeiro (custo de build mínimo, problema histórico documentado), depois Plano B.
+### 🎯 PLANO PARTE 8 (próxima sessão) — atacar Bug G
+
+**Opção A8 (mais rápida — ~30s build):** stub C++ pro `sub_00182f28` em `game_overrides.cpp` que finja "atender" o IRQ de VBlank.
+- Risco: precisa entender o que o handler real faz. Se ele apenas incrementa um contador de frame e marca o IRQ como atendido, um stub minimalista resolve. Se ele faz cleanup específico (DMA/GS), pode quebrar coisas.
+- Vantagem: build incremental rápido, mesmo padrão da PARTE 7 funcionou perfeitamente.
+
+**Opção B8 (definitiva — ~80min build):** dump dos bytes do ELF em `0x182f28..0x182fXX`, desassemblar manualmente, reescrever a função em C++ (ou regenerar via PS2Recomp forçando esse endereço como entry-point).
+- Risco: maior esforço, mas resolve a causa raiz (e provavelmente desbloqueia outras funções "fantasma" do mesmo padrão).
+
+**Opção C8 (híbrida):** em vez de stub no handler, modificar o mecanismo `[INTC:skip]` no runtime pra "fake-atender" IRQs de VBlank — incrementar contadores típicos sem chamar a função real. Resolve apenas o sintoma, mas pode destravar muitos jogos com a mesma classe de problema.
+
+**Recomendação do analista:** começar por **Opção A8** (mesmo padrão da PARTE 7 que acabou de funcionar). Se o stub minimalista não resolver, escalar pra B8. Antes de aplicar A8 vale verificar:
+1. Onde no runtime está o ponto que loga `[INTC:skip]` (provavelmente `ps2_runtime.cpp` ou `ps2_intc.cpp`) — pra entender o protocolo de "atender IRQ"
+2. Se o `ps2_runtime` já tem algum mecanismo de "VBlank counter" exposto que o handler poderia bumpar
 
 ---
 
