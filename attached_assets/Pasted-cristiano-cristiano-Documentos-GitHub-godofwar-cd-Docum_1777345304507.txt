@@ -1,0 +1,57 @@
+cristiano@cristiano:~/Documentos/GitHub/godofwar$ cd ~/Documentos/GitHub/godofwar
+git config --global credential.helper store
+git push origin main
+Username for 'https://github.com': cristianomarianoufsc-ops
+Password for 'https://cristianomarianoufsc-ops@github.com': 
+Everything up-to-date
+cristiano@cristiano:~/Documentos/GitHub/godofwar$ git push origin main --dry-run
+Everything up-to-date
+cristiano@cristiano:~/Documentos/GitHub/godofwar$ bash auto_round.sh once
+[2026-04-27 23:56:28] Criando branch logs/auto no remoto (primeira vez)...
+remote: 
+To https://github.com/cristianomarianoufsc-ops/godofwar.git
+ * [new branch]      7fcb060a3372ccc4f0d77c2f9d580764fa75d3c3 -> logs/auto
+[2026-04-27 23:56:31] ================================================
+[2026-04-27 23:56:31] ROUND novo iniciando
+[2026-04-27 23:56:31] ================================================
+[2026-04-27 23:56:31] 1/5: git pull origin main...
+From https://github.com/cristianomarianoufsc-ops/godofwar
+ * branch            main       -> FETCH_HEAD
+Already up to date.
+[2026-04-27 23:56:32] 2/5: rebuild_runtime.sh (pode demorar 30s-2min)...
+[1/3] Recompilando o runtime do PS2...
+[  0%] Building CXX object CMakeFiles/ps2runtime.dir/home/cristiano/Documentos/GitHub/godofwar/PS2Recomp/ps2xRuntime/src/lib/ps2_stubs.cpp.o
+[100%] Linking CXX static library libps2runtime.a
+[100%] Built target ps2runtime
+
+[2/3] Relinkando o executável GodOfWarPCPort...
+[  1%] Built target ps2runtime
+[100%] Built target gow_recompiled
+[100%] Linking CXX executable GodOfWarPCPort
+[100%] Built target GodOfWarPCPort
+
+[3/3] Pronto! Executável atualizado: build/GodOfWarPCPort
+
+[2026-04-27 23:59:06] 3/5: rodando jogo por 90s (timeout envia Ctrl+C automático)...
+[2026-04-28 00:00:36] 4/5: filtrando log...
+[2026-04-28 00:00:36]    Log full:     465 linhas
+[2026-04-28 00:00:36]    Log filtrado: 101 linhas
+[2026-04-28 00:00:36] 5/5: commitando logs em logs/auto...
+[logs/auto a2627cf] auto: round em main@7fcb060 (2026-04-28_00:00) — full=465 filt=101
+ 4 files changed, 1132 insertions(+)
+ create mode 100644 runs_automaticos/log_20260427_235906_7fcb060_filtered.txt
+ create mode 100644 runs_automaticos/log_20260427_235906_7fcb060_full.txt
+ create mode 100644 runs_automaticos/log_latest_filtered.txt
+ create mode 100644 runs_automaticos/log_latest_full.txt
+Enumerating objects: 6, done.
+Counting objects: 100% (6/6), done.
+Delta compression using up to 4 threads
+Compressing objects: 100% (5/5), done.
+Writing objects: 100% (5/5), 5.74 KiB | 5.74 MiB/s, done.
+Total 5 (delta 2), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (2/2), completed with 1 local object.
+To https://github.com/cristianomarianoufsc-ops/godofwar.git
+   7fcb060..a2627cf  logs/auto -> logs/auto
+[2026-04-28 00:00:39]    Push OK — agente pode ler do branch logs/auto
+[2026-04-28 00:00:39] ROUND completo.
+cristiano@cristiano:~/Documentos/GitHub/godofwar$ 
