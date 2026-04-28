@@ -89,31 +89,87 @@ inundar. Aguardando próximo dossiê.** Depois: fuga com o alvo
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-27 PARTE 10 PLANO C APLICADO — blindagem de chamada SIF marciana Bug J + log de registers, aguardando log_part10e)
+## 🤖 FLUXO DE TRABALHO AUTOMATIZADO — VIGENTE DESDE 2026-04-28
 
-### Status: ✅ PARTE 10 PLANO A/B3 CONFIRMADOS + ✅ PARTE 10 PLANO B1 CONFIRMADO (log_part10d 491 linhas) + 🆕 BUG J descoberto + 🟡 PARTE 10 PLANO C APLICADO. B1 disparou 4x reais, eliminou 8 mensagens `motivo='canCopyGuestByteRange...'`, jogo estável 41s/2460 VBlanks, zero crashes. NOVO bug J revelado pelo log_part10d: chamada `sceSifSetDma(dmat=0x5, count=0x20)` com `ra=0x0` (= MIPS lixo, impossível em código legítimo). PLANO C blinda silenciosamente + loga registers UMA vez pra rastrear origem. AGUARDANDO log_part10e.
+**MUDANÇA ESTRUTURAL:** A partir de 2026-04-28, o Agente Cris **não cola mais logs no chat**. O loop manual (git pull + rebuild + run + Ctrl+C + grep + cola .txt) foi substituído pelo script `auto_round.sh` no PC dele que faz tudo sozinho e commita logs em branch separada `logs/auto`. O analista lê os logs **direto do GitHub** via raw URL — sem precisar pedir, sem precisar aguardar copy/paste.
 
-**Comando do próximo round (Agente Cris no PC local):**
+### Como o analista (você, próximo agente) consome resultados:
+
 ```bash
-cd ~/Documentos/GitHub/godofwar
-git pull origin main
-bash rebuild_runtime.sh                # incremental ~30s
-PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_part10e.txt
-# Deixe rodar 60-120s na tela preta; cancele com Ctrl+C NO TERMINAL (não no X da janela)
-grep -E "PARTE 10 PLANO (B1|C)|sceSifSetDma|Unknown syscall|VBlank tick #" log_part10e.txt | head -80
-wc -l log_part10e.txt
-# Se aparecer "Morto" sem Ctrl+C: dmesg | tail -30 | grep -i 'oom\|kill'
+# Log filtrado mais recente (101 linhas típicas, só o que importa):
+curl -s "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/logs/auto/runs_automaticos/log_latest_filtered.txt"
+
+# Log completo (~465 linhas, se precisar de contexto mais amplo):
+curl -s "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/logs/auto/runs_automaticos/log_latest_full.txt"
+
+# Histórico de rounds anteriores (timestamp + hash do main):
+# https://github.com/cristianomarianoufsc-ops/godofwar/tree/logs/auto/runs_automaticos
 ```
 
-**Esperado no log_part10e:**
-- 4 ocorrências `[PARTE 10 PLANO B1]` (SIF RPC stage transfer aceito) — NÃO mais que isso (cap de 8 por src único)
-- **1 ocorrência `[PARTE 10 PLANO C]`** com `ra=0x... sp=0x... gp=0x... pc=0x...` — esses 4 valores REVELAM origem do Bug J:
-  - Se `ra` apontar pra dentro de uma das 4 funções fantasma (`0x283770/0x17acb8/0x138b10/0x1838d0`) → confirma hipótese stub-fantasma deixa registers lixo
-  - Se `gp` for `0x2cf070` → contexto principal; se for outro → outro thread
-  - Se `sp` estiver perto da stack de `[CreateThread] id=2 entry=0x2947c8 stack=0x326b40` → thread 2 é o culpado
-- ZERO ocorrências `[PARTE 10 PLANO A]` (PLANO A só dispara em casos NÃO cobertos por B1/C)
-- 0 a 2 ocorrências `sceSifSetDma failed dmat=0xN count=0xM` (warning compacto antigo, pode persistir 1-2x se houver chamada legítima ainda falhando)
-- VBlank chegando além de #2460 (#3000+ esperado em 60s)
+### Como funciona end-to-end:
+
+```
+1. Você (analista) commita mudança em main (qualquer arquivo)
+2. Agente Cris tem `bash auto_round.sh loop` rodando num terminal aberto
+3. Em ≤30s, script no PC dele detecta novo commit em main
+4. Script: git pull → bash rebuild_runtime.sh → timeout 90s bash jogar.sh → grep filtra log
+5. Script faz git push de logs em branch logs/auto (NUNCA em main, evita loop)
+6. Quando Agente Cris vier ao chat e te chamar (qualquer mensagem), você puxa o log via curl
+```
+
+### O que o Agente Cris faz:
+- **Liga o loop UMA VEZ por sessão** (`bash auto_round.sh loop`)
+- **Vem ao chat** quando quiser ("olha o resultado", "manda próximo", etc)
+- **Aperta Ctrl+C no terminal** SÓ quando quiser parar o loop (fim do dia / desligar PC)
+
+### O que o analista faz:
+- **Lê log do GitHub via curl** (ver URLs acima) no início de cada round
+- **NÃO pede log no chat** — já está disponível
+- **Commita mudanças** sabendo que próximo round dispara automaticamente em 30s
+
+### Comandos do `auto_round.sh` (todos em `~/Documentos/GitHub/godofwar`):
+
+| Comando | Comportamento | Ctrl+C? |
+|---|---|---|
+| `bash auto_round.sh once` | Roda 1 round e SAI sozinho | ❌ NÃO precisa |
+| `bash auto_round.sh loop` | Vivo pra sempre, checa novo commit a cada 30s | ✅ Pra parar |
+| `bash auto_round.sh status` | Mostra estado e sai | ❌ NÃO precisa |
+| `nohup bash auto_round.sh loop > auto_round.log 2>&1 &` | Roda em background | `pkill -f auto_round.sh` pra matar |
+
+Dentro de cada round, o `timeout --signal=INT 90s` mata o jogo automaticamente. **Agente Cris não precisa apertar Ctrl+C no jogo.**
+
+### Configuração já feita (não mexer):
+- Token GitHub fine-grained criado com `Contents: Read and write` no repo godofwar
+- `git config --global credential.helper store` salvou token em `~/.git-credentials`
+- Branch `logs/auto` criada no remoto pelo primeiro `bash auto_round.sh once` (2026-04-28 00:00)
+
+### Onde o script vive:
+- Arquivo: `auto_round.sh` (raiz do repo, executável)
+- Logs gerados (locais no PC dele, gitignored em main): `runs_automaticos/`
+- Estado de hash processado: `.auto_round_last_hash` (gitignored)
+
+### Limitações honestas:
+- Analista é leitor SOB DEMANDA, não vigia 24/7. Só lê GitHub quando o Agente Cris vier ao chat.
+- Se o jogo gerar erro VISUAL (não capturado em log stderr), Agente Cris precisa descrever no chat.
+- Se o script travar (push falha, internet cai), o Agente Cris vê no terminal e avisa.
+
+---
+
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-28 BUG J PARCIALMENTE RASTREADO + FLUXO AUTOMATIZADO ESTREADO)
+
+### Status: ✅ Fluxo automatizado funcionando (1º round automático completo, 2026-04-28 00:00, log_latest em logs/auto). ✅ PARTE 10 PLANO A/B3/B1/C todos confirmados. 🆕 BUG J PARCIALMENTE RASTREADO via PARTE 10 PLANO C (round automático): chamada veio do **THREAD MAIN** (`gp=0x2cf070`), com `sp=0x1ffbf50` (stack saudável, não zerada), `ra=0x0`, `pc=0x293fe4`. Hipótese antiga (thread 2 com stack lixo) **DESCARTADA**. Nova hipótese: alguma função recompilada faz `jr $ra` com `$ra=0` carregado da stack, OU stub não-recompilado é chamado via `jr $reg` sem JAL. VBlank chegou em #5340 (89s do 90s timeout, sustentado e estável). Zero crashes/SIGSEGV/syscalls faltando. **Bug J está blindado (PLANO C), não trava nada — pode esperar enquanto B2 é implementado.**
+
+**Comando do próximo round (NOVO FLUXO):**
+- Analista commita mudança em main (qualquer fix)
+- Agente Cris **já tem `bash auto_round.sh loop` rodando** — script dispara automaticamente em ≤30s
+- Próximo log fica em `logs/auto` branch, lido via curl pelo analista
+
+**Esperado no próximo log automático:**
+- 4 ocorrências `[PARTE 10 PLANO B1]` (estável)
+- 1 ocorrência `[PARTE 10 PLANO C]` (Bug J ainda capturado)
+- 0 ocorrências `[PARTE 10 PLANO A]`
+- VBlank chegando >#5000 (igual ou maior ao último)
+- Se PARTE 10 PLANO B2 for implementado: pode aparecer comportamento NOVO (logs SIF RPC dispatching, possível primeira imagem renderizada)
 
 **Decifração da câmera B3 (log_part10b.txt linhas 400-411) — confirma SIF RPC Sony:**
 

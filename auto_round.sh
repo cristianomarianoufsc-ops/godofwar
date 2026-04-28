@@ -1,20 +1,54 @@
 #!/usr/bin/env bash
+# ============================================================================
 # auto_round.sh — automação do loop "git pull + rebuild + run + log + commit"
 # para o projeto God of War PS2→PC port (Operação Esparta).
+# ============================================================================
 #
-# Uso:
-#   bash auto_round.sh         # roda em loop, a cada 30s checa novo commit
-#   bash auto_round.sh once    # roda uma vez e sai (útil pra testar)
-#   bash auto_round.sh status  # mostra estado atual
+# COMANDOS DISPONÍVEIS (todos rodam de ~/Documentos/GitHub/godofwar):
+# ----------------------------------------------------------------------------
 #
-# Pressione Ctrl+C pra parar limpo.
-# O script NUNCA commita em main — só em branch separada logs/auto.
-# Logo, não cria loop infinito de auto-commit.
+#   bash auto_round.sh once
+#       → Roda UM round (rebuild + jogo + log + commit) e SAI SOZINHO.
+#       → ❌ NÃO precisa Ctrl+C — termina em ~3 min.
+#       → Use pra testar se está tudo funcionando.
 #
+#   bash auto_round.sh loop                     ⭐ MODO PRINCIPAL
+#       → Fica VIVO PRA SEMPRE checando novo commit no main a cada 30s.
+#       → Quando o agente IA commitar algo, dispara um round automático.
+#       → ✅ Aperte Ctrl+C SÓ quando quiser parar (fim do dia, desligar PC).
+#       → Pode minimizar o terminal — segue rodando enquanto está aberto.
+#
+#   bash auto_round.sh status
+#       → Mostra estado atual (último hash, logs gerados) e SAI SOZINHO.
+#       → ❌ NÃO precisa Ctrl+C.
+#
+#   nohup bash auto_round.sh loop > auto_round.log 2>&1 &
+#       → Modo "fantasma": roda em background mesmo se fechar terminal.
+#       → Pra ver: tail -f auto_round.log
+#       → Pra matar: pkill -f auto_round.sh
+#
+# ----------------------------------------------------------------------------
+# DENTRO DE CADA ROUND (qualquer modo):
+#   - Janela do jogo abre sozinha, fica 90s, FECHA SOZINHA via timeout.
+#   - ❌ Você NÃO precisa apertar Ctrl+C no jogo nem no terminal.
+#   - ❌ NÃO feche a janela do jogo no X — deixe o timeout fazer o trabalho.
+# ----------------------------------------------------------------------------
+#
+# COMO O AGENTE IA RECEBE OS LOGS:
+#   - Após cada round, script faz git push em branch separada `logs/auto`
+#   - Agente IA lê via: curl https://raw.githubusercontent.com/.../logs/auto/runs_automaticos/log_latest_filtered.txt
+#   - VOCÊ NÃO PRECISA COLAR LOGS NO CHAT — agente busca sozinho.
+#
+# SEGURANÇA:
+#   - Script NUNCA commita em `main` (só em `logs/auto`) — sem loop infinito.
+#   - Token GitHub salvo em ~/.git-credentials (modo store).
+#
+# ----------------------------------------------------------------------------
 # Requisitos:
-#   - git configurado com push sem senha (chave SSH ou token armazenado)
+#   - git configurado com push sem senha (token fine-grained com Contents: RW)
 #   - rebuild_runtime.sh e jogar.sh no diretório do projeto
-#   - timeout (coreutils, padrão Linux)
+#   - timeout (coreutils, padrão Linux Mint/Ubuntu)
+# ============================================================================
 
 set -u
 
