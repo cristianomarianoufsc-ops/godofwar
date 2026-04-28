@@ -3311,6 +3311,44 @@ void sceSifSetDma(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
             failXfer = xfer;
             break;
         }
+
+        // PARTE 10 PLANO B1 — stub permissivo pra SIF RPC stage transfer.
+        // Confirmado pela PARTE 10 PLANO B3 (log_part10b, linhas 400-411): quando
+        // xfer.dest=0xffffffff, o pacote em xfer.src é SIF RPC genuíno da Sony
+        // (header 0x80000000+opcode, formato {size, 0, 0x80000000+op, ...}).
+        // O EE manda sem destino fixo porque o IOP decide pelo header.
+        // Como não implementamos SIF RPC IOP-side (PARTE 10 PLANO B2 seria 200-400
+        // linhas), aceitamos o pacote, retornamos ID válido e fingimos que entregamos.
+        // Risco: jogo pode pollar semáforo IOP esperando ACK que nunca vem → trava
+        // num próximo lugar. Bom — revela o próximo bug pra mapeamento.
+        // Loga 1ª ocorrência por (src) único pra rastreabilidade, máx 8.
+        if (xfer.dest == 0xFFFFFFFFu)
+        {
+            static std::mutex s_b1Mutex;
+            static std::unordered_set<uint32_t> s_b1LoggedSrcs;
+            bool firstForThisSrc = false;
+            {
+                std::lock_guard<std::mutex> lock(s_b1Mutex);
+                if (s_b1LoggedSrcs.size() < 8u && s_b1LoggedSrcs.insert(xfer.src).second)
+                {
+                    firstForThisSrc = true;
+                }
+            }
+            if (firstForThisSrc)
+            {
+                std::cerr << "[PARTE 10 PLANO B1] aceitando SIF RPC stage transfer "
+                          << "(dest=0xffffffff, IOP decide pelo header) — xfer.src=0x"
+                          << std::hex << xfer.src
+                          << " xfer.size=0x" << xfer.size
+                          << " xfer.attr=0x" << xfer.attr
+                          << " ra=0x" << getRegU32(ctx, 31)
+                          << std::dec << std::endl;
+            }
+            // NÃO adiciona ao pending (não tenta copiar pra 0xffffffff).
+            // O jogo recebe ID válido no setReturnS32 mais abaixo.
+            continue;
+        }
+
         if (!canCopyGuestByteRange(rdram, xfer.dest, xfer.src, sizeBytes))
         {
             ok = false;

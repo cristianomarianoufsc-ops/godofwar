@@ -89,19 +89,46 @@ inundar. Aguardando próximo dossiê.** Depois: fuga com o alvo
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-27 PARTE 10 PLANO B3 APLICADO — instrumentação extra de dump em hex, aguardando log_part10b do Agente Cris)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-27 PARTE 10 PLANO B1 APLICADO — stub permissivo SIF RPC stage transfer, aguardando log_part10c do Agente Cris)
 
-### Status: ✅ PARTE 10 PLANO A CONFIRMADO + 🟡 PARTE 10 PLANO B3 APLICADO no runtime — Agente Cris delegou a decisão pra central; central escolheu B3 como mais viável (zero risco, decide entre B1 atalho e B2 fix completo). AGUARDANDO log_part10b com dump em hex do pacote SIF.
+### Status: ✅ PARTE 10 PLANO A CONFIRMADO + ✅ PARTE 10 PLANO B3 CONFIRMADO + 🟡 PARTE 10 PLANO B1 APLICADO. Câmera B3 decifrou: pacotes são SIF RPC genuíno da Sony (header `0x80000000+opcode`). Central escolheu B1 (atalho ~25 linhas) sobre B2 (fix completo ~200-400 linhas) porque revela próximo travamento em ~30s. AGUARDANDO log_part10c.
 
 **Comando do próximo round (Agente Cris no PC local):**
 ```bash
 cd ~/Documentos/GitHub/godofwar
 git pull origin main
 bash rebuild_runtime.sh                # incremental ~30s
-PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_part10b.txt
-# Pode cancelar com Ctrl+C após ~30s — basta confirmar que o dump apareceu
-grep -E "PARTE 10 PLANO (A|B3)|sceSifSetDma" log_part10b.txt | head -50
+PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_part10c.txt
+# Deixe rodar 30-60s; cancele com Ctrl+C
+grep -E "PARTE 10 PLANO (A|B1|B3)|sceSifSetDma|Unknown syscall|VBlank tick #" log_part10c.txt | head -80
+# Se aparecer "Morto" sem Ctrl+C, rode também:
+dmesg | tail -20    # confirma se foi OOM killer do kernel
 ```
+
+**Decifração da câmera B3 (log_part10b.txt linhas 400-411) — confirma SIF RPC Sony:**
+
+1º pacote (20 bytes em 0x327880, dmat=0x1fffed0):
+```
+[0]  size       = 0x00000014 (= 20 bytes, bate com xfer.size)
+[4]  reservado  = 0x00000000
+[8]  HEADER     = 0x80000000 ← bit alto = "EE→IOP", opcode=0 (provável SIF_CMD_INIT)
+[12] reservado  = 0x00000000
+[16] callback   = 0x003277c0 (endereço EE pra resposta)
+```
+
+2º pacote (64 bytes em 0x20327ac0 = mirror KSEG1, dmat=0x1fffdf0):
+```
+[0]  size           = 0x00000040 (= 64 bytes)
+[8]  HEADER         = 0x80000009 ← opcode=9 (provável RPC_BIND ou RPC_CALL)
+[16] rpc_id         = 0x00000005 (id do serviço IOP alvo)
+[20] self-ref       = 0x20327ac0 (= xfer.src, padrão SIF)
+[24] payload_words  = 0x00000002 (= 8 bytes de dados úteis)
+[28] response_buf   = 0x0030aaa8 (endereço EE do buffer de resposta)
+[32] sub-header     = 0x80000592 (sub-pacote interno)
+[36..63] zeros (padding)
+```
+
+**⚠️ Sinal extra do log_part10b a investigar:** linha 443 `jogar.sh, linha 29: 301110 Morto` — processo MATADO sem Ctrl+C, em VBlank #840 (vs #1680 do log_part10). Hipóteses: (a) OOM killer do Linux Mint (RAM esgotada), (b) flush pesado do `std::cerr` no dump em hex causou backpressure / problema de I/O, (c) SEGV silencioso. Pra investigar: rodar `dmesg | tail -30 | grep -i 'oom\|kill'` após o próximo `Morto`. Se for OOM, podemos diminuir o ASAN_OPTIONS ou desabilitar `PS2_TRACE`.
 
 **🎯 Achado glorioso da câmera PARTE 10 PLANO A (linhas 379-432 do log_part10.txt):**
 
