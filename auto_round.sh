@@ -1,0 +1,241 @@
+#!/usr/bin/env bash
+# auto_round.sh — automação do loop "git pull + rebuild + run + log + commit"
+# para o projeto God of War PS2→PC port (Operação Esparta).
+#
+# Uso:
+#   bash auto_round.sh         # roda em loop, a cada 30s checa novo commit
+#   bash auto_round.sh once    # roda uma vez e sai (útil pra testar)
+#   bash auto_round.sh status  # mostra estado atual
+#
+# Pressione Ctrl+C pra parar limpo.
+# O script NUNCA commita em main — só em branch separada logs/auto.
+# Logo, não cria loop infinito de auto-commit.
+#
+# Requisitos:
+#   - git configurado com push sem senha (chave SSH ou token armazenado)
+#   - rebuild_runtime.sh e jogar.sh no diretório do projeto
+#   - timeout (coreutils, padrão Linux)
+
+set -u
+
+# ============================================================
+# CONFIGURAÇÃO
+# ============================================================
+PROJECT_DIR="${PROJECT_DIR:-$HOME/Documentos/GitHub/godofwar}"
+POLL_INTERVAL=30                  # segundos entre checagens de novo commit
+RUN_TIMEOUT=90                    # segundos rodando o jogo (jogar.sh)
+LOG_BRANCH="logs/auto"
+LOG_DIR_NAME="runs_automaticos"
+STATE_FILE_NAME=".auto_round_last_hash"
+
+# Padrão grep pra extrair as linhas que importam pro próximo round
+GREP_PATTERN="PARTE 10 PLANO|Unknown syscall|VBlank tick #|sceSifSetDma|SIGSEGV|Morto|CreateThread|stub:|INTC:"
+
+# ============================================================
+# HELPERS
+# ============================================================
+LOG_DIR="$PROJECT_DIR/$LOG_DIR_NAME"
+STATE_FILE="$PROJECT_DIR/$STATE_FILE_NAME"
+
+log() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $*"
+}
+
+err() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] ERRO: $*" >&2
+}
+
+cd_project() {
+    cd "$PROJECT_DIR" || {
+        err "Diretório $PROJECT_DIR não existe. Edite PROJECT_DIR no topo do script."
+        exit 1
+    }
+}
+
+ensure_log_branch() {
+    # Cria branch logs/auto no remoto se não existir
+    if ! git ls-remote --exit-code --heads origin "$LOG_BRANCH" >/dev/null 2>&1; then
+        log "Criando branch $LOG_BRANCH no remoto (primeira vez)..."
+        git fetch origin main >/dev/null 2>&1 || true
+        local main_hash
+        main_hash=$(git rev-parse origin/main 2>/dev/null || git rev-parse HEAD)
+        git push origin "${main_hash}:refs/heads/$LOG_BRANCH" 2>&1 | tail -3
+    fi
+}
+
+# ============================================================
+# ROUND ÚNICO
+# ============================================================
+run_one_round() {
+    log "================================================"
+    log "ROUND novo iniciando"
+    log "================================================"
+
+    # 1. git pull em main
+    log "1/5: git pull origin main..."
+    git checkout main >/dev/null 2>&1 || { err "checkout main falhou"; return 1; }
+    if ! git pull origin main; then
+        err "git pull falhou"
+        return 1
+    fi
+
+    # 2. rebuild
+    log "2/5: rebuild_runtime.sh (pode demorar 30s-2min)..."
+    if ! bash rebuild_runtime.sh; then
+        err "rebuild falhou — pulando este round"
+        return 1
+    fi
+
+    # 3. preparar pastas e nome de log
+    mkdir -p "$LOG_DIR"
+    local TS HEAD_HASH FULL_LOG FILTERED_LOG
+    TS=$(date +%Y%m%d_%H%M%S)
+    HEAD_HASH=$(git rev-parse --short HEAD)
+    FULL_LOG="$LOG_DIR/log_${TS}_${HEAD_HASH}_full.txt"
+    FILTERED_LOG="$LOG_DIR/log_${TS}_${HEAD_HASH}_filtered.txt"
+
+    # 4. rodar jogo com timeout (manda SIGINT = Ctrl+C, jogo salva log limpo)
+    log "3/5: rodando jogo por ${RUN_TIMEOUT}s (timeout envia Ctrl+C automático)..."
+    PS2_TRACE=1 timeout --signal=INT --kill-after=10s "${RUN_TIMEOUT}s" \
+        bash jogar.sh > "$FULL_LOG" 2>&1 || true
+
+    # 5. filtrar e medir
+    log "4/5: filtrando log..."
+    grep -E "$GREP_PATTERN" "$FULL_LOG" > "$FILTERED_LOG" 2>/dev/null || true
+
+    local LINES_TOTAL LINES_FILT
+    LINES_TOTAL=$(wc -l < "$FULL_LOG" 2>/dev/null || echo 0)
+    LINES_FILT=$(wc -l < "$FILTERED_LOG" 2>/dev/null || echo 0)
+    log "   Log full:     $LINES_TOTAL linhas"
+    log "   Log filtrado: $LINES_FILT linhas"
+
+    if [ "$LINES_TOTAL" -lt 5 ]; then
+        err "Log full muito curto — jogo pode não ter rodado direito (display X disponível?)"
+    fi
+
+    # também salva versão "latest" pra fácil acesso do agente
+    cp "$FULL_LOG" "$LOG_DIR/log_latest_full.txt" 2>/dev/null || true
+    cp "$FILTERED_LOG" "$LOG_DIR/log_latest_filtered.txt" 2>/dev/null || true
+
+    # 6. commitar em logs/auto
+    log "5/5: commitando logs em $LOG_BRANCH..."
+    git fetch origin "$LOG_BRANCH" >/dev/null 2>&1 || true
+    if git rev-parse "origin/$LOG_BRANCH" >/dev/null 2>&1; then
+        git checkout -B "$LOG_BRANCH" "origin/$LOG_BRANCH" >/dev/null 2>&1
+    else
+        git checkout -B "$LOG_BRANCH" >/dev/null 2>&1
+    fi
+
+    git add -f "$LOG_DIR_NAME/" 2>/dev/null
+    if git commit -m "auto: round em main@${HEAD_HASH} ($(date +%Y-%m-%d_%H:%M)) — full=${LINES_TOTAL} filt=${LINES_FILT}"; then
+        if git push origin "$LOG_BRANCH"; then
+            log "   Push OK — agente pode ler do branch $LOG_BRANCH"
+        else
+            err "git push falhou (sem internet? credencial?)"
+        fi
+    else
+        log "   Nada novo pra commitar (logs idênticos ao último)"
+    fi
+
+    git checkout main >/dev/null 2>&1
+    log "ROUND completo."
+    return 0
+}
+
+# ============================================================
+# LOOP PRINCIPAL
+# ============================================================
+main_loop() {
+    cd_project
+    ensure_log_branch
+
+    log "Modo loop ativo. Verificando novos commits a cada ${POLL_INTERVAL}s."
+    log "Branch monitorada: main → resultados em logs/auto"
+    log "Diretório dos logs: $LOG_DIR"
+    log "Pressione Ctrl+C pra parar."
+    log ""
+
+    local last_hash=""
+    [ -f "$STATE_FILE" ] && last_hash=$(cat "$STATE_FILE")
+
+    while true; do
+        git fetch origin main >/dev/null 2>&1
+        local current_hash
+        current_hash=$(git rev-parse origin/main 2>/dev/null || echo "")
+
+        if [ -z "$current_hash" ]; then
+            err "Não consegui resolver origin/main. Sem internet?"
+        elif [ "$current_hash" != "$last_hash" ]; then
+            log "Commit novo detectado: ${current_hash:0:8} (anterior: ${last_hash:0:8})"
+            if run_one_round; then
+                echo "$current_hash" > "$STATE_FILE"
+                last_hash="$current_hash"
+            else
+                err "Round falhou. Tentando novamente em ${POLL_INTERVAL}s."
+            fi
+        else
+            log "Sem novidade. Próxima verificação em ${POLL_INTERVAL}s."
+        fi
+
+        sleep "$POLL_INTERVAL"
+    done
+}
+
+# ============================================================
+# COMANDOS AUXILIARES
+# ============================================================
+cmd_status() {
+    cd_project
+    echo "PROJECT_DIR: $PROJECT_DIR"
+    echo "LOG_BRANCH:  $LOG_BRANCH"
+    echo "LOG_DIR:     $LOG_DIR"
+    echo "STATE_FILE:  $STATE_FILE"
+    if [ -f "$STATE_FILE" ]; then
+        echo "Último hash processado: $(cat "$STATE_FILE")"
+    else
+        echo "Último hash processado: (nenhum, primeiro run)"
+    fi
+    echo ""
+    echo "Hash atual main local: $(git rev-parse main 2>/dev/null || echo 'N/A')"
+    echo "Hash atual origin/main: $(git rev-parse origin/main 2>/dev/null || echo 'N/A — rode git fetch')"
+    if [ -d "$LOG_DIR" ]; then
+        echo ""
+        echo "Últimos 5 logs em $LOG_DIR:"
+        ls -lt "$LOG_DIR" 2>/dev/null | head -6
+    fi
+}
+
+# ============================================================
+# TRAP — saída limpa no Ctrl+C
+# ============================================================
+cleanup() {
+    echo ""
+    log "Interrompido pelo usuário. Saindo limpo."
+    exit 0
+}
+trap cleanup INT TERM
+
+# ============================================================
+# ENTRADA
+# ============================================================
+case "${1:-loop}" in
+    once)
+        cd_project
+        ensure_log_branch
+        run_one_round
+        ;;
+    loop)
+        main_loop
+        ;;
+    status)
+        cmd_status
+        ;;
+    *)
+        echo "Uso: bash auto_round.sh [loop|once|status]"
+        echo ""
+        echo "  loop   (padrão) roda em loop checando novo commit a cada ${POLL_INTERVAL}s"
+        echo "  once   roda uma vez (independente de ter commit novo) e sai"
+        echo "  status mostra estado atual sem rodar nada"
+        exit 1
+        ;;
+esac
