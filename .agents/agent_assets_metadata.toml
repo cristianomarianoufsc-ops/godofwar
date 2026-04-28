@@ -6,3 +6,9 @@ id = "ue7U3-CC8JyiQLPKveR2r"
 uri = "file://MONETIZACAO_E_DIVULGACAO.md"
 type = "text"
 title = "Estratégia de Monetização e Divulgação — OPERAÇÃO ESPARTA"
+
+[[outputs]]
+id = "nSOnjziZ0wFkXqUAUdE1S"
+uri = "file://attached_assets/patches/docs_fluxo_auto.patch.txt"
+type = "text"
+title = "Patch: docs do fluxo automatizado (3 arquivos)"

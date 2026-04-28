@@ -51,6 +51,66 @@ Se você terminar a sessão sem atualizar os dois, o próximo agente vai perder 
 
 ---
 
+## 🤖 FLUXO DE TRABALHO AUTOMATIZADO — VIGENTE DESDE 2026-04-28 🤖
+
+**LEIA ANTES DE PEDIR LOG AO AGENTE CRIS.** A partir de 2026-04-28 o Agente Cris **não cola mais logs no chat**. Ele tem um script (`auto_round.sh`) rodando no PC dele que dispara um round completo automaticamente sempre que você (analista) commita em `main`.
+
+### Fluxo end-to-end:
+1. Analista commita mudança em `main`
+2. Script `bash auto_round.sh loop` (já rodando no terminal do Agente Cris) detecta novo commit em ≤30s
+3. Script faz: `git pull` → `bash rebuild_runtime.sh` → `timeout 90s bash jogar.sh` → grep filtra
+4. Script faz `git push` dos logs em branch separada **`logs/auto`** (NUNCA em main)
+5. Agente Cris vem ao chat com qualquer mensagem
+6. Analista lê logs **direto do GitHub** via curl
+
+### Como o analista lê o log mais recente (NÃO peça ao Agente Cris):
+```bash
+# Filtrado (~101 linhas, só o que importa):
+curl -s "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/logs/auto/runs_automaticos/log_latest_filtered.txt"
+
+# Completo (~465 linhas):
+curl -s "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/logs/auto/runs_automaticos/log_latest_full.txt"
+
+# Histórico no GitHub:
+# https://github.com/cristianomarianoufsc-ops/godofwar/tree/logs/auto/runs_automaticos
+```
+
+⚠️ `git fetch` LOCAL NO REPLIT É BLOQUEADO COMO "DESTRUCTIVE" — sempre use `curl raw.githubusercontent.com`.
+
+### Modos do `auto_round.sh` (rode em `~/Documentos/GitHub/godofwar`):
+| Comando | Comportamento | Ctrl+C? |
+|---|---|---|
+| `bash auto_round.sh once` | 1 round e SAI sozinho | ❌ NÃO |
+| `bash auto_round.sh loop` ⭐ | Vivo pra sempre, polling 30s | ✅ Pra parar (fim do dia) |
+| `bash auto_round.sh status` | Mostra estado e SAI | ❌ NÃO |
+| `nohup bash auto_round.sh loop > auto_round.log 2>&1 &` | Background | `pkill -f auto_round.sh` |
+
+Dentro de cada round, `timeout --signal=INT 90s` mata o jogo automaticamente. **Agente Cris NUNCA precisa apertar Ctrl+C no jogo.**
+
+### Configuração já feita (NÃO recriar):
+- Token GitHub fine-grained (Contents: Read+Write) salvo em `~/.git-credentials` no PC do Agente Cris
+- Branch `logs/auto` criada no remoto pelo primeiro round (commit `a2627cf`, 2026-04-28 00:00)
+- `runs_automaticos/` e `.auto_round_last_hash` no `.gitignore` de main
+- Em `logs/auto`, logs entram via `git add -f` (forçado, ignorando gitignore)
+
+### O analista FAZ:
+- ✅ Commitar mudanças sabendo que round automático dispara em ≤30s
+- ✅ Ler log via curl do GitHub no início de cada interação
+- ✅ Atualizar `replit.md` + `HANDOFF_AGENT.md` no mesmo commit (regra acima)
+
+### O analista NÃO FAZ:
+- ❌ Pedir log ao Agente Cris ("cola aqui o resultado")
+- ❌ Pedir comando longo de terminal ("rode `git pull && rebuild && jogar...`")
+- ❌ Tentar `git fetch` local no Replit (bloqueado)
+- ❌ Sugerir parar o loop (deixa rodando)
+
+### Limitações honestas:
+- Analista é leitor SOB DEMANDA, não vigia 24/7. Só lê GitHub quando Agente Cris vier ao chat.
+- Erros visuais (textura errada, tela piscando) NÃO entram em log — Agente Cris descreve.
+- Agente Cris está no plano FREE Replit, NÃO PODE pagar nada (recusou OpenInterpreter pago).
+
+---
+
 ## 🚨🚨 ARMADILHA CRÍTICA: DOIS DIRETÓRIOS `src/recompiled/` 🚨🚨
 
 O projeto tem **DOIS diretórios paralelos** com os mesmos ~5626 `.cpp` recompilados:
