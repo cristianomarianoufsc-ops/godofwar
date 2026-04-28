@@ -3270,6 +3270,45 @@ void sceSifSetDma(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
         return;
     }
 
+    // PARTE 10 PLANO C — blindagem contra "chamada SIF marciana" (Bug J).
+    // Confirmado pela log_part10d (linhas 406, 535): apareceu chamada com
+    // dmat=0x5 count=0x20 e ra=0x0 (impossível em MIPS legítimo — todo JAL
+    // seta $ra automaticamente). Hipótese: stub não-recompilado (0x283770,
+    // 0x17acb8, 0x138b10, 0x1838d0) deixa registers em estado lixo e quando
+    // controle volta a código recompilado, cai num "JAL sceSifSetDma" com
+    // argumentos zerados/aleatórios. Mantém comportamento (return 0 = falha,
+    // igual ao caso dmatAddr==0), apenas silencia o ruído E loga UMA vez
+    // os registers completos (ra, sp, gp) pra rastrear origem futuramente.
+    // Threshold 0x100000 = início do segmento de código EE (entry 0x100008);
+    // chamadas legítimas usam dmat=0x1fffed0/0x1fffdf0 (>1MB), bem acima.
+    if (dmatAddr < 0x00100000u)
+    {
+        static std::mutex s_part10cMutex;
+        static bool s_part10cLogged = false;
+        bool firstTime = false;
+        {
+            std::lock_guard<std::mutex> lock(s_part10cMutex);
+            if (!s_part10cLogged)
+            {
+                s_part10cLogged = true;
+                firstTime = true;
+            }
+        }
+        if (firstTime)
+        {
+            std::cerr << "[PARTE 10 PLANO C] sceSifSetDma com dmat lixo (rastro pra Bug J): "
+                      << "a0(dmat)=0x" << std::hex << dmatAddr
+                      << " a1(count)=0x" << count
+                      << " ra=0x" << getRegU32(ctx, 31)
+                      << " sp=0x" << getRegU32(ctx, 29)
+                      << " gp=0x" << getRegU32(ctx, 28)
+                      << " pc=0x" << ctx->pc
+                      << std::dec << std::endl;
+        }
+        setReturnS32(ctx, 0);
+        return;
+    }
+
     std::array<Ps2SifDmaTransfer, 32u> pending{};
     uint32_t pendingCount = 0u;
     bool ok = true;

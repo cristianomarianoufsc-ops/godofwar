@@ -89,21 +89,31 @@ inundar. Aguardando próximo dossiê.** Depois: fuga com o alvo
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-27 PARTE 10 PLANO B1 APLICADO — stub permissivo SIF RPC stage transfer, aguardando log_part10c do Agente Cris)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-27 PARTE 10 PLANO C APLICADO — blindagem de chamada SIF marciana Bug J + log de registers, aguardando log_part10e)
 
-### Status: ✅ PARTE 10 PLANO A CONFIRMADO + ✅ PARTE 10 PLANO B3 CONFIRMADO + 🟡 PARTE 10 PLANO B1 APLICADO. Câmera B3 decifrou: pacotes são SIF RPC genuíno da Sony (header `0x80000000+opcode`). Central escolheu B1 (atalho ~25 linhas) sobre B2 (fix completo ~200-400 linhas) porque revela próximo travamento em ~30s. AGUARDANDO log_part10c.
+### Status: ✅ PARTE 10 PLANO A/B3 CONFIRMADOS + ✅ PARTE 10 PLANO B1 CONFIRMADO (log_part10d 491 linhas) + 🆕 BUG J descoberto + 🟡 PARTE 10 PLANO C APLICADO. B1 disparou 4x reais, eliminou 8 mensagens `motivo='canCopyGuestByteRange...'`, jogo estável 41s/2460 VBlanks, zero crashes. NOVO bug J revelado pelo log_part10d: chamada `sceSifSetDma(dmat=0x5, count=0x20)` com `ra=0x0` (= MIPS lixo, impossível em código legítimo). PLANO C blinda silenciosamente + loga registers UMA vez pra rastrear origem. AGUARDANDO log_part10e.
 
 **Comando do próximo round (Agente Cris no PC local):**
 ```bash
 cd ~/Documentos/GitHub/godofwar
 git pull origin main
 bash rebuild_runtime.sh                # incremental ~30s
-PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_part10c.txt
-# Deixe rodar 30-60s; cancele com Ctrl+C
-grep -E "PARTE 10 PLANO (A|B1|B3)|sceSifSetDma|Unknown syscall|VBlank tick #" log_part10c.txt | head -80
-# Se aparecer "Morto" sem Ctrl+C, rode também:
-dmesg | tail -20    # confirma se foi OOM killer do kernel
+PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_part10e.txt
+# Deixe rodar 60-120s na tela preta; cancele com Ctrl+C NO TERMINAL (não no X da janela)
+grep -E "PARTE 10 PLANO (B1|C)|sceSifSetDma|Unknown syscall|VBlank tick #" log_part10e.txt | head -80
+wc -l log_part10e.txt
+# Se aparecer "Morto" sem Ctrl+C: dmesg | tail -30 | grep -i 'oom\|kill'
 ```
+
+**Esperado no log_part10e:**
+- 4 ocorrências `[PARTE 10 PLANO B1]` (SIF RPC stage transfer aceito) — NÃO mais que isso (cap de 8 por src único)
+- **1 ocorrência `[PARTE 10 PLANO C]`** com `ra=0x... sp=0x... gp=0x... pc=0x...` — esses 4 valores REVELAM origem do Bug J:
+  - Se `ra` apontar pra dentro de uma das 4 funções fantasma (`0x283770/0x17acb8/0x138b10/0x1838d0`) → confirma hipótese stub-fantasma deixa registers lixo
+  - Se `gp` for `0x2cf070` → contexto principal; se for outro → outro thread
+  - Se `sp` estiver perto da stack de `[CreateThread] id=2 entry=0x2947c8 stack=0x326b40` → thread 2 é o culpado
+- ZERO ocorrências `[PARTE 10 PLANO A]` (PLANO A só dispara em casos NÃO cobertos por B1/C)
+- 0 a 2 ocorrências `sceSifSetDma failed dmat=0xN count=0xM` (warning compacto antigo, pode persistir 1-2x se houver chamada legítima ainda falhando)
+- VBlank chegando além de #2460 (#3000+ esperado em 60s)
 
 **Decifração da câmera B3 (log_part10b.txt linhas 400-411) — confirma SIF RPC Sony:**
 
