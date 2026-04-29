@@ -18,23 +18,8 @@ author = "agent"
 task = "workflow.run"
 args = "Start application"
 
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Download part1.pak"
-
 [[workflows.workflow]]
 name = "Start application"
-author = "agent"
-
-[workflows.workflow.metadata]
-outputType = "vnc"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "bash build.sh"
-
-[[workflows.workflow]]
-name = "Download part1.pak"
 author = "agent"
 
 [workflows.workflow.metadata]
@@ -42,4 +27,4 @@ outputType = "console"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "uv run gdown 'https://drive.google.com/uc?id=1pmhBQeneIMLyIiAeWeAiAebOJb3O6fuM' -O GOD_PC_PORT_FINAL/data/part1.pak && echo 'DOWNLOAD CONCLUÍDO!' || echo 'FALHA NO DOWNLOAD'"
+args = "echo '⚠️  Replit é só pra editar/analisar código. NÃO compila e NÃO roda o jogo.' && echo '   O build (5626 arquivos) é feito no PC do Agente Cris via bash build.sh / rebuild_runtime.sh.' && echo '   Veja replit.md → seção \"Regras pro agente Replit\" (linha ~1138).'"
