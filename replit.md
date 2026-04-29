@@ -2422,3 +2422,31 @@ python3 tools/analisa_log.py log_gameloop.txt --diff log_bootloop_fix.txt
 E AUSÊNCIA de `[DBG 100E28]` — o loop não deve mais aparecer.
 Se `func_238860` for chamada, esperamos ver logs de GS/frame ou novas
 linhas de boot nunca vistas antes.
+
+---
+
+## Estado atual da depuração (sessão de 2026-04-29) — PARTE 10 PLANO B2 PASSO 1 CONFIRMADO + PASSO 2 APLICADO
+
+**Para detalhes completos, leia `HANDOFF_AGENT.md` seção "🟢 ESTADO ATUAL".** Resumo:
+
+### PASSO 1 confirmado em produção (round `99b5727`, log `log_20260429_011641_7d6ba33`)
+
+Decoder do header SIF RPC disparou 2x revelando o protocolo exato:
+- **PACOTE 1 INIT** (size=0x14): `opcode=0x0000`, `callback=0x3277c0`
+- **PACOTE 2 RPC_BIND** (size=0x40): `opcode=0x0009`, `rpc_id=0x5`, `client_buf=0x30aaa8`, `sid=0x80000592`
+
+Análise estática do ELF confirma `0x30aaa8` está em **BSS** (zerado no boot) → spinlock pollando `*0x30aaa8 != 0`. Como IOP não responde, jogo trava em init infinito. **Hipótese do PIVOT 100% confirmada.**
+
+### PASSO 2 aplicado em `ps2_stubs_misc.inl:3482-3568`
+
+Quando vê RPC_BIND (opcode=0x09), escreve `server_handle = 0x10000000 | rpc_id` em offsets `{0,4,24,32,40}` do `client_buf` via `getMemPtr`. Estratégia defensiva pra cobrir 5 variantes conhecidas do `sceSifClientData` (Sony SDK varia entre versions). Dedupe por `(client_buf, rpc_id)`, máximo 8 binds, log `[PARTE 10 PLANO B2 PASSO 2]` na primeira ocorrência.
+
+### Esperado no próximo round automático
+
+| Marker | Antes | Esperado |
+|---|---|---|
+| `[PARTE 10 PLANO B2 PASSO 2]` | 0 | **1+** novo |
+| `[CreateThread]` | 1 | **2+** se destravar |
+| `[vif1:cmd] DIRECT (0x50/0x51)` | 0 | **1+** se chegar render |
+
+Se destravar → próximo bloqueio aparece (provável CDVD/save/render). Se NÃO destravar → PASSO 3 = forjar `iSignalSema` (jogo usa semáforo SIF em vez de polling).

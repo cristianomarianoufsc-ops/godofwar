@@ -3475,6 +3475,92 @@ void sceSifSetDma(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
                               << " size=0x" << sizeBytes << ")"
                               << std::dec << std::endl;
                 }
+
+                // PARTE 10 PLANO B2 PASSO 2 — resposta SIF FORJADA pra destravar
+                // o spinlock do jogo. Confirmado pelo PASSO 1 (round 7d6ba33,
+                // 2026-04-29 01:18): jogo manda RPC_BIND (opcode=0x09) pedindo
+                // ligacao com sid=0x80000592 e fica pollando o cliente em
+                // response_buf=0x30aaa8 esperando o campo `server` ficar non-zero.
+                // Nao temos IOP rodando, entao escrevemos NOS direto na guest RAM
+                // a resposta que o IOP escreveria, simulando "bind concedido".
+                //
+                // Risco: estamos escrevendo dados sinteticos numa estrutura cujo
+                // layout exato (sceSifClientData) varia entre Sony SDK versions.
+                // Estrategia DEFENSIVA: escrevemos um sentinela non-zero em
+                // multiplos offsets onde o campo `server` aparece nas variantes
+                // conhecidas (0, 4, 24, 32, 40). Custo: 44 bytes de "lixo
+                // controlado" por bind. Beneficio: maximiza chance do polling
+                // EE achar non-zero em qualquer um dos campos checados.
+                //
+                // Se isso destravar, log do proximo round vai mostrar:
+                //   - menos VBlanks parados em INIT (jogo avancou)
+                //   - chamadas novas que estavam atras do BIND (ex: RPC_CALL,
+                //     load de save, abrir CDVD, etc.)
+                // Se nao destravar (jogo continua spinlock identico), proxima
+                // hipotese: jogo usa semaforo SIF, nao polling — ai PASSO 3 vai
+                // precisar disparar iSignalSema fake via stub do sceSifCallRpc.
+                //
+                // Opcodes alvo:
+                //   0x09 = SIF_CMD_RPC_BIND  -> fingir bind ok
+                // (INIT opcode=0x00 nao tem polling, eh fire-and-forget — nao
+                //  precisa resposta forjada agora; se virar bloqueio, PASSO 3.)
+                if (isRpcLayout && opcode == 0x0009u && responseBuf != 0u)
+                {
+                    static std::mutex s_b2p2Mutex;
+                    static std::unordered_set<uint64_t> s_b2p2Done;
+                    bool firstForThisBind = false;
+                    const uint64_t bindKey =
+                        (static_cast<uint64_t>(responseBuf) << 32) ^
+                        static_cast<uint64_t>(rpcId);
+                    {
+                        std::lock_guard<std::mutex> lock(s_b2p2Mutex);
+                        if (s_b2p2Done.size() < 8u && s_b2p2Done.insert(bindKey).second)
+                        {
+                            firstForThisBind = true;
+                        }
+                    }
+
+                    uint8_t *clientPtr = getMemPtr(rdram, responseBuf);
+                    if (clientPtr)
+                    {
+                        // server_handle sentinela: parece pointer valido em heap
+                        // PS2 EE (>0x01000000), mas escolhido pra nao colidir
+                        // com nada legitimo. Misturamos rpc_id pra cada bind ter
+                        // handle unico, facilitando rastreio se virar problema.
+                        const uint32_t serverHandle = 0x10000000u | (rpcId & 0xFFFFu);
+                        const uint32_t writeOffsets[] = { 0u, 4u, 24u, 32u, 40u };
+                        bool wroteAll = true;
+                        for (uint32_t off : writeOffsets)
+                        {
+                            // Limita escrita a area que sabemos ser RAM valida.
+                            if (!canCopyGuestByteRange(rdram, responseBuf + off, responseBuf + off, 4u))
+                            {
+                                wroteAll = false;
+                                break;
+                            }
+                            std::memcpy(clientPtr + off, &serverHandle, 4);
+                        }
+
+                        if (firstForThisBind)
+                        {
+                            std::cerr << "[PARTE 10 PLANO B2 PASSO 2] resposta SIF forjada — "
+                                      << "RPC_BIND opcode=0x9 sid=0x" << std::hex << subHeader
+                                      << " rpc_id=0x" << rpcId
+                                      << " client=0x" << responseBuf
+                                      << " server_handle=0x" << serverHandle
+                                      << " offsets={0,4,24,32,40} ok=" << std::dec << wroteAll
+                                      << std::endl;
+                        }
+                    }
+                    else if (firstForThisBind)
+                    {
+                        std::cerr << "[PARTE 10 PLANO B2 PASSO 2] FALHOU — "
+                                  << "responseBuf=0x" << std::hex << responseBuf
+                                  << " nao mapeia em RAM (getMemPtr=null) — "
+                                  << "bind nao destravado, jogo vai continuar spinlock"
+                                  << std::dec << std::endl;
+                    }
+                }
             }
             // NÃO adiciona ao pending (não tenta copiar pra 0xffffffff).
             // O jogo recebe ID válido no setReturnS32 mais abaixo.

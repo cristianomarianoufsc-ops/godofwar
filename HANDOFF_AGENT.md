@@ -169,7 +169,61 @@ Antes de escolher: rodar `git log --oneline origin/main..HEAD` lista os commits 
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-29 BUG J DESMISTIFICADO via análise estática + PARTE 10 PLANO B2 PASSO 1 EM ROTA)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-29 PARTE 10 PLANO B2 PASSO 1 CONFIRMADO + PASSO 2 APLICADO)
+
+### 🆕 PARTE 10 PLANO B2 PASSO 1 — CONFIRMADO em produção (round `99b5727`, log `log_20260429_011641_7d6ba33`)
+
+Decoder do header SIF RPC disparou **2 vezes** (1 INIT + 1 RPC_BIND), revelando o protocolo exato que o GoW usa:
+
+```
+PACOTE 1 — INIT (xfer.src=0x327880 size=0x14):
+  opcode=0x0000  sifBit=1  hdrFlags=0x0  hdrSize=0x14
+  INIT{ callback=0x3277c0 }    ← callback EE registrado, será disparado quando IOP confirmar
+
+PACOTE 2 — RPC_BIND (xfer.src=0x20327ac0 size=0x40):
+  opcode=0x0009  sifBit=1  hdrFlags=0x0  hdrSize=0x40
+  RPC{ rpc_id=0x5  self=0x20327ac0  payload_words=2
+       client_buf=0x30aaa8       ← onde o jogo polla esperando bind ok
+       sid=0x80000592 }          ← service ID requisitado (provável MC2_S1/MC2_D)
+```
+
+**Confirmações importantes da análise estática do ELF:**
+- `0x30aaa8` = **BSS (zerado no boot)** — confirma hipótese de spinlock pollando `*0x30aaa8 != 0`
+- `0x3277c0` = **BSS (preenchido em runtime)** — callback registrado dinamicamente pelo jogo
+
+**Diagnóstico unificado:** jogo manda os 2 pacotes, fica pollando `0x30aaa8`. Como IOP não responde (não temos IOP), spinlock infinito → 5340 VBlanks parados → tela bugada. Hipótese do PIVOT 2026-04-29 100% confirmada.
+
+### 🆕 PARTE 10 PLANO B2 PASSO 2 — APLICADO 2026-04-29
+
+Implementado em `ps2_stubs_misc.inl:3482-3568` (logo após o PASSO 1, dentro do bloco `if (xfer.dest == 0xFFFFFFFFu)`):
+
+**O que faz:** quando vê RPC_BIND (opcode=0x09), escreve resposta sintética IOP no `client_buf` da guest RAM, simulando "bind concedido".
+
+**Estratégia defensiva:** layout do `sceSifClientData` varia entre Sony SDK versions (campo `server` aparece em offsets 0/4/24/32/40 nas variantes conhecidas). Em vez de adivinhar, escreve `server_handle = 0x10000000 | (rpc_id & 0xFFFF)` em **todos os 5 offsets**. Custo: 44 bytes "lixo controlado" por bind. Benefício: maximiza chance do polling EE achar non-zero.
+
+**INIT (opcode=0) NÃO é forjado** — é fire-and-forget no Sony SDK, jogo não polla por ele. Se virar bloqueio em PASSO 3, escrevemos callback EE direto.
+
+**Esperado no próximo log automático (após PASSO 2):**
+
+| Marker | Antes (round 7d6ba33) | Esperado pós-PASSO 2 |
+|---|---|---|
+| `[PARTE 10 PLANO B1]` | 2 | 1-4 (mesma magnitude) |
+| `[PARTE 10 PLANO B2 PASSO 1]` | 2 | 2 (idênticas) |
+| `[PARTE 10 PLANO B2 PASSO 2]` | 0 | **1+** 🆕 |
+| `[PARTE 10 PLANO C]` | 1 | 0-1 |
+| `[CreateThread]` | 1 | **2+** se destravar |
+| `[vif1:cmd] DIRECT (0x50/0x51)` | 0 | **1+** se chegar em render |
+| `vu1:xgkick` | 0 | **1+** se chegar em render |
+| VBlank tick | até #5340 | qualquer (importante é o RESTO mudar) |
+
+**Cenários de saída (do mais pro menos esperado):**
+1. ✅ **Destravou em polling EE direto** — jogo avança pra próxima fase, log mostra novas chamadas (provável: load CDVD, alocar buffers, criar threads de render). Comportamento de tela muda visualmente.
+2. 🟡 **Destravou parcial** — passou do BIND mas trava em outra coisa (RPC_CALL, semáforo IOP, etc.). PASSO 3 lida com isso.
+3. ❌ **Não destravou** (log idêntico) — jogo usa semáforo SIF, não polling. PASSO 3 = forjar `iSignalSema` na resposta.
+
+---
+
+### 🟡 Histórico — PARTE 10 PLANO B2 PASSO 1 (resolvido pelo round 7d6ba33)
 
 ### Status: ✅ Fluxo automatizado funcionando, último log em `logs/auto/runs_automaticos/log_latest_filtered.txt` mostra 5340 VBlanks (89s liso). ✅ PARTE 10 PLANO A/B3/B1/C confirmados. 🆕 **BUG J DESMISTIFICADO 2026-04-29 via desmontagem estática do ELF (sem build, ~10min de mips_inspect.py + varredura de bytes)**: descobertas que mudam a hipótese:
 
