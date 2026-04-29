@@ -155,21 +155,61 @@ Dentro de cada round, o `timeout --signal=INT 90s` mata o jogo automaticamente. 
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-28 BUG J PARCIALMENTE RASTREADO + FLUXO AUTOMATIZADO ESTREADO)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-29 BUG J DESMISTIFICADO via análise estática + PARTE 10 PLANO B2 PASSO 1 EM ROTA)
 
-### Status: ✅ Fluxo automatizado funcionando (1º round automático completo, 2026-04-28 00:00, log_latest em logs/auto). ✅ PARTE 10 PLANO A/B3/B1/C todos confirmados. 🆕 BUG J PARCIALMENTE RASTREADO via PARTE 10 PLANO C (round automático): chamada veio do **THREAD MAIN** (`gp=0x2cf070`), com `sp=0x1ffbf50` (stack saudável, não zerada), `ra=0x0`, `pc=0x293fe4`. Hipótese antiga (thread 2 com stack lixo) **DESCARTADA**. Nova hipótese: alguma função recompilada faz `jr $ra` com `$ra=0` carregado da stack, OU stub não-recompilado é chamado via `jr $reg` sem JAL. VBlank chegou em #5340 (89s do 90s timeout, sustentado e estável). Zero crashes/SIGSEGV/syscalls faltando. **Bug J está blindado (PLANO C), não trava nada — pode esperar enquanto B2 é implementado.**
+### Status: ✅ Fluxo automatizado funcionando, último log em `logs/auto/runs_automaticos/log_latest_filtered.txt` mostra 5340 VBlanks (89s liso). ✅ PARTE 10 PLANO A/B3/B1/C confirmados. 🆕 **BUG J DESMISTIFICADO 2026-04-29 via desmontagem estática do ELF (sem build, ~10min de mips_inspect.py + varredura de bytes)**: descobertas que mudam a hipótese:
+
+**Achados duros da análise estática (todos verificados no ELF SCUS_973.99):**
+
+1. `0x293fe4` é a instrução `syscall` dentro do trampoline `0x293fe0` que executa `addiu $v1, $zero, 0x77; syscall; jr $ra; nop`. Confirmado pela tabela de trampolines em `0x293fc0-0x29403c` que cobre os 8 syscalls SIF da Sony (`0x76`/`0x77`/`0x78`/`0x79`/`0x7a` e suas variantes negativas — `0x7a` é o do Bug H que matamos na PARTE 9).
+2. **Único caminho de invocação:** zero outras instâncias de `addiu $v1, $zero, 0x77` no ELF inteiro (varredura completa); zero ponteiros pra `0x293fe0` ou `0x293fe4` armazenados em data segment. **Toda chamada legítima a `sceSifSetDma` no jogo passa por esse trampoline.**
+3. **Apenas 4 callers JAL** pra `0x293fe0` no ELF inteiro:
+
+| File offset | Virtual addr | Status verificado |
+|---|---|---|
+| `0x089640` | `0x188640` | legítimo (caller A) |
+| `0x1845e8` | `0x2835e8` | legítimo (caller B) |
+| `0x1979a4` | `0x2969a4` | ✅ **LEGÍTIMO confirmado em produção** (PLANO B1, ra=0x2969ac no log) |
+| `0x19a06c` | `0x29906c` | legítimo (caller D) |
+
+4. **Padrão idêntico nos 4 callers** (verificado por desmontagem):
+```
+   sw  ?, ($sp)              ← descritor[0] = src
+   sw  ?, 4($sp)             ← descritor[4] = dest
+   sw  ?, 8($sp)             ← descritor[8] = size
+   sw  ?, 0xc($sp)           ← descritor[c] = attr
+   move $a0, $sp             ← a0 = ponteiro pro descritor (~0x1ffbXXXX)
+   nop / move
+   jal 0x293fe0              ← JAL (sempre seta $ra automaticamente)
+   addiu $a1, $zero, 1       ← delay slot: a1 = count = 1
+```
+
+5. **`ctx.pc=0x293fe4` é canônico** — verificado em `ps2_syscalls.cpp:312` + `ps2_syscalls_system.inl:275`. O dispatcher do runtime sempre seta o PC pro endereço da instrução `syscall`, independente de quem chamou. **`pc=0x293fe4` no PLANO C NÃO rastreia origem.**
+
+**Conclusão sobre Bug J — interpretação única racional:**
+
+Bug J (chamada com `a0=5, a1=0x20, ra=0`) **não bate com nenhum dos 4 callers reais** (que sempre usam `a0=$sp` ~0x1ffbXXXX, `a1=1`). E `ra=0` é fisicamente impossível em caller MIPS legítimo (JAL/JALR sempre carimbam $ra). Sobram 3 hipóteses ranqueadas por probabilidade:
+
+1. **(MAIS PROVÁVEL) Bug do PS2Recomp gerando placeholder** — recompilador encontra `jalr $reg` com target desconhecido em compile-time (vtable callsite, ponteiro de função em data) e gera código que invoca o stub de syscall "mais próximo" como fallback. `ra=0` bate porque o placeholder não popula $ra. Args lixo (`a0=5, a1=0x20`) batem com "registers em estado anterior, não preparados pra essa função".
+2. **Stack corruption + jr $ra=0** — função restaura `$ra` de slot zerado, executa `jr 0`, runtime detecta PC inválido e cai em syscall fallback. Menos provável (seria intermitente).
+3. **JALR via callback table com handler malformado** — handler IRQ/timer registrado com endereço errado. Possível mas exigiria patching ativo.
+
+**~~Hipótese antiga descartada:~~** "stub não-recompilado caindo em código bobo via `jr $reg` sem JAL" → DESCARTADA porque varredura completa do ELF mostrou 0 J/JR diretos pra esse trampoline.
+
+**Bug J permanece BLINDADO pelo PLANO C** (`if dmatAddr < 0x100000 return 0`). Não trava nada. Pode permanecer assim indefinidamente — investigar mais só se aparecer evidência forte de impacto em gameplay.
 
 **Comando do próximo round (NOVO FLUXO):**
 - Analista commita mudança em main (qualquer fix)
 - Agente Cris **já tem `bash auto_round.sh loop` rodando** — script dispara automaticamente em ≤30s
 - Próximo log fica em `logs/auto` branch, lido via curl pelo analista
 
-**Esperado no próximo log automático:**
-- 4 ocorrências `[PARTE 10 PLANO B1]` (estável)
-- 1 ocorrência `[PARTE 10 PLANO C]` (Bug J ainda capturado)
+**Esperado no próximo log automático (após PARTE 10 PLANO B2 PASSO 1):**
+- 1+ ocorrências `[PARTE 10 PLANO B1]` (mantido, comportamento idêntico)
+- 1+ ocorrências `[PARTE 10 PLANO B2 PASSO 1]` 🆕 — decoder do header SIF RPC mostrando opcode, rpc_id, callback, response_buf, payload_words em formato legível (1 log por combinação `(opcode, rpc_id)` única)
+- 1 ocorrência `[PARTE 10 PLANO C]` (Bug J ainda capturado, esperado)
 - 0 ocorrências `[PARTE 10 PLANO A]`
-- VBlank chegando >#5000 (igual ou maior ao último)
-- Se PARTE 10 PLANO B2 for implementado: pode aparecer comportamento NOVO (logs SIF RPC dispatching, possível primeira imagem renderizada)
+- VBlank ≥ #5000 (igual ou maior ao último)
+- **Comportamento de gameplay: idêntico ao atual** — PASSO 1 é puramente diagnóstico, NÃO escreve respostas. PASSO 2 (próximo round, depois de ler o decoder) é que vai tentar respostas.
 
 **Decifração da câmera B3 (log_part10b.txt linhas 400-411) — confirma SIF RPC Sony:**
 

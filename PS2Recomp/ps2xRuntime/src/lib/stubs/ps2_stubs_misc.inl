@@ -3383,6 +3383,99 @@ void sceSifSetDma(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
                           << " ra=0x" << getRegU32(ctx, 31)
                           << std::dec << std::endl;
             }
+
+            // PARTE 10 PLANO B2 PASSO 1 — decodificador legível do pacote SIF RPC.
+            // PASSO 1 é PURAMENTE DIAGNÓSTICO: lê os bytes em xfer.src, extrai os
+            // campos do protocolo Sony (HEADER+opcode, rpc_id, callback, response_buf,
+            // payload_words, sub-header) e loga UMA vez por combinação (opcode, rpc_id)
+            // pra dar visão completa de quais services o jogo acessa. Comportamento
+            // IDÊNTICO ao PLANO B1 — segue dando `continue` sem copiar nada.
+            // PASSO 2 (próximo round, depois de ler o que PASSO 1 revelou) decide se
+            // vamos escrever respostas fake (INIT_OK, RPC_BIND com serverId fake,
+            // RPC_CALL com resultado zerado) ou algo mais cirúrgico baseado nos
+            // services específicos que aparecerem. Layout esperado (decifrado em B3):
+            //   [0]  size     [4]  reservado     [8]  HEADER (0x80000000+opcode)
+            //   [12] reservado/extras
+            //   pkt INIT (size=0x14): [16] callback EE
+            //   pkt RPC  (size=0x40): [16] rpc_id, [20] self-ref, [24] payload_words,
+            //                         [28] response_buf, [32] sub-header
+            const uint8_t *pktPtr = getConstMemPtr(rdram, xfer.src);
+            if (pktPtr && sizeBytes >= 12u)
+            {
+                uint32_t hdrSize = 0u;
+                uint32_t hdrCmd = 0u;
+                std::memcpy(&hdrSize, pktPtr + 0, 4);
+                std::memcpy(&hdrCmd, pktPtr + 8, 4);
+                const uint32_t opcode = hdrCmd & 0xFFFFu;
+                const uint32_t sifCmdBit = (hdrCmd >> 31) & 1u;
+                const uint32_t hdrFlags = (hdrCmd >> 16) & 0x7FFFu;
+
+                uint32_t callback = 0u;
+                uint32_t rpcId = 0u;
+                uint32_t selfRef = 0u;
+                uint32_t payloadWords = 0u;
+                uint32_t responseBuf = 0u;
+                uint32_t subHeader = 0u;
+                bool isRpcLayout = false;
+
+                if (sizeBytes >= 36u)
+                {
+                    isRpcLayout = true;
+                    std::memcpy(&rpcId, pktPtr + 16, 4);
+                    std::memcpy(&selfRef, pktPtr + 20, 4);
+                    std::memcpy(&payloadWords, pktPtr + 24, 4);
+                    std::memcpy(&responseBuf, pktPtr + 28, 4);
+                    std::memcpy(&subHeader, pktPtr + 32, 4);
+                }
+                else if (sizeBytes >= 20u)
+                {
+                    std::memcpy(&callback, pktPtr + 16, 4);
+                }
+
+                const uint64_t dedupKey =
+                    (static_cast<uint64_t>(opcode) << 32) ^
+                    static_cast<uint64_t>(rpcId);
+
+                static std::mutex s_b2p1Mutex;
+                static std::unordered_set<uint64_t> s_b2p1Logged;
+                bool firstForThisCombo = false;
+                {
+                    std::lock_guard<std::mutex> lock(s_b2p1Mutex);
+                    if (s_b2p1Logged.size() < 16u && s_b2p1Logged.insert(dedupKey).second)
+                    {
+                        firstForThisCombo = true;
+                    }
+                }
+                if (firstForThisCombo)
+                {
+                    std::cerr << "[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — "
+                              << "opcode=0x" << std::hex << std::setw(4) << std::setfill('0') << opcode
+                              << std::setfill(' ')
+                              << " sifBit=" << std::dec << sifCmdBit
+                              << " hdrFlags=0x" << std::hex << hdrFlags
+                              << " hdrSize=0x" << hdrSize;
+                    if (isRpcLayout)
+                    {
+                        std::cerr << " RPC{ rpc_id=0x" << rpcId
+                                  << " self=0x" << selfRef
+                                  << " payload_words=" << std::dec << payloadWords
+                                  << " response_buf=0x" << std::hex << responseBuf
+                                  << " sub_hdr=0x" << subHeader
+                                  << " }";
+                    }
+                    else if (sizeBytes >= 20u)
+                    {
+                        std::cerr << " INIT{ callback=0x" << callback << " }";
+                    }
+                    else
+                    {
+                        std::cerr << " (sem campos extras alem do header)";
+                    }
+                    std::cerr << " (xfer.src=0x" << xfer.src
+                              << " size=0x" << sizeBytes << ")"
+                              << std::dec << std::endl;
+                }
+            }
             // NÃO adiciona ao pending (não tenta copiar pra 0xffffffff).
             // O jogo recebe ID válido no setReturnS32 mais abaixo.
             continue;
