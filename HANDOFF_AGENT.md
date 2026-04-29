@@ -211,6 +211,51 @@ Bug J (chamada com `a0=5, a1=0x20, ra=0`) **não bate com nenhum dos 4 callers r
 - VBlank ≥ #5000 (igual ou maior ao último)
 - **Comportamento de gameplay: idêntico ao atual** — PASSO 1 é puramente diagnóstico, NÃO escreve respostas. PASSO 2 (próximo round, depois de ler o decoder) é que vai tentar respostas.
 
+---
+
+### 🚨 PIVOT ESTRATÉGICO 2026-04-29 — análise do log_latest_full.txt revelou que problema PRINCIPAL **NÃO é SIF cosmético** mas **INIT bloqueando avanço pra render**
+
+**Achados quantitativos do log full (465 linhas, branch `origin/logs/auto`):**
+
+| Marker | Count | Interpretação |
+|---|---|---|
+| `[stub:sub_0013DA10] PARTE 7` | 4 | alloc inicial (memória OK) |
+| `[CreateThread]` | **1** ⚠️ | só 1 thread criada o boot inteiro (PS2 normal teria várias) |
+| `[stub PARTE 9] syscall 0x7a` | 1 (dedupe) | poll SIF disparado, jogo USA esse caminho |
+| `[PARTE 10 PLANO B1]` | 4 (2 pacotes únicos × multi VBlanks) | SIF stage transfers raw via DMA |
+| `[PARTE 10 PLANO C]` | 1 | Bug J capturado uma vez |
+| `[vif1:cmd]` | **160** ⚠️ | 158 NOPs (0x00) + 1 STMASK (0x10) + 1 outro (0x7f) |
+| `[vif1:cmd] opcode=0x50/0x51 (DIRECT)` | **0** ⚠️ | **NENHUM pacote GIF gerado pelo VIF1** |
+| `[vif1:cmd] opcode=0x14/0x17 (MSCAL/MSCNT)` | **0** ⚠️ | **VU1 nunca executou microprograma** |
+| `[vu1:xgkick]` | **0** ⚠️ | **XGKICK nunca disparou** |
+| `[gif:submit]` / `[gs:gif]` | **0** ⚠️ | **GIF nunca recebeu pacote** |
+| `[stub:0x182f28] VBlank tick` | até #5340 | clock ticks saudáveis (IRQ-driven, não bloqueado) |
+
+**Diagnóstico revisado da causa-raiz:**
+
+1. ✅ Boot inicial roda (alloc, thread main, VBlank IRQ funcionando)
+2. ✅ SIF DMA raw mandando 2 pacotes (INIT + RPC_CALL com rpc_id=5)
+3. ✅ Game faz poll syscall 0x7a, destravado pelo PARTE 9 (return -1)
+4. ❌ **Mas o jogo NUNCA submete display list real** — só NOPs no VIF1
+5. ❌ **Nunca cria threads de render/audio/input** (só 1 CreateThread)
+6. ❌ **Nunca chega na fase de render** — tela preta
+
+**Hipótese unificada:** o jogo está bloqueado num stage de INIT esperando confirmação SIF do IOP (provavelmente "IOP modules loaded OK" ou "SIF channel established"). Sem essa confirmação, fica em loop de polling/sleep, com VBlank IRQ tickando mas main thread parado num lugar que nunca avança pra `setupRenderThread()`/`loadAssets()`/`mainGameLoop()`.
+
+**Significado pra estratégia:**
+
+- ❌ ~~PASSO 2 = "fake response opcional pra completude"~~
+- ✅ **PASSO 2 = "fake response é a CHAVE pra destravar o jogo do init e ver primeira imagem"**
+
+A urgência do PASSO 2 subiu drasticamente. Quando o log do PASSO 1 chegar revelando os opcodes/services SIF que o jogo usa, o PASSO 2 vai escrever respostas mínimas (INIT_OK, RPC_BIND com serverId fake, RPC_CALL com `recv_buf` zerado) escolhidas pra simular um IOP "amigável" que aceita tudo. O risco de "quebrar o que funciona" é baixo porque atualmente o jogo NÃO ESTÁ FUNCIONANDO em nenhum nível visual.
+
+**Sub-investigações pra fazer DEPOIS do PASSO 1 (não agora, pra não confundir o log):**
+
+1. **Por que só 1 CreateThread?** Pode ser indicador adicional de bloqueio em init — investigar se o jogo cria threads condicionalmente após receber resposta SIF.
+2. **Quem é o opcode VIF1 0x7f?** Não está em VIFCmd enum padrão — pode ser unpack disfarçado (bit 7 set = unpack family).
+3. **Existe `[boot_stub]` log?** Apareceu nos prefixos — investigar conteúdo pra entender estágios de boot.
+4. **Sony's high-level RPC API (SifInitRpc/SifBindRpc/SifCallRpc) está implementada no runtime mas GoW NÃO USA** — confirmado: zero `[SifInitRpc] Initialized` e zero log de SifBindRpc/SifCallRpc no full log. GoW vai 100% via raw DMA. Isso é OK pra nós (menos infra Sony pra debugar), mas significa que PASSO 2 precisa simular respostas no nível raw, sem reusar a infra Sony existente.
+
 **Decifração da câmera B3 (log_part10b.txt linhas 400-411) — confirma SIF RPC Sony:**
 
 1º pacote (20 bytes em 0x327880, dmat=0x1fffed0):
