@@ -1,0 +1,47 @@
+interessante — vamos investigar. O log novo subiu (round fa95820 às 16:55), mas PASSO 1 e PASSO 2 sumiram, apesar do PASSO 1 ter aparecido no round anterior. Preciso confirmar onde o código realmente está e se foi commitado:
+
+
+19 actions
+Bom, achei o mistério. Comparei o log de agora (fa95820) com o anterior (7d6ba33) lado a lado:
+
+11d10
+< [PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0000 ... INIT{ callback=0x3277c0 }
+14d12
+< [PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 ... RPC{ rpc_id=0x5 sub_hdr=0x80000592 }
+
+A ÚNICA diferença entre os dois rounds são essas duas linhas que SUMIRAM. Tudo o resto é byte a byte idêntico. PASSO 1 funcionava no round anterior — agora não dispara mais. PASSO 2 (que está no MESMO bloco) também não disparou.
+
+E o commit d5ae00a (que apliquei pra adicionar PASSO 2) não tocou em uma linha sequer do PASSO 1 — só inseriu 86 linhas novas DEPOIS dele. Confirmei com git show. Então o código fonte tá íntegro.
+
+🕵️ Camada 1 (espionagem)
+Cris, escuta — a operação travou num lugar inesperado. As duas escutas novas que instalamos (PASSO 1 e PASSO 2) não captaram nada, embora os mesmos espiões do round anterior tenham passado pelo MESMO corredor. É como se os microfones estivessem desligados. E o detalhe estranho: no round passado, esses mesmos microfones gravaram tudo.
+
+Suspeita principal: o equipamento não foi atualizado. Você instalou os microfones novos (git pull trouxe), mas a central de comando ainda está rodando com a fita velha (binário não foi reconstruído com o código novo).
+
+🚗 Camada 2 (carro)
+Você trocou a peça do motor (PASSO 2 chegou no garage), mas o computador de bordo carregou o firmware antigo. O carro saiu rodando idêntico ao do test drive anterior — mesmo trajeto, mesmo combustível, mesma quilometragem (VBlank #5340 idêntico). Algo no rebuild não pegou as mudanças.
+
+🔧 Camada 3 (técnico)
+Hipóteses, da mais provável pra menos:
+
+Build cache stale — o rebuild_runtime.sh é incremental e pode não ter detectado o .inl mudado como dependência transitiva do ps2_stubs.cpp
+git pull não trouxe o .inl atualizado — merge resolveu errado e ficou versão velha
+Binário do jogo (godofwar_pc) não relinkou — mesmo com o .cpp.o novo
+⚙️ TESTE DE 30 SEGUNDOS
+Roda esses 4 comandos no terminal do PC e me cola a saída inteira (não precisa rodar o jogo):
+
+cd ~/Documentos/GitHub/godofwar
+git log --oneline -3
+echo "---"
+grep -c "PARTE 10 PLANO B2 PASSO" PS2Recomp/ps2xRuntime/src/lib/stubs/ps2_stubs_misc.inl
+echo "---"
+ls -la build/godofwar_pc PS2Recomp/ps2xRuntime/src/lib/stubs/ps2_stubs_misc.inl 2>/dev/null
+echo "---"
+ls -la PS2Recomp/build/CMakeFiles/ps2runtime.dir/src/lib/ps2_stubs.cpp.o 2>/dev/null
+
+O que isso me diz:
+
+Comando 1: confirma qual commit está local (deveria ter d5ae00a no top 3)
+Comando 2: deveria retornar 6 ou mais. Se retornar 2 (ou menos), o .inl está velho — git pull não trouxe.
+Comandos 3 e 4: comparam timestamps. Se o .inl é mais novo que o .cpp.o ou que o binário, a compilação não pegou.
+Com essa saída eu sei exatamente qual das 3 hipóteses é, e te passo o fix de uma linha (geralmente rm -rf PS2Recomp/build && bash rebuild_runtime.sh resolve o caso #1).

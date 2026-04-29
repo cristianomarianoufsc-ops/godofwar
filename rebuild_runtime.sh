@@ -25,6 +25,13 @@ if [ ! -f "build/CMakeCache.txt" ]; then
     exit 1
 fi
 
+# FIX 2026-04-29: garante que ps2_stubs.cpp seja recompilado quando
+# qualquer .inl incluído por ele mudar (CMake nem sempre rastreia .inl
+# como dependência via -MD). Sem isso, mudanças em ps2_stubs_misc.inl
+# eram silenciosamente ignoradas e o jogo rodava com o binário antigo.
+echo "[0/3] Forçando recompilação de ps2_stubs.cpp (caso .inl tenha mudado)..."
+touch PS2Recomp/ps2xRuntime/src/lib/ps2_stubs.cpp
+
 cd build
 
 echo "[1/3] Recompilando o runtime do PS2..."

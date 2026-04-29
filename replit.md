@@ -2425,6 +2425,29 @@ linhas de boot nunca vistas antes.
 
 ---
 
+## Estado atual da depuração (sessão de 2026-04-29 16:56) — REBUILD STALE DIAGNOSTICADO E CORRIGIDO
+
+**Para detalhes completos, leia `HANDOFF_AGENT.md` seção "🟢 ESTADO ATUAL".** Resumo:
+
+Após PASSO 2 ser commitado em `d5ae00a`, o round automático seguinte
+(`fa95820`) NÃO disparou nem PASSO 1 nem PASSO 2. Diff byte-a-byte com
+round anterior mostrou que as duas linhas que ANTES disparavam sumiram —
+ou seja, o binário rodando era o mesmo de antes do PASSO 2.
+
+**Causa raiz:** `ps2_stubs.cpp` inclui `stubs/ps2_stubs_misc.inl` via
+`#include`. CMake/Ninja **nem sempre rastreia .inl como dependência via
+-MD do gcc**, então mudanças no .inl não disparavam recompilação do
+`ps2_stubs.cpp.o`. Resultado: cada round automático rodava com o
+binário velho do cache.
+
+**Fix (1 linha em `rebuild_runtime.sh`):** `touch PS2Recomp/ps2xRuntime/src/lib/ps2_stubs.cpp`
+antes do `cmake --build`. Força recompilação garantida. Custo: ~20s/round.
+
+**Esperado no próximo round automático:** PASSO 1 = 2 disparos, PASSO 2 =
+1+ disparo, CreateThread = 2+ se de fato destravar o spinlock SIF RPC.
+
+---
+
 ## Estado atual da depuração (sessão de 2026-04-29) — PARTE 10 PLANO B2 PASSO 1 CONFIRMADO + PASSO 2 APLICADO
 
 **Para detalhes completos, leia `HANDOFF_AGENT.md` seção "🟢 ESTADO ATUAL".** Resumo:

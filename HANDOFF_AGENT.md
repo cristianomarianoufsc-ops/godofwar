@@ -169,7 +169,52 @@ Antes de escolher: rodar `git log --oneline origin/main..HEAD` lista os commits 
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-29 PARTE 10 PLANO B2 PASSO 1 CONFIRMADO + PASSO 2 APLICADO)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-29 PASSO 2 APLICADO + REBUILD STALE DIAGNOSTICADO + FIX APLICADO)
+
+### 🆕 PARTE 10 PLANO B2 — REBUILD CACHE STALE — DIAGNOSTICADO 2026-04-29
+
+**Sintoma:** após commit `d5ae00a` (PASSO 2 aplicado), o round automático
+seguinte (`fa95820` às 16:55) NÃO disparou nem `[PARTE 10 PLANO B2 PASSO 1]`
+nem `[PARTE 10 PLANO B2 PASSO 2]`. Diff byte-a-byte com round anterior
+(`7d6ba33`) revelou que as DUAS linhas do PASSO 1 que disparavam antes
+sumiram, e o resto do log é idêntico.
+
+**Investigação (Cris rodou os 4 comandos do checklist):**
+- `git log` → commit `d5ae00a` está na branch local ✅
+- `grep -c "PARTE 10 PLANO B2 PASSO" .inl` → **5** (Replit também: 5) ✅
+  código fonte está íntegro
+- `ls build/godofwar_pc` → vazio (mas é typo do comando: nome real é
+  `build/GodOfWarPCPort` em camelCase) — falso negativo
+- `ls PS2Recomp/build/CMakeFiles/...ps2_stubs.cpp.o` → vazio (path errado
+  no comando — o build real está em `./build/`, não `PS2Recomp/build/`)
+
+**Causa raiz identificada (sem precisar de outro round):** o `.inl` é
+incluído via `#include "stubs/ps2_stubs_misc.inl"` em `ps2_stubs.cpp:219`.
+O `rebuild_runtime.sh` rodava `cmake --build . --target ps2runtime` mas o
+CMake/Ninja **nem sempre rastreia .inl como dependência via -MD do gcc**,
+então `ps2_stubs.cpp.o` ficava no cache com a versão antiga do código.
+Resultado: cada round automático rodava o binário velho, sem PASSO 1/2.
+
+**Fix aplicado em `rebuild_runtime.sh` (commit 2026-04-29):** adicionado
+`touch PS2Recomp/ps2xRuntime/src/lib/ps2_stubs.cpp` antes do build, força
+recompilação garantida do .cpp.o que inclui o .inl. Custo: ~20s extras
+por round (1 arquivo). Benefício: todas as mudanças em .inl agora pegam.
+
+**Esperado no próximo round automático:**
+| Marker | Antes | Esperado agora |
+|---|---|---|
+| `[PARTE 10 PLANO B2 PASSO 1]` | 0 | **2** (INIT + RPC_BIND) |
+| `[PARTE 10 PLANO B2 PASSO 2]` | 0 | **1+** (1 RPC_BIND × 5 offsets) |
+| `[CreateThread]` | 1 | **2+** se PASSO 2 destravar de fato |
+
+Se PASSO 2 disparar mas CreateThread continuar 1 → escrita sintética no
+`client_buf` está nos offsets errados, próximo passo é dump dos 64 bytes
+do buffer pra calibrar. Se PASSO 2 disparar E destravar (CreateThread≥2,
+vif1:cmd≥1) → vamos pra próximo bloqueio (provável CDVD/save/render).
+
+---
+
+
 
 ### 🆕 PARTE 10 PLANO B2 PASSO 1 — CONFIRMADO em produção (round `99b5727`, log `log_20260429_011641_7d6ba33`)
 
