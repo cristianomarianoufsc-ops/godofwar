@@ -105,11 +105,16 @@ run_one_round() {
     log "ROUND novo iniciando"
     log "================================================"
 
-    # 1. git pull em main
-    log "1/5: git pull origin main..."
+    # 1. git pull em main (estrategia merge explicita pra nao travar em
+    # divergencia — este PC e consumidor passivo de main, entao se houver
+    # commit local pendurado deixamos o merge resolver. Se quiser politica
+    # mais estrita troque por --ff-only e investigue a divergencia manual.)
+    log "1/5: git pull --no-rebase origin main..."
     git checkout main >/dev/null 2>&1 || { err "checkout main falhou"; return 1; }
-    if ! git pull origin main; then
-        err "git pull falhou"
+    if ! git pull --no-rebase origin main; then
+        err "git pull falhou (provavel divergencia local nao resolvida)"
+        err "  diagnostico: rode 'git log --oneline origin/main..HEAD' pra ver commits locais sobrando"
+        err "  fix rapido (perde commits locais): git fetch origin main && git reset --hard origin/main"
         return 1
     fi
 

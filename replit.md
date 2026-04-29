@@ -120,6 +120,20 @@ Dentro de cada round, `timeout --signal=INT 90s` mata o jogo automaticamente. **
 - ❌ Tentar `git fetch` local no Replit (bloqueado)
 - ❌ Sugerir parar o loop (deixa rodando)
 
+### Troubleshooting do loop (problemas conhecidos):
+
+**Sintoma:** loop fica repetindo `ERRO: git pull falhou` a cada 30s, com mensagem do git sobre `divergent branches` / `Need to specify how to reconcile`.
+
+**Causa:** repositório local tem commit local que não está em `origin/main` (checkpoint pendurado, replit.md editado direto no PC, etc.). `git pull` recusa decidir entre merge/rebase.
+
+**Fix permanente já aplicado em `auto_round.sh` (commit 2026-04-29):** script agora roda `git pull --no-rebase origin main` (estratégia merge explícita).
+
+**Fix imediato pro Agente Cris (rodar no PC, NÃO mexe no remoto):**
+- Opção A (preserva trabalho local): `git config pull.rebase false` (define merge como padrão; próximo pull cria merge commit)
+- Opção B (descarta trabalho local — só se tiver certeza): `git fetch origin main && git reset --hard origin/main`
+
+Diagnóstico antes de escolher: `git log --oneline origin/main..HEAD` (lista commits locais sobrando).
+
 ### Limitações honestas:
 - Analista é leitor SOB DEMANDA, não vigia 24/7. Só lê GitHub quando Agente Cris vier ao chat.
 - Erros visuais (textura errada, tela piscando) NÃO entram em log — Agente Cris descreve.

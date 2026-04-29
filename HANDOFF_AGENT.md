@@ -148,6 +148,20 @@ Dentro de cada round, o `timeout --signal=INT 90s` mata o jogo automaticamente. 
 - Logs gerados (locais no PC dele, gitignored em main): `runs_automaticos/`
 - Estado de hash processado: `.auto_round_last_hash` (gitignored)
 
+### Troubleshooting do loop (problemas conhecidos):
+
+**Sintoma:** loop fica repetindo `ERRO: git pull falhou` a cada 30s, com mensagem do git sobre `divergent branches` / `Need to specify how to reconcile`.
+
+**Causa:** repositório local do Agente Cris tem commit local que não está em `origin/main` (checkpoint pendurado, replit.md editado direto no PC, merge antigo). `git pull` recusa decidir entre merge/rebase.
+
+**Fix permanente já aplicado em `auto_round.sh` (commit 2026-04-29):** script agora roda `git pull --no-rebase origin main` (estratégia merge explícita, NÃO trava mais por isso).
+
+**Fix imediato pro Agente Cris no PC dele (não mexe no remoto):**
+- Opção A (preserva commits locais): `git config pull.rebase false` — define merge como padrão; próximo pull cria merge commit
+- Opção B (descarta commits locais — só se tiver certeza que nada importante): `git fetch origin main && git reset --hard origin/main`
+
+Antes de escolher: rodar `git log --oneline origin/main..HEAD` lista os commits locais sobrando.
+
 ### Limitações honestas:
 - Analista é leitor SOB DEMANDA, não vigia 24/7. Só lê GitHub quando o Agente Cris vier ao chat.
 - Se o jogo gerar erro VISUAL (não capturado em log stderr), Agente Cris precisa descrever no chat.
