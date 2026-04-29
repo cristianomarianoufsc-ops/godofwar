@@ -1,0 +1,126 @@
+cristiano@cristiano:~/Documentos/GitHub/godofwar$ git config pull.rebase false
+git pull origin main
+From https://github.com/cristianomarianoufsc-ops/godofwar
+ * branch            main       -> FETCH_HEAD
+Mesclagem automática de replit.md
+Merge made by the 'ort' strategy.
+ .replit                                            |  17 +---
+ HANDOFF_AGENT.md                                   |  99 +++++++++++++++++++--
+ .../ps2xRuntime/src/lib/stubs/ps2_stubs_misc.inl   |  93 +++++++++++++++++++
+ ...it-md-index-62aa9d4-16927ca-1_1777424380925.txt |  71 +++++++++++++++
+ attached_assets/image_1777424326055.png            | Bin 0 -> 220950 bytes
+ build.sh                                           |  16 ++++
+ instalar_linux_mint.sh                             |   9 ++
+ jogar.sh                                           |   8 ++
+ rebuild_runtime.sh                                 |   8 ++
+ recompilar.sh                                      |   9 ++
+ replit.md                                          |  16 ++++
+ setup_linux.sh                                     |   9 ++
+ 12 files changed, 332 insertions(+), 23 deletions(-)
+ create mode 100644 attached_assets/Pasted-iff-git-a-replit-md-b-replit-md-index-62aa9d4-16927ca-1_1777424380925.txt
+ create mode 100644 attached_assets/image_1777424326055.png
+cristiano@cristiano:~/Documentos/GitHub/godofwar$ bash auto_round.sh loop
+[2026-04-29 01:13:58] Modo loop ativo. Verificando novos commits a cada 30s.
+[2026-04-29 01:13:58] Branch monitorada: main → resultados em logs/auto
+[2026-04-29 01:13:58] Diretório dos logs: /home/cristiano/Documentos/GitHub/godofwar/runs_automaticos
+[2026-04-29 01:13:58] Pressione Ctrl+C pra parar.
+[2026-04-29 01:13:58] 
+[2026-04-29 01:13:59] Commit novo detectado: 32b42fd5 (anterior: )
+[2026-04-29 01:13:59] ================================================
+[2026-04-29 01:13:59] ROUND novo iniciando
+[2026-04-29 01:13:59] ================================================
+[2026-04-29 01:13:59] 1/5: git pull origin main...
+From https://github.com/cristianomarianoufsc-ops/godofwar
+ * branch            main       -> FETCH_HEAD
+Already up to date.
+[2026-04-29 01:14:01] 2/5: rebuild_runtime.sh (pode demorar 30s-2min)...
+[1/3] Recompilando o runtime do PS2...
+[  0%] Building CXX object CMakeFiles/ps2runtime.dir/home/cristiano/Documentos/GitHub/godofwar/PS2Recomp/ps2xRuntime/src/lib/ps2_stubs.cpp.o
+[100%] Linking CXX static library libps2runtime.a
+[100%] Built target ps2runtime
+
+[2/3] Relinkando o executável GodOfWarPCPort...
+[  1%] Built target ps2runtime
+[100%] Built target gow_recompiled
+[100%] Linking CXX executable GodOfWarPCPort
+[100%] Built target GodOfWarPCPort
+
+[3/3] Pronto! Executável atualizado: build/GodOfWarPCPort
+
+[2026-04-29 01:16:41] 3/5: rodando jogo por 90s (timeout envia Ctrl+C automático)...
+[2026-04-29 01:18:11] 4/5: filtrando log...
+[2026-04-29 01:18:11]    Log full:     467 linhas
+[2026-04-29 01:18:11]    Log filtrado: 103 linhas
+[2026-04-29 01:18:11] 5/5: commitando logs em logs/auto...
+[logs/auto 99b5727] auto: round em main@7d6ba33 (2026-04-29_01:18) — full=467 filt=103
+ 2 files changed, 570 insertions(+)
+ create mode 100644 runs_automaticos/log_20260429_011641_7d6ba33_filtered.txt
+ create mode 100644 runs_automaticos/log_20260429_011641_7d6ba33_full.txt
+Enumerating objects: 7, done.
+Counting objects: 100% (7/7), done.
+Delta compression using up to 4 threads
+Compressing objects: 100% (5/5), done.
+Writing objects: 100% (5/5), 5.88 KiB | 2.94 MiB/s, done.
+Total 5 (delta 3), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (3/3), completed with 2 local objects.
+To https://github.com/cristianomarianoufsc-ops/godofwar.git
+   a2627cf..99b5727  logs/auto -> logs/auto
+[2026-04-29 01:18:15]    Push OK — agente pode ler do branch logs/auto
+[2026-04-29 01:18:16] ROUND completo.
+[2026-04-29 01:18:47] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:19:18] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:19:48] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:20:19] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:20:50] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:21:20] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:21:51] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:22:21] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:22:52] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:23:23] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:23:53] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:24:24] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:24:54] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:25:25] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:25:56] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:26:27] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:26:57] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:27:28] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:27:58] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:28:29] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:29:00] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:29:30] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:30:01] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:30:32] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:31:03] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:31:33] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:32:04] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:32:34] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:33:05] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:33:36] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:34:06] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:34:37] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:35:07] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:35:38] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:36:09] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:36:39] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:37:10] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:37:41] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:38:11] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:38:42] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:39:13] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:39:43] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:40:14] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:40:45] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:41:16] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:41:46] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:42:17] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:42:47] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:43:18] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:43:49] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:44:19] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:44:50] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:45:21] Sem novidade. Próxima verificação em 30s.
+[2026-04-29 01:45:51] Sem novidade. Próxima verificação em 30s.
+^C
+[2026-04-29 01:46:03] Interrompido pelo usuário. Saindo limpo.
+cristiano@cristiano:~/Documentos/GitHub/godofwar$ 
