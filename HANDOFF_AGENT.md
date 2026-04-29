@@ -169,7 +169,57 @@ Antes de escolher: rodar `git log --oneline origin/main..HEAD` lista os commits 
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-29 PASSO 2 APLICADO + REBUILD STALE DIAGNOSTICADO + FIX APLICADO)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-29 PASSO 2 CONFIRMADO + PASSO 2.5 INSTRUMENTADO)
+
+### 🆕 PARTE 10 PLANO B2 PASSO 2 — CONFIRMADO no round `9caf879` (2026-04-29 17:27)
+
+Pos-fix do `touch ps2_stubs.cpp` no rebuild_runtime.sh, marcadores PASSO 1 e
+PASSO 2 voltaram a aparecer no log:
+
+| Marker | Esperado | Observado |
+|---|---|---|
+| `[PARTE 10 PLANO B2 PASSO 1]` | 2 | **2** ✅ |
+| `[PARTE 10 PLANO B2 PASSO 2] forjada` | 1+ | **1 com ok=1** ✅ |
+| `[CreateThread]` | 2+ se destravar | **1** ❌ |
+| `[vif1:cmd]` | 1+ se chegar render | **0** ❌ |
+| VBlank max | seria diferente | **5340** (idêntico ao round anterior) |
+
+**Veredito:** PASSO 2 escreve com sucesso (`server_handle=0x10000005` em
+offsets {0,4,24,32,40} de `client=0x30aaa8`), mas o jogo continua no MESMO
+spinlock — VBlank, CreateThread, vif1 absolutamente idênticos ao round anterior.
+
+### 🆕 PARTE 10 PLANO B2 PASSO 2.5 — INSTRUMENTAÇÃO DIAGNÓSTICA aplicada 2026-04-29
+
+**Hipóteses ainda em aberto** (mais provável → menos provável):
+
+- **(A) Falta a notificação:** no PS2 real, IOP escreve no client_buf E
+  dispara interrupção SIF1 que aciona o callback EE registrado em `0x3277c0`.
+  Sem o passo 2 (interrupção), o jogo nunca "acorda" do polling.
+- **(B) Offsets errados:** os 5 offsets {0,4,24,32,40} não cobrem o campo
+  exato que o jogo verifica (varia por SDK version).
+- **(C) server_handle inválido:** `0x10000005` pode não passar em alguma
+  validação de magic number do jogo.
+
+**Instrumentação adicionada em 3 pontos:**
+
+1. `ps2_stubs_misc.inl` linha 3536: dump de 64 bytes do `client_buf` ANTES da
+   escrita do PASSO 2 (estado inicial).
+2. `ps2_stubs_misc.inl` linha 3580: dump de 64 bytes APÓS escrita (confirma
+   bytes exatos que a forja gravou).
+3. `game_overrides.cpp:28` define `extern std::atomic<uint32_t>
+   g_gowSifClientBufWatch{0u}` em escopo global, populada pela primeira escrita
+   do PASSO 2. Handler do VBlank (`gow_intc_handler_0x182f28`) faz dump dos
+   mesmos 64 bytes nos ticks #100, #1000 e #5000 pra detectar mudanças no buffer.
+
+**Como interpretar o próximo log:**
+- Se entre `dump @VBlank #100` e `dump @VBlank #5000` o conteúdo NÃO mudar
+  → jogo NÃO está pollando esse buffer → **hipótese (A) confirmada**
+  → próximo passo (PASSO 3) é forjar `iSignalSema` ou disparar interrupção
+  SIF1 + chamar callback EE em 0x3277c0.
+- Se mudar → jogo está pollando ativamente → **hipótese (B) confirmada**
+  → calibrar offsets a partir do que o jogo escreveu.
+- Se aparecer cookie/magic não-zero no dump ANTES → **hipótese (C)**
+  → ajustar server_handle pra padrão Sony válido.
 
 ### 🆕 PARTE 10 PLANO B2 — REBUILD CACHE STALE — DIAGNOSTICADO 2026-04-29
 

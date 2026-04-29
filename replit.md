@@ -2425,6 +2425,37 @@ linhas de boot nunca vistas antes.
 
 ---
 
+## Estado atual da depuração (sessão de 2026-04-29 17:30) — PASSO 2 CONFIRMADO + PASSO 2.5 INSTRUMENTADO
+
+**Para detalhes completos, leia `HANDOFF_AGENT.md` seção "🟢 ESTADO ATUAL".** Resumo:
+
+### PASSO 2 CONFIRMADO no round `9caf879` (pos-fix do touch)
+
+PASSO 1 e PASSO 2 voltaram a aparecer no log com valores esperados:
+- `[PARTE 10 PLANO B2 PASSO 1]` = 2x (INIT + RPC_BIND)
+- `[PARTE 10 PLANO B2 PASSO 2] forjada` = 1 com `ok=1`
+
+**MAS o jogo continua no spinlock idêntico** — VBlank #5340, CreateThread=1,
+vif1=0. Forja escreveu mas não destravou.
+
+### PASSO 2.5 INSTRUMENTAÇÃO DIAGNÓSTICA
+
+3 hipóteses em aberto (A/B/C — ver HANDOFF_AGENT.md). Pra discriminar
+sem implementar fix completo do PASSO 3, adicionei dump do `client_buf`
+em 3 momentos:
+
+1. `ps2_stubs_misc.inl:3536` — dump de 64 bytes ANTES da escrita do PASSO 2
+2. `ps2_stubs_misc.inl:3580` — dump de 64 bytes APÓS a escrita
+3. `game_overrides.cpp:28` — global `g_gowSifClientBufWatch` (escopo file)
+   populada pela primeira escrita; handler do VBlank dump nos ticks
+   #100, #1000 e #5000
+
+**Teste:** se o conteúdo NÃO mudar entre VBlank #100 e #5000, o jogo
+não polla esse buffer → hipótese (A) confirmada → PASSO 3 = forjar
+interrupção SIF1 ou disparar callback EE em `0x3277c0`.
+
+---
+
 ## Estado atual da depuração (sessão de 2026-04-29 16:56) — REBUILD STALE DIAGNOSTICADO E CORRIGIDO
 
 **Para detalhes completos, leia `HANDOFF_AGENT.md` seção "🟢 ESTADO ATUAL".** Resumo:

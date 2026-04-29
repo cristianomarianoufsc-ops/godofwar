@@ -10,10 +10,20 @@
 #include <cctype>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <mutex>
 #include <optional>
 #include <vector>
+
+// PARTE 10 PLANO B2 PASSO 2.5 — endereco do client_buf SIF que o PASSO 2
+// escreveu (registrado em ps2_stubs_misc.inl). Permite que o handler do
+// VBlank faca dump periodico pra detectar se o jogo esta de fato pollando
+// esse buffer. Se o conteudo mudar entre VBlanks, o jogo polla; se ficar
+// identico, o jogo provavelmente espera interrupcao SIF1, nao polling.
+// DECLARADO em escopo global (file scope, fora de namespace anonimo) pra
+// permitir extern acesso de ps2_stubs_misc.inl.
+std::atomic<uint32_t> g_gowSifClientBufWatch{0u};
 
 namespace
 {
@@ -394,6 +404,30 @@ namespace
                       << " flag=" << ((flag ^ 1u) & 1u)
                       << " altCount=" << (altCount + 1u)
                       << std::endl;
+        }
+
+        // PARTE 10 PLANO B2 PASSO 2.5 — dump do client_buf SIF nos ticks
+        // 100, 1000 e 5000 pra ver se o jogo mexe no buffer apos a forja.
+        if (tick == 100u || tick == 1000u || tick == 5000u)
+        {
+            const uint32_t watchAddr = g_gowSifClientBufWatch.load(std::memory_order_relaxed);
+            if (watchAddr != 0u && watchAddr < 0x02000000u)
+            {
+                const uint8_t* p = rdram + watchAddr;
+                std::cerr << "[stub:0x182f28] PARTE 10 PLANO B2 PASSO 2.5 — "
+                          << "dump @VBlank #" << std::dec << tick
+                          << " buf=0x" << std::hex << watchAddr << ":";
+                for (uint32_t i = 0; i < 64u; ++i)
+                {
+                    if ((i & 15u) == 0u) std::cerr << "\n  +0x"
+                        << std::hex << std::setw(2) << std::setfill('0')
+                        << i << ":";
+                    std::cerr << " " << std::hex << std::setw(2)
+                        << std::setfill('0')
+                        << static_cast<unsigned>(p[i]);
+                }
+                std::cerr << std::dec << std::setfill(' ') << std::endl;
+            }
         }
 
         // Termina o handler retornando ao chamador. O loop em

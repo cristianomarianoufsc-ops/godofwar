@@ -3523,6 +3523,27 @@ void sceSifSetDma(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
                     uint8_t *clientPtr = getMemPtr(rdram, responseBuf);
                     if (clientPtr)
                     {
+                        // PARTE 10 PLANO B2 PASSO 2.5 — DIAGNOSTICO 2026-04-29
+                        // Dump dos 64 bytes ANTES da escrita pra ver estado
+                        // inicial do client_buf. Se o jogo ja escreveu algum
+                        // cookie/magic, vamos ver aqui. Se for 100% zeros, eh
+                        // BSS limpo e o jogo so polla esperando algo non-zero.
+                        if (firstForThisBind)
+                        {
+                            std::cerr << "[PARTE 10 PLANO B2 PASSO 2.5] dump ANTES @0x"
+                                      << std::hex << responseBuf << ":";
+                            for (uint32_t i = 0; i < 64u; ++i)
+                            {
+                                if ((i & 15u) == 0u) std::cerr << "\n  +0x"
+                                    << std::hex << std::setw(2) << std::setfill('0')
+                                    << i << ":";
+                                std::cerr << " " << std::hex << std::setw(2)
+                                    << std::setfill('0')
+                                    << static_cast<unsigned>(clientPtr[i]);
+                            }
+                            std::cerr << std::dec << std::setfill(' ') << std::endl;
+                        }
+
                         // server_handle sentinela: parece pointer valido em heap
                         // PS2 EE (>0x01000000), mas escolhido pra nao colidir
                         // com nada legitimo. Misturamos rpc_id pra cada bind ter
@@ -3550,6 +3571,29 @@ void sceSifSetDma(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
                                       << " server_handle=0x" << serverHandle
                                       << " offsets={0,4,24,32,40} ok=" << std::dec << wroteAll
                                       << std::endl;
+
+                            // PARTE 10 PLANO B2 PASSO 2.5 — dump APOS escrita
+                            // pra confirmar bytes exatos que o jogo vai ler.
+                            std::cerr << "[PARTE 10 PLANO B2 PASSO 2.5] dump APOS @0x"
+                                      << std::hex << responseBuf << ":";
+                            for (uint32_t i = 0; i < 64u; ++i)
+                            {
+                                if ((i & 15u) == 0u) std::cerr << "\n  +0x"
+                                    << std::hex << std::setw(2) << std::setfill('0')
+                                    << i << ":";
+                                std::cerr << " " << std::hex << std::setw(2)
+                                    << std::setfill('0')
+                                    << static_cast<unsigned>(clientPtr[i]);
+                            }
+                            std::cerr << std::dec << std::setfill(' ') << std::endl;
+
+                            // PARTE 10 PLANO B2 PASSO 2.5 — registra o
+                            // responseBuf numa global pro stub do VBlank
+                            // (gow_intc_handler_0x182f28) poder fazer dump
+                            // periodico e detectar se o jogo mexe no buffer.
+                            extern std::atomic<uint32_t> g_gowSifClientBufWatch;
+                            g_gowSifClientBufWatch.store(responseBuf,
+                                std::memory_order_relaxed);
                         }
                     }
                     else if (firstForThisBind)
