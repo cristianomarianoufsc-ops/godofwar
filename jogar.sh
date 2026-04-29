@@ -2,6 +2,14 @@
 # =============================================================
 # God of War PC Port - Executar o Jogo
 # =============================================================
+# GUARD: NÃO RODAR NO REPLIT — ver replit.md (topo). Execução é no PC do Cris.
+if [ -n "${REPL_ID:-}" ] || [ -n "${REPLIT_DEV_DOMAIN:-}" ] || [ -n "${REPL_OWNER:-}" ]; then
+    echo "❌ ERRO: jogar.sh NÃO deve ser rodado no Replit."
+    echo "   Replit é só editor + análise estática (ver replit.md, topo)."
+    echo "   Execução do jogo é feita no PC do Agente Cris (Linux Mint)."
+    exit 1
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 EXE="$SCRIPT_DIR/build/GodOfWarPCPort"
 ELF="$SCRIPT_DIR/GOD_PC_PORT_FINAL/data/SCUS_973.99"

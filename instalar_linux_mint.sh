@@ -6,6 +6,15 @@
 # =============================================================
 
 set -e
+
+# GUARD: NÃO RODAR NO REPLIT — ver replit.md (topo). Instalação é no PC do Cris.
+if [ -n "${REPL_ID:-}" ] || [ -n "${REPLIT_DEV_DOMAIN:-}" ] || [ -n "${REPL_OWNER:-}" ]; then
+    echo "❌ ERRO: instalar_linux_mint.sh NÃO deve ser rodado no Replit."
+    echo "   Replit é só editor + análise estática (ver replit.md, topo)."
+    echo "   Instalação é feita no PC do Agente Cris (Linux Mint)."
+    exit 1
+fi
+
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
 
 echo -e "${GREEN}=== God of War PC Port - Instalação Linux Mint ===${NC}"

@@ -2,6 +2,15 @@
 # =============================================================================
 # setup_linux.sh - Setup automatico do ambiente para o port do God of War
 # =============================================================================
+
+# GUARD: NÃO RODAR NO REPLIT — ver replit.md (topo). Setup é no PC do Cris.
+if [ -n "${REPL_ID:-}" ] || [ -n "${REPLIT_DEV_DOMAIN:-}" ] || [ -n "${REPL_OWNER:-}" ]; then
+    echo "❌ ERRO: setup_linux.sh NÃO deve ser rodado no Replit."
+    echo "   Replit é só editor + análise estática (ver replit.md, topo)."
+    echo "   Setup do ambiente é feito no PC do Agente Cris (Linux Mint)."
+    exit 1
+fi
+
 # Uso: bash setup_linux.sh
 #
 # O que este script faz:

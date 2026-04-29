@@ -1,5 +1,21 @@
 # God of War PC Port — 🏛️ OPERAÇÃO ESPARTA
 
+> # 🛑🛑🛑 PARA O PRÓXIMO AGENTE REPLIT — LEIA ANTES DE QUALQUER TOOL CALL 🛑🛑🛑
+>
+> **NÃO RODE `bash build.sh`. NÃO RODE `bash rebuild_runtime.sh`. NÃO RODE `bash recompilar.sh`. NÃO RODE `bash setup_linux.sh`. NÃO RODE `bash instalar_linux_mint.sh`. NÃO RODE `bash jogar.sh`. NÃO RODE `cmake` NEM `make`.**
+>
+> Os scripts de build acima já têm guard que detecta `$REPL_ID` e ABORTA com erro se você tentar — não estão quebrados, é proposital. Não tente "consertar" removendo o guard.
+>
+> Este Replit é **só editor + análise estática**. Os 5.626 arquivos `.cpp` são compilados no PC do Agente Cris (Linux Mint). Compilar aqui leva ~80 minutos, queima os créditos free dele, e o executável nem rodaria (precisa de display real, não headless).
+>
+> O workflow `Start application` está intencionalmente configurado pra só imprimir esse aviso. Se ele tiver outro comando, alguém quebrou — restaure pro echo.
+>
+> **O que VOCÊ pode fazer aqui:** editar `.cpp`/`.h`, rodar ferramentas em `tools/` (`uv run python tools/X.py`), `g++ -fsyntax-only` em arquivos isolados, ler logs via `curl` da branch `logs/auto` (ver HANDOFF_AGENT.md → "FLUXO AUTOMATIZADO").
+>
+> Detalhes completos na seção **"Regras pro agente Replit"** mais abaixo neste arquivo. Mas o resumo acima é suficiente — não precisa rodar nada de build pra começar a trabalhar.
+>
+> 🛑🛑🛑 FIM DO AVISO OBRIGATÓRIO 🛑🛑🛑
+
 Port estático do God of War (PS2) para PC usando o PS2Recomp.
 
 ---
