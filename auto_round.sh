@@ -63,7 +63,7 @@ LOG_DIR_NAME="runs_automaticos"
 STATE_FILE_NAME=".auto_round_last_hash"
 
 # Padrão grep pra extrair as linhas que importam pro próximo round
-GREP_PATTERN="PARTE 10 PLANO|Unknown syscall|VBlank tick #|sceSifSetDma|SIGSEGV|Morto|CreateThread|stub:|INTC:"
+GREP_PATTERN="PARTE 10 PLANO|Unknown syscall|VBlank tick #|sceSifSetDma|SIGSEGV|Morto|CreateThread|stub:|INTC:|CreateSema|WaitSema|SignalSema"
 
 # ============================================================
 # HELPERS
@@ -152,11 +152,11 @@ run_one_round() {
         err "Log full muito curto — jogo pode não ter rodado direito (display X disponível?)"
     fi
 
-    # também salva versão "latest" pra fácil acesso do agente
-    cp "$FULL_LOG" "$LOG_DIR/log_latest_full.txt" 2>/dev/null || true
-    cp "$FILTERED_LOG" "$LOG_DIR/log_latest_filtered.txt" 2>/dev/null || true
-
     # 6. commitar em logs/auto
+    # IMPORTANTE: o cp dos arquivos "_latest_" tem que ser DEPOIS do checkout,
+    # senao o git checkout -B logs/auto origin/logs/auto sobrescreve eles com
+    # a versao velha tracked na branch (bug confirmado 2026-04-30: log_latest
+    # ficava stale apesar do cp ter rodado antes — checkout reverteu).
     log "5/5: commitando logs em $LOG_BRANCH..."
     git fetch origin "$LOG_BRANCH" >/dev/null 2>&1 || true
     if git rev-parse "origin/$LOG_BRANCH" >/dev/null 2>&1; then
@@ -164,6 +164,10 @@ run_one_round() {
     else
         git checkout -B "$LOG_BRANCH" >/dev/null 2>&1
     fi
+
+    # AGORA sim — depois do checkout, sobrescreve log_latest com versao desta rodada
+    cp -f "$FULL_LOG" "$LOG_DIR/log_latest_full.txt" 2>/dev/null || true
+    cp -f "$FILTERED_LOG" "$LOG_DIR/log_latest_filtered.txt" 2>/dev/null || true
 
     git add -f "$LOG_DIR_NAME/" 2>/dev/null
     if git commit -m "auto: round em main@${HEAD_HASH} ($(date +%Y-%m-%d_%H:%M)) — full=${LINES_TOTAL} filt=${LINES_FILT}"; then

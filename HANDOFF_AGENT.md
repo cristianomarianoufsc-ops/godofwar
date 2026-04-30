@@ -223,7 +223,52 @@ Antes de escolher: rodar `git log --oneline origin/main..HEAD` lista os commits 
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-30 — PASSO 2.7 DECIFRADO + PASSO 2.8 INSTRUMENTAÇÃO WaitSema)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-30 tarde — SMOKING GUN DEFINITIVO + log_latest BUG fixado)
+
+### 🆕 SESSÃO 2026-04-30 (tarde, analista pós-2.8) — descoberta empírica antes do round novo
+
+**Não precisamos do PASSO 2.8 pra confirmar a hipótese da soneca em semáforo.** Análise do `log_20260430_122407_b7ceb6d_full.txt` (último round disponível) com `grep` simples:
+
+| Syscall | Hits no log full (89s = 5340 VBlanks) |
+|---|---|
+| `CreateSema` | 4 |
+| `WaitSema` | 1 |
+| **`SignalSema`** | **0** |
+| `iSignalSema` | 0 |
+
+**Implicação direta:** o jogo cria 4 semáforos no boot, dorme em pelo menos 1 (`sid=4`), e **NUNCA NINGUÉM sinaliza qualquer semáforo durante o run inteiro**. Não é "RPC_BIND não chega na hora" nem "callback EE precisa ser invocada" — é **completa ausência de produtor de sinal**. No PS2 real, o IOP rodaria handler de SIF1 e chamaria `iSignalSema` na thread de quem fez o BIND. Como não temos IOP, ninguém faz isso por padrão.
+
+**Consequência pro PASSO 3:** o agente anterior já tinha previsto (linhas 230-232 da seção 2.8): "Forjar `iSignalSema(sid_bloqueado)`". A evidência empírica acabou de **confirmar antecipadamente** que opção 1 (correlação temporal) é segura — **não há risco de "duplicar sinal" ou "sinalizar antes de hora"** quando a contagem total de SignalSema no run é literalmente zero. Podemos ir direto pro PASSO 3 versão simples (forjar `iSignalSema(sid)` logo após `gow_record_sif_bind_ts`) sem esperar o `delta_ms` chegar.
+
+**Mas vou esperar o round novo mesmo assim** — porque (a) o `delta_ms_since_RPC_BIND` confirma se o `sid` que precisa sinalizar é o que dormiu **logo após** o BIND ou se há thread paralela esperando outro sid criado depois; (b) só assim sei se forjar `iSignalSema(sid_visto_no_BIND)` ou `iSignalSema(qualquer_sid_pendente)`.
+
+### 🆕 BUG DO `log_latest_*.txt` STALE — CAUSA RAIZ + FIX aplicado nesta sessão
+
+**Confirmado empiricamente** comparando hashes via curl:
+```
+log_latest_full.txt        sha256 = 29c96a48...
+log_20260430_122407_b7ceb6d_full.txt  sha256 = 26f8b557...
+→ DIFERENTES
+```
+
+**Causa raiz** (confirmada via leitura de `auto_round.sh:128-178`):
+1. linha 156-157: `cp $FULL_LOG → log_latest_*.txt` (no disco, branch main)
+2. linha 163: `git checkout -B logs/auto origin/logs/auto` — **sobrescreve** `log_latest_*.txt` com versão tracked da branch (que é VELHA, do round anterior).
+3. linha 168: `git add` pega só os arquivos timestamped novos.
+4. `log_latest_*.txt` no commit final = idêntico à versão da branch antes do checkout = stale.
+
+**Fix aplicado:** moveu o `cp -f` pra linha 172, **depois** do checkout. Agora a sobrescrita do `log_latest_*.txt` acontece com a branch já em `logs/auto`, então o `git add` pega ele de verdade.
+
+**Bonus do mesmo commit:** adicionado `SignalSema|iSignalSema|CreateSema|WaitSema` ao `GREP_PATTERN` do filtro (linha 69), pra que o `_filtered.txt` mostre TODAS as syscalls de semáforo nos próximos rounds (hoje só algumas vazavam via `stub:` regex genérica).
+
+**📋 Comando pro Agente Cris após este commit:**
+- Clica **Push** no Replit pra mandar `auto_round.sh` (atualizado) + `HANDOFF_AGENT.md` + `replit.md` pro GitHub.
+- O loop do `auto_round.sh` no PC vai detectar o commit em ≤30s e disparar round novo automaticamente. Mas atenção: como o script foi alterado, o **próximo** round usa a versão ANTIGA (script atual em execução), e só do round seguinte em diante o fix do `log_latest` aplica. Se quiser que o fix valha já no próximo round, faça `Ctrl+C` no terminal do loop e `bash auto_round.sh loop` novamente.
+- Resultado esperado: round novo com `[WaitSema:block] tid=N sid=N pc=0xN ra=0xN delta_ms_since_RPC_BIND=N` + `SignalSema=0` no filtered (confirmando a evidência), e `log_latest_*.txt` finalmente atualizado pra esse round.
+
+---
+
+## 📜 HISTÓRICO — PARTE 10 PLANO B2 PASSO 2.7 DECIFRADO + PASSO 2.8 INSTRUMENTAÇÃO WaitSema (sessão 2026-04-30 manhã)
 
 ### 🆕 PARTE 10 PLANO B2 PASSO 2.8 INSTRUMENTAÇÃO WaitSema — sessão 2026-04-30 (tarde)
 

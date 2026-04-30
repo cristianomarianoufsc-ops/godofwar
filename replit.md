@@ -2577,7 +2577,40 @@ antes do `cmake --build`. Força recompilação garantida. Custo: ~20s/round.
 
 ---
 
-## Estado atual da depuração (sessão 2026-04-30) — PASSO 2.7 DECIFRADO + PASSO 2.8 INSTRUMENTAÇÃO WaitSema
+## Estado atual da depuração (sessão 2026-04-30 tarde) — SMOKING GUN EMPÍRICO + log_latest BUG fixado
+
+**Sessão de catch-up pós-2.8.** Antes de gerar round novo, varredura no `log_20260430_122407_b7ceb6d_full.txt` (último round disponível no GitHub) com `grep` simples revelou:
+
+| Syscall | Hits no log full (89s = 5340 VBlanks) |
+|---|---|
+| `CreateSema` | 4 |
+| `WaitSema` | 1 |
+| **`SignalSema`** | **0** |
+| `iSignalSema` | 0 |
+
+**Implicação direta:** o jogo cria 4 semáforos no boot, dorme em pelo menos 1 (`sid=4`) logo após RPC_BIND, e **NUNCA NINGUÉM sinaliza qualquer semáforo durante o run inteiro**. Não é "RPC_BIND não chega na hora" nem "callback EE precisa ser invocada" — é **completa ausência de produtor de sinal**. No PS2 real o IOP rodaria handler SIF1 e chamaria `iSignalSema` na thread de quem fez o BIND. Como não temos IOP, ninguém faz isso.
+
+**Confirma antecipadamente** o PASSO 3 versão simples (forjar `iSignalSema(sid)` logo após `gow_record_sif_bind_ts`) — não há risco de "duplicar sinal" quando o produtor real é literalmente zero.
+
+### Bug do `log_latest_*.txt` STALE — fix aplicado
+
+Confirmado por checksum:
+```
+log_latest_full.txt        sha256 = 29c96a48...
+log_20260430_122407_b7ceb6d_full.txt  sha256 = 26f8b557...  → DIFERENTES
+```
+
+**Causa raiz:** `auto_round.sh` linha 156-157 fazia `cp $FULL_LOG → log_latest_*.txt` **antes** do `git checkout -B logs/auto origin/logs/auto` (linha 163). O checkout sobrescrevia `log_latest_*.txt` com a versão tracked velha da branch. Resultado: latest sempre 1 round atrasado.
+
+**Fix:** moveu o `cp -f` pra depois do checkout (linha 172 nova). Bonus: adicionado `SignalSema|iSignalSema|CreateSema|WaitSema` ao `GREP_PATTERN` do filtro (linha 69) — futuros `_filtered.txt` mostram tudo de semáforo. Comentário de manutenção colocado no script explicando o porquê pra próximo agente que mexer.
+
+### Diretriz "Grande Unificação" registrada
+
+**Em alinhamento com Agente Cris 2026-04-30:** registrei nova seção de longo prazo `🌍 VISÃO DE LONGO PRAZO — GRANDE UNIFICAÇÃO PS2→PC` (logo antes do "OBRIGATÓRIO PARA QUALQUER AGENTE NOVO"). Toda nova ferramenta de automação deve nascer pensando em portabilidade pra outros jogos PS2 (modularidade, config externa, docstring de cabeçalho). Aplicar só em coisa nova/em mudança — sem refactor agressivo de tools antigas. Detalhes lá. Ferramentas hoje classificadas como "Universal" (`ps2_syscalls.py`, `mips_inspect.py`, `gap_discover.py`) e "GoW-specific candidatas a parametrizar" (`find_writer_32E854*.py`, `regen_truncated.sh`).
+
+---
+
+## Estado atual da depuração (sessão 2026-04-30 manhã) — PASSO 2.7 DECIFRADO + PASSO 2.8 INSTRUMENTAÇÃO WaitSema
 
 **Para detalhes completos, leia `HANDOFF_AGENT.md` seção "🟢 ESTADO ATUAL".** Resumo:
 
