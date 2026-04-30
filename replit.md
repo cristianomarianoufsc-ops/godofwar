@@ -2440,6 +2440,49 @@ linhas de boot nunca vistas antes.
 
 ---
 
+## Estado atual da depuração (sessão de 2026-04-30) — PASSO 2 REVERTIDO + PASSO 2.7 INSTRUMENTADO
+
+**Para detalhes completos, leia `HANDOFF_AGENT.md` seção "🟢 ESTADO ATUAL".** Resumo:
+
+### Achado decisivo do round `f8cb6a5` (29-04 22:20)
+
+Os dumps do PASSO 2.5 revelaram **duas coisas simultaneamente**:
+
+1. **Buffer imutável por 5000 VBlanks** — dump em `#100`/`#1000`/`#5000` byte-por-byte idêntico ao "APÓS escrita". O jogo **NÃO** polla `client_buf=0x30aaa8`. Espera ser acordado por callback EE em `0x3277c0` (registrada no INIT).
+2. **Escrita era destrutiva** — dump ANTES mostrou que o jogo já tinha gravado:
+   - `+0x00`: `0x20327ac0` (= ponteiro `self` do struct, igual a `xfer.src` do RPC_BIND)
+   - `+0x04`: `2` (= `payload_words`)
+   - `+0x08`: `4` (= field desconhecido)
+   Sobrescrever offsets `{0,4}` apaga `self` e `payload_words`. Quando a callback finalmente rodar (PASSO 3), ela vai dereferenciar `self` pra achar `response_buf` e crashar com endereço lixo `0x10000005`.
+
+### PASSO 2 REVERTIDO
+
+`ps2_stubs_misc.inl:3525-3618` — bloco de escrita removido. Mantém apenas:
+- Dump observacional do `client_buf` (renomeado pra "dump natural")
+- Registro no `g_gowSifClientBufWatch` pro VBlank handler continuar dumpando @#100/#1000/#5000
+- Log `[PARTE 10 PLANO B2 PASSO 2 REVERTIDO]` deixando claro que não escreveu
+
+### PASSO 2.7 INSTRUMENTADO — dump do alvo da callback EE
+
+`ps2_stubs_misc.inl:3481-3522` — quando decodifica INIT (no PASSO 1), agora dumpa 64 bytes em torno de `callback=0x3277c0`. Isso é PRÉ-REQUISITO pro PASSO 3:
+- `mips_inspect.py 0x3277c0` confirmou que está **fora do code segment do ELF principal** (BSS preenchida em runtime)
+- Dump revela: (a) zeros = jogo nunca populou de verdade; (b) instruções MIPS = é código direto, invocar via `lookupFunction(0x3277c0)`; (c) ponteiro no início = é struct `sceSifQueueData`, primeiros 4-8 bytes apontam pra função real
+
+### Próximo round automático
+
+Esperado no log:
+- `[PARTE 10 PLANO B2 PASSO 2.7] dump callback target @0x3277c0:` + 64 bytes em hex
+- `[PARTE 10 PLANO B2 PASSO 2.5] dump natural @0x30aaa8:` + 64 bytes (sem nossa escrita)
+- `[PARTE 10 PLANO B2 PASSO 2 REVERTIDO] ... NAO escrevendo`
+- VBlank handler continua dumpando @#100/#1000/#5000 — agora se conteúdo MUDAR significa que algo do runtime está mexendo (pista pro PASSO 3)
+- Comportamento: idêntico ao spinlock atual (não destrava — esperado, é puro diagnóstico)
+
+### Bug paralelo descoberto
+
+`auto_round.sh` não está atualizando `log_latest_filtered.txt` / `log_latest_full.txt` — eles apontam pra round antigo de 27/abril. Os arquivos timestamped (`log_20260429_222018_f8cb6a5_*.txt`) são gravados certo. Workaround: ler pelo nome timestamped via `curl raw.githubusercontent.com/.../log_NNNNNN_HHHHHH_HASH_*.txt`. Fix futuro: adicionar `cp -f` no fim do script.
+
+---
+
 ## Estado atual da depuração (sessão de 2026-04-29 17:30) — PASSO 2 CONFIRMADO + PASSO 2.5 INSTRUMENTADO
 
 **Para detalhes completos, leia `HANDOFF_AGENT.md` seção "🟢 ESTADO ATUAL".** Resumo:

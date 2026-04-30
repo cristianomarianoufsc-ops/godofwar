@@ -196,7 +196,77 @@ Antes de escolher: rodar `git log --oneline origin/main..HEAD` lista os commits 
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-29 PASSO 2 CONFIRMADO + PASSO 2.5 INSTRUMENTADO)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-30 PASSO 2 REVERTIDO + PASSO 2.7 INSTRUMENTADO)
+
+### 🆕 PARTE 10 PLANO B2 PASSO 2 REVERTIDO + PASSO 2.7 INSTRUMENTADO — sessão 2026-04-30
+
+**Achado decisivo do round `f8cb6a5` (29-04 22:20):** os dumps do PASSO 2.5 fecharam o caso da hipótese (A) e revelaram bug colateral.
+
+**Dumps capturados (`log_20260429_222018_f8cb6a5_full.txt` linhas relevantes):**
+```
+[PASSO 2.5] dump ANTES @0x30aaa8:
+  +0x00: c0 7a 32 20 02 00 00 00 04 00 00 00 00 00 00 00   ← ja tinha conteudo legitimo
+  +0x10: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  ...
+
+[PASSO 2.5] dump APOS @0x30aaa8:
+  +0x00: 05 00 00 10 05 00 00 10 04 00 00 00 00 00 00 00   ← apaguei `self` e `payload_words`!
+  +0x10: 00 00 00 00 00 00 00 00 05 00 00 10 00 00 00 00
+  +0x20: 05 00 00 10 00 00 00 00 05 00 00 10 00 00 00 00
+  ...
+
+[PASSO 2.5] dump @VBlank #100  buf=0x30aaa8: ...idêntico ao APÓS...
+[PASSO 2.5] dump @VBlank #1000 buf=0x30aaa8: ...idêntico ao APÓS...
+[PASSO 2.5] dump @VBlank #5000 buf=0x30aaa8: ...idêntico ao APÓS...
+```
+
+**Decodificação dos bytes ANTES (que a forja apagou):**
+
+| Offset | Bytes | Significado |
+|---|---|---|
+| `+0x00` | `c0 7a 32 20` (LE) | `0x20327ac0` = ponteiro `self` (= `xfer.src` do RPC_BIND) |
+| `+0x04` | `02 00 00 00` | `payload_words = 2` |
+| `+0x08` | `04 00 00 00` | `count = 4` (field desconhecido) |
+
+**Diagnóstico unificado:**
+1. ✅ **Hipótese (A) FALTA NOTIFICAÇÃO confirmada** — buffer estável por 5000 VBlanks (~83s) prova zero leitura do EE. Jogo dorme aguardando callback EE em `0x3277c0` (registrada no INIT).
+2. ✅ **Hipótese (B) OFFSETS ERRADOS confirmada como bônus** — `{0,4}` são destrutivos (apagam `self` e `payload_words`). Quando callback EE rodar (PASSO 3) e tentar dereferenciar `self`, vai crashar com `0x10000005`.
+3. ❌ **Hipótese (C) magic inválido descartada** — jogo nem leu, então nunca validou.
+
+**Mudanças aplicadas hoje (2 commits no mesmo arquivo `ps2_stubs_misc.inl`):**
+
+| Marker | O que faz | Linhas |
+|---|---|---|
+| **PASSO 2 REVERTIDO** | Para de escrever no `client_buf`. Mantém dump observacional (renomeado pra "dump natural") + registro do watch global pro VBlank handler continuar amostrando @#100/#1000/#5000. Loga `[PARTE 10 PLANO B2 PASSO 2 REVERTIDO]`. | 3525-3618 |
+| **PASSO 2.7 INSTRUMENTADO** | Quando decodifica INIT (no PASSO 1), dumpa 64 bytes em torno de `callback=0x3277c0`. Pré-requisito pra PASSO 3 (não dá pra invocar callback sem saber se é função, struct ou área zerada). | 3481-3522 |
+
+**Por que NÃO implementei o PASSO 3 (invocar callback) AGORA:**
+
+`mips_inspect.py 0x3277c0` retornou: **"endereco fora dos segmentos do ELF"**. Ou seja, `0x3277c0` é BSS preenchida em runtime — não é função estática do ELF. Se chamar `lookupFunction(0x3277c0)` agora, retorna `nullptr` (não tem .cpp recompilado lá). Hipóteses do que pode estar lá:
+- (a) Zeros — jogo nunca preencheu (problema é outro)
+- (b) Instruções MIPS reais — é código direto (algum jogo copia código pra BSS), invocar via `lookupFunction`
+- (c) Struct `sceSifQueueData` — primeiros 4-8 bytes apontam pra função real, invocar essa
+
+PASSO 2.7 vai revelar qual caso é, e aí o PASSO 3 pode ser implementado com convention correta sem chutar.
+
+**Esperado no próximo round automático:**
+
+| Marker | Antes (round f8cb6a5) | Esperado agora |
+|---|---|---|
+| `[PARTE 10 PLANO B2 PASSO 1]` | 2 | 2 (idêntico) |
+| `[PARTE 10 PLANO B2 PASSO 2.7] dump callback target @0x3277c0:` + 64B hex | 0 | **1** 🆕 |
+| `[PARTE 10 PLANO B2 PASSO 2.5] dump natural @0x30aaa8:` + 64B hex | 0 | **1** 🆕 |
+| `[PARTE 10 PLANO B2 PASSO 2 REVERTIDO] ... NAO escrevendo` | 0 | **1** 🆕 |
+| `[PARTE 10 PLANO B2 PASSO 2] resposta forjada` | 1 | **0** (revertido) |
+| `[PASSO 2.5 dump @VBlank #100/#1000/#5000]` | 3 | 3 (mantido) |
+| VBlank max | 5340 | ~5300+ (idêntico, esperado — é puro diagnóstico) |
+| `[CreateThread]` | 1 | 1 (idêntico) |
+
+**Bug paralelo confirmado pelo agente anterior e por mim:** `auto_round.sh` não atualiza `log_latest_*.txt` (apontam pra round de 27-04). Workaround: ler pelo nome timestamped (`log_20260429_222018_f8cb6a5_*.txt`). Fix: adicionar `cp -f log_${timestamp}_${hash}_*.txt log_latest_*.txt` no fim do script — futuro.
+
+**📋 Comando pro Agente Cris:** clicar **Push** no Replit. Loop do `auto_round.sh` dispara em ≤30s, próximo log em `logs/auto/runs_automaticos/log_<timestamp>_<hash>_full.txt`.
+
+---
 
 ### 🆕 PARTE 10 PLANO B2 PASSO 2 — CONFIRMADO no round `9caf879` (2026-04-29 17:27)
 

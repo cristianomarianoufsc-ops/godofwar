@@ -3474,36 +3474,81 @@ void sceSifSetDma(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
                     std::cerr << " (xfer.src=0x" << xfer.src
                               << " size=0x" << sizeBytes << ")"
                               << std::dec << std::endl;
+
+                    // PARTE 10 PLANO B2 PASSO 2.7 — DUMP DO ALVO DA CALLBACK EE
+                    // (2026-04-30). Achado decisivo do round f8cb6a5 (29-04 22:20):
+                    // o jogo NAO faz polling no client_buf; espera ser acordado por
+                    // callback EE em 0x3277c0 (registrado no INIT). Mas mips_inspect
+                    // confirmou que 0x3277c0 esta FORA do code segment do ELF
+                    // principal — e BSS preenchida em runtime, ou ponteiro pra
+                    // struct sceSifQueueData (cuja layout aponta pra funcao real
+                    // num offset interno). Sem saber o que tem la, nao da pra
+                    // invocar a callback sem crashar. Esse dump revela:
+                    //   - se 64 bytes em 0x3277c0 sao zero -> jogo NAO populou
+                    //     ainda, callback nunca foi setada de verdade; problema
+                    //     eh outro
+                    //   - se aparecem instrucoes MIPS (prologo addiu sp,sp,-X
+                    //     ou jr ra) -> eh codigo direto, podemos invocar via
+                    //     lookupFunction(0x3277c0)
+                    //   - se aparece um ponteiro 0x00XXXXXX no inicio -> eh
+                    //     struct, primeiros 4-8 bytes sao endereco da funcao real
+                    //     que precisamos invocar
+                    if (!isRpcLayout && callback != 0u && sizeBytes >= 20u)
+                    {
+                        const uint8_t *cbPtr = getConstMemPtr(rdram, callback);
+                        std::cerr << "[PARTE 10 PLANO B2 PASSO 2.7] dump callback target @0x"
+                                  << std::hex << callback << ":";
+                        if (cbPtr)
+                        {
+                            for (uint32_t i = 0; i < 64u; ++i)
+                            {
+                                if ((i & 15u) == 0u) std::cerr << "\n  +0x"
+                                    << std::hex << std::setw(2) << std::setfill('0')
+                                    << i << ":";
+                                std::cerr << " " << std::hex << std::setw(2)
+                                    << std::setfill('0')
+                                    << static_cast<unsigned>(cbPtr[i]);
+                            }
+                            std::cerr << std::dec << std::setfill(' ') << std::endl;
+                        }
+                        else
+                        {
+                            std::cerr << " <getConstMemPtr=null, endereco fora da RAM mapeada>"
+                                      << std::dec << std::endl;
+                        }
+                    }
                 }
 
-                // PARTE 10 PLANO B2 PASSO 2 — resposta SIF FORJADA pra destravar
-                // o spinlock do jogo. Confirmado pelo PASSO 1 (round 7d6ba33,
-                // 2026-04-29 01:18): jogo manda RPC_BIND (opcode=0x09) pedindo
-                // ligacao com sid=0x80000592 e fica pollando o cliente em
-                // response_buf=0x30aaa8 esperando o campo `server` ficar non-zero.
-                // Nao temos IOP rodando, entao escrevemos NOS direto na guest RAM
-                // a resposta que o IOP escreveria, simulando "bind concedido".
+                // PARTE 10 PLANO B2 PASSO 2 — REVERTIDO em 2026-04-30
+                // ================================================================
+                // O PASSO 2 originalmente escrevia server_handle=0x10000005 em 5
+                // offsets {0,4,24,32,40} do client_buf, na esperanca de que o
+                // jogo estivesse pollando algum desses offsets. Round f8cb6a5
+                // (29-04 22:20) PROVOU duas coisas via dump do PASSO 2.5:
                 //
-                // Risco: estamos escrevendo dados sinteticos numa estrutura cujo
-                // layout exato (sceSifClientData) varia entre Sony SDK versions.
-                // Estrategia DEFENSIVA: escrevemos um sentinela non-zero em
-                // multiplos offsets onde o campo `server` aparece nas variantes
-                // conhecidas (0, 4, 24, 32, 40). Custo: 44 bytes de "lixo
-                // controlado" por bind. Beneficio: maximiza chance do polling
-                // EE achar non-zero em qualquer um dos campos checados.
+                //   1. CONTEUDO IMUTAVEL POR 5000 VBLANKS: dump em VBlank #100,
+                //      #1000 e #5000 sao byte-por-byte identicos ao "APOS escrita".
+                //      O jogo NAO esta pollando esse buffer. Esta esperando ser
+                //      acordado por callback EE (registrada no INIT como 0x3277c0).
                 //
-                // Se isso destravar, log do proximo round vai mostrar:
-                //   - menos VBlanks parados em INIT (jogo avancou)
-                //   - chamadas novas que estavam atras do BIND (ex: RPC_CALL,
-                //     load de save, abrir CDVD, etc.)
-                // Se nao destravar (jogo continua spinlock identico), proxima
-                // hipotese: jogo usa semaforo SIF, nao polling — ai PASSO 3 vai
-                // precisar disparar iSignalSema fake via stub do sceSifCallRpc.
+                //   2. ESCRITA ERA DESTRUTIVA: dump ANTES revelou que o jogo ja
+                //      tinha gravado campos legitimos no client_buf:
+                //        +0x00: c0 7a 32 20  (= 0x20327ac0 = self/ponteiro)
+                //        +0x04: 02 00 00 00  (= payload_words = 2)
+                //        +0x08: 04 00 00 00  (= count = 4)
+                //      Sobrescrever offsets {0,4} apaga `self` e `payload_words`.
+                //      Quando a callback EE finalmente rodar (PASSO 3), ela vai
+                //      dereferenciar `self` pra achar o response_buf real e
+                //      crashar com endereco lixo (0x10000005).
                 //
-                // Opcodes alvo:
-                //   0x09 = SIF_CMD_RPC_BIND  -> fingir bind ok
-                // (INIT opcode=0x00 nao tem polling, eh fire-and-forget — nao
-                //  precisa resposta forjada agora; se virar bloqueio, PASSO 3.)
+                // ENTAO: paramos de escrever. Mantemos apenas o DUMP OBSERVACIONAL
+                // (PASSO 2.5) e o registro do client_buf no watch global pro
+                // handler do VBlank continuar dumpando @#100/#1000/#5000.
+                //
+                // Caminho real (PASSO 3): invocar a callback EE em 0x3277c0 logo
+                // apos decodificar o RPC_BIND. PASSO 2.7 (decoder INIT, acima)
+                // vai dumpar 64 bytes em torno de 0x3277c0 PRIMEIRO pra revelar
+                // se eh codigo direto ou struct (sceSifQueueData) com ponteiro.
                 if (isRpcLayout && opcode == 0x0009u && responseBuf != 0u)
                 {
                     static std::mutex s_b2p2Mutex;
@@ -3520,17 +3565,16 @@ void sceSifSetDma(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
                         }
                     }
 
-                    uint8_t *clientPtr = getMemPtr(rdram, responseBuf);
-                    if (clientPtr)
+                    if (firstForThisBind)
                     {
-                        // PARTE 10 PLANO B2 PASSO 2.5 — DIAGNOSTICO 2026-04-29
-                        // Dump dos 64 bytes ANTES da escrita pra ver estado
-                        // inicial do client_buf. Se o jogo ja escreveu algum
-                        // cookie/magic, vamos ver aqui. Se for 100% zeros, eh
-                        // BSS limpo e o jogo so polla esperando algo non-zero.
-                        if (firstForThisBind)
+                        const uint8_t *clientPtr = getConstMemPtr(rdram, responseBuf);
+                        if (clientPtr)
                         {
-                            std::cerr << "[PARTE 10 PLANO B2 PASSO 2.5] dump ANTES @0x"
+                            // PASSO 2.5 OBSERVACIONAL: dump do estado natural do
+                            // client_buf (sem nenhuma escrita nossa). Vai virar a
+                            // baseline pra comparar com o que a callback EE escrever
+                            // depois do PASSO 3.
+                            std::cerr << "[PARTE 10 PLANO B2 PASSO 2.5] dump natural @0x"
                                       << std::hex << responseBuf << ":";
                             for (uint32_t i = 0; i < 64u; ++i)
                             {
@@ -3542,73 +3586,31 @@ void sceSifSetDma(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
                                     << static_cast<unsigned>(clientPtr[i]);
                             }
                             std::cerr << std::dec << std::setfill(' ') << std::endl;
-                        }
 
-                        // server_handle sentinela: parece pointer valido em heap
-                        // PS2 EE (>0x01000000), mas escolhido pra nao colidir
-                        // com nada legitimo. Misturamos rpc_id pra cada bind ter
-                        // handle unico, facilitando rastreio se virar problema.
-                        const uint32_t serverHandle = 0x10000000u | (rpcId & 0xFFFFu);
-                        const uint32_t writeOffsets[] = { 0u, 4u, 24u, 32u, 40u };
-                        bool wroteAll = true;
-                        for (uint32_t off : writeOffsets)
-                        {
-                            // Limita escrita a area que sabemos ser RAM valida.
-                            if (!canCopyGuestByteRange(rdram, responseBuf + off, responseBuf + off, 4u))
-                            {
-                                wroteAll = false;
-                                break;
-                            }
-                            std::memcpy(clientPtr + off, &serverHandle, 4);
-                        }
-
-                        if (firstForThisBind)
-                        {
-                            std::cerr << "[PARTE 10 PLANO B2 PASSO 2] resposta SIF forjada — "
+                            std::cerr << "[PARTE 10 PLANO B2 PASSO 2 REVERTIDO] "
                                       << "RPC_BIND opcode=0x9 sid=0x" << std::hex << subHeader
                                       << " rpc_id=0x" << rpcId
                                       << " client=0x" << responseBuf
-                                      << " server_handle=0x" << serverHandle
-                                      << " offsets={0,4,24,32,40} ok=" << std::dec << wroteAll
-                                      << std::endl;
+                                      << " — NAO escrevendo (round f8cb6a5 confirmou que "
+                                      << "jogo nao polla, espera callback EE em 0x3277c0). "
+                                      << "Aguardando dump 2.7 revelar layout do callback."
+                                      << std::dec << std::endl;
 
-                            // PARTE 10 PLANO B2 PASSO 2.5 — dump APOS escrita
-                            // pra confirmar bytes exatos que o jogo vai ler.
-                            std::cerr << "[PARTE 10 PLANO B2 PASSO 2.5] dump APOS @0x"
-                                      << std::hex << responseBuf << ":";
-                            for (uint32_t i = 0; i < 64u; ++i)
-                            {
-                                if ((i & 15u) == 0u) std::cerr << "\n  +0x"
-                                    << std::hex << std::setw(2) << std::setfill('0')
-                                    << i << ":";
-                                std::cerr << " " << std::hex << std::setw(2)
-                                    << std::setfill('0')
-                                    << static_cast<unsigned>(clientPtr[i]);
-                            }
-                            std::cerr << std::dec << std::setfill(' ') << std::endl;
-
-                            // PARTE 10 PLANO B2 PASSO 2.5 — registra o
-                            // responseBuf numa global pro stub do VBlank
-                            // (gow_intc_handler_0x182f28) poder fazer dump
-                            // periodico e detectar se o jogo mexe no buffer.
-                            // FIX 2026-04-29 22:13 — wrapper `extern "C"`
-                            // declarado no escopo GLOBAL no topo de
-                            // ps2_stubs.cpp:32-38 (extern "C" so pode em
-                            // namespace/global, nunca dentro de funcao).
-                            // Definicao em game_overrides.cpp:37-40 escreve
-                            // em ::g_gowSifClientBufWatch. Aqui chamamos
-                            // qualificado com `::` pra forcar lookup global
-                            // (estamos dentro de `namespace ps2_stubs {}`).
+                            // Registra o client_buf no watch global pro handler do
+                            // VBlank continuar dumpando @#100/#1000/#5000. Agora
+                            // serve como CONFIRMACAO: se o conteudo MUDAR ao longo
+                            // dos VBlanks, alguma outra coisa do runtime/jogo ta
+                            // escrevendo la (pode ser pista pro PASSO 3).
                             ::gow_set_sif_client_buf_watch(responseBuf);
                         }
-                    }
-                    else if (firstForThisBind)
-                    {
-                        std::cerr << "[PARTE 10 PLANO B2 PASSO 2] FALHOU — "
-                                  << "responseBuf=0x" << std::hex << responseBuf
-                                  << " nao mapeia em RAM (getMemPtr=null) — "
-                                  << "bind nao destravado, jogo vai continuar spinlock"
-                                  << std::dec << std::endl;
+                        else
+                        {
+                            std::cerr << "[PARTE 10 PLANO B2 PASSO 2 REVERTIDO] "
+                                      << "responseBuf=0x" << std::hex << responseBuf
+                                      << " nao mapeia em RAM (getConstMemPtr=null) — "
+                                      << "alvo do BIND fora da guest RAM (suspeito)"
+                                      << std::dec << std::endl;
+                        }
                     }
                 }
             }
