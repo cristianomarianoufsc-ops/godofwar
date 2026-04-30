@@ -196,9 +196,74 @@ Antes de escolher: rodar `git log --oneline origin/main..HEAD` lista os commits 
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-30 PASSO 2 REVERTIDO + PASSO 2.7 INSTRUMENTADO)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-30 — PASSO 2.7 DECIFRADO + PASSO 2.8 INSTRUMENTAÇÃO WaitSema)
 
-### 🆕 PARTE 10 PLANO B2 PASSO 2 REVERTIDO + PASSO 2.7 INSTRUMENTADO — sessão 2026-04-30
+### 🆕 PARTE 10 PLANO B2 PASSO 2.8 INSTRUMENTAÇÃO WaitSema — sessão 2026-04-30 (tarde)
+
+**Round `b7ceb6d` (30-04 12:24) baixado e decifrado.** Resultado dos dumps prometidos:
+
+**DUMP 1 — callback target @0x3277c0 (PASSO 2.7):**
+```
++0x00..0x3F: 00 00 00 00 ... 00 00 00 00   (64 bytes TODOS ZEROS)
+```
+**Caso (a) confirmado:** a callback EE NUNCA foi populada. **O PLANO ANTIGO (PASSO 3 = invocar callback) está MORTO** — invocar 64 bytes zerados = SIGSEGV imediato. `lookupFunction(0x3277c0)` também retornaria `nullptr`.
+
+**DUMP 2 — client_buf natural @0x30aaa8 (PASSO 2.5):**
+```
++0x00: c0 7a 32 20 02 00 00 00 04 00 00 00 00 00 00 00
++0x10..0x3F: 00 00 ... 00
+```
+Idêntico nos VBlanks #100, #1000, #5000 — confirma que **o jogo NÃO polla esse buffer**.
+
+**SMOKING GUN (linhas adjacentes no log):**
+```
+[CreateSema] id=4 init=0 max=1
+[WaitSema:block] tid=1 sid=4 pc=0x293c64 ra=0x297374
+```
+**O jogo NÃO está em busy-wait. Ele DORME em semáforo `sid=4`.** No PS2 real o IOP processaria o RPC_BIND e faria `iSignalSema(4)` num handler de interrupção, acordando a thread. Como não temos IOP, deadlock eterno.
+
+### Plano REVISADO
+
+| Etapa | Antes (caduca) | Agora |
+|---|---|---|
+| Identificar bloqueio | "Busy-wait pollando `client_buf`" | **DORME em semáforo `sid=4` após RPC_BIND** |
+| Próximo passo (PASSO 3) | "Invocar callback EE em `0x3277c0`" | **Forjar `iSignalSema(sid_bloqueado)`** |
+| Risco do PASSO 3 antigo | "Convenção de args errada" | **N/A — descartado (callback é zeros)** |
+| Risco do PASSO 3 novo | — | "Identificar QUAL `sid` sinalizar sem falsificar errado" |
+
+### PASSO 2.8 — Instrumentação aplicada nesta sessão (variante segura)
+
+**Objetivo:** confirmar correlação temporal RPC_BIND → WaitSema:block antes de aplicar fix definitivo. Se >50% dos blocks acontecem em <100ms após o último RPC_BIND, opção 1 (correlação temporal) do PASSO 3 é segura. Se demora >5s ou nunca, precisa de opção 2/3 (cirúrgica).
+
+**Mudanças (5 arquivos, 1 commit):**
+
+| Arquivo | Linhas | O que faz |
+|---|---|---|
+| `game_overrides.cpp` | +`<chrono>`, ~42-62 | Adiciona `g_gowLastSifBindMonotonicNs` (atomic uint64), setter `gow_record_sif_bind_ts()` e getter `gow_get_sif_bind_monotonic_ns()` (extern "C"). |
+| `ps2_stubs.cpp` | ~38-41 | Declara extern "C" do `gow_record_sif_bind_ts()` (igual padrão do `gow_set_sif_client_buf_watch`). |
+| `ps2_syscalls.cpp` | ~37-41 | Declara extern "C" do `gow_get_sif_bind_monotonic_ns()` antes do `namespace ps2_syscalls`. |
+| `ps2_stubs_misc.inl` | ~3617 | Logo após `gow_set_sif_client_buf_watch(responseBuf)`, chama `::gow_record_sif_bind_ts()` pra marcar timestamp do RPC_BIND. |
+| `ps2_syscalls_flags.inl` | ~295-319 | Modifica log `[WaitSema:block]` pra incluir `delta_ms_since_RPC_BIND=N` (ou `never` se nenhum BIND foi visto antes). |
+
+### Esperado no próximo round automático
+
+Procurar no log:
+```
+[WaitSema:block] tid=N sid=N pc=0xN ra=0xN delta_ms_since_RPC_BIND=N
+```
+
+Análise:
+- **Se delta < 100 na maioria** → confirmou correlação → PASSO 3 versão simples = forjar `iSignalSema(sid_visto)` logo depois de `gow_record_sif_bind_ts`.
+- **Se delta varia muito (1ms~10s)** → precisa de cirurgia: ler `sceSifClientData->sema` no `self=0x20327ac0` (offset depende de SDK version, exigirá outro round de instrumentação).
+- **Se delta = `never` no `sid=4` específico** → o BIND não foi interceptado antes desse WaitSema → revisar ordem dos eventos no log.
+
+### Bug colateral pendente (não tocado nesta sessão)
+
+`Bug J` — função `0x296a54` not found, dispatch cai em zeros. Já blindado pelo PLANO C (`sceSifSetDma` retorna 0 se `dmat<0x100000`). Não afeta deadlock atual.
+
+---
+
+### 📜 HISTÓRICO — PARTE 10 PLANO B2 PASSO 2 REVERTIDO + PASSO 2.7 INSTRUMENTADO — sessão 2026-04-30 (manhã)
 
 **Achado decisivo do round `f8cb6a5` (29-04 22:20):** os dumps do PASSO 2.5 fecharam o caso da hipótese (A) e revelaram bug colateral.
 

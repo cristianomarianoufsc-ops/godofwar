@@ -3602,6 +3602,16 @@ void sceSifSetDma(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
                             // dos VBlanks, alguma outra coisa do runtime/jogo ta
                             // escrevendo la (pode ser pista pro PASSO 3).
                             ::gow_set_sif_client_buf_watch(responseBuf);
+
+                            // PASSO 2.8 — Marca timestamp do RPC_BIND visto AGORA.
+                            // O log de [WaitSema:block] em ps2_syscalls_flags.inl
+                            // le esse timestamp e calcula delta_ms desde aqui.
+                            // Hipotese: dump round b7ceb6d revelou callback EE
+                            // @0x3277c0 = ZEROS (caso A da PASSO 2.7), e log
+                            // mostrou WaitSema:block tid=1 sid=4 logo apos.
+                            // Se delta < 100ms na maioria dos blocks confirmados,
+                            // PASSO 3 = forjar iSignalSema(sid_visto_no_block).
+                            ::gow_record_sif_bind_ts();
                         }
                         else
                         {

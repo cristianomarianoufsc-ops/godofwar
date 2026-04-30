@@ -31,6 +31,12 @@
 
 std::string translatePs2Path(const char *ps2Path);
 
+// PASSO 2.8 — getter do timestamp do ultimo RPC_BIND interceptado, definido
+// em game_overrides.cpp. Usado em ps2_syscalls_flags.inl pra calcular
+// delta_ms_since_RPC_BIND no log de [WaitSema:block]. Correlacao temporal
+// pra confirmar hipotese "jogo dorme em sema esperando IOP sinalizar".
+extern "C" std::uint64_t gow_get_sif_bind_monotonic_ns();
+
 #include "syscalls/helpers/ps2_syscalls_helpers_path.inl"
 #include "syscalls/helpers/ps2_syscalls_helpers_state.inl"
 #include "syscalls/helpers/ps2_syscalls_helpers_loader.inl"

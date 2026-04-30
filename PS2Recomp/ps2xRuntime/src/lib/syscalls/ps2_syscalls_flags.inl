@@ -289,11 +289,30 @@ void WaitSema(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
         const uint32_t blockLog = s_waitSemaBlockLogs.fetch_add(1, std::memory_order_relaxed);
         if (blockLog < 256u)
         {
+            // PASSO 2.8 — calcula delta_ms desde ultimo RPC_BIND interceptado.
+            // Setter em ps2_stubs_misc.inl (PASSO 2 REVERTIDO), getter em
+            // game_overrides.cpp. Se delta_ms_since_bind < 100 na maioria dos
+            // blocks, confirma "jogo dorme em sema apos BIND" -> PASSO 3
+            // forja iSignalSema(sid).
+            const uint64_t bindNs = ::gow_get_sif_bind_monotonic_ns();
+            int64_t deltaMsSinceBind = -1;
+            if (bindNs != 0u)
+            {
+                auto now = std::chrono::steady_clock::now().time_since_epoch();
+                auto nowNs = static_cast<uint64_t>(
+                    std::chrono::duration_cast<std::chrono::nanoseconds>(now).count());
+                if (nowNs >= bindNs)
+                {
+                    deltaMsSinceBind = static_cast<int64_t>((nowNs - bindNs) / 1000000ull);
+                }
+            }
             std::cout << "[WaitSema:block] tid=" << g_currentThreadId
                       << " sid=" << sid
                       << " pc=0x" << std::hex << ctx->pc
                       << " ra=0x" << getRegU32(ctx, 31)
                       << std::dec
+                      << " delta_ms_since_RPC_BIND="
+                      << ((deltaMsSinceBind < 0) ? std::string("never") : std::to_string(deltaMsSinceBind))
                       << std::endl;
         }
 

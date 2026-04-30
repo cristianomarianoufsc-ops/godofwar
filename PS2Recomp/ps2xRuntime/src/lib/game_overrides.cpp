@@ -8,6 +8,7 @@
 #include <array>
 #include <atomic>
 #include <cctype>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -34,6 +35,28 @@ std::atomic<uint32_t> g_gowSifClientBufWatch{0u};
 extern "C" void gow_set_sif_client_buf_watch(std::uint32_t addr)
 {
     g_gowSifClientBufWatch.store(addr, std::memory_order_relaxed);
+}
+
+// PASSO 2.8 — Timestamp (steady_clock ns) do ultimo RPC_BIND interceptado
+// em sceSifSetDma. Usado pra correlacao WaitSema:block <-> RPC_BIND.
+// Hipotese sob teste: dump round b7ceb6d (2026-04-30) revelou callback EE
+// @0x3277c0 = 64 bytes ZERADOS (nunca populada). Mas log mostrou
+// [WaitSema:block] tid=1 sid=4 logo apos RPC_BIND — jogo dorme em
+// semaforo, NAO em busy-wait. Se >50% dos blocks acontecem em <100ms apos
+// o RPC_BIND, confirma que o sema bloqueado e' o que IOP deveria sinalizar
+// -> PASSO 3 (NOVO PLANO) = forjar iSignalSema do sid bloqueado.
+std::atomic<uint64_t> g_gowLastSifBindMonotonicNs{0u};
+
+extern "C" void gow_record_sif_bind_ts()
+{
+    auto now = std::chrono::steady_clock::now().time_since_epoch();
+    auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(now).count();
+    g_gowLastSifBindMonotonicNs.store(static_cast<uint64_t>(ns), std::memory_order_relaxed);
+}
+
+extern "C" std::uint64_t gow_get_sif_bind_monotonic_ns()
+{
+    return g_gowLastSifBindMonotonicNs.load(std::memory_order_relaxed);
 }
 
 namespace

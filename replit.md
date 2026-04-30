@@ -2537,28 +2537,49 @@ antes do `cmake --build`. Força recompilação garantida. Custo: ~20s/round.
 
 ---
 
-## Estado atual da depuração (sessão de 2026-04-29) — PARTE 10 PLANO B2 PASSO 1 CONFIRMADO + PASSO 2 APLICADO
+## Estado atual da depuração (sessão 2026-04-30) — PASSO 2.7 DECIFRADO + PASSO 2.8 INSTRUMENTAÇÃO WaitSema
 
 **Para detalhes completos, leia `HANDOFF_AGENT.md` seção "🟢 ESTADO ATUAL".** Resumo:
 
-### PASSO 1 confirmado em produção (round `99b5727`, log `log_20260429_011641_7d6ba33`)
+### Linha do tempo dos rounds
 
-Decoder do header SIF RPC disparou 2x revelando o protocolo exato:
-- **PACOTE 1 INIT** (size=0x14): `opcode=0x0000`, `callback=0x3277c0`
-- **PACOTE 2 RPC_BIND** (size=0x40): `opcode=0x0009`, `rpc_id=0x5`, `client_buf=0x30aaa8`, `sid=0x80000592`
+| Round | Data | O que comprovou |
+|---|---|---|
+| `99b5727` (29-04 01:16) | PASSO 1 | Decoder SIF: INIT (`callback=0x3277c0`) + RPC_BIND (`client_buf=0x30aaa8`, `sid=0x80000592`, `rpc_id=0x5`). Hipótese do PIVOT confirmada. |
+| `f8cb6a5` (29-04 22:20) | PASSO 2 (forja) | Forja em `{0,4}` apagou `self`+`payload_words`. Buffer estável por 5000 VBlanks ⇒ **jogo NÃO polla**. PASSO 2 REVERTIDO. |
+| `b7ceb6d` (30-04 12:24) | PASSO 2.5+2.7 | **Achado decisivo:** callback @0x3277c0 = **64 bytes ZEROS** (caso a). Plano antigo PASSO 3 (invocar callback) ⇒ MORTO. **Smoking gun:** `[WaitSema:block] tid=1 sid=4` logo após RPC_BIND ⇒ **jogo dorme em semáforo, NÃO em busy-wait**. |
 
-Análise estática do ELF confirma `0x30aaa8` está em **BSS** (zerado no boot) → spinlock pollando `*0x30aaa8 != 0`. Como IOP não responde, jogo trava em init infinito. **Hipótese do PIVOT 100% confirmada.**
+### PASSO 3 — Plano REVISADO
 
-### PASSO 2 aplicado em `ps2_stubs_misc.inl:3482-3568`
+| Antes | Agora |
+|---|---|
+| Invocar callback EE em `0x3277c0` | **Forjar `iSignalSema(sid_bloqueado)`** simulando IOP→EE |
+| Risco: convenção de args errada | Risco: identificar QUAL `sid` sinalizar (false-positive falsifica errado) |
 
-Quando vê RPC_BIND (opcode=0x09), escreve `server_handle = 0x10000000 | rpc_id` em offsets `{0,4,24,32,40}` do `client_buf` via `getMemPtr`. Estratégia defensiva pra cobrir 5 variantes conhecidas do `sceSifClientData` (Sony SDK varia entre versions). Dedupe por `(client_buf, rpc_id)`, máximo 8 binds, log `[PARTE 10 PLANO B2 PASSO 2]` na primeira ocorrência.
+### PASSO 2.8 aplicado nesta sessão (variante segura)
+
+Não aplicado o PASSO 3 ainda — primeiro instrumentar correlação temporal pra confirmar hipótese. Mudanças (5 arquivos, 1 commit pendente):
+
+- `game_overrides.cpp`: nova global `g_gowLastSifBindMonotonicNs` (atomic uint64) + setter `gow_record_sif_bind_ts()` + getter `gow_get_sif_bind_monotonic_ns()`. Adiciona `<chrono>`.
+- `ps2_stubs.cpp` e `ps2_syscalls.cpp`: declarações `extern "C"` (mesmo padrão do `gow_set_sif_client_buf_watch`).
+- `ps2_stubs_misc.inl` (~3617): chama `::gow_record_sif_bind_ts()` logo após registrar `client_buf` no PASSO 2 REVERTIDO.
+- `ps2_syscalls_flags.inl` (~295-319): log `[WaitSema:block]` agora inclui `delta_ms_since_RPC_BIND=N` (ou `never`).
 
 ### Esperado no próximo round automático
 
-| Marker | Antes | Esperado |
-|---|---|---|
-| `[PARTE 10 PLANO B2 PASSO 2]` | 0 | **1+** novo |
-| `[CreateThread]` | 1 | **2+** se destravar |
-| `[vif1:cmd] DIRECT (0x50/0x51)` | 0 | **1+** se chegar render |
+Procurar:
+```
+[WaitSema:block] tid=N sid=N pc=0xN ra=0xN delta_ms_since_RPC_BIND=N
+```
 
-Se destravar → próximo bloqueio aparece (provável CDVD/save/render). Se NÃO destravar → PASSO 3 = forjar `iSignalSema` (jogo usa semáforo SIF em vez de polling).
+Critério de decisão pro PASSO 3:
+
+| Observação | Decisão |
+|---|---|
+| `delta < 100ms` na maioria dos blocks (em particular no `sid=4`) | PASSO 3 simples: forjar `iSignalSema(sid)` direto |
+| `delta` varia 1ms~10s | Cirurgia: ler `sceSifClientData->sema` do `self=0x20327ac0` |
+| `delta = never` no `sid=4` | Revisar ordem dos eventos — pode haver outro caminho |
+
+### Bug paralelo (não tocado)
+
+`Bug J` — `0x296a54` not found, dispatch cai em zeros. Já blindado pelo PLANO C em `sceSifSetDma` (return 0 se `dmat<0x100000`). Não afeta deadlock.

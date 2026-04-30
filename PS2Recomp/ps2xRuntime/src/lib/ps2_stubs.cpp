@@ -33,6 +33,9 @@
 // funcao) falhou na compilacao com "expected unqualified-id before string
 // constant". A definicao da funcao esta em game_overrides.cpp:37-40.
 extern "C" void gow_set_sif_client_buf_watch(std::uint32_t addr);
+// PASSO 2.8 — registra timestamp do RPC_BIND interceptado pra correlacao
+// com WaitSema:block. Definido em game_overrides.cpp.
+extern "C" void gow_record_sif_bind_ts();
 
 namespace ps2_stubs
 {
