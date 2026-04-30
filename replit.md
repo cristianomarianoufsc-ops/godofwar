@@ -216,6 +216,33 @@ Sessões anteriores (incluindo a 04-26 PARTE 1) editaram o arquivo errado e gast
 
 ---
 
+## 🦆 LIÇÕES METODOLÓGICAS — TÉCNICAS DE TRABALHO PRA PRÓXIMOS AGENTES 🦆
+
+> Lições aprendidas em campo, registradas pra evitar que o próximo agente
+> precise re-descobrir do zero. Adicione novas conforme aparecerem.
+
+### Lição 1 — "Rubber duck debugging por proxy" (registrada 2026-04-30)
+
+**Princípio:** sempre que você estiver em **"modo espera passiva"** (aguardando round automático, aguardando resposta do user, aguardando build, aguardando hipótese do agente anterior se confirmar), **NÃO fique parado**. Faça **triagem ativa** do que poderia ser feito agora — mesmo se a resposta da triagem for "nada útil".
+
+**Por que funciona:** o ato de **explicar/inventariar por que NÃO vai fazer X** força você a abrir a ficha de X, e nesse processo frequentemente revela:
+- Que X já estava parcialmente feito e quebrado (descoberta de bug oculto)
+- Que X tem ângulo adjacente não considerado (descoberta de evidência colateral)
+- Que a hipótese atual estava enviesada pelo último agente
+
+É a versão "no-target" do clássico *rubber duck debugging*: ao explicar pro pato (ou pro user) **POR QUE** algo não merece ser feito agora, você frequentemente descobre que merece, ou descobre algo melhor que merece.
+
+**Caso de origem:** 2026-04-30 tarde. Agente Cris perguntou "vale criar ferramenta nova?". Em vez de só responder "não, espera o round", o analista fez triagem rankeada das 8 ferramentas possíveis. Pra rankear "fix do log_latest", abriu o `auto_round.sh`, percebeu que o `cp` já existia, investigou por que falhava, descobriu que o `git checkout` sobrescrevia, validou com curl. No mesmo `grep` de validação, contou syscalls de semáforo e descobriu que **`SignalSema=0` no run inteiro** — smoking gun do deadlock do PASSO 3, sem precisar do round novo. **2 fixes operacionais + 1 descoberta diagnóstica** em ~10 min, todos derivados de uma pergunta cuja resposta inicial era "nada a fazer".
+
+**Como aplicar:**
+- Se vai responder "vou esperar X" → primeiro liste 5-8 coisas que poderiam ser feitas e por que cada uma não vale agora. Frequentemente uma vai surpreender.
+- Se vai dizer "tudo está OK, só aguardando" → primeiro rode `grep` ou checksum em algo já existente pra confirmar que está OK de fato. "OK assumido" frequentemente não é "OK verificado".
+- Se vai aplicar fix óbvio em arquivo X → antes leia o arquivo X mesmo se acha que sabe o conteúdo. Frequentemente o "fix óbvio" já está lá, mas quebrado por outro motivo.
+
+**Anti-padrão a evitar:** "vou esperar o user/round/build" sem ter triado o que dá pra fazer enquanto. Espera passiva é OK SE você primeiro provou que não há nada produtivo pra fazer no intervalo. Quase nunca não há.
+
+---
+
 ## 🚨 OBRIGATÓRIO PARA QUALQUER AGENTE NOVO 🚨
 
 **Antes de tocar em qualquer coisa neste projeto, faça nesta ordem:**

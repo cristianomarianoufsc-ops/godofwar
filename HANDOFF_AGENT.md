@@ -92,6 +92,25 @@ no GoW, mas **toda decisão arquitetural nova prepara o terreno**.
 
 ---
 
+## 🦆 LIÇÕES METODOLÓGICAS — TÉCNICAS DE TRABALHO 🦆
+
+> Lições aprendidas em campo, registradas pra evitar que o próximo agente
+> precise re-descobrir do zero. Versão expandida (com exemplos de aplicação)
+> vive em `replit.md` na seção `🦆 LIÇÕES METODOLÓGICAS`. Adicione novas
+> lições conforme aparecerem.
+
+### Lição 1 — "Rubber duck debugging por proxy" (2026-04-30)
+
+**Princípio:** sempre que estiver em **modo espera passiva** (aguardando round, aguardando user, aguardando build), **NÃO fique parado** — faça **triagem ativa** do que poderia ser feito agora, mesmo se a resposta for "nada útil". O ato de **explicar/inventariar por que NÃO vai fazer X** força você a abrir a ficha de X, e nesse processo frequentemente revela bug oculto, evidência colateral, ou viés do agente anterior.
+
+**Caso de origem:** triagem de "vale criar tool nova?" → abriu `auto_round.sh` pra ranquear → descobriu bug do `cp` antes do checkout → no `grep` de validação contou semáforos → achou `SignalSema=0` (smoking gun do PASSO 3). 2 fixes + 1 descoberta diagnóstica em ~10 min, **todos derivados de pergunta cuja resposta inicial era "nada a fazer"**.
+
+**Como aplicar:** se vai responder "vou esperar X" → primeiro liste 5-8 alternativas e por que cada uma não vale agora; se vai dizer "está OK" → primeiro `grep`/checksum pra confirmar; se vai aplicar fix óbvio → leia o arquivo de qualquer jeito.
+
+**Anti-padrão:** "esperar passivo sem ter triado". OK só se PROVOU que não há nada útil. Quase nunca não há.
+
+---
+
 ## 📖 ANALOGIAS — atualize a cada sessão (estilo de chat = espionagem/ação)
 
 O usuário pediu duas analogias paralelas pra acompanhar o progresso sem
