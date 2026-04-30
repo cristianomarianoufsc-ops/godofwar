@@ -38,6 +38,33 @@ Se você terminar a sessão sem atualizar os dois, o próximo agente vai perder 
 
 ---
 
+## 🚨 FLUXO DE PUSH — REPLIT NÃO EMPURRA AUTOMATICAMENTE PRO REMOTO 🚨
+
+**Descoberta operacional 2026-04-29 21:59 (Agente Cris):**
+
+Quando o analista edita arquivos no Replit, o sistema cria **checkpoint LOCAL**
+automático (commit em branch local), mas **NÃO faz `git push` pro `origin/main`**.
+Os commits ficam parados no Replit até o **Agente Cris clicar manualmente no
+botão "Push" da interface Git do Replit** (sidebar esquerda → Git pane).
+
+**Implicação direta no fluxo automatizado:**
+- ❌ ~~"meu commit dispara o auto_round em ≤30s automaticamente"~~ — FALSO
+- ✅ **Sequência real:** analista edita → Replit cria checkpoint local → analista
+  AVISA o Agente Cris ("clica no Push") → Cris aperta botão na UI → commit vai
+  pro GitHub → loop do auto_round detecta `git fetch` em ≤30s → round dispara
+
+**Obrigação do analista:** ao terminar QUALQUER edição que precisa rodar no PC
+(fix de código, mudança de instrumentação, alteração em script de build),
+**explicitar na resposta**: "Cris, clica no botão Push do Replit pra mandar o
+fix pro GitHub, daí o loop pega em ≤30s." Sem isso, o loop fica em retry
+infinito tentando o build velho que está quebrado.
+
+**Exceção:** edição em `replit.md`/`HANDOFF_AGENT.md` puramente documental
+NÃO precisa de push imediato (pode esperar próximo lote de mudanças). Só
+push quando há código que precisa rodar.
+
+---
+
 ## 📖 ANALOGIAS — atualize a cada sessão (estilo de chat = espionagem/ação)
 
 O usuário pediu duas analogias paralelas pra acompanhar o progresso sem

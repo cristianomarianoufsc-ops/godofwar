@@ -120,6 +120,21 @@ Dentro de cada round, `timeout --signal=INT 90s` mata o jogo automaticamente. **
 - ❌ Tentar `git fetch` local no Replit (bloqueado)
 - ❌ Sugerir parar o loop (deixa rodando)
 
+### 🚨 PUSH NÃO É AUTOMÁTICO — DESCOBERTA 2026-04-29 21:59 🚨
+
+**Replit cria checkpoint LOCAL automático ao terminar uma tarefa, mas NÃO faz `git push`.** O commit fica parado no Replit até o **Agente Cris clicar manualmente no botão "Push"** da interface Git do Replit (sidebar esquerda → Git pane).
+
+**Sequência real (não a que parecia):**
+1. Analista edita arquivo no Replit
+2. Replit cria checkpoint local (mensagem `<checkpoint_created commit_id="...">`)
+3. **Analista AVISA explicitamente:** "Cris, clica no botão Push do Replit"
+4. Cris aperta o botão na UI → commit vai pro `origin/main` no GitHub
+5. Loop do `auto_round.sh` no PC dele detecta em ≤30s e dispara round
+
+**Sintoma de esquecer o aviso de push:** o loop entra em `ERRO: rebuild falhou — pulando este round` repetidamente, porque continua tentando o build velho sem o fix novo. O Agente Cris fica esperando o round novo que nunca vem.
+
+**Obrigação do analista:** sempre que editar código que precisa rodar (não só `replit.md`/`HANDOFF_AGENT.md` documental), encerrar a resposta com a frase explícita pedindo o push. Documentação pura pode ir em lote (próximo push de código carrega junto).
+
 ### Troubleshooting do loop (problemas conhecidos):
 
 **Sintoma:** loop fica repetindo `ERRO: git pull falhou` a cada 30s, com mensagem do git sobre `divergent branches` / `Need to specify how to reconcile`.
