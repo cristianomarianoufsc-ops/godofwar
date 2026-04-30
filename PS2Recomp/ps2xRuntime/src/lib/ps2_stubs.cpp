@@ -26,6 +26,14 @@
 #include "raylib.h"
 #include "stubs/helpers/ps2_stubs_helpers.inl"
 
+// FIX 2026-04-29 22:13 — forward declaration extern "C" no escopo GLOBAL.
+// `extern "C"` so pode aparecer em escopo de namespace/global, NUNCA dentro
+// de funcao. Por isso a tentativa anterior dentro de ps2_stubs_misc.inl
+// (incluida dentro do `namespace ps2_stubs {}` abaixo, e usada dentro de uma
+// funcao) falhou na compilacao com "expected unqualified-id before string
+// constant". A definicao da funcao esta em game_overrides.cpp:37-40.
+extern "C" void gow_set_sif_client_buf_watch(std::uint32_t addr);
+
 namespace ps2_stubs
 {
     namespace

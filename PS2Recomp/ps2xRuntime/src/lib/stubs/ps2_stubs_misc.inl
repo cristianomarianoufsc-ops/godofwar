@@ -3591,17 +3591,15 @@ void sceSifSetDma(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
                             // responseBuf numa global pro stub do VBlank
                             // (gow_intc_handler_0x182f28) poder fazer dump
                             // periodico e detectar se o jogo mexe no buffer.
-                            // FIX 2026-04-29 21:58 — esta .inl é incluida
-                            // DENTRO de `namespace ps2_stubs {}` em
-                            // ps2_stubs.cpp:29-219. C++ NAO permite declarar
-                            // `extern Type ::name;` de dentro de outro
-                            // namespace (sintaxe invalida). Solucao: usar
-                            // wrapper `extern "C"` definido em
-                            // game_overrides.cpp — sem name mangling, acessa
-                            // a variavel global sem ambiguidade de namespace.
-                            extern "C" void gow_set_sif_client_buf_watch(
-                                std::uint32_t addr);
-                            gow_set_sif_client_buf_watch(responseBuf);
+                            // FIX 2026-04-29 22:13 — wrapper `extern "C"`
+                            // declarado no escopo GLOBAL no topo de
+                            // ps2_stubs.cpp:32-38 (extern "C" so pode em
+                            // namespace/global, nunca dentro de funcao).
+                            // Definicao em game_overrides.cpp:37-40 escreve
+                            // em ::g_gowSifClientBufWatch. Aqui chamamos
+                            // qualificado com `::` pra forcar lookup global
+                            // (estamos dentro de `namespace ps2_stubs {}`).
+                            ::gow_set_sif_client_buf_watch(responseBuf);
                         }
                     }
                     else if (firstForThisBind)
