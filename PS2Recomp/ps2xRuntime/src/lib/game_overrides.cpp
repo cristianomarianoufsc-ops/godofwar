@@ -25,6 +25,17 @@
 // permitir extern acesso de ps2_stubs_misc.inl.
 std::atomic<uint32_t> g_gowSifClientBufWatch{0u};
 
+// FIX 2026-04-29 21:58 — wrapper extern "C" pra escrita da variavel a partir
+// de ps2_stubs_misc.inl, que e incluida DENTRO de `namespace ps2_stubs {}`
+// em ps2_stubs.cpp. C++ nao permite declarar `extern Type ::name;` de dentro
+// de outro namespace, entao um setter `extern "C"` (sem name mangling)
+// resolve sem ambiguidade. Custo: 1 indireção (irrelevante, escrita feita
+// 1x por bind, dezenas de vezes no boot inteiro).
+extern "C" void gow_set_sif_client_buf_watch(std::uint32_t addr)
+{
+    g_gowSifClientBufWatch.store(addr, std::memory_order_relaxed);
+}
+
 namespace
 {
     std::mutex &registryMutex()
