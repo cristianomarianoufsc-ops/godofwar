@@ -176,6 +176,46 @@ Sessões anteriores (incluindo a 04-26 PARTE 1) editaram o arquivo errado e gast
 
 ---
 
+## 🌍 VISÃO DE LONGO PRAZO — GRANDE UNIFICAÇÃO PS2→PC 🌍
+
+> **Definida pelo Agente Cris em 2026-04-30.** Toda ferramenta de automação
+> criada/atualizada daqui pra frente deve ser pensada como **embrião de um
+> Sistema Universal de Portabilidade PS2→PC**, não como utilitário descartável
+> só do God of War. Não vamos unificar agora — foco continua no GoW —, mas
+> **toda decisão arquitetural nova deve preparar o terreno**.
+
+### Diretrizes obrigatórias pra ferramentas novas/atualizadas (`tools/*.py`, `*.sh`, scripts de varredura, parsers, instrumentação de runtime)
+
+| # | Diretriz | Como aplicar na prática |
+|---|---|---|
+| **1** | **Modularidade** — separar lógica genérica de dados específicos do GoW. | A função que decodifica MIPS, varre o ELF, mapeia syscalls etc. **não pode ter `if jogo == "GoW":` nem endereços hard-coded enterrados na lógica**. Lógica em funções/classes puras, dados específicos isolados. |
+| **2** | **Configuração externa** — endereços de memória, nomes de arquivos, IDs de syscall, seeds de BFS, tudo em arquivo de config (TOML/CSV/JSON) ou variáveis no topo do script. | Hoje já temos `tools/reachable_seeds.txt`, `tools/truncation_overrides.csv` — bom padrão. **Para novas tools, criar `tools/<nome>_config.toml` ou seção dedicada num futuro `tools/games/godofwar.toml`**. Endereços hard-coded só dentro de blocos claramente marcados `# GoW-specific` com TODO de externalização. |
+| **3** | **Documentação inline** — toda ferramenta começa com docstring de cabeçalho explicando: (a) **qual classe de bug PS2** ela resolve, (b) **inputs/outputs**, (c) **exemplos de uso**, (d) **flag explícita "GoW-specific" ou "Universal"**. | Padrão proposto pro topo de qualquer `.py`/`.sh` novo:<br>`"""<br>FERRAMENTA: <nome><br>CATEGORIA: [Universal | GoW-specific] <br>RESOLVE: <classe de bug PS2 — ex: 'syscalls SIF não implementadas'><br>INPUTS: <arquivos/args><br>OUTPUTS: <arquivos/stdout><br>EXEMPLOS:<br>  python3 tools/x.py --foo<br>NOTAS DE PORTABILIDADE: <o que precisa ser parametrizado pra outro jogo><br>"""` |
+
+### Diretrizes pra runtime (`PS2Recomp/ps2xRuntime/src/lib/`)
+
+- `game_overrides.cpp` já segue o padrão (`PS2_REGISTER_GAME_OVERRIDE("GodOfWarPCPort:...")`) — **manter**. Cada novo override deve declarar string-key explícita do jogo, nunca aplicar global incondicional.
+- Constantes específicas do jogo (`kGowVblankFlagAddr`, `kGowStubHeapBase`, etc) devem ter **prefixo `kGow`** e viver no namespace anônimo de `game_overrides.cpp`. **Nunca** vazar pra `ps2_stubs_misc.inl`/`ps2_runtime.cpp`/etc — esses arquivos são "kernel universal".
+- Stubs em `ps2_stubs_misc.inl` etc devem ser **agnósticos ao jogo**. Quando um fix de SIF/IRX/syscall serviria pra outros jogos PS2, comentar com `// Universal PS2 SIF behavior — applies to any PS2 game using sceSif*`.
+
+### Operacional
+
+- **Sem refactor agressivo agora.** Não voltar em ferramentas existentes só pra "modularizar pré-Unificação" — tempo é GoW. Aplicar diretrizes **só em coisas novas ou já em mudança**.
+- **Ao atualizar tool antiga**, oportunisticamente extrair endereços hard-coded pra config se for trivial (≤5min). Se for caro, **deixar TODO no docstring**.
+- **Quando a Grande Unificação chegar**, futuro arquiteto vai ler esta seção, varrer `tools/` por docstrings padronizadas e extrair os "GoW-specific" pra `tools/games/godofwar.toml`. Quanto mais ferramentas seguirem o padrão, mais barata fica essa migração.
+
+**Ferramentas atuais que JÁ seguem o espírito** (referência boa):
+- `tools/ps2_syscalls.py` — tabela genérica de syscalls PS2, funcionaria pra qualquer jogo (✅ Universal de fato).
+- `tools/mips_inspect.py` — desmontador R5900, agnóstico (✅ Universal).
+- `tools/gap_discover.py` — varredura de prólogos MIPS, agnóstico (✅ Universal).
+- `tools/diagnose_crt0.py` — **GoW-specific** (verifica 9 instruções específicas do crt0 do SCUS_973.99) — bom candidato a parametrizar primeiro quando Unificação chegar.
+
+**Ferramentas atuais que precisariam de retoque na Unificação** (anotar mentalmente, não fazer agora):
+- `tools/find_writer_32E854.py` / `find_writer_v2.py` / `find_writer_32E854_overlays.py` — endereço alvo `0x32E854` hard-coded (sentinela específica do GoW). Trivial parametrizar com argv. **TODO documentado aqui pra próxima vez que alguém mexer**.
+- `tools/regen_truncated.sh` — caminhos `GOD_PC_PORT_FINAL/...` hard-coded. Quando virar Universal, extrair pra `${GAME_ROOT}` env var.
+
+---
+
 ## 🚨 OBRIGATÓRIO PARA QUALQUER AGENTE NOVO 🚨
 
 **Antes de tocar em qualquer coisa neste projeto, faça nesta ordem:**

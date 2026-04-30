@@ -65,6 +65,33 @@ push quando há código que precisa rodar.
 
 ---
 
+## 🌍 VISÃO DE LONGO PRAZO — GRANDE UNIFICAÇÃO PS2→PC 🌍
+
+**Definida pelo Agente Cris em 2026-04-30.** Toda ferramenta de automação
+criada/atualizada daqui pra frente é **embrião de um Sistema Universal de
+Portabilidade PS2→PC**, não utilitário descartável só do GoW. Foco continua
+no GoW, mas **toda decisão arquitetural nova prepara o terreno**.
+
+**3 diretrizes (versão expandida com exemplos vive em `replit.md` na seção `🌍 VISÃO DE LONGO PRAZO`):**
+
+1. **Modularidade** — lógica genérica em funções puras; nenhum `if jogo == "GoW":` ou endereço hard-coded enterrado dentro do algoritmo. Dados específicos isolados em arquivos de config ou constantes claramente marcadas.
+2. **Configuração externa** — endereços, paths, IDs de syscall, seeds → arquivo TOML/CSV/JSON ou variáveis no topo do script. Hard-code só dentro de bloco `# GoW-specific` com TODO de externalização.
+3. **Documentação inline** — toda tool nova começa com docstring de cabeçalho declarando: categoria (`Universal` ou `GoW-specific`), classe de bug PS2 que resolve, inputs/outputs, exemplos, notas de portabilidade.
+
+**Runtime (`PS2Recomp/ps2xRuntime/src/lib/`):**
+- Lógica específica do GoW vai em `game_overrides.cpp` com `PS2_REGISTER_GAME_OVERRIDE("GodOfWarPCPort:...")`.
+- Constantes do jogo prefixadas `kGow*`, vivendo no namespace anônimo de `game_overrides.cpp`. **Nunca** vazar pra `ps2_stubs_misc.inl`/`ps2_runtime.cpp` — esses são "kernel universal".
+- Quando um fix em stub Sony serve pra qualquer jogo PS2, comentar `// Universal PS2 SIF behavior — applies to any PS2 game using sceSif*`.
+
+**Operacional:**
+- **NÃO refactor agressivo de tools antigas** só pra modularizar — foco é GoW. Aplica só em coisa nova ou já em mudança.
+- **Ferramentas que já seguem o espírito** (referência): `ps2_syscalls.py`, `mips_inspect.py`, `gap_discover.py`.
+- **Ferramentas a parametrizar quando alguém mexer**: `find_writer_32E854*.py` (alvo hard-coded), `regen_truncated.sh` (paths `GOD_PC_PORT_FINAL/` hard-coded).
+
+**Por que este registro:** sem isso, próximos agentes criariam mais 10 scripts `.py` com `0x32E854` no meio do código e a Unificação futura seria refactor de 2 semanas em vez de 2 dias.
+
+---
+
 ## 📖 ANALOGIAS — atualize a cada sessão (estilo de chat = espionagem/ação)
 
 O usuário pediu duas analogias paralelas pra acompanhar o progresso sem
