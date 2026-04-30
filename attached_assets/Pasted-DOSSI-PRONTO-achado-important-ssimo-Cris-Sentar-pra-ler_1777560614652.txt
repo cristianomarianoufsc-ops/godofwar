@@ -1,0 +1,55 @@
+DOSSIÊ PRONTO — achado importantíssimo, Cris. Sentar pra ler. Antes da análise, mais uma checagem rápida pra fechar o quadro:
+
+
+2 actions
+📡 RELATÓRIO DE INTELIGÊNCIA — Round f8cb6a5
+Achado da semana, Agente Cris. Os Câmeras instalados no PASSO 2.5 capturaram tudo. Tenho o crime, a arma e o álibi do Sabotador I.
+
+🕵️ Camada 1 — O que os dumps revelam
+Cena 1: o buffer ANTES da resposta forjada (@0x30aaa8)
++0x00: c0 7a 32 20    ← 0x20327ac0 (PONTEIRO da request original!)
++0x04: 02 00 00 00    ← payload_words = 2
++0x08: 04 00 00 00    ← count = 4
++0x0c: 00 00 00 00
+
+O client_buf=0x30aaa8 NÃO é área vazia esperando resposta — é um descritor de request que o jogo MESMO acabou de preencher. Eu tava entendendo errado o significado desse campo do header SIF.
+
+Cena 2: depois do PASSO 2 forjar 0x10000005
++0x00: 05 00 00 10    ← APAGUEI o ponteiro 0x20327ac0 que o jogo precisava!
++0x04: 05 00 00 10
++0x18: 05 00 00 10
++0x20: 05 00 00 10
++0x28: 05 00 00 10
+
+Eu estava sabotando o jogo, sobrescrevendo metadado útil dele.
+
+Cena 3: dumps em VBlank #100, #1000, #5000 — idênticos à Cena 2
+Ninguém mais tocou nesse buffer durante 5000 frames. O jogo NÃO está fazendo polling em 0x30aaa8. Ele está esperando ser acordado por interrupt — não checando memória.
+
+Cena 4: a peça-chave que estava na linha 365 do log
+[PARTE 10 PLANO B2 PASSO 1] INIT{ callback=0x3277c0 }
+
+O jogo registrou uma callback EE em 0x3277c0 via sceSifInitRpc antes do bind. Essa é a função que ele quer que rode quando a resposta SIF chegar. E eu nunca chamei essa função. Toda a tentativa de escrever no buffer foi inútil — o jogo está esperando o telefone tocar, e eu venho deixando o bilhete na mesa.
+
+🚗 Camada 2 — O Carro
+A oficina IOP terminou o serviço e ligou pra avisar a EE. Mas a recepção (você) não está atendendo o telefone — está esperando ele tocar. Eu vinha colando bilhetes na vitrine: "carro pronto!" — sem nem pegar no fone. O jogo deixou o número de discagem registrado no PASSO 1 (callback=0x3277c0), mas eu ignorei, e o jogo nunca soube que o IOP "respondeu".
+
+🔧 Camada 3 — Próximo Movimento (PASSO 3)
+Confirmações
+Hipótese A do scratchpad = CONFIRMADA: precisa disparar callback EE.
+Hipótese B (offsets errados) = irrelevante por enquanto: ninguém lê o buffer.
+Hipótese C (magic number errado) = também irrelevante: callback nunca rodou.
+Plano PASSO 3 (proposto, aguardando seu OK)
+Reverter o PASSO 2 — parar de sobrescrever 0x30aaa8 (estou corrompendo dados úteis do jogo, sem ganho nenhum).
+Implementar PASSO 3 — disparar callback EE em 0x3277c0 logo após decodificar a request RPC_BIND. A callback recebe um pacote SIF formatado em registradores/memória contendo {server_handle=0x10000005, sid=0x80000592, rpc_id=0x5}.
+Manter os Câmeras do PASSO 2.5 instalados — agora apontando pro local de escrita REAL que a callback fizer.
+O que vamos descobrir
+Se a callback 0x3277c0 roda e o jogo desbloqueia → vitória técnica do Bug I, primeiro frame não-stall.
+Se a callback roda e trava em algum stub não implementado → temos novo alvo cirúrgico, muito menor que o Bug I.
+Se a callback roda e nada muda → revela que precisa de outra peça (provavelmente uma flag global de "RPC ready" que ela consulta).
+🛠 Bug paralelo descoberto
+O auto_round.sh está com defeito: log_latest_full.txt e log_latest_filtered.txt apontam pra log de 27/abril (ignorando rounds novos). Os arquivos timestamped (log_20260429_222018_f8cb6a5_*.txt) são gravados certo, mas o "atalho" pro mais recente parou. A partir de agora vou puxar pelo nome timestamped — mas vale corrigir o script um dia (cp -f faltando no fim).
+
+📋 Sua decisão
+Implementar PASSO 3 (atender o telefone) — vou editar ps2_stubs_misc.inl reverten­do o PASSO 2 e adicionando a chamada da callback 0x3277c0. Depois você clica Push e roda novo round.
+Ler com calma primeiro — me chama quando quiser que eu mexa.
