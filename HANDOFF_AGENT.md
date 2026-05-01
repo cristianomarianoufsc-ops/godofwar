@@ -91,29 +91,39 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-01 — Bug M, timeout 90→300s)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-01 — Bug N diagnosticado e CORRIGIDO)
 
 ### ✅ Bug K — CONFIRMADO RESOLVIDO
 ### ✅ Bug L — CONFIRMADO RESOLVIDO (stub 0x296a54 visível 8x no round: callbacks #0–#7)
+### ✅ Bug M — Timeout insuficiente (RUN_TIMEOUT 90→300s) — RESOLVIDO
 
-### 🔍 Bug M — Timeout insuficiente (RUN_TIMEOUT 90→300s)
+### 🔧 Bug N — `*(outer_struct+0x24)` nunca preenchido após bind fake → retry loop de 148s
 
-**Diagnóstico do round mais recente:**
-- Jogo carrega 25+ módulos IOP via SIF RPC_BIND (sids 4–28 visíveis)
-- Módulos 1–7: delta_ms=0 → instantâneos
-- Módulos 8+ (rpc_id ≥ 0x80005): delta_ms=3s–64s cada, jogo faz poll de VBlank entre binds
-- Com 90s, corta em sid=28, frame ~5340 — jogo **não está preso**, só precisa de mais tempo
+**Causa raiz (diagnóstico completo 2026-05-01):**
 
-**Falso positivo descartado — VBlank `flag=0`:**
-Stub faz `flag ^= 1` (toggle correto). Log periódico a cada 60 ticks (pares) → sempre captura flag=0. Não é bug.
+| Componente | Endereço | Papel |
+|---|---|---|
+| `entry_298910` | 0x298910 | Loop principal de bind: checa `*(s0+0x24)` após cada bind |
+| `sub_00297290` | 0x297290 | Executa o bind SIF; s1=a0=outer_struct_ptr=**0x0032AF00** |
+| delay slot em 0x2972c4 | — | `sw $zero, 0x24($s1)` — ZERA `*(0x0032AF24)` incondicionalmente |
+| `entry_298910` label_2989c4 | — | Retry loop: if `*(s0+0x24)==0` → delay 1M iters (~148s) → recomeça |
+| FUN_00293c60 + syscall 0x293c64 | — | WaitSema; PASSO 3 forjava o signal mas não preenchia o campo |
 
-**Fix aplicado:** `auto_round.sh` `RUN_TIMEOUT=90` → `RUN_TIMEOUT=300`
+**No PS2 real:** handler de interrupção DMA SIF escreve `*(s1+0x24) = client_ptr` quando IOP responde ao bind.
+**No port:** PASSO 3 forjava o WaitSema mas jamais escrevia `*(s1+0x24)` → campo ficava 0 → retry infinito.
 
-**Esperado no próximo round (300s):** jogo termina de carregar todos os módulos IOP e revela o próximo bloqueio real.
+**Fix aplicado — PASSO 4 em `ps2_syscalls_flags.inl`:**
+
+Quando PASSO 3 forja o WaitSema COM condição `pc==0x293c64 && ra==0x297374` (o call site de bind):
+- `s1_outer = gpr[17]` (callee-saved — outer struct, jamais tocado por FUN_00293c60)
+- `s0_client = gpr[16]` (callee-saved — client ptr retornado por func_296E10)
+- Escreve `*(rdram + s1_outer + 0x24) = s0_client` simulando a resposta do handler SIF
+
+**Consequência esperada:** loop de bind em `entry_298910` finalmente avança após cada bind confirmado (em vez de retornar ao topo de `label_2989c4`). O jogo deve carregar todos os 35 módulos IOP sem ficar preso.
 
 ---
 
-## 🐛 BIBLIOTECA DE BUGS A-J (resumo compacto)
+## 🐛 BIBLIOTECA DE BUGS A-N (resumo compacto)
 
 | Bug | Status | Arquivo do fix | Receita |
 |---|---|---|---|
@@ -129,6 +139,8 @@ Stub faz `flag ^= 1` (toggle correto). Log periódico a cada 60 ticks (pares) �
 | **J** — `0x296a54` not found, `ra=0` | 🟡 BLINDADO | `ps2_stubs_misc.inl` (PLANO C) | `if dmatAddr < 0x100000 return 0` |
 | **K** — `WaitSema sid=12` delta=2837ms > guard 100ms | ✅ RESOLVIDO | `ps2_syscalls_flags.inl` | Removido `&& deltaMsSinceBind < 100` — condição agora só `deltaMsSinceBind >= 0` |
 | **L** — `0x296a54 not found` 33x (FUN_00296a50 truncada a 2 instr.) | ✅ RESOLVIDO | `game_overrides.cpp` + `truncation_overrides.csv` | Stub noop em `0x296A54`; CSV com range real `0x296a50-0x296c48` pra regen futura |
+| **M** — Timeout insuficiente (90s), cortava em sid=28 | ✅ RESOLVIDO | `auto_round.sh` | `RUN_TIMEOUT=90` → `300` |
+| **N** — `*(outer_struct+0x24)` nunca preenchido → retry loop 148s | ✅ CORRIGIDO | `ps2_syscalls_flags.inl` (PASSO 4) | Em WaitSema(pc=0x293c64,ra=0x297374): `*(rdram+gpr[17]+0x24)=gpr[16]` |
 
 > **Detalhe completo de cada bug** (diagnóstico, dumps, hipóteses descartadas, código aplicado) → `HANDOFF_HISTORICO.md`.
 
@@ -162,29 +174,25 @@ Testado contra log atual → detectou corretamente sid=34, 31 módulos acordados
 
 ---
 
-## 📋 Próxima ação do analista (atualizado 2026-05-01 — após Bug M + nova ferramenta)
+## 📋 Próxima ação do analista (atualizado 2026-05-01 — Bug N corrigido — PASSO 4)
 
-**Fixes/features aplicados (Cris precisa clicar em Push):**
-- `auto_round.sh`: `RUN_TIMEOUT=90` → `RUN_TIMEOUT=300` + `boot-loop:suspect` adicionado ao `GREP_PATTERN`
-- `ps2_runtime.cpp`: detector `[boot-loop:suspect]` — rastreia `(pc, a0, a1)` consecutivos no dispatch loop; loga quando ≥10000x. Sintaxe verificada (g++ -fsyntax-only, exit 0).
-- `tools/missing_to_seeds.py`: nova ferramenta — converte FUNCTION entries do ps2_missing.log em seeds (retroalimenta o scanner estático). **Não requer rebuild — é só Python.**
-- `tools/triage_round.py`: nova ferramenta — triagem pós-round em 1 comando; baixa log do GitHub, detecta sids/frames/erros/boot-loops, gera diagnóstico e próximo passo. **Não requer rebuild.**
+**Fixes pendentes de push (Cris precisa clicar em Push):**
+- `ps2_syscalls_flags.inl` — **PASSO 4 Bug N fix**: em PASSO 3 (WaitSema forjado, pc=0x293c64, ra=0x297374), escreve `*(rdram+gpr[17]+0x24)=gpr[16]` simulando o handler DMA SIF que preenche o campo `confirmed_client` no outer_struct. **Requer rebuild do runtime (build.sh no PC do Cris).**
+- (já enviados em commit anterior, não precisam de push): `auto_round.sh` RUN_TIMEOUT=300, `tools/triage_round.py`, `tools/missing_to_seeds.py`, `ps2_runtime.cpp` boot-loop detector.
 
 **Após o push e próximo round (300s), o analista deve:**
 ```bash
-# 1. Triagem completa em 1 comando (substitui curl | grep manual):
+# 1. Triagem completa em 1 comando:
 python3 tools/triage_round.py
 
 # 2. Resumo rápido:
 python3 tools/triage_round.py --short
-
-# 3. Se o round gerou ps2_missing.log no build/ do Cris, retroalimentar seeds:
-python3 tools/missing_to_seeds.py --log build/ps2_missing.log --min-calls 3
-# (modo seco primeiro pra revisar, depois --apply se fizer sentido)
 ```
 
 **O que procurar:**
-- Se o log mostrar `sid=N` crescendo até parar e depois aparecer algo novo (erro, Warning, função not found) → Bug N identificado, diagnosticar
-- Se o jogo ainda terminar por SIGINT (timeout) sem erro → aumentar RUN_TIMEOUT mais ou investigar o inter-módulo delay
-- Se aparecer `SIGSEGV` ou crash → novo bug para análise
-- Se aparecer `[boot-loop:suspect]` → checar PC e a0 reportados, identificar função em loop
+- `[PASSO 4]` aparecendo ≥1x no log → Bug N fix está ativo
+- Se sids subirem de forma contínua (sid=1→2→3→...→35) sem pause de 148s → Bug N resolvido!
+- Se aparecer nova linha parada (ex: `func_XXXXXX not found`) → novo bug para análise
+- Se aparecer `SIGSEGV` → crash pós-bind, bug de runtime pós-carregamento de módulos
+- Se aparecer `[boot-loop:suspect]` → checar PC e a0 reportados
+- Se o jogo ainda terminar por SIGINT sem chegar nos 35 módulos → possível Bug O (outro campo ausente ou outro módulo com lógica diferente)

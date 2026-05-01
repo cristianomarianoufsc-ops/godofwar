@@ -323,27 +323,29 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 ---
 
-## 🟢 ESTADO ATUAL — Bug M diagnosticado, timeout 90→300s (atualizado 2026-05-01)
+## 🟢 ESTADO ATUAL — Bug N corrigido — PASSO 4 (atualizado 2026-05-01)
 
 ### ✅ Bug K — CONFIRMADO RESOLVIDO
 ### ✅ Bug L — CONFIRMADO RESOLVIDO (0x296a54 stub noop, 8 callbacks registrados no round)
+### ✅ Bug M — Timeout insuficiente (90→300s) — RESOLVIDO
+### 🔧 Bug N — `*(outer_struct+0x24)` nunca preenchido → retry loop de ~148s — PASSO 4 APLICADO
 
-### 🔍 Bug M — Timeout insuficiente para init IOP completo
+**Bug N — Causa raiz:**
 
-**Diagnóstico (round 2026-05-01):**
-- Jogo carrega 25+ módulos IOP via SIF RPC_BIND (sids 4–28 visíveis, padrão `rpc_id = N*0x10000 + 5`)
-- Módulos 1–7 (sids 4–11): delta_ms=0 → carregamento instantâneo
-- Módulos 8+ (sids 12–28): delta_ms=3s a 64s cada → 2–5 segundos por módulo (poll de VBlank entre binds)
-- `RUN_TIMEOUT=90s` → corta em sid=28 (frame ~5340). Jogo **não está preso** — apenas precisa de mais tempo.
+`sub_00297290` (0x297290) é a função de bind SIF. Ela recebe `a0=s1=outer_struct_ptr` (ex: 0x0032AF00) e no delay slot de 0x2972c4 executa `sw $zero, 0x24($s1)` zerando `*(outer_struct+0x24)`. Após o bind e o WaitSema (forjado pelo PASSO 3), retorna para `entry_298910` (0x298910) que checa `*(s0+0x24) == 0`. Como o PASSO 3 forjava só o WaitSema mas nunca preenchia esse campo, o jogo entrava em retry de 1M iterações (~148s) e reiniciava todo o processo de bind.
 
-**Falso positivo descartado — VBlank `flag=0`:**
-O stub `0x182f28` faz `flag ^= 1` a cada tick (toggles corretamente). O log periódico captura só ticks múltiplos de 60 (pares), que por coincidência sempre têm `flag=0`. A flag alternates normalmente; não é bug.
+No PS2 real, o handler de interrupção DMA SIF escreve `*(s1+0x24) = client_ptr` (o ponteiro do struct cliente retornado por `func_296E10`) ao receber a resposta do IOP. No port, esse handler não existe.
 
-**Fix aplicado:** `auto_round.sh` linha 60: `RUN_TIMEOUT=90` → `RUN_TIMEOUT=300`
+**Bug N — Fix aplicado (`ps2_syscalls_flags.inl`, PASSO 4):**
 
-**Feature adicionada:** `ps2_runtime.cpp` — detector `[boot-loop:suspect]` no dispatch loop. Rastreia `(pc, a0, a1)` consecutivos; loga quando a mesma combinação se repete ≥10000x. Configurável via `PS2_SAME_CALL_REPORT_AFTER=N`. Capturado automaticamente no `log_latest_filtered.txt` (padrão `boot-loop:suspect` adicionado ao `auto_round.sh`).
+Dentro de PASSO 3 (WaitSema forjado), quando `pc == 0x293c64 && ra == 0x297374` (o call site de bind em `sub_00297290`):
+```cpp
+s1_outer = gpr[17]  // callee-saved — outer_struct_ptr (jamais tocado por FUN_00293c60)
+s0_client = gpr[16] // callee-saved — client_ptr (retorno de func_296E10 = 0x30aaa8)
+*(rdram + s1_outer + 0x24) = s0_client  // simula handler DMA SIF
+```
 
-**Esperado no próximo round:** jogo carrega todos os módulos IOP e revela o próximo bloqueio (primeiro símbolo ou função não encontrada após boot completo, ou tela de intro travada). Se o jogo entrar em polling loop, o detector vai mostrar `[boot-loop:suspect] pc=0xXXXX a0=0xYYYY repeated=N`.
+**Esperado no próximo round:** `[PASSO 4]` aparece no log; sids sobem continuamente 1→35 sem pausa de 148s; jogo conclui init IOP e revela próximo bloqueio.
 
 ---
 
