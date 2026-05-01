@@ -342,7 +342,7 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 ## 🟢 ESTADO ATUAL — Bugs X+P resolvidos, Bug Q é o próximo bloqueador (atualizado 2026-05-01)
 
 ### ✅ Bugs K, L, M, N, O, X, P — RESOLVIDOS
-### 🔴 Bug Q — PRÓXIMO BLOQUEADOR ESPERADO
+### ✅ Bug Q — CORRIGIDO ANTECIPADAMENTE (2026-05-01, aguarda rebuild)
 ### ⚠️ Bugs R–W — todos truncados, aguardando log para priorizar
 
 ---

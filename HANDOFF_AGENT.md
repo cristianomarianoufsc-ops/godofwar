@@ -151,10 +151,10 @@ O agente anterior mandou `bash build.sh` (errado — deveria ser `bash recompila
 | **N** — PASSO 4 era regressão | ✅ REVERTIDO | `ps2_syscalls_flags.inl` | Bloco PASSO 4 removido |
 | **O** — stub `0x296a54` retornava 0 | ✅ | `game_overrides.cpp` | `$v0=0` → `$v0=1` |
 | **P** — FUN_002947c8 truncada (thread 2 sem corpo) | ✅ REESCRITA MANUAL | `GOD_PC_PORT_FINAL/src/recompiled/FUN_002947c8_0x2947c8.cpp` | 334 linhas reescritas manualmente; sintaxe verificada ok (g++ -fsyntax-only) |
-| **Q** — FUN_00294990 truncada (1 instrução) | 🔴 PRÓXIMO BLOQUEADOR | `GOD_PC_PORT_FINAL/src/recompiled/FUN_00294990_0x294990.cpp` | Registrada em 0x294990; chamada por `sub_00297290` via `j func_294990` (linha 643); range real 0x294990–0x294a30; contém GetThreadId (syscall -0x2F) + lógica de registro pós-bind; reescrita manual necessária (igual Bug P, regen não funciona por overlap) |
+| **Q** — FUN_00294990 truncada (1 instrução) | ✅ REESCRITA MANUAL | `GOD_PC_PORT_FINAL/src/recompiled/FUN_00294990_0x294990.cpp` | 182 linhas reescritas manualmente (2026-05-01); **sintaxe verificada g++ -fsyntax-only = zero erros**; aguarda rebuild no PC do Cris (`bash recompilar.sh`) |
 | **R** — FUN_00294c70 truncada | ✅ PROVAVELMENTE OK | — | Código de 0x294c70 já está inline em `sub_00294AF8` (cobre 0x294af8–0x294c98); nenhum chamador direto externo encontrado; arquivo truncado existe mas dificilmente atingido |
 | **S** — FUN_00297058 truncada | ⚠️ AGUARDANDO LOG | `truncation_overrides.csv` | 25 linhas; fora do caminho crítico imediato identificado |
-| **T** — FUN_002971c0 truncada | ⚠️ AGUARDANDO LOG | `truncation_overrides.csv` | 25 linhas; imediatamente antes de sub_00297290 (bind loop); pode ser bloqueador secundário |
+| **T** — FUN_002971c0 truncada | ⚠️ AGUARDANDO LOG | `truncation_overrides.csv` | 25 linhas; imediatamente antes de sub_00297290 (bind loop); **zero callers encontrados em qualquer .cpp recompilado** — provavelmente chamado via ponteiro de função em runtime; disassembly completo disponível via `python3 tools/mips_inspect.py 0x2971c0` (cobre 0x2971c0–0x297284) |
 | **U** — FUN_00294d40 truncada | ⚠️ AGUARDANDO LOG | `truncation_overrides.csv` | 28 linhas; zona crítica 0x29xxxx |
 | **V** — FUN_00238890 truncada | ⚠️ AGUARDANDO LOG | `truncation_overrides.csv` | 28 linhas; 43 referências estáticas — mais chamada entre as truncadas |
 | **W** — FUN_00244600 truncada | ⚠️ AGUARDANDO LOG | `truncation_overrides.csv` | 25 linhas; 36 referências estáticas |
@@ -210,15 +210,21 @@ python3 tools/triage_round.py --short
 - ✅ Thread 2 deve entrar no loop de dispatch (Bug P resolvido)
 - 🔴 Provável próximo travamento: **Bug Q** — `FUN_00294990` chamada por `sub_00297290` via `j func_294990`, executa 1 instrução e retorna sem fazer nada útil
 
-### Passo 3 — Se Bug Q travar, reescrever manualmente
-O arquivo `GOD_PC_PORT_FINAL/src/recompiled/FUN_00294990_0x294990.cpp` precisa de reescrita manual (igual Bug P). Range real: `0x294990–0x294a30`. A função:
-- Salva `$ra` e `$s0` na stack (instruções `sq` — R5900 128-bit, usar `sd` equivalente)
-- Chama GetThreadId (syscall -0x2F → `v0` = tid atual)
-- Compara `$s0` (tid passado) com `$a0` (tid retornado)
-- Se diferente: chama `func_293B60` e retorna para 0x294a18
-- Se igual e `$s0 >= 0x100`: retorna -1
-- Se igual e `$s0 < 0x100`: lê `mem[0x2A4AB0]`, se não nulo: insere no ring buffer em `mem[0x326f48]`, chama `func_293C50`, chama `func_2969D0` (via 0x294a08)
-- Restaura `$ra`, `$s0` e retorna
+### Passo 3 — Bug Q JÁ CORRIGIDO (2026-05-01) — só rodar `bash recompilar.sh`
+
+`GOD_PC_PORT_FINAL/src/recompiled/FUN_00294990_0x294990.cpp` foi reescrito manualmente (182 linhas, **g++ -fsyntax-only = zero erros**) enquanto o build anterior rodava. Após o build terminar, Agente Cris deve:
+
+```bash
+bash recompilar.sh    # compila só os arquivos alterados (Bug Q + Bug P + Fix X)
+bash auto_round.sh once
+python3 tools/triage_round.py --short
+```
+
+### Passo 4 — O que esperar após Bug Q corrigido
+O próximo bloqueador provável é **Bug T (FUN_002971c0)** — mas sua relevância ainda é incerta (zero callers diretos encontrados em qualquer .cpp). O log vai revelar. Se travar, o disassembly já está disponível:
+```bash
+python3 tools/mips_inspect.py 0x2971c0   # range completo 0x2971c0–0x297284
+```
 
 ### ⚠️ Lembrete ao analista
 Sempre pedir ao Agente Cris para clicar em **Push** no Replit após qualquer edição de código.
