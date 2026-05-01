@@ -278,10 +278,10 @@ PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_teste.txt
 | `discovered_functions.csv` | CSV de funções descobertas pelo `gap_discover.py`. 75 entradas. | Consumido pelo `recompiler.toml`. |
 | `truncation_overrides.csv` | **Edite à mão** — overrides manuais de ranges. 1 override ativo: `entry,0x100008,0x100db8`. | Lido por `fix_truncated.py`. |
 | `reachable_seeds.txt` | Lista de seeds de BFS. 1 seed ativo: `0x100008`. | Lido por `reachable_after_boot.py`. |
+| `missing_to_seeds.py` | Lê `ps2_missing.log`, extrai entradas `FUNCTION` (ausentes em runtime) e adiciona como seeds em `reachable_seeds.txt`. Modo seco por padrão; `--apply` pra escrever. | `python3 tools/missing_to_seeds.py` / `python3 tools/missing_to_seeds.py --apply --min-calls 3` |
 
 **Lacunas conhecidas (oportunidades pra novas ferramentas):**
 - ❌ Scanner de IRX (`*.IRX`) buscando escritores de globals da EE.
-- ❌ Parser do `ps2_missing.log` que adiciona PCs travados como seeds em `reachable_seeds.txt`.
 - ❌ Detector de "boot loop" no runtime (mesma função N vezes com args idênticos).
 
 ---

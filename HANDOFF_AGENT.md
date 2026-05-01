@@ -134,19 +134,46 @@ Stub faz `flag ^= 1` (toggle correto). Log periódico a cada 60 ticks (pares) �
 
 ---
 
-## 📋 Próxima ação do analista (atualizado 2026-05-01 — após Bug M)
+## 🛠️ Nova ferramenta adicionada (2026-05-01 — sessão atual)
+
+**`tools/missing_to_seeds.py`** — fecha a lacuna "Parser do ps2_missing.log → seeds"
+
+Lê `ps2_missing.log`, extrai entradas `FUNCTION` (funções chamadas em runtime mas não recompiladas), e as adiciona como seeds em `tools/reachable_seeds.txt`.
+
+```bash
+# Modo seco — só mostra o que seria adicionado:
+python3 tools/missing_to_seeds.py --log build/ps2_missing.log
+
+# Aplica os top-10 mais chamados (≥3 calls):
+python3 tools/missing_to_seeds.py --log build/ps2_missing.log --apply --min-calls 3 --top 10
+
+# Em seguida, rodar o scanner de alcançabilidade com os novos seeds:
+python3 tools/reachable_after_boot.py
+```
+
+Ferramenta Universal (sem endereços GoW hard-coded). Sintaxe verificada (py_compile, exit 0).
+
+---
+
+## 📋 Próxima ação do analista (atualizado 2026-05-01 — após Bug M + nova ferramenta)
 
 **Fixes/features aplicados (Cris precisa clicar em Push):**
 - `auto_round.sh`: `RUN_TIMEOUT=90` → `RUN_TIMEOUT=300` + `boot-loop:suspect` adicionado ao `GREP_PATTERN`
 - `ps2_runtime.cpp`: detector `[boot-loop:suspect]` — rastreia `(pc, a0, a1)` consecutivos no dispatch loop; loga quando ≥10000x. Sintaxe verificada (g++ -fsyntax-only, exit 0).
+- `tools/missing_to_seeds.py`: nova ferramenta — converte FUNCTION entries do ps2_missing.log em seeds (retroalimenta o scanner estático). **Não requer rebuild — é só Python.**
 
 **Após o push e próximo round (300s), o analista deve:**
 ```bash
-# Ver até onde o jogo chegou — quantos sids? qual foi o último?
-curl -s "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/logs/auto/runs_automaticos/log_latest_filtered.txt" | grep -E "CreateSema|WaitSema:block|stub:|Warning|SIGSEGV" | tail -40
+# 1. Ver até onde o jogo chegou — quantos sids? qual foi o último?
+curl -s "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/logs/auto/runs_automaticos/log_latest_filtered.txt" | grep -E "CreateSema|WaitSema:block|stub:|Warning|SIGSEGV|boot-loop" | tail -40
+
+# 2. Se o round gerou ps2_missing.log no build/ do Cris, rodar a nova ferramenta:
+python3 tools/missing_to_seeds.py --log build/ps2_missing.log --min-calls 3
+# (modo seco primeiro pra revisar, depois --apply se fizer sentido)
 ```
 
 **O que procurar:**
 - Se o log mostrar `sid=N` crescendo até parar e depois aparecer algo novo (erro, Warning, função not found) → Bug N identificado, diagnosticar
 - Se o jogo ainda terminar por SIGINT (timeout) sem erro → aumentar RUN_TIMEOUT mais ou investigar o inter-módulo delay
 - Se aparecer `SIGSEGV` ou crash → novo bug para análise
+- Se aparecer `[boot-loop:suspect]` → checar PC e a0 reportados, identificar função em loop
