@@ -1,14 +1,12 @@
 # Manual de Transferência — God of War PS2 PC Port — 🏛️ OPERAÇÃO ESPARTA
 
-> **Para o próximo analista:** Este documento contém TUDO que você precisa saber para continuar a Operação Esparta. Leia até o fim antes de tocar em qualquer código. O Agente Cris (usuário) fala português brasileiro — responda nele.
+> **Para o próximo analista:** Leia até o fim antes de tocar em qualquer código. O Agente Cris (usuário) fala português brasileiro — responda nele.
+>
+> **Histórico narrativo detalhado** (sessões 2026-04-23 a 2026-04-29, bugs A-J completos, dumps hex, diagnósticos de hipóteses descartadas) → `HANDOFF_HISTORICO.md`. Leia se precisar de detalhe de bug específico.
 
 ---
 
 ## 🎬 PROTOCOLO DE COMUNICAÇÃO — OPERAÇÃO ESPARTA 🎬
-
-Toda conversa com o Agente Cris segue **linguagem narrativa de espionagem/ação**.
-A versão completa do protocolo (cast, regras de tom, três camadas de explicação)
-está em `replit.md` — fonte da verdade. **Resumo obrigatório aqui:**
 
 | Papel | Quem é |
 |---|---|
@@ -20,9 +18,7 @@ está em `replit.md` — fonte da verdade. **Resumo obrigatório aqui:**
 | **Câmeras escondidas** | Watchpoints (`ps2CheckGlobalWatch*` em `ps2_runtime.h`) |
 | **Cofre / 6000 portas** | Imagem do executável recompilado (~6000 funções `sub_XXXXXX.cpp`) |
 
-**Regra de ouro:** ao explicar um achado novo, sempre as três camadas
-nesta ordem: 🕵️ espionagem → 🚗 carro → 🔧 técnico (código puro).
-Tom: relatório de inteligência calmo, não Hollywood.
+**Regra de ouro:** ao explicar um achado novo, sempre as três camadas nesta ordem: 🕵️ espionagem → 🚗 carro → 🔧 técnico (código puro). Tom: relatório de inteligência calmo, não Hollywood.
 
 ---
 
@@ -40,213 +36,64 @@ Se você terminar a sessão sem atualizar os dois, o próximo agente vai perder 
 
 ## 🚨 FLUXO DE PUSH — REPLIT NÃO EMPURRA AUTOMATICAMENTE PRO REMOTO 🚨
 
-**Descoberta operacional 2026-04-29 21:59 (Agente Cris):**
+**Sequência real:**
+1. Analista edita arquivos no Replit → Replit cria checkpoint LOCAL
+2. **Analista AVISA explicitamente:** "Cris, clica no botão Push"
+3. Cris aperta botão na UI → commit vai pro GitHub → loop detecta em ≤30s → round dispara
 
-Quando o analista edita arquivos no Replit, o sistema cria **checkpoint LOCAL**
-automático (commit em branch local), mas **NÃO faz `git push` pro `origin/main`**.
-Os commits ficam parados no Replit até o **Agente Cris clicar manualmente no
-botão "Push" da interface Git do Replit** (sidebar esquerda → Git pane).
+**Obrigação do analista:** ao terminar QUALQUER edição que precisa rodar no PC, explicitar na resposta: *"Cris, clica no botão Push do Replit pra mandar o fix pro GitHub."*
 
-**Implicação direta no fluxo automatizado:**
-- ❌ ~~"meu commit dispara o auto_round em ≤30s automaticamente"~~ — FALSO
-- ✅ **Sequência real:** analista edita → Replit cria checkpoint local → analista
-  AVISA o Agente Cris ("clica no Push") → Cris aperta botão na UI → commit vai
-  pro GitHub → loop do auto_round detecta `git fetch` em ≤30s → round dispara
-
-**Obrigação do analista:** ao terminar QUALQUER edição que precisa rodar no PC
-(fix de código, mudança de instrumentação, alteração em script de build),
-**explicitar na resposta**: "Cris, clica no botão Push do Replit pra mandar o
-fix pro GitHub, daí o loop pega em ≤30s." Sem isso, o loop fica em retry
-infinito tentando o build velho que está quebrado.
-
-**Exceção:** edição em `replit.md`/`HANDOFF_AGENT.md` puramente documental
-NÃO precisa de push imediato (pode esperar próximo lote de mudanças). Só
-push quando há código que precisa rodar.
+**Exceção:** edição em `replit.md`/`HANDOFF_AGENT.md` puramente documental NÃO precisa de push imediato.
 
 ---
 
 ## 🌍 VISÃO DE LONGO PRAZO — GRANDE UNIFICAÇÃO PS2→PC 🌍
 
-**Definida pelo Agente Cris em 2026-04-30.** Toda ferramenta de automação
-criada/atualizada daqui pra frente é **embrião de um Sistema Universal de
-Portabilidade PS2→PC**, não utilitário descartável só do GoW. Foco continua
-no GoW, mas **toda decisão arquitetural nova prepara o terreno**.
+Detalhes completos em `replit.md §🌍 VISÃO DE LONGO PRAZO`. Resumo:
 
-**3 diretrizes (versão expandida com exemplos vive em `replit.md` na seção `🌍 VISÃO DE LONGO PRAZO`):**
-
-1. **Modularidade** — lógica genérica em funções puras; nenhum `if jogo == "GoW":` ou endereço hard-coded enterrado dentro do algoritmo. Dados específicos isolados em arquivos de config ou constantes claramente marcadas.
-2. **Configuração externa** — endereços, paths, IDs de syscall, seeds → arquivo TOML/CSV/JSON ou variáveis no topo do script. Hard-code só dentro de bloco `# GoW-specific` com TODO de externalização.
-3. **Documentação inline** — toda tool nova começa com docstring de cabeçalho declarando: categoria (`Universal` ou `GoW-specific`), classe de bug PS2 que resolve, inputs/outputs, exemplos, notas de portabilidade.
-
-**Runtime (`PS2Recomp/ps2xRuntime/src/lib/`):**
-- Lógica específica do GoW vai em `game_overrides.cpp` com `PS2_REGISTER_GAME_OVERRIDE("GodOfWarPCPort:...")`.
-- Constantes do jogo prefixadas `kGow*`, vivendo no namespace anônimo de `game_overrides.cpp`. **Nunca** vazar pra `ps2_stubs_misc.inl`/`ps2_runtime.cpp` — esses são "kernel universal".
-- Quando um fix em stub Sony serve pra qualquer jogo PS2, comentar `// Universal PS2 SIF behavior — applies to any PS2 game using sceSif*`.
-
-**Operacional:**
-- **NÃO refactor agressivo de tools antigas** só pra modularizar — foco é GoW. Aplica só em coisa nova ou já em mudança.
-- **Ferramentas que já seguem o espírito** (referência): `ps2_syscalls.py`, `mips_inspect.py`, `gap_discover.py`.
-- **Ferramentas a parametrizar quando alguém mexer**: `find_writer_32E854*.py` (alvo hard-coded), `regen_truncated.sh` (paths `GOD_PC_PORT_FINAL/` hard-coded).
-
-**Por que este registro:** sem isso, próximos agentes criariam mais 10 scripts `.py` com `0x32E854` no meio do código e a Unificação futura seria refactor de 2 semanas em vez de 2 dias.
+- Toda ferramenta nova = embrião do Sistema Universal de Portabilidade PS2→PC.
+- Overrides GoW vivem em `game_overrides.cpp` com `PS2_REGISTER_GAME_OVERRIDE("GodOfWarPCPort:...")`.
+- Lógica específica do GoW **nunca vaza** pro runtime universal (`ps2_runtime.cpp`, `ps2_stubs_misc.inl`).
+- Sem refactor agressivo de tools antigas — só em coisas novas ou já em mudança.
 
 ---
 
-## 🦆 LIÇÕES METODOLÓGICAS — TÉCNICAS DE TRABALHO 🦆
+## 🦆 LIÇÕES METODOLÓGICAS 🦆
 
-> Lições aprendidas em campo, registradas pra evitar que o próximo agente
-> precise re-descobrir do zero. Versão expandida (com exemplos de aplicação)
-> vive em `replit.md` na seção `🦆 LIÇÕES METODOLÓGICAS`. Adicione novas
-> lições conforme aparecerem.
+Versão expandida com exemplos vive em `replit.md §🦆 LIÇÕES METODOLÓGICAS`.
 
-### Lição 1 — "Rubber duck debugging por proxy" (2026-04-30)
-
-**Princípio:** sempre que estiver em **modo espera passiva** (aguardando round, aguardando user, aguardando build), **NÃO fique parado** — faça **triagem ativa** do que poderia ser feito agora, mesmo se a resposta for "nada útil". O ato de **explicar/inventariar por que NÃO vai fazer X** força você a abrir a ficha de X, e nesse processo frequentemente revela bug oculto, evidência colateral, ou viés do agente anterior.
-
-**Caso de origem:** triagem de "vale criar tool nova?" → abriu `auto_round.sh` pra ranquear → descobriu bug do `cp` antes do checkout → no `grep` de validação contou semáforos → achou `SignalSema=0` (smoking gun do PASSO 3). 2 fixes + 1 descoberta diagnóstica em ~10 min, **todos derivados de pergunta cuja resposta inicial era "nada a fazer"**.
-
-**Como aplicar:** se vai responder "vou esperar X" → primeiro liste 5-8 alternativas e por que cada uma não vale agora; se vai dizer "está OK" → primeiro `grep`/checksum pra confirmar; se vai aplicar fix óbvio → leia o arquivo de qualquer jeito.
-
-**Anti-padrão:** "esperar passivo sem ter triado". OK só se PROVOU que não há nada útil. Quase nunca não há.
+**Lição 1 — "Rubber duck debugging por proxy":** quando em modo espera passiva, faça triagem ativa do que poderia ser feito. O ato de inventariar por que NÃO vai fazer X frequentemente revela bug oculto. Caso: triagem de "vale criar tool nova?" revelou bug do `log_latest` stale + smoking gun SignalSema=0 em ~10 min.
 
 ---
 
-## 📖 ANALOGIAS — atualize a cada sessão (estilo de chat = espionagem/ação)
+## 📖 ANALOGIAS — estado atual (2026-04-30 tarde)
 
-O usuário pediu duas analogias paralelas pra acompanhar o progresso sem
-precisar entender MIPS/syscalls/boot stub. **Tabela completa fica em
-`replit.md` na seção "📖 ANALOGIAS DO PROJETO" — fonte da verdade.**
-Aqui só o resumo do ponto atual; mantenha sincronizado.
+**Carro:** motor deu 1ª partida (Fix 4+5); guarda neutralizado (Fixes 1+6); bomba aftermarket (PARTE 7 Bug F ✅); sensor de injeção rebobinado (PARTE 8 Bug G ✅); 4 botões pneumáticos (PARTE 9 Bug H ✅); sensor diagnóstico + stub permissivo no acoplamento SIF (PARTE 10 Bugs I/J blindados). **PARTE 10 PASSO 2.8: cronômetro instalado entre "caminhão saiu do portão SIF" e "motor dorme em semáforo". Smoking gun: motor dorme, ninguém acorda. Aguardando próximo dossiê.**
 
-**Carro (até PARTE 10):** chassi/combustível/injeção/chave de ignição prontos;
-motor deu 1ª partida (Fix 4+5); engasgou (lista circular #2); braçadeira +
-limitador (parte 3); sensor de vazamento (parte 4); PARTE 5: bomba de óleo
-bombeando AR ZERO; PARTE 6: sensor #3 + válvula; **PARTE 7: bomba
-aftermarket — Bug F resolvido**; **PARTE 8: sensor de injeção rebobinado —
-Bug G resolvido (VBlank tick #1..#300, log_part9 baseline)**; **PARTE 9:
-mecânico ligou os 4 botões pneumáticos da chave inglesa à fonte central —
-Bug H resolvido (stub disparou 1x, Unknown syscallId=0x7a sumiu de 40k+
-hits/12s pra 0, VBlank #960 = +220% vs PARTE 8, log_part9b 2026-04-27)**.
-🆕 **PARTE 10 PLANO A APLICADA: o caminhão de carga entre cofre EE e
-cofre IOP (SIF DMA) tentou sair 8x e a embreagem não pegou — câmera só
-mostrava "tentativa falhou". Mecânico instalou um sensor diagnóstico no
-acoplamento que vai gravar EXATAMENTE qual válvula travou + endereço de
-origem/destino/tamanho/tipo. Não muda comportamento — só ouvinte. Próxima
-rodada de teste vai expor causa raiz pro fix definitivo (PARTE 10 PLANO
-B). Custo no PC: rebuild_runtime ~30s.** Depois: test drive (VIF1/DMA com
-payloads válidos, GS, áudio, controle).
-
-**Espionagem (até PARTE 10):** recrutamento, recon, entrada (Fix 5), cofre
-ABERTO (Fix 4+5), 1º guarda (`0x2cbbb0`), tranquilizante + colete (parte 3);
-câmera escondida (parte 4); PARTE 5: sabotador `13FAB8` flagrado; PARTE 6:
-câmera #3 + Kevlar; **PARTE 7: agente duplo no almoxarifado — Bug F
-resolvido**; **PARTE 8: agente de tráfego no cruzamento — Bug G resolvido
-(720 piscadas)**; **PARTE 9: operador no switchboard das 4 portas
-biométricas — Bug H resolvido (agente atravessou a sala na 1ª biometria,
-criou 7 crachás auxiliares, chegou no portão de carga do SIF a 16s)**.
-🆕 **PARTE 10 PLANO A APLICADA: o portão de carga do SIF (Sub-system
-Interface entre cofres EE e IOP) tem o sensor de despacho rejeitando
-silenciosamente — agente tentou despachar 8 caminhões e nenhum saiu, mas
-a câmera só mostrava "tentativa falhou", não dizia QUAL válvula nem PRA
-ONDE o caminhão queria ir. Mecânico do portão instalou um sensor
-diagnóstico passivo (`sceSifSetDma` instrumentado) que vai gravar
-EXATAMENTE qual ifguard rejeitou (`entryAddr_fora_da_RAM` /
-`size_maior_que_RAM` / `canCopyGuestByteRange_rejeitou_dest_ou_src` /
-`copyGuestByteRange_falhou_durante_copia`) + endereços src/dest/size/attr
-completos + RA/PC do caller. Limita a 8 combinações únicas pra não
-inundar. Aguardando próximo dossiê.** Depois: fuga com o alvo
-(subsistemas gráficos reais, VIF1/DMA com payload, áudio, gamepad).
-
-> Estilo de narração padrão = **espionagem/ação**. Three camadas: 🕵️
-> espionagem → 🚗 carro → 🔧 técnico. Veja PROTOCOLO DE COMUNICAÇÃO acima.
+**Espionagem:** cofre aberto (Fix 4+5); guardas 1/2 neutralizados; agente duplo no almoxarifado (PARTE 7 ✅); agente de tráfego no cruzamento (PARTE 8 ✅); operador no switchboard (PARTE 9 ✅); sensor diagnóstico + stub no portão SIF (PARTE 10 ✅). **PARTE 10 PASSO 2.8: câmera com cronômetro instalada no posto do guarda semáforo. Smoking gun: SignalSema=0 no run inteiro. Agente dorme, ninguém acorda. Aguardando próximo dossiê.**
 
 ---
 
 ## 🤖 FLUXO DE TRABALHO AUTOMATIZADO — VIGENTE DESDE 2026-04-28
 
-**MUDANÇA ESTRUTURAL:** A partir de 2026-04-28, o Agente Cris **não cola mais logs no chat**. O loop manual (git pull + rebuild + run + Ctrl+C + grep + cola .txt) foi substituído pelo script `auto_round.sh` no PC dele que faz tudo sozinho e commita logs em branch separada `logs/auto`. O analista lê os logs **direto do GitHub** via raw URL — sem precisar pedir, sem precisar aguardar copy/paste.
-
-### Como o analista (você, próximo agente) consome resultados:
-
 ```bash
-# Log filtrado mais recente (101 linhas típicas, só o que importa):
+# Log filtrado mais recente (101 linhas típicas):
 curl -s "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/logs/auto/runs_automaticos/log_latest_filtered.txt"
 
-# Log completo (~465 linhas, se precisar de contexto mais amplo):
+# Log completo (~465 linhas):
 curl -s "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/logs/auto/runs_automaticos/log_latest_full.txt"
-
-# Histórico de rounds anteriores (timestamp + hash do main):
-# https://github.com/cristianomarianoufsc-ops/godofwar/tree/logs/auto/runs_automaticos
 ```
 
-### Como funciona end-to-end:
+**O analista FAZ:** ler log via curl, commitar mudanças, pedir push ao Cris.
+**O analista NÃO FAZ:** pedir log no chat, tentar `git fetch` local no Replit, sugerir parar o loop.
 
-```
-1. Você (analista) commita mudança em main (qualquer arquivo)
-2. Agente Cris tem `bash auto_round.sh loop` rodando num terminal aberto
-3. Em ≤30s, script no PC dele detecta novo commit em main
-4. Script: git pull → bash rebuild_runtime.sh → timeout 90s bash jogar.sh → grep filtra log
-5. Script faz git push de logs em branch logs/auto (NUNCA em main, evita loop)
-6. Quando Agente Cris vier ao chat e te chamar (qualquer mensagem), você puxa o log via curl
-```
-
-### O que o Agente Cris faz:
-- **Liga o loop UMA VEZ por sessão** (`bash auto_round.sh loop`)
-- **Vem ao chat** quando quiser ("olha o resultado", "manda próximo", etc)
-- **Aperta Ctrl+C no terminal** SÓ quando quiser parar o loop (fim do dia / desligar PC)
-
-### O que o analista faz:
-- **Lê log do GitHub via curl** (ver URLs acima) no início de cada round
-- **NÃO pede log no chat** — já está disponível
-- **Commita mudanças** sabendo que próximo round dispara automaticamente em 30s
-
-### Comandos do `auto_round.sh` (todos em `~/Documentos/GitHub/godofwar`):
-
-| Comando | Comportamento | Ctrl+C? |
-|---|---|---|
-| `bash auto_round.sh once` | Roda 1 round e SAI sozinho | ❌ NÃO precisa |
-| `bash auto_round.sh loop` | Vivo pra sempre, checa novo commit a cada 30s | ✅ Pra parar |
-| `bash auto_round.sh status` | Mostra estado e sai | ❌ NÃO precisa |
-| `nohup bash auto_round.sh loop > auto_round.log 2>&1 &` | Roda em background | `pkill -f auto_round.sh` pra matar |
-
-Dentro de cada round, o `timeout --signal=INT 90s` mata o jogo automaticamente. **Agente Cris não precisa apertar Ctrl+C no jogo.**
-
-### Configuração já feita (não mexer):
-- Token GitHub fine-grained criado com `Contents: Read and write` no repo godofwar
-- `git config --global credential.helper store` salvou token em `~/.git-credentials`
-- Branch `logs/auto` criada no remoto pelo primeiro `bash auto_round.sh once` (2026-04-28 00:00)
-
-### Onde o script vive:
-- Arquivo: `auto_round.sh` (raiz do repo, executável)
-- Logs gerados (locais no PC dele, gitignored em main): `runs_automaticos/`
-- Estado de hash processado: `.auto_round_last_hash` (gitignored)
-
-### Troubleshooting do loop (problemas conhecidos):
-
-**Sintoma:** loop fica repetindo `ERRO: git pull falhou` a cada 30s, com mensagem do git sobre `divergent branches` / `Need to specify how to reconcile`.
-
-**Causa:** repositório local do Agente Cris tem commit local que não está em `origin/main` (checkpoint pendurado, replit.md editado direto no PC, merge antigo). `git pull` recusa decidir entre merge/rebase.
-
-**Fix permanente já aplicado em `auto_round.sh` (commit 2026-04-29):** script agora roda `git pull --no-rebase origin main` (estratégia merge explícita, NÃO trava mais por isso).
-
-**Fix imediato pro Agente Cris no PC dele (não mexe no remoto):**
-- Opção A (preserva commits locais): `git config pull.rebase false` — define merge como padrão; próximo pull cria merge commit
-- Opção B (descarta commits locais — só se tiver certeza que nada importante): `git fetch origin main && git reset --hard origin/main`
-
-Antes de escolher: rodar `git log --oneline origin/main..HEAD` lista os commits locais sobrando.
-
-### Limitações honestas:
-- Analista é leitor SOB DEMANDA, não vigia 24/7. Só lê GitHub quando o Agente Cris vier ao chat.
-- Se o jogo gerar erro VISUAL (não capturado em log stderr), Agente Cris precisa descrever no chat.
-- Se o script travar (push falha, internet cai), o Agente Cris vê no terminal e avisa.
+Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO AUTOMATIZADO`.
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-30 tarde — SMOKING GUN DEFINITIVO + log_latest BUG fixado)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-30 tarde)
 
-### 🆕 SESSÃO 2026-04-30 (tarde, analista pós-2.8) — descoberta empírica antes do round novo
-
-**Não precisamos do PASSO 2.8 pra confirmar a hipótese da soneca em semáforo.** Análise do `log_20260430_122407_b7ceb6d_full.txt` (último round disponível) com `grep` simples:
+### Smoking Gun Definitivo (confirmado empiricamente, round `b7ceb6d` 2026-04-30 12:24)
 
 | Syscall | Hits no log full (89s = 5340 VBlanks) |
 |---|---|
@@ -255,1144 +102,79 @@ Antes de escolher: rodar `git log --oneline origin/main..HEAD` lista os commits 
 | **`SignalSema`** | **0** |
 | `iSignalSema` | 0 |
 
-**Implicação direta:** o jogo cria 4 semáforos no boot, dorme em pelo menos 1 (`sid=4`), e **NUNCA NINGUÉM sinaliza qualquer semáforo durante o run inteiro**. Não é "RPC_BIND não chega na hora" nem "callback EE precisa ser invocada" — é **completa ausência de produtor de sinal**. No PS2 real, o IOP rodaria handler de SIF1 e chamaria `iSignalSema` na thread de quem fez o BIND. Como não temos IOP, ninguém faz isso por padrão.
+**Diagnóstico:** o jogo cria 4 semáforos no boot, dorme em `WaitSema sid=4` logo após RPC_BIND, e **NUNCA NINGUÉM sinaliza qualquer semáforo durante o run inteiro**. No PS2 real o IOP processaria o RPC_BIND e faria `iSignalSema(4)` num handler de interrupção. Como não temos IOP, **deadlock eterno**.
 
-**Consequência pro PASSO 3:** o agente anterior já tinha previsto (linhas 230-232 da seção 2.8): "Forjar `iSignalSema(sid_bloqueado)`". A evidência empírica acabou de **confirmar antecipadamente** que opção 1 (correlação temporal) é segura — **não há risco de "duplicar sinal" ou "sinalizar antes de hora"** quando a contagem total de SignalSema no run é literalmente zero. Podemos ir direto pro PASSO 3 versão simples (forjar `iSignalSema(sid)` logo após `gow_record_sif_bind_ts`) sem esperar o `delta_ms` chegar.
+Confirmado também que:
+- Callback EE `@0x3277c0` = 64 bytes ZERADOS (nunca populada) — invocar direto daria SIGSEGV.
+- `client_buf @0x30aaa8` estável por 5000 VBlanks — jogo não polla esse buffer.
+- Log SMOKING GUN: `[CreateSema] id=4 init=0 max=1` → `[WaitSema:block] tid=1 sid=4 pc=0x293c64 ra=0x297374`
 
-**Mas vou esperar o round novo mesmo assim** — porque (a) o `delta_ms_since_RPC_BIND` confirma se o `sid` que precisa sinalizar é o que dormiu **logo após** o BIND ou se há thread paralela esperando outro sid criado depois; (b) só assim sei se forjar `iSignalSema(sid_visto_no_BIND)` ou `iSignalSema(qualquer_sid_pendente)`.
+### Bug do `log_latest_*.txt` STALE — corrigido nesta sessão (2026-04-30 tarde)
 
-### 🆕 BUG DO `log_latest_*.txt` STALE — CAUSA RAIZ + FIX aplicado nesta sessão
+**Causa raiz:** `cp log_latest_*.txt` rodava ANTES do `git checkout -B logs/auto origin/logs/auto` → checkout sobrescrevia com versão velha.
+**Fix:** moveu o `cp -f` para linha 169-170 de `auto_round.sh`, DEPOIS do checkout.
+**Bonus:** `GREP_PATTERN` em `auto_round.sh:66` adicionou `CreateSema|WaitSema|SignalSema`.
 
-**Confirmado empiricamente** comparando hashes via curl:
-```
-log_latest_full.txt        sha256 = 29c96a48...
-log_20260430_122407_b7ceb6d_full.txt  sha256 = 26f8b557...
-→ DIFERENTES
-```
+### PASSO 2.8 — Instrumentação WaitSema aplicada nesta sessão
 
-**Causa raiz** (confirmada via leitura de `auto_round.sh:128-178`):
-1. linha 156-157: `cp $FULL_LOG → log_latest_*.txt` (no disco, branch main)
-2. linha 163: `git checkout -B logs/auto origin/logs/auto` — **sobrescreve** `log_latest_*.txt` com versão tracked da branch (que é VELHA, do round anterior).
-3. linha 168: `git add` pega só os arquivos timestamped novos.
-4. `log_latest_*.txt` no commit final = idêntico à versão da branch antes do checkout = stale.
-
-**Fix aplicado:** moveu o `cp -f` pra linha 172, **depois** do checkout. Agora a sobrescrita do `log_latest_*.txt` acontece com a branch já em `logs/auto`, então o `git add` pega ele de verdade.
-
-**Bonus do mesmo commit:** adicionado `SignalSema|iSignalSema|CreateSema|WaitSema` ao `GREP_PATTERN` do filtro (linha 69), pra que o `_filtered.txt` mostre TODAS as syscalls de semáforo nos próximos rounds (hoje só algumas vazavam via `stub:` regex genérica).
-
-**📋 Comando pro Agente Cris após este commit:**
-- Clica **Push** no Replit pra mandar `auto_round.sh` (atualizado) + `HANDOFF_AGENT.md` + `replit.md` pro GitHub.
-- O loop do `auto_round.sh` no PC vai detectar o commit em ≤30s e disparar round novo automaticamente. Mas atenção: como o script foi alterado, o **próximo** round usa a versão ANTIGA (script atual em execução), e só do round seguinte em diante o fix do `log_latest` aplica. Se quiser que o fix valha já no próximo round, faça `Ctrl+C` no terminal do loop e `bash auto_round.sh loop` novamente.
-- Resultado esperado: round novo com `[WaitSema:block] tid=N sid=N pc=0xN ra=0xN delta_ms_since_RPC_BIND=N` + `SignalSema=0` no filtered (confirmando a evidência), e `log_latest_*.txt` finalmente atualizado pra esse round.
-
----
-
-## 📜 HISTÓRICO — PARTE 10 PLANO B2 PASSO 2.7 DECIFRADO + PASSO 2.8 INSTRUMENTAÇÃO WaitSema (sessão 2026-04-30 manhã)
-
-### 🆕 PARTE 10 PLANO B2 PASSO 2.8 INSTRUMENTAÇÃO WaitSema — sessão 2026-04-30 (tarde)
-
-**Round `b7ceb6d` (30-04 12:24) baixado e decifrado.** Resultado dos dumps prometidos:
-
-**DUMP 1 — callback target @0x3277c0 (PASSO 2.7):**
-```
-+0x00..0x3F: 00 00 00 00 ... 00 00 00 00   (64 bytes TODOS ZEROS)
-```
-**Caso (a) confirmado:** a callback EE NUNCA foi populada. **O PLANO ANTIGO (PASSO 3 = invocar callback) está MORTO** — invocar 64 bytes zerados = SIGSEGV imediato. `lookupFunction(0x3277c0)` também retornaria `nullptr`.
-
-**DUMP 2 — client_buf natural @0x30aaa8 (PASSO 2.5):**
-```
-+0x00: c0 7a 32 20 02 00 00 00 04 00 00 00 00 00 00 00
-+0x10..0x3F: 00 00 ... 00
-```
-Idêntico nos VBlanks #100, #1000, #5000 — confirma que **o jogo NÃO polla esse buffer**.
-
-**SMOKING GUN (linhas adjacentes no log):**
-```
-[CreateSema] id=4 init=0 max=1
-[WaitSema:block] tid=1 sid=4 pc=0x293c64 ra=0x297374
-```
-**O jogo NÃO está em busy-wait. Ele DORME em semáforo `sid=4`.** No PS2 real o IOP processaria o RPC_BIND e faria `iSignalSema(4)` num handler de interrupção, acordando a thread. Como não temos IOP, deadlock eterno.
-
-### Plano REVISADO
-
-| Etapa | Antes (caduca) | Agora |
-|---|---|---|
-| Identificar bloqueio | "Busy-wait pollando `client_buf`" | **DORME em semáforo `sid=4` após RPC_BIND** |
-| Próximo passo (PASSO 3) | "Invocar callback EE em `0x3277c0`" | **Forjar `iSignalSema(sid_bloqueado)`** |
-| Risco do PASSO 3 antigo | "Convenção de args errada" | **N/A — descartado (callback é zeros)** |
-| Risco do PASSO 3 novo | — | "Identificar QUAL `sid` sinalizar sem falsificar errado" |
-
-### PASSO 2.8 — Instrumentação aplicada nesta sessão (variante segura)
-
-**Objetivo:** confirmar correlação temporal RPC_BIND → WaitSema:block antes de aplicar fix definitivo. Se >50% dos blocks acontecem em <100ms após o último RPC_BIND, opção 1 (correlação temporal) do PASSO 3 é segura. Se demora >5s ou nunca, precisa de opção 2/3 (cirúrgica).
-
-**Mudanças (5 arquivos, 1 commit):**
+**Objetivo:** confirmar correlação temporal RPC_BIND → WaitSema:block antes de aplicar fix definitivo.
 
 | Arquivo | Linhas | O que faz |
 |---|---|---|
-| `game_overrides.cpp` | +`<chrono>`, ~42-62 | Adiciona `g_gowLastSifBindMonotonicNs` (atomic uint64), setter `gow_record_sif_bind_ts()` e getter `gow_get_sif_bind_monotonic_ns()` (extern "C"). |
-| `ps2_stubs.cpp` | ~38-41 | Declara extern "C" do `gow_record_sif_bind_ts()` (igual padrão do `gow_set_sif_client_buf_watch`). |
-| `ps2_syscalls.cpp` | ~37-41 | Declara extern "C" do `gow_get_sif_bind_monotonic_ns()` antes do `namespace ps2_syscalls`. |
-| `ps2_stubs_misc.inl` | ~3617 | Logo após `gow_set_sif_client_buf_watch(responseBuf)`, chama `::gow_record_sif_bind_ts()` pra marcar timestamp do RPC_BIND. |
-| `ps2_syscalls_flags.inl` | ~295-319 | Modifica log `[WaitSema:block]` pra incluir `delta_ms_since_RPC_BIND=N` (ou `never` se nenhum BIND foi visto antes). |
+| `game_overrides.cpp` | 11, 48-59 | `g_gowLastSifBindMonotonicNs` (atomic uint64), setter `gow_record_sif_bind_ts()`, getter `gow_get_sif_bind_monotonic_ns()`. `<chrono>` incluído. |
+| `ps2_stubs.cpp` | 38 | `extern "C" void gow_record_sif_bind_ts();` em escopo global |
+| `ps2_syscalls.cpp` | 38 | `extern "C" std::uint64_t gow_get_sif_bind_monotonic_ns();` em escopo global |
+| `ps2_stubs_misc.inl` | 3614 | `::gow_record_sif_bind_ts();` logo após `gow_set_sif_client_buf_watch(responseBuf)` |
+| `ps2_syscalls_flags.inl` (em `lib/syscalls/`) | 309-316 | Log `[WaitSema:block] tid=N sid=N pc=0xN ra=0xN delta_ms_since_RPC_BIND=N\|never` |
 
-### Esperado no próximo round automático
+**Auditoria confirmada:** todos os 5 arquivos estão corretos, nenhum include faltando, nenhum extern "C" em escopo errado.
 
-Procurar no log:
-```
-[WaitSema:block] tid=N sid=N pc=0xN ra=0xN delta_ms_since_RPC_BIND=N
-```
-
-Análise:
-- **Se delta < 100 na maioria** → confirmou correlação → PASSO 3 versão simples = forjar `iSignalSema(sid_visto)` logo depois de `gow_record_sif_bind_ts`.
-- **Se delta varia muito (1ms~10s)** → precisa de cirurgia: ler `sceSifClientData->sema` no `self=0x20327ac0` (offset depende de SDK version, exigirá outro round de instrumentação).
-- **Se delta = `never` no `sid=4` específico** → o BIND não foi interceptado antes desse WaitSema → revisar ordem dos eventos no log.
-
-### Bug colateral pendente (não tocado nesta sessão)
-
-`Bug J` — função `0x296a54` not found, dispatch cai em zeros. Já blindado pelo PLANO C (`sceSifSetDma` retorna 0 se `dmat<0x100000`). Não afeta deadlock atual.
-
----
-
-### 📜 HISTÓRICO — PARTE 10 PLANO B2 PASSO 2 REVERTIDO + PASSO 2.7 INSTRUMENTADO — sessão 2026-04-30 (manhã)
-
-**Achado decisivo do round `f8cb6a5` (29-04 22:20):** os dumps do PASSO 2.5 fecharam o caso da hipótese (A) e revelaram bug colateral.
-
-**Dumps capturados (`log_20260429_222018_f8cb6a5_full.txt` linhas relevantes):**
-```
-[PASSO 2.5] dump ANTES @0x30aaa8:
-  +0x00: c0 7a 32 20 02 00 00 00 04 00 00 00 00 00 00 00   ← ja tinha conteudo legitimo
-  +0x10: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-  ...
-
-[PASSO 2.5] dump APOS @0x30aaa8:
-  +0x00: 05 00 00 10 05 00 00 10 04 00 00 00 00 00 00 00   ← apaguei `self` e `payload_words`!
-  +0x10: 00 00 00 00 00 00 00 00 05 00 00 10 00 00 00 00
-  +0x20: 05 00 00 10 00 00 00 00 05 00 00 10 00 00 00 00
-  ...
-
-[PASSO 2.5] dump @VBlank #100  buf=0x30aaa8: ...idêntico ao APÓS...
-[PASSO 2.5] dump @VBlank #1000 buf=0x30aaa8: ...idêntico ao APÓS...
-[PASSO 2.5] dump @VBlank #5000 buf=0x30aaa8: ...idêntico ao APÓS...
-```
-
-**Decodificação dos bytes ANTES (que a forja apagou):**
-
-| Offset | Bytes | Significado |
-|---|---|---|
-| `+0x00` | `c0 7a 32 20` (LE) | `0x20327ac0` = ponteiro `self` (= `xfer.src` do RPC_BIND) |
-| `+0x04` | `02 00 00 00` | `payload_words = 2` |
-| `+0x08` | `04 00 00 00` | `count = 4` (field desconhecido) |
-
-**Diagnóstico unificado:**
-1. ✅ **Hipótese (A) FALTA NOTIFICAÇÃO confirmada** — buffer estável por 5000 VBlanks (~83s) prova zero leitura do EE. Jogo dorme aguardando callback EE em `0x3277c0` (registrada no INIT).
-2. ✅ **Hipótese (B) OFFSETS ERRADOS confirmada como bônus** — `{0,4}` são destrutivos (apagam `self` e `payload_words`). Quando callback EE rodar (PASSO 3) e tentar dereferenciar `self`, vai crashar com `0x10000005`.
-3. ❌ **Hipótese (C) magic inválido descartada** — jogo nem leu, então nunca validou.
-
-**Mudanças aplicadas hoje (2 commits no mesmo arquivo `ps2_stubs_misc.inl`):**
-
-| Marker | O que faz | Linhas |
-|---|---|---|
-| **PASSO 2 REVERTIDO** | Para de escrever no `client_buf`. Mantém dump observacional (renomeado pra "dump natural") + registro do watch global pro VBlank handler continuar amostrando @#100/#1000/#5000. Loga `[PARTE 10 PLANO B2 PASSO 2 REVERTIDO]`. | 3525-3618 |
-| **PASSO 2.7 INSTRUMENTADO** | Quando decodifica INIT (no PASSO 1), dumpa 64 bytes em torno de `callback=0x3277c0`. Pré-requisito pra PASSO 3 (não dá pra invocar callback sem saber se é função, struct ou área zerada). | 3481-3522 |
-
-**Por que NÃO implementei o PASSO 3 (invocar callback) AGORA:**
-
-`mips_inspect.py 0x3277c0` retornou: **"endereco fora dos segmentos do ELF"**. Ou seja, `0x3277c0` é BSS preenchida em runtime — não é função estática do ELF. Se chamar `lookupFunction(0x3277c0)` agora, retorna `nullptr` (não tem .cpp recompilado lá). Hipóteses do que pode estar lá:
-- (a) Zeros — jogo nunca preencheu (problema é outro)
-- (b) Instruções MIPS reais — é código direto (algum jogo copia código pra BSS), invocar via `lookupFunction`
-- (c) Struct `sceSifQueueData` — primeiros 4-8 bytes apontam pra função real, invocar essa
-
-PASSO 2.7 vai revelar qual caso é, e aí o PASSO 3 pode ser implementado com convention correta sem chutar.
-
-**Esperado no próximo round automático:**
-
-| Marker | Antes (round f8cb6a5) | Esperado agora |
-|---|---|---|
-| `[PARTE 10 PLANO B2 PASSO 1]` | 2 | 2 (idêntico) |
-| `[PARTE 10 PLANO B2 PASSO 2.7] dump callback target @0x3277c0:` + 64B hex | 0 | **1** 🆕 |
-| `[PARTE 10 PLANO B2 PASSO 2.5] dump natural @0x30aaa8:` + 64B hex | 0 | **1** 🆕 |
-| `[PARTE 10 PLANO B2 PASSO 2 REVERTIDO] ... NAO escrevendo` | 0 | **1** 🆕 |
-| `[PARTE 10 PLANO B2 PASSO 2] resposta forjada` | 1 | **0** (revertido) |
-| `[PASSO 2.5 dump @VBlank #100/#1000/#5000]` | 3 | 3 (mantido) |
-| VBlank max | 5340 | ~5300+ (idêntico, esperado — é puro diagnóstico) |
-| `[CreateThread]` | 1 | 1 (idêntico) |
-
-**Bug paralelo confirmado pelo agente anterior e por mim:** `auto_round.sh` não atualiza `log_latest_*.txt` (apontam pra round de 27-04). Workaround: ler pelo nome timestamped (`log_20260429_222018_f8cb6a5_*.txt`). Fix: adicionar `cp -f log_${timestamp}_${hash}_*.txt log_latest_*.txt` no fim do script — futuro.
-
-**📋 Comando pro Agente Cris:** clicar **Push** no Replit. Loop do `auto_round.sh` dispara em ≤30s, próximo log em `logs/auto/runs_automaticos/log_<timestamp>_<hash>_full.txt`.
-
----
-
-### 🆕 PARTE 10 PLANO B2 PASSO 2 — CONFIRMADO no round `9caf879` (2026-04-29 17:27)
-
-Pos-fix do `touch ps2_stubs.cpp` no rebuild_runtime.sh, marcadores PASSO 1 e
-PASSO 2 voltaram a aparecer no log:
-
-| Marker | Esperado | Observado |
-|---|---|---|
-| `[PARTE 10 PLANO B2 PASSO 1]` | 2 | **2** ✅ |
-| `[PARTE 10 PLANO B2 PASSO 2] forjada` | 1+ | **1 com ok=1** ✅ |
-| `[CreateThread]` | 2+ se destravar | **1** ❌ |
-| `[vif1:cmd]` | 1+ se chegar render | **0** ❌ |
-| VBlank max | seria diferente | **5340** (idêntico ao round anterior) |
-
-**Veredito:** PASSO 2 escreve com sucesso (`server_handle=0x10000005` em
-offsets {0,4,24,32,40} de `client=0x30aaa8`), mas o jogo continua no MESMO
-spinlock — VBlank, CreateThread, vif1 absolutamente idênticos ao round anterior.
-
-### 🆕 PARTE 10 PLANO B2 PASSO 2.5 — INSTRUMENTAÇÃO DIAGNÓSTICA aplicada 2026-04-29
-
-**Hipóteses ainda em aberto** (mais provável → menos provável):
-
-- **(A) Falta a notificação:** no PS2 real, IOP escreve no client_buf E
-  dispara interrupção SIF1 que aciona o callback EE registrado em `0x3277c0`.
-  Sem o passo 2 (interrupção), o jogo nunca "acorda" do polling.
-- **(B) Offsets errados:** os 5 offsets {0,4,24,32,40} não cobrem o campo
-  exato que o jogo verifica (varia por SDK version).
-- **(C) server_handle inválido:** `0x10000005` pode não passar em alguma
-  validação de magic number do jogo.
-
-**Instrumentação adicionada em 3 pontos:**
-
-1. `ps2_stubs_misc.inl` linha 3536: dump de 64 bytes do `client_buf` ANTES da
-   escrita do PASSO 2 (estado inicial).
-2. `ps2_stubs_misc.inl` linha 3580: dump de 64 bytes APÓS escrita (confirma
-   bytes exatos que a forja gravou).
-3. `game_overrides.cpp:28` define `extern std::atomic<uint32_t>
-   g_gowSifClientBufWatch{0u}` em escopo global, populada pela primeira escrita
-   do PASSO 2. Handler do VBlank (`gow_intc_handler_0x182f28`) faz dump dos
-   mesmos 64 bytes nos ticks #100, #1000 e #5000 pra detectar mudanças no buffer.
-
-**Como interpretar o próximo log:**
-- Se entre `dump @VBlank #100` e `dump @VBlank #5000` o conteúdo NÃO mudar
-  → jogo NÃO está pollando esse buffer → **hipótese (A) confirmada**
-  → próximo passo (PASSO 3) é forjar `iSignalSema` ou disparar interrupção
-  SIF1 + chamar callback EE em 0x3277c0.
-- Se mudar → jogo está pollando ativamente → **hipótese (B) confirmada**
-  → calibrar offsets a partir do que o jogo escreveu.
-- Se aparecer cookie/magic não-zero no dump ANTES → **hipótese (C)**
-  → ajustar server_handle pra padrão Sony válido.
-
-### 🆕 PARTE 10 PLANO B2 — REBUILD CACHE STALE — DIAGNOSTICADO 2026-04-29
-
-**Sintoma:** após commit `d5ae00a` (PASSO 2 aplicado), o round automático
-seguinte (`fa95820` às 16:55) NÃO disparou nem `[PARTE 10 PLANO B2 PASSO 1]`
-nem `[PARTE 10 PLANO B2 PASSO 2]`. Diff byte-a-byte com round anterior
-(`7d6ba33`) revelou que as DUAS linhas do PASSO 1 que disparavam antes
-sumiram, e o resto do log é idêntico.
-
-**Investigação (Cris rodou os 4 comandos do checklist):**
-- `git log` → commit `d5ae00a` está na branch local ✅
-- `grep -c "PARTE 10 PLANO B2 PASSO" .inl` → **5** (Replit também: 5) ✅
-  código fonte está íntegro
-- `ls build/godofwar_pc` → vazio (mas é typo do comando: nome real é
-  `build/GodOfWarPCPort` em camelCase) — falso negativo
-- `ls PS2Recomp/build/CMakeFiles/...ps2_stubs.cpp.o` → vazio (path errado
-  no comando — o build real está em `./build/`, não `PS2Recomp/build/`)
-
-**Causa raiz identificada (sem precisar de outro round):** o `.inl` é
-incluído via `#include "stubs/ps2_stubs_misc.inl"` em `ps2_stubs.cpp:219`.
-O `rebuild_runtime.sh` rodava `cmake --build . --target ps2runtime` mas o
-CMake/Ninja **nem sempre rastreia .inl como dependência via -MD do gcc**,
-então `ps2_stubs.cpp.o` ficava no cache com a versão antiga do código.
-Resultado: cada round automático rodava o binário velho, sem PASSO 1/2.
-
-**Fix aplicado em `rebuild_runtime.sh` (commit 2026-04-29):** adicionado
-`touch PS2Recomp/ps2xRuntime/src/lib/ps2_stubs.cpp` antes do build, força
-recompilação garantida do .cpp.o que inclui o .inl. Custo: ~20s extras
-por round (1 arquivo). Benefício: todas as mudanças em .inl agora pegam.
-
-**Esperado no próximo round automático:**
-| Marker | Antes | Esperado agora |
-|---|---|---|
-| `[PARTE 10 PLANO B2 PASSO 1]` | 0 | **2** (INIT + RPC_BIND) |
-| `[PARTE 10 PLANO B2 PASSO 2]` | 0 | **1+** (1 RPC_BIND × 5 offsets) |
-| `[CreateThread]` | 1 | **2+** se PASSO 2 destravar de fato |
-
-Se PASSO 2 disparar mas CreateThread continuar 1 → escrita sintética no
-`client_buf` está nos offsets errados, próximo passo é dump dos 64 bytes
-do buffer pra calibrar. Se PASSO 2 disparar E destravar (CreateThread≥2,
-vif1:cmd≥1) → vamos pra próximo bloqueio (provável CDVD/save/render).
-
----
-
-
-
-### 🆕 PARTE 10 PLANO B2 PASSO 1 — CONFIRMADO em produção (round `99b5727`, log `log_20260429_011641_7d6ba33`)
-
-Decoder do header SIF RPC disparou **2 vezes** (1 INIT + 1 RPC_BIND), revelando o protocolo exato que o GoW usa:
+### Esperado no próximo round
 
 ```
-PACOTE 1 — INIT (xfer.src=0x327880 size=0x14):
-  opcode=0x0000  sifBit=1  hdrFlags=0x0  hdrSize=0x14
-  INIT{ callback=0x3277c0 }    ← callback EE registrado, será disparado quando IOP confirmar
-
-PACOTE 2 — RPC_BIND (xfer.src=0x20327ac0 size=0x40):
-  opcode=0x0009  sifBit=1  hdrFlags=0x0  hdrSize=0x40
-  RPC{ rpc_id=0x5  self=0x20327ac0  payload_words=2
-       client_buf=0x30aaa8       ← onde o jogo polla esperando bind ok
-       sid=0x80000592 }          ← service ID requisitado (provável MC2_S1/MC2_D)
+[WaitSema:block] tid=1 sid=4 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=N
 ```
 
-**Confirmações importantes da análise estática do ELF:**
-- `0x30aaa8` = **BSS (zerado no boot)** — confirma hipótese de spinlock pollando `*0x30aaa8 != 0`
-- `0x3277c0` = **BSS (preenchido em runtime)** — callback registrado dinamicamente pelo jogo
+### PASSO 3 — plano (aguardando dado do round)
 
-**Diagnóstico unificado:** jogo manda os 2 pacotes, fica pollando `0x30aaa8`. Como IOP não responde (não temos IOP), spinlock infinito → 5340 VBlanks parados → tela bugada. Hipótese do PIVOT 2026-04-29 100% confirmada.
-
-### 🆕 PARTE 10 PLANO B2 PASSO 2 — APLICADO 2026-04-29
-
-Implementado em `ps2_stubs_misc.inl:3482-3568` (logo após o PASSO 1, dentro do bloco `if (xfer.dest == 0xFFFFFFFFu)`):
-
-**O que faz:** quando vê RPC_BIND (opcode=0x09), escreve resposta sintética IOP no `client_buf` da guest RAM, simulando "bind concedido".
-
-**Estratégia defensiva:** layout do `sceSifClientData` varia entre Sony SDK versions (campo `server` aparece em offsets 0/4/24/32/40 nas variantes conhecidas). Em vez de adivinhar, escreve `server_handle = 0x10000000 | (rpc_id & 0xFFFF)` em **todos os 5 offsets**. Custo: 44 bytes "lixo controlado" por bind. Benefício: maximiza chance do polling EE achar non-zero.
-
-**INIT (opcode=0) NÃO é forjado** — é fire-and-forget no Sony SDK, jogo não polla por ele. Se virar bloqueio em PASSO 3, escrevemos callback EE direto.
-
-**Esperado no próximo log automático (após PASSO 2):**
-
-| Marker | Antes (round 7d6ba33) | Esperado pós-PASSO 2 |
-|---|---|---|
-| `[PARTE 10 PLANO B1]` | 2 | 1-4 (mesma magnitude) |
-| `[PARTE 10 PLANO B2 PASSO 1]` | 2 | 2 (idênticas) |
-| `[PARTE 10 PLANO B2 PASSO 2]` | 0 | **1+** 🆕 |
-| `[PARTE 10 PLANO C]` | 1 | 0-1 |
-| `[CreateThread]` | 1 | **2+** se destravar |
-| `[vif1:cmd] DIRECT (0x50/0x51)` | 0 | **1+** se chegar em render |
-| `vu1:xgkick` | 0 | **1+** se chegar em render |
-| VBlank tick | até #5340 | qualquer (importante é o RESTO mudar) |
-
-**Cenários de saída (do mais pro menos esperado):**
-1. ✅ **Destravou em polling EE direto** — jogo avança pra próxima fase, log mostra novas chamadas (provável: load CDVD, alocar buffers, criar threads de render). Comportamento de tela muda visualmente.
-2. 🟡 **Destravou parcial** — passou do BIND mas trava em outra coisa (RPC_CALL, semáforo IOP, etc.). PASSO 3 lida com isso.
-3. ❌ **Não destravou** (log idêntico) — jogo usa semáforo SIF, não polling. PASSO 3 = forjar `iSignalSema` na resposta.
-
----
-
-### 🟡 Histórico — PARTE 10 PLANO B2 PASSO 1 (resolvido pelo round 7d6ba33)
-
-### Status: ✅ Fluxo automatizado funcionando, último log em `logs/auto/runs_automaticos/log_latest_filtered.txt` mostra 5340 VBlanks (89s liso). ✅ PARTE 10 PLANO A/B3/B1/C confirmados. 🆕 **BUG J DESMISTIFICADO 2026-04-29 via desmontagem estática do ELF (sem build, ~10min de mips_inspect.py + varredura de bytes)**: descobertas que mudam a hipótese:
-
-**Achados duros da análise estática (todos verificados no ELF SCUS_973.99):**
-
-1. `0x293fe4` é a instrução `syscall` dentro do trampoline `0x293fe0` que executa `addiu $v1, $zero, 0x77; syscall; jr $ra; nop`. Confirmado pela tabela de trampolines em `0x293fc0-0x29403c` que cobre os 8 syscalls SIF da Sony (`0x76`/`0x77`/`0x78`/`0x79`/`0x7a` e suas variantes negativas — `0x7a` é o do Bug H que matamos na PARTE 9).
-2. **Único caminho de invocação:** zero outras instâncias de `addiu $v1, $zero, 0x77` no ELF inteiro (varredura completa); zero ponteiros pra `0x293fe0` ou `0x293fe4` armazenados em data segment. **Toda chamada legítima a `sceSifSetDma` no jogo passa por esse trampoline.**
-3. **Apenas 4 callers JAL** pra `0x293fe0` no ELF inteiro:
-
-| File offset | Virtual addr | Status verificado |
-|---|---|---|
-| `0x089640` | `0x188640` | legítimo (caller A) |
-| `0x1845e8` | `0x2835e8` | legítimo (caller B) |
-| `0x1979a4` | `0x2969a4` | ✅ **LEGÍTIMO confirmado em produção** (PLANO B1, ra=0x2969ac no log) |
-| `0x19a06c` | `0x29906c` | legítimo (caller D) |
-
-4. **Padrão idêntico nos 4 callers** (verificado por desmontagem):
-```
-   sw  ?, ($sp)              ← descritor[0] = src
-   sw  ?, 4($sp)             ← descritor[4] = dest
-   sw  ?, 8($sp)             ← descritor[8] = size
-   sw  ?, 0xc($sp)           ← descritor[c] = attr
-   move $a0, $sp             ← a0 = ponteiro pro descritor (~0x1ffbXXXX)
-   nop / move
-   jal 0x293fe0              ← JAL (sempre seta $ra automaticamente)
-   addiu $a1, $zero, 1       ← delay slot: a1 = count = 1
-```
-
-5. **`ctx.pc=0x293fe4` é canônico** — verificado em `ps2_syscalls.cpp:312` + `ps2_syscalls_system.inl:275`. O dispatcher do runtime sempre seta o PC pro endereço da instrução `syscall`, independente de quem chamou. **`pc=0x293fe4` no PLANO C NÃO rastreia origem.**
-
-**Conclusão sobre Bug J — interpretação única racional:**
-
-Bug J (chamada com `a0=5, a1=0x20, ra=0`) **não bate com nenhum dos 4 callers reais** (que sempre usam `a0=$sp` ~0x1ffbXXXX, `a1=1`). E `ra=0` é fisicamente impossível em caller MIPS legítimo (JAL/JALR sempre carimbam $ra). Sobram 3 hipóteses ranqueadas por probabilidade:
-
-1. **(MAIS PROVÁVEL) Bug do PS2Recomp gerando placeholder** — recompilador encontra `jalr $reg` com target desconhecido em compile-time (vtable callsite, ponteiro de função em data) e gera código que invoca o stub de syscall "mais próximo" como fallback. `ra=0` bate porque o placeholder não popula $ra. Args lixo (`a0=5, a1=0x20`) batem com "registers em estado anterior, não preparados pra essa função".
-2. **Stack corruption + jr $ra=0** — função restaura `$ra` de slot zerado, executa `jr 0`, runtime detecta PC inválido e cai em syscall fallback. Menos provável (seria intermitente).
-3. **JALR via callback table com handler malformado** — handler IRQ/timer registrado com endereço errado. Possível mas exigiria patching ativo.
-
-**~~Hipótese antiga descartada:~~** "stub não-recompilado caindo em código bobo via `jr $reg` sem JAL" → DESCARTADA porque varredura completa do ELF mostrou 0 J/JR diretos pra esse trampoline.
-
-**Bug J permanece BLINDADO pelo PLANO C** (`if dmatAddr < 0x100000 return 0`). Não trava nada. Pode permanecer assim indefinidamente — investigar mais só se aparecer evidência forte de impacto em gameplay.
-
-**Comando do próximo round (NOVO FLUXO):**
-- Analista commita mudança em main (qualquer fix)
-- Agente Cris **já tem `bash auto_round.sh loop` rodando** — script dispara automaticamente em ≤30s
-- Próximo log fica em `logs/auto` branch, lido via curl pelo analista
-
-**Esperado no próximo log automático (após PARTE 10 PLANO B2 PASSO 1):**
-- 1+ ocorrências `[PARTE 10 PLANO B1]` (mantido, comportamento idêntico)
-- 1+ ocorrências `[PARTE 10 PLANO B2 PASSO 1]` 🆕 — decoder do header SIF RPC mostrando opcode, rpc_id, callback, response_buf, payload_words em formato legível (1 log por combinação `(opcode, rpc_id)` única)
-- 1 ocorrência `[PARTE 10 PLANO C]` (Bug J ainda capturado, esperado)
-- 0 ocorrências `[PARTE 10 PLANO A]`
-- VBlank ≥ #5000 (igual ou maior ao último)
-- **Comportamento de gameplay: idêntico ao atual** — PASSO 1 é puramente diagnóstico, NÃO escreve respostas. PASSO 2 (próximo round, depois de ler o decoder) é que vai tentar respostas.
-
----
-
-### 🚨 PIVOT ESTRATÉGICO 2026-04-29 — análise do log_latest_full.txt revelou que problema PRINCIPAL **NÃO é SIF cosmético** mas **INIT bloqueando avanço pra render**
-
-**Achados quantitativos do log full (465 linhas, branch `origin/logs/auto`):**
-
-| Marker | Count | Interpretação |
-|---|---|---|
-| `[stub:sub_0013DA10] PARTE 7` | 4 | alloc inicial (memória OK) |
-| `[CreateThread]` | **1** ⚠️ | só 1 thread criada o boot inteiro (PS2 normal teria várias) |
-| `[stub PARTE 9] syscall 0x7a` | 1 (dedupe) | poll SIF disparado, jogo USA esse caminho |
-| `[PARTE 10 PLANO B1]` | 4 (2 pacotes únicos × multi VBlanks) | SIF stage transfers raw via DMA |
-| `[PARTE 10 PLANO C]` | 1 | Bug J capturado uma vez |
-| `[vif1:cmd]` | **160** ⚠️ | 158 NOPs (0x00) + 1 STMASK (0x10) + 1 outro (0x7f) |
-| `[vif1:cmd] opcode=0x50/0x51 (DIRECT)` | **0** ⚠️ | **NENHUM pacote GIF gerado pelo VIF1** |
-| `[vif1:cmd] opcode=0x14/0x17 (MSCAL/MSCNT)` | **0** ⚠️ | **VU1 nunca executou microprograma** |
-| `[vu1:xgkick]` | **0** ⚠️ | **XGKICK nunca disparou** |
-| `[gif:submit]` / `[gs:gif]` | **0** ⚠️ | **GIF nunca recebeu pacote** |
-| `[stub:0x182f28] VBlank tick` | até #5340 | clock ticks saudáveis (IRQ-driven, não bloqueado) |
-
-**Diagnóstico revisado da causa-raiz:**
-
-1. ✅ Boot inicial roda (alloc, thread main, VBlank IRQ funcionando)
-2. ✅ SIF DMA raw mandando 2 pacotes (INIT + RPC_CALL com rpc_id=5)
-3. ✅ Game faz poll syscall 0x7a, destravado pelo PARTE 9 (return -1)
-4. ❌ **Mas o jogo NUNCA submete display list real** — só NOPs no VIF1
-5. ❌ **Nunca cria threads de render/audio/input** (só 1 CreateThread)
-6. ❌ **Nunca chega na fase de render** — tela preta
-
-**Hipótese unificada:** o jogo está bloqueado num stage de INIT esperando confirmação SIF do IOP (provavelmente "IOP modules loaded OK" ou "SIF channel established"). Sem essa confirmação, fica em loop de polling/sleep, com VBlank IRQ tickando mas main thread parado num lugar que nunca avança pra `setupRenderThread()`/`loadAssets()`/`mainGameLoop()`.
-
-**Significado pra estratégia:**
-
-- ❌ ~~PASSO 2 = "fake response opcional pra completude"~~
-- ✅ **PASSO 2 = "fake response é a CHAVE pra destravar o jogo do init e ver primeira imagem"**
-
-A urgência do PASSO 2 subiu drasticamente. Quando o log do PASSO 1 chegar revelando os opcodes/services SIF que o jogo usa, o PASSO 2 vai escrever respostas mínimas (INIT_OK, RPC_BIND com serverId fake, RPC_CALL com `recv_buf` zerado) escolhidas pra simular um IOP "amigável" que aceita tudo. O risco de "quebrar o que funciona" é baixo porque atualmente o jogo NÃO ESTÁ FUNCIONANDO em nenhum nível visual.
-
-**Sub-investigações pra fazer DEPOIS do PASSO 1 (não agora, pra não confundir o log):**
-
-1. **Por que só 1 CreateThread?** Pode ser indicador adicional de bloqueio em init — investigar se o jogo cria threads condicionalmente após receber resposta SIF.
-2. **Quem é o opcode VIF1 0x7f?** Não está em VIFCmd enum padrão — pode ser unpack disfarçado (bit 7 set = unpack family).
-3. **Existe `[boot_stub]` log?** Apareceu nos prefixos — investigar conteúdo pra entender estágios de boot.
-4. **Sony's high-level RPC API (SifInitRpc/SifBindRpc/SifCallRpc) está implementada no runtime mas GoW NÃO USA** — confirmado: zero `[SifInitRpc] Initialized` e zero log de SifBindRpc/SifCallRpc no full log. GoW vai 100% via raw DMA. Isso é OK pra nós (menos infra Sony pra debugar), mas significa que PASSO 2 precisa simular respostas no nível raw, sem reusar a infra Sony existente.
-
-**Decifração da câmera B3 (log_part10b.txt linhas 400-411) — confirma SIF RPC Sony:**
-
-1º pacote (20 bytes em 0x327880, dmat=0x1fffed0):
-```
-[0]  size       = 0x00000014 (= 20 bytes, bate com xfer.size)
-[4]  reservado  = 0x00000000
-[8]  HEADER     = 0x80000000 ← bit alto = "EE→IOP", opcode=0 (provável SIF_CMD_INIT)
-[12] reservado  = 0x00000000
-[16] callback   = 0x003277c0 (endereço EE pra resposta)
-```
-
-2º pacote (64 bytes em 0x20327ac0 = mirror KSEG1, dmat=0x1fffdf0):
-```
-[0]  size           = 0x00000040 (= 64 bytes)
-[8]  HEADER         = 0x80000009 ← opcode=9 (provável RPC_BIND ou RPC_CALL)
-[16] rpc_id         = 0x00000005 (id do serviço IOP alvo)
-[20] self-ref       = 0x20327ac0 (= xfer.src, padrão SIF)
-[24] payload_words  = 0x00000002 (= 8 bytes de dados úteis)
-[28] response_buf   = 0x0030aaa8 (endereço EE do buffer de resposta)
-[32] sub-header     = 0x80000592 (sub-pacote interno)
-[36..63] zeros (padding)
-```
-
-**⚠️ Sinal extra do log_part10b a investigar:** linha 443 `jogar.sh, linha 29: 301110 Morto` — processo MATADO sem Ctrl+C, em VBlank #840 (vs #1680 do log_part10). Hipóteses: (a) OOM killer do Linux Mint (RAM esgotada), (b) flush pesado do `std::cerr` no dump em hex causou backpressure / problema de I/O, (c) SEGV silencioso. Pra investigar: rodar `dmesg | tail -30 | grep -i 'oom\|kill'` após o próximo `Morto`. Se for OOM, podemos diminuir o ASAN_OPTIONS ou desabilitar `PS2_TRACE`.
-
-**🎯 Achado glorioso da câmera PARTE 10 PLANO A (linhas 379-432 do log_part10.txt):**
-
-```
-[PARTE 10 PLANO A] sceSifSetDma falhou —
-  dmat=0x1fffed0 count=0x1
-  idxFail=0 motivo='canCopyGuestByteRange_rejeitou_dest_ou_src'
-  xfer.src=0x327880  xfer.dest=0xffffffff  xfer.size=0x14  xfer.attr=0x44
-  ra=0x2969ac  pc=0x293fe4
-```
-
-E o padrão repetitivo subsequente (a cada ~5-10s):
-```
-xfer.src=0x20327ac0 (= 0x327ac0 + 0x20000000 = mirror KSEG1 da mesma RAM)
-xfer.dest=0xffffffff
-xfer.size=0x40  xfer.attr=0x44
-```
-
-**Causa raiz forte:** `xfer.dest = 0xffffffff` (sentinela U32 "-1") **NÃO é endereço de RAM** (não é IOP `0xBC...`, não é KSEG0 `0x80...`, não é scratchpad `0x70...`). É o padrão **"stage transfer" do SIF RPC** — o EE manda o pacote sem destino fixo, o IOP decodifica o header (tipicamente `RPC_BIND`/`RPC_CALL`/`RPC_END`) e decide onde gravar. O runtime atual não implementa esse modo — só valida endereço cru via `canCopyGuestByteRange` que (corretamente) rejeita `0xffffffff`.
-
-**Estado do jogo no momento do cancelamento:**
-- VBlank tick #1680 = 28 segundos rodando
-- 17 semáforos criados (`CreateSema id=4..17`)
-- `sceSifSetDma failed` repetindo a cada poucos segundos
-- **Sem crash, sem deadlock — só loop estável de retry no canal SIF**
-- Cancelamento foi OK: programa não ia descobrir nada novo, só ia continuar repetindo
-
-**🎯 Resumo do que foi feito nesta sessão (2026-04-27 PARTE 10):**
-
-| Item | Resultado |
+| Se delta_ms na maioria | Ação |
 |---|---|
-| **PARTE 9 confirmada em produção** (log_part9b do Agente Cris, 612 linhas) | ✅ `[stub PARTE 9] syscall 0x7a primeira chamada -- retornando -1` apareceu na linha 393, `Unknown syscallId=0x7a` SUMIU (40k+ hits/12s → 0), VBlank avançou pra #960 (16s @ 60Hz, +220% vs PARTE 8), 7 novos `CreateSema id=4..10` criados, jogo entrou em território novo. **Bug H DEFINITIVAMENTE RESOLVIDO** |
-| **Bug I (suspeito) detectado no log_part9b** | ✅ `sceSifSetDma failed dmat=0x1fffed0 count=0x1` repete 8x sem revelar QUAL validação falha. Função existe em `ps2_stubs_misc.inl:3261-3338`, valida descritor 16B (src/dest/size/attr) via 4 ifs (`!entry`, `size>RAM`, `canCopyGuestByteRange`, `copyGuestByteRange`) mas log não diz qual rejeitou nem mostra os endereços que o jogo mandou |
-| **PARTE 10 PLANO A aplicada** em `PS2Recomp/ps2xRuntime/src/lib/stubs/ps2_stubs_misc.inl:3264-3398` | ✅ Variáveis `failIndex` (1..4) + `failReason` (string identificando ifguard) + `failXfer` (struct `Ps2SifDmaTransfer` completa) preenchidas no ponto da falha. Log detalhado via `static std::mutex` + `static std::unordered_set<uint64_t>` chaveado em `(uint64_t(dest)<<32) ^ uint32_t(src)`, máx 8 combinações únicas pra evitar inundar. Log antigo "sceSifSetDma failed dmat= count=" preservado pra contagem total |
-| **Garantia de "não muda comportamento"** | ✅ Instrumentação é puramente OUVINTE: nenhum return modificado, nenhum if invertido, nenhum side-effect novo no caminho de sucesso. Quem passava continua passando, quem falhava continua falhando — a única diferença é que agora a câmera grava o motivo |
-| Includes confirmados disponíveis | ✅ `<mutex>`, `<unordered_set>`, `<iostream>` já presentes via top-level `ps2_stubs.cpp` (que `#include`s os `.inl`) |
-| Documentação | ✅ `replit.md` (Bug I na biblioteca de bugs A-J, analogias 1+2 atualizadas, Bug H marcado ✅ CONFIRMADO) + `HANDOFF_AGENT.md` (este arquivo) |
-| Build no Replit | ⏸️ Não tentado — compilação roda só no PC do Agente Cris |
-| Teste no PC | ⏸️ AGUARDANDO Agente Cris executar `rebuild_runtime.sh` (~30s) |
+| **< 100ms** | PASSO 3 simples: forjar `iSignalSema(sid_visto)` em `gow_record_sif_bind_ts` logo após o RPC_BIND |
+| **Varia muito (1ms~10s)** | Cirurgia: ler `sceSifClientData->sema` no offset do SDK, novo round de instrumentação |
+| **`never` no `sid=4`** | BIND não foi interceptado antes desse WaitSema — revisar ordem dos eventos |
 
-### 🔬 Anatomia do bug + da fix
+**Status:** aguardando Cris clicar Push → round dispara → analista próximo lê via curl e decide PASSO 3.
 
-**O que aparece no log_part9b atual** (sintoma cego):
-```
-sceSifSetDma failed dmat=0x1fffed0 count=0x1   ← 8x seguidas, nada mais
-```
+---
 
-**O que a função fazia em silêncio** (`ps2_stubs_misc.inl:3261-3338`, ANTES da PARTE 10):
-```cpp
-sceSifSetDma(dmat, count) {
-  for (i = 0; i < count; i++) {
-    Ps2SifDmaTransfer xfer = leDescritor16B(dmat + i*16);  // src/dest/size/attr
-    void* entry = getConstMemPtr(xfer.dest);                   // if 1
-    if (!entry) return 0;
-    if (xfer.size > RAM_TOTAL) return 0;                       // if 2
-    if (!canCopyGuestByteRange(xfer.dest, xfer.src, xfer.size)) return 0;  // if 3
-    if (!copyGuestByteRange(xfer.dest, xfer.src, xfer.size)) return 0;     // if 4
-  }
-  return id;
-}
-```
+## 🐛 BIBLIOTECA DE BUGS A-J (resumo compacto)
 
-**O que a função faz AGORA com PARTE 10 PLANO A**:
-```cpp
-sceSifSetDma(dmat, count) {
-  uint32_t failIndex = 0;
-  const char* failReason = "";
-  Ps2SifDmaTransfer failXfer{};
-  for (i = 0; i < count; i++) {
-    Ps2SifDmaTransfer xfer = leDescritor16B(...);
-    void* entry = getConstMemPtr(xfer.dest);
-    if (!entry)                                       { failIndex=1; failReason="entryAddr_fora_da_RAM"; failXfer=xfer; goto fail; }
-    if (xfer.size > RAM_TOTAL)                        { failIndex=2; failReason="size_maior_que_RAM"; failXfer=xfer; goto fail; }
-    if (!canCopyGuestByteRange(...))                  { failIndex=3; failReason="canCopyGuestByteRange_rejeitou_dest_ou_src"; failXfer=xfer; goto fail; }
-    if (!copyGuestByteRange(...))                     { failIndex=4; failReason="copyGuestByteRange_falhou_durante_copia"; failXfer=xfer; goto fail; }
-  }
-  return id;
-fail:
-  // log antigo preservado
-  std::cerr << "sceSifSetDma failed dmat=0x" << dmat << " count=0x" << count << "\n";
-  // log novo PARTE 10 (mutex + unordered_set, máx 8 únicos)
-  uint64_t key = (uint64_t(failXfer.dest) << 32) ^ uint32_t(failXfer.src);
-  std::lock_guard<std::mutex> lk(s_sifDmaFailMutex);
-  if (s_sifDmaFailKeys.size() < 8 && s_sifDmaFailKeys.insert(key).second) {
-    std::cerr << "[PARTE 10 PLANO A] sceSifSetDma falhou — idxFail=" << failIndex
-              << " motivo='" << failReason << "'"
-              << " xfer.src=0x" << std::hex << failXfer.src
-              << " xfer.dest=0x" << failXfer.dest
-              << " xfer.size=0x" << failXfer.size
-              << " xfer.attr=0x" << failXfer.attr
-              << " ra=0x" << GPR_U32(ctx, 31)
-              << " pc=0x" << ctx.pc << "\n";
-  }
-  return 0;
-}
-```
-
-### 🧠 LIÇÕES TÉCNICAS DA INVESTIGAÇÃO (não esquecer — vão se repetir)
-
-1. **Stubs SIF do runtime PS2 são ESTRITOS por padrão** — qualquer endereço fora dos 32 MB de RAM EE (IOP RAM, scratchpad EE, kernel space) é rejeitado silenciosamente. Provável que o jogo passe `xfer.dest` apontando pra IOP (0xBC000000+ ou 0x1Cxxxxxx) — nesse caso o stub PARTE 10 PLANO B vai precisar relaxar a validação ou implementar mapping IOP↔EE.
-2. **Padrão "instrumentação antes do fix"** — quando uma falha é repetitiva mas o log não revela causa, NUNCA chutar o fix. Adicionar log primeiro, rodar 1 teste, depois decidir o fix. Custo: 1 ciclo de rebuild_runtime.sh (~30s) — mas economiza 1 ciclo de fix-errado + outro de revert.
-3. **Mutex + `unordered_set` pra deduplicar logs em multithread** — o runtime tem worker threads VBlank/IOP/etc. Sem o mutex, 8 threads podem entrar no log simultaneamente e gerar saída entrelaçada. Sem o set, o log infla pra 100k+ linhas. Padrão `s_unknownCounts` da TODO já estabelecido — replicar.
-4. **`Ps2SifDmaTransfer` no runtime tem layout 16B fixo** (linha 2615-2622): `uint32_t src; uint32_t dest; uint32_t size; uint32_t attr;`. Ordem importa pra debug — `src` é EE/IOP origem, `dest` é EE/IOP destino, `attr` carrega flags de modo (chain/normal/IRQ).
-
-### 📋 Comando pro Agente Cris testar a PARTE 10
-
-```bash
-cd ~/Documentos/GitHub/godofwar
-git pull origin main
-bash rebuild_runtime.sh                # incremental ~30s
-PS2_TRACE=1 ./build/GodOfWarPCPort GOD_PC_PORT_FINAL/data/SCUS_973.99 2>&1 | tee log_part10.txt
-grep -E "PARTE 10 PLANO A|sceSifSetDma|stub PARTE 9|stub:0x182f28|Unknown syscallId|VBlank tick #" log_part10.txt | head -200
-wc -l log_part10.txt
-```
-
-### 🎯 Cenários esperados no log_part10.txt — **resultado real:**
-
-| Cenário | Sinais | Próxima ação | Aconteceu? |
+| Bug | Status | Arquivo do fix | Receita |
 |---|---|---|---|
-| **A — Câmera capturou** | `[PARTE 10 PLANO A] sceSifSetDma falhou — idxFail=N motivo='X' xfer.src=0x... xfer.dest=0x...` aparece 1-8x | Decifrar PARTE 10 PLANO B | ✅ **SIM** — linhas 379-432 |
-| **B — Câmera silenciosa, sintoma sumiu** | — | Procurar próximo travamento | ❌ não |
-| **C — Câmera silenciosa, sintoma persiste** | — | Build não pegou | ❌ não |
-| **D — Inunda log mesmo com unordered_set** | — | Aumentar limite | ❌ não — só 2 chaves únicas, deduplicação funcionou |
-| **E — Crash novo** | — | Investigar | ❌ não — sem crash, loop estável |
+| **A** — crt0 truncado | ✅ | `truncation_overrides.csv` + `regen_truncated.sh` | Forçar range real, regen via ps2_recomp |
+| **B** — `$gp=0` no boot | ✅ | `ps2_runtime.cpp` (kInitChain) | Boot stub seta `$gp=0x2cf070` |
+| **C** — boot stub sabotando crt0 | ✅ | `ps2_runtime.cpp` | Boot stub opt-in `PS2_BOOT_STUB=1`, default OFF |
+| **D** — loop infinito `func_100408` | ✅ | `sub_00100E28_0x100e28.cpp`, `sub_00100408_0x100408.cpp` | JALR guard `if (!runtime->hasFunction(jumpTarget))` |
+| **E** — sentinela `0x2cf090` zerada | ✅ | `ps2_runtime.cpp` (Fix 1) | `mem[SENTINEL] = mem[SENTINEL+4] = SENTINEL` |
+| **F** — alocador `sub_0013DA10` retorna 0 | ✅ | `game_overrides.cpp` | Stub bump allocator via `PS2_REGISTER_GAME_OVERRIDE` |
+| **G** — handler INTC VBlank `0x182f28` | ✅ | `game_overrides.cpp` | `runtime.registerFunction(0x00182F28, stub)` |
+| **H** — syscalls SIF poll 0x79-0x7D | ✅ | `ps2_syscalls.cpp:321-363` | 4 cases no switch retornando `-1` |
+| **I** — `sceSifSetDma` rejeita `dest=0xffffffff` | 🟡 BLINDADO | `ps2_stubs_misc.inl` (PLANO B1) | Aceita `dest=0xffffffff`, retorna 1 fake |
+| **J** — `0x296a54` not found, `ra=0` | 🟡 BLINDADO | `ps2_stubs_misc.inl` (PLANO C) | `if dmatAddr < 0x100000 return 0` |
 
-### 🟢 PARTE 10 PLANO B — opções na mesa (aguardando decisão do Agente Cris)
-
-A câmera revelou que `xfer.dest = 0xffffffff` em todas as falhas, com `motivo='canCopyGuestByteRange_rejeitou_dest_ou_src'` (if 3 do stub). Nenhum dos endereços previstos no plano contingencial original (IOP `0xBC...`, scratchpad `0x70...`, KSEG0 `0x80...`) — é o **valor sentinela "-1"**, padrão do **SIF RPC stage transfer**: o EE manda o pacote sem destino fixo e o IOP decide pelo header (`RPC_BIND`/`RPC_CALL`/`RPC_END`).
-
-| Opção | O que faz | Custo no PC | Risco | Quando escolher |
-|---|---|---|---|---|
-| **B1 — Stub permissivo** | Quando `dest==0xffffffff`, aceitar o pacote, registrar no log e retornar sucesso fake (não copia nada). Jogo continua, IOP nunca recebe | `rebuild_runtime` ~30s, ~15 linhas | Baixo. Se jogo pollar IOP esperando ACK, trava em outro lugar — **bom**, isso revela o próximo bug | Quando queremos avançar rápido pra mapear próximo travamento |
-| **B2 — Implementar SIF RPC stage** | Decodificar header SIF do pacote, alocar buffer interno, copiar `src→buffer`, simular ACK do IOP corretamente | `rebuild_runtime` ~30s + 200-400 linhas novas | Médio. Exige decifrar protocolo SIF Sony (RPC_BIND/CALL/END, semáforos IOP-side) | Quando confirmamos que B1 trava cedo demais e jogo realmente precisa do IOP funcional |
-| **B3 — Instrumentação extra (dump do pacote)** ✅ **APLICADO 2026-04-27** | Antes do log de falha, ler os 0x14 ou 0x40 bytes em `xfer.src` e dumpar em hex no stderr. Confirma se header começa com `0x80000000+rpc_id` (RPC_BIND) ou outro padrão | `rebuild_runtime` ~30s, ~30 linhas adicionadas | Zero. Só observação | ✅ **APLICADO PRIMEIRO** — central escolheu pelo Agente Cris após delegação ("escolha o que ache mais viável") |
-
-**Plano recomendado:** **B3 (✅ aplicado) → analisar log_part10b → decidir entre B1 (atalho) ou B2 (correto).**
-
-#### Implementação aplicada do PARTE 10 PLANO B3
-
-**Arquivos modificados:**
-- `PS2Recomp/ps2xRuntime/src/lib/ps2_stubs.cpp:27` — adicionado `#include <iomanip>` (não existia, precisa pra `std::setw`/`std::setfill`)
-- `PS2Recomp/ps2xRuntime/src/lib/stubs/ps2_stubs_misc.inl:3376-3402` — bloco de dump em hex dentro do `if (shouldLogDetail)`, depois do log PARTE 10 PLANO A
-
-**Código aplicado** (em `ps2_stubs_misc.inl`):
-```cpp
-const uint8_t *srcPtr = getConstMemPtr(rdram, failXfer.src);
-if (srcPtr && failXfer.size > 0) {
-    const uint32_t dumpBytes = std::min<uint32_t>(static_cast<uint32_t>(failXfer.size), 64u);
-    std::cerr << "  [PARTE 10 PLANO B3] xfer.src dump (primeiros "
-              << std::dec << dumpBytes << " bytes em 0x"
-              << std::hex << failXfer.src << "):\n  ";
-    for (uint32_t k = 0; k < dumpBytes; ++k) {
-        std::cerr << std::hex << std::setw(2) << std::setfill('0')
-                  << static_cast<unsigned>(srcPtr[k]);
-        if ((k & 3u) == 3u) std::cerr << " ";
-        if ((k & 15u) == 15u && (k + 1u) < dumpBytes) std::cerr << "\n  ";
-    }
-    std::cerr << std::setfill(' ') << std::dec << std::endl;
-} else {
-    std::cerr << "  [PARTE 10 PLANO B3] xfer.src=0x" << std::hex << failXfer.src
-              << " sem ponteiro válido na RAM (getConstMemPtr=nullptr) — pula dump"
-              << std::dec << std::endl;
-}
-```
-
-**Garantias:**
-- Comportamento NÃO muda (puro observador, sem `setReturn` novo, sem if invertido)
-- Reaproveita o `static std::mutex` + `static std::unordered_set<uint64_t>` da PARTE 10 PLANO A → máx 8 dumps únicos `(dest,src)`, nenhum risco de inundar
-- `getConstMemPtr` é a mesma função que `canCopyGuestByteRange` usa internamente; se ela retornar nullptr, log diz isso explicitamente
-- Limite de 64 bytes por dump cobre os 2 padrões observados (`size=0x14`=20B e `size=0x40`=64B)
-
-**Como interpretar o resultado:**
-
-| Padrão do header (primeiros 4 bytes em little-endian) | Diagnóstico | Próximo passo |
-|---|---|---|
-| `0x00 0x00 0x00 0x80` (= `0x80000000`) ou `0x?? 0x?? 0x?? 0x80`+ | Header **SIF RPC** Sony (RPC_BIND/RPC_CALL/RPC_END) | **B2 ganha** — implementar SIF RPC stage de verdade. Decodificar opcode + alocar buffer interno + simular ACK IOP |
-| Padrão de bytes "razoáveis" (não-zero, não-sentinela), ASCII ou ponteiros plausíveis | Provável estrutura de dados própria do God of War (ex: comando pra audio thread) | **B1 ganha** — stub permissivo aceita `dest==0xffffffff`, retorna sucesso fake; jogo segue, próximo travamento revela próximo bug |
-| Tudo zero ou tudo `0xff` | Buffer não-inicializado ou já liberado (jogo tá enviando lixo) | Investigar quem ESCREVE no `xfer.src` antes da chamada — provável Bug J = construção do descritor errada. PARTE 11 |
-
-### 📂 Arquivos modificados nesta sessão
-- `PS2Recomp/ps2xRuntime/src/lib/stubs/ps2_stubs_misc.inl:3264-3398` — instrumentação cirúrgica de `sceSifSetDma` (PARTE 10 PLANO A)
-- `replit.md` — Bug I marcado ✅ CONFIRMADO com causa raiz revelada (linhas 144, 173, 737), analogias 1+2 atualizadas
-- `HANDOFF_AGENT.md` (este arquivo) — ESTADO ATUAL reescrito com achado da câmera + tabela PARTE 10 PLANO B (B1/B2/B3) com esqueleto de código pronto pra B3
+> **Detalhe completo de cada bug** (diagnóstico, dumps, hipóteses descartadas, código aplicado) → `HANDOFF_HISTORICO.md`.
 
 ---
 
-## 📜 HISTÓRICO PARTE 9 — Família syscalls SIF poll 0x79/0x7A/0x7B/0x7D (Bug H RESOLVIDO)
+## 📋 Comandos pro Agente Cris (próxima ação)
 
-**Status final:** 🟢 CONFIRMADO em produção (log_part9b do Agente Cris, 612 linhas, 2026-04-27).
-
-**O que foi feito:** 4 cases novos no switch de `dispatchNumericSyscall` em `PS2Recomp/ps2xRuntime/src/lib/ps2_syscalls.cpp:321-363`:
-- `case 0x79`/`case 0x7A`/`case 0x7B`/`case 0x7D` → `setReturnS32(ctx, -1)` + log 1ª chamada via `static std::mutex` + `static std::unordered_set<uint8_t>` (padrão `s_unknownCounts` da TODO).
-- Retorno `-1` = `0xFFFFFFFF` em U32: qualquer máscara bit-a-bit do retorno produz != 0, destrava qualquer poll do tipo `and $v0,$v0,$sN; beqz $v0,-0x4`.
-
-**Por que funcionou:** caller `entry_296518:0x296710` esperava bit 17 (`$s0 = 0x20000`). `0xFFFFFFFF & 0x20000 = 0x20000 ≠ 0` → `beqz $v0` falso → loop quebra na 1ª iteração.
-
-**Confirmação no log_part9b:**
-- Linha 393: `[stub PARTE 9] syscall 0x7a primeira chamada -- retornando -1` apareceu UMA vez.
-- `Unknown syscallId=0x7a hits=...` SUMIU (era 40k+ em 12s no baseline).
-- VBlank tick avançou de #300 (PARTE 8) pra #960 (PARTE 9) — **+220% mais frames executados**.
-- 7 novos `CreateSema id=4..10` criados depois da liberação do poll.
-
-**Lições mantidas pra próximas partes:**
-1. Atalho universal pra spinloop bit-mask: `setReturnS32(ctx, -1)`.
-2. Convenção PS2 "wrapper de 1 instrução" (`addiu $v1,N; syscall; jr $ra`) revela ID exato pelo nome do `entry_*.cpp` — não confiar só no `pc` do log.
-3. Cuidado: `pc` no log de syscall = endereço APÓS o `syscall`, não o do `syscall` em si (delay-slot).
-4. Família 0x79-0x7D fica num corredor de SIF entre `sceSifSetDChain` (0x78) e `GetMemorySize` (0x7F) — provavelmente `sceSif*Stat`/`sceSif*Reg` variants. Documentação Sony escassa.
-
----
-
-## 📜 HISTÓRICO PARTE 8 — Handler INTC VBlank stub (Bug G RESOLVIDO)
-
-**Status final:** 🟢 CONFIRMADO em produção (log_part9 baseline do Agente Cris, 7.882.220 linhas). VBlank tick #1..#300 (5s @ 60Hz), `[INTC:skip]` sumiu, `[vif1:cmd]` apareceu com IRQ no idx=20.
-
-**O que foi feito:** stub C++ `gow_intc_handler_0x182f28` em `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp` registrado via `runtime.registerFunction(0x00182F28u, ...)` em `apply_god_of_war_overrides`. Replica fiel das 8 instruções MIPS perdidas pelo detector PS2Recomp (estavam em `sub_00182EE8.cpp` linhas 134-196, mas após `jr $ra` em 0x182f20 → marcado como código morto).
-
-**MIPS replicado:**
-```mips
-0x182f28: lui $v1,0x2A; lui $a0,0x2A
-0x182f30: lw $v0,-0x3828($v1)            ; lê [0x29C7D8]
-0x182f34: lui $a1,0x33
-0x182f38: xori $v0,$v0,0x1
-0x182f3c: sw $v0,-0x3828($v1)            ; [0x29C7D8] ^= 1
-0x182f40: lw $v0,-0x382C($a0); addiu; sw ; [0x29C7D4] += 1
-0x182f4c: lw $v0,0x4F58($a1); addiu; sw  ; [0x334F58] += 1
-0x182f58: sync; ei; jr $ra
-```
-
-**Lições mantidas pra próximas partes:**
-1. Detector PS2Recomp tem 2 modos (JAL direto / tabela ELF). Funções após `jr $ra` em outra função ficam órfãs.
-2. As 4 funções "NÃO REGISTRADA" do init pre-main (`0x283770`, `0x17acb8`, `0x138b10`, `0x1838d0`) provavelmente sofrem da mesma doença.
-3. Mecanismo VSync do runtime já existia em `ps2_syscalls_interrupt.inl` (`g_vsync_tick_counter`, `interruptWorkerMain`, `dispatchIntcHandlersForCause`, `signalVSyncFlag`, `AddIntcHandler` syscall). Padrão pra próximo handler INTC fantasma: `runtime.registerFunction(addr, stub)` em `apply_god_of_war_overrides`.
-
----
-
-## 📜 HISTÓRICO PARTE 6 — Câmera #3 + Blindagem (mantido para referência)
-
-**🎯 Decisão da PARTE 6:** Agente Cris escolheu Opção 2+3 combinada (recomendação do analista da PARTE 5). Câmera escondida #3 + blindagem defensiva num único build incremental.
-
-**O que foi aplicado nesta sessão (2026-04-26 PARTE 6):**
-
-**1. Câmera #3 instalada — `PS2Recomp/ps2xRuntime/include/ps2_runtime.h`:**
-- `PS2_GLOBAL_WATCH_3_ADDR = 0x002C7910u` (4 bytes do ponteiro do pool)
-- Função `ps2CheckGlobalWatch3(...)` espelha o padrão das câmeras #1 e #2
-- Hook em `ps2TraceGuestWrite` chama o vigia novo logo depois dos #1 e #2
-- Marcador especial `<<< POOL INICIALIZADO!` quando alguém escreve valor não-zero
-
-**2. Blindagem aplicada — `GOD_PC_PORT_FINAL/src/recompiled/sub_0013FAB8_0x13fab8.cpp`:**
-- Logo após `sub_0013DA10_0x13da10(...)` retornar (PC alvo `0x13fb14`):
-  - Se `GPR_U32(ctx, 2) == 0u` (`$v0 == 0`):
-    - Loga até 16 disparos: `[13FAB8] BLINDAGEM PARTE 6: ...`
-    - Executa epílogo manual (lq $s0,sp+32; lq $s1,sp+16; ld $ra,sp+0; addiu sp,sp,0x30)
-    - `ctx->pc = $ra; return;`
-- **Resultado:** stores em `[0x2cbbb4]` (PC `0x13fb24`) e `[0x2cbbb0]` (PC `0x13fb3c`) NUNCA executam quando o pool está vazio. Sentinela do Fix 6 fica intacta.
-
-**Mirror não atualizado:** `./src/recompiled/sub_0013FAB8_0x13fab8.cpp` está com drift de ~41 linhas em relação à versão do build (faltava a TRAVA da PARTE 3). Espelhar só essa edição agravaria o drift sem benefício (CMake ignora esse path). Próximo agente: regenerar o mirror inteiro a partir do `GOD_PC_PORT_FINAL/...` ou apagar.
-
-### Comando para o Agente Cris testar a PARTE 6
+Após clicar **Push** no Replit (para mandar PASSO 2.8 + fix `auto_round.sh`):
 
 ```bash
-cd ~/Documentos/GitHub/godofwar
-git pull origin main
-bash recompilar.sh   # incremental — só ps2_runtime.h e sub_0013FAB8 mudaram, ~30s a 1 min
-PS2_TRACE=1 ./build/GodOfWarPCPort GOD_PC_PORT_FINAL/data/SCUS_973.99 2>&1 | tee log_part6.txt
-grep -E "watch:POOL_0x2c7910|BLINDAGEM PARTE 6|watch:SENTINEL_0x2cbbb0|TRAVA|13FAB8|FIX 1|FIX 6|init concluido" log_part6.txt | head -150
-wc -l log_part6.txt
+# Se quiser que o fix do log_latest valha já no PRÓXIMO round
+# (senão só no round seguinte porque o script em execução é a versão antiga):
+Ctrl+C no terminal do loop
+bash auto_round.sh loop
 ```
 
-### Cenários esperados no log da PARTE 6
-
-| Cenário | Sinais no log | Próxima ação (PARTE 7) |
-|---|---|---|
-| **A — Câmera flagrou init no pool** | `[watch:POOL_0x2c7910] #1 ... pc=0x???????? <<< POOL INICIALIZADO!` aparece **antes** de `BLINDAGEM` | Abrir `sub_<pc>.cpp`, descobrir por que esse init não estava sendo chamado, registrar no chain do boot stub |
-| **B — Câmera silenciosa + blindagem disparou** | Nenhum `[watch:POOL_0x2c7910]`, mas `[13FAB8] BLINDAGEM PARTE 6: ... count=N` aparece | `[0x2c7910]` realmente nunca é inicializado pelo código recompilado. Aplicar Opção 1 (stub C++ no `sub_0013DA10` em `game_overrides.cpp`) |
-| **C — Câmera flagrou + blindagem ainda disparou** | Watch loga init MAS chamadas iniciais do `13FAB8` recebem `$v0=0` | Race condition / ordem do init chain errada. Investigar se o init precisa rodar antes de `0x2996b0` |
-| **D — Tudo silencioso, jogo avança** | Nem watch nem blindagem disparam, jogo passa do loop VIF1 | Algo mudou no fluxo. Ler log inteiro pra ver onde travou |
-
-**Cenário mais provável: B** (câmera silenciosa + blindagem disparando). Confirmaria PARTE 5 e aponta direto pra Opção 1 como Plano A da PARTE 7.
-
-**Importante:** com a blindagem ativa, `[watch:SENTINEL_0x2cbbb0]` NÃO deve mais aparecer com `<<< CORRUPCAO PARA ZERO!`. Se aparecer, há um terceiro sabotador que ainda não conhecemos.
-
----
-
-## 🟡 ESTADO PARTE 5 (mantido para histórico)
-
-### Status: câmera flagrou o sabotador — `sub_0013DA10` retorna `$v0=0`, e `sub_0013FAB8` propaga esse 0 destruindo a sentinela
-
-**🎯 ACHADO PARTE 5 (log_watch_part5.txt do Agente Cris, 2026-04-26):**
-
-```
-[watch:SENTINEL_0x2cbbb0] #1 op=WRITE32 addr=0x2cbbb4 size=4 value=0x0 pc=0x13fb24 ra=0x13fb14
-[watch:SENTINEL_0x2cbbb0] #2 op=WRITE32 addr=0x2cbbb0 size=4 value=0x0 pc=0x13fb3c ra=0x13fde0  <<< CORRUPCAO PARA ZERO!
-```
-
-**Decifrando** (linhas 162–222 de `GOD_PC_PORT_FINAL/src/recompiled/sub_0013FAB8_0x13fab8.cpp`):
-
-O path `label_13fb0c` (inserir 1º elemento na lista vazia) faz:
-1. `jal func_13DA10` — pede um nó novo pro alocador
-2. **Alocador retorna `$v0 = 0`** (porque o pool em `[0x2c7910]` está vazio/não-inicializado)
-3. Os stores em `$v0+offset` viram escritas inofensivas em `[0x000+offset]`
-4. **MAS**: `sw $v0, 0x4($s0)` no PC `0x13fb24` escreve `0` em `[0x2cbbb4]` (sentinela.prev)
-5. **E**: `sw $v0, 0x0($v1)` no PC `0x13fb3c` escreve `0` em `[0x2cbbb0]` (sentinela.next, porque `$v1` foi carregado de `head.prev` que era `0x2cbbb0` graças ao Fix 6)
-6. Sentinela morre. Próximas chamadas do `13FAB8` caem no loop infinito.
-
-**Causa raiz definitiva:** `sub_0013DA10` é um alocador real, mas depende de
-`$a0` = ponteiro pra estrutura de pool (vinda de `*0x2c7910`, uma global em
-BSS). Como `*0x2c7910 = 0` (BSS não inicializada), o alocador lê de endereço
-inválido (`lw $v0, 0x10($s0)` com `$s0=0`) e devolve 0. Quem inicializa
-`[0x2c7910]` provavelmente é um dos 4 JALs **NÃO REGISTRADOS** detectados
-na PARTE 3: `0x283770`, `0x17acb8`, `0x138b10`, `0x1838d0`.
-
-### 🔄 OPÇÕES PARA PARTE 6 (aguardando decisão do Agente Cris)
-
-**Opção 1 — Stub C++ pra `sub_0013DA10` (rápido, ~5 linhas, curativo):**
-- Em `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp`, override que
-  devolve `malloc(0x10)` zerado. Resolve sintoma imediato.
-- Risco: leaks se o jogo reciclar nós depois.
-
-**Opção 2 — Achar quem deveria inicializar `[0x2c7910]` (causa raiz):**
-- Adicionar 3ª câmera (`PS2_GLOBAL_WATCH_3_ADDR = 0x002C7910u`) e testar
-  de novo. Se ninguém escrever, o init é um dos 4 JALs perdidos.
-- Custo: 1 build longo (~80min) + 1 teste do Agente Cris.
-
-**Opção 3 — Blindar `label_13fb0c` no `sub_0013FAB8` (curativo no chamador):**
-- Editar o `.cpp` recompilado pra checar `if ($v0 == 0) return;` depois
-  do `jal 13DA10`. Mais rápido que Opção 1 mas só protege esse caller.
-
-**Recomendação do analista:** Opção 2 primeiro (instala 3ª câmera, espera
-1 build e 1 teste). Se não pegar autor, cair pra Opção 1 como fallback.
-
-### Comando pra Agente Cris testar a PARTE 6 (após decisão)
-
-```bash
-cd ~/Documentos/GitHub/godofwar
-git pull origin main
-bash build.sh
-PS2_TRACE=1 ./build/GodOfWarPCPort GOD_PC_PORT_FINAL/data/SCUS_973.99 2>&1 | tee log_part6.txt
-grep -E "watch:|FIX|13FAB8|TRAVA|CORRUPCAO" log_part6.txt | head -100
-wc -l log_part6.txt
-```
-
----
-
-## 📚 BIBLIOTECA DE BUGS CONHECIDOS (consultar ANTES de investigar bug novo)
-
-| # | Família | Sintoma típico | Causa raiz | Fix |
-|---|---|---|---|---|
-| **A** | crt0 truncado | Boot trava antes do main | `crt0` recompilado com instruções faltando | Disassembly + reescrita |
-| **B** | Boot stub sabotando | Boot pula main | `boot_stub` com JAL pra alvo errado | Trocar alvo do JAL |
-| **C** | `$v0=0` retorno | SEGV/comportamento errado | Recompilação setando `$v0` errado | Override do retorno |
-| **D** | Loop+stack overflow | PC trava, RAM cresce | Recursão sem base case em `func_100408` | Trava de iter + override |
-| **1, 6** | Sentinela não-inicializada | Loop infinito em função que percorre lista | `head.next/prev = 0` em vez de apontar pra si | Fix 1/6: escrever `head=head.next=head.prev` no boot_stub ANTES dos inits |
-| **F** | Alocador retorna 0 → corrompe consumidor | Bug 1/6 reaparece depois do fix | Alocador (ex: `13DA10`) lê pool vazio, devolve 0; consumidor escreve em `[0+offset]` que cai em região crítica | ✅ PARTE 6 mitigado: blindagem `if ($v0==0) abort` no consumidor (sintoma controlado, jogo avança). Fix definitivo (PARTE 7+) = stub C++ no alocador em `game_overrides.cpp` |
-| **G** | Handler de interrupção apontado mas não recompilado → polling infinito | Programa entra em loop após boot avançado (sem crash) | INTC mapeia handler pra endereço guest que está num `.cpp` recompilado mas órfão (após `jr $ra` em outra função, marcado como código morto pelo detector PS2Recomp) | ✅ **PARTE 8 RESOLVIDO**: `runtime.registerFunction(addr, stub_C++)` em `game_overrides.cpp` replicando as escritas globais do handler original |
-| **H** | **Família de syscalls SIF poll faltando no switch → spinloop bit-mask** | Loop infinito sem crash, log explode com `Unknown syscallId=0xN hits=...` (10k-130k em segundos) | Switch `dispatchNumericSyscall` em `ps2_syscalls.cpp` tinha buracos em 0x79/0x7A/0x7B/0x7D entre `sceSifSetDChain` (0x78) e `GetMemorySize` (0x7F). Caller faz `jal wrapper; and $v0,$v0,$sN; beqz $v0,-0x4` → poll de bit que nunca acende com retorno default 0 | ✅ **PARTE 9 RESOLVIDO** (confirmado log_part9b 2026-04-27): 4 cases novos no switch retornando `-1` (= `0xFFFFFFFF`, destrava qualquer máscara bit) + log 1ª chamada. Stub disparou 1x, `Unknown syscallId=0x7a` SUMIU (40k+ hits/12s → 0), VBlank #960 |
-| **I** | **Stub SIF DMA EE↔IOP rejeita silenciosamente sem dizer qual validação falhou** | `sceSifSetDma failed dmat=0xN count=0xM` repete 8+ vezes em segundos (não trava o jogo, mas impede transferência EE↔IOP de continuar) | Stub `sceSifSetDma` em `ps2_stubs_misc.inl:3261` valida descritor 16B (src/dest/size/attr) via 4 ifs (`!entry`, `size>RAM`, `canCopyGuestByteRange`, `copyGuestByteRange`). Em falha, retorna 0 sem dizer QUAL if rejeitou nem QUAIS endereços o jogo mandou. Provável causa: `xfer.src` ou `xfer.dest` aponta pra IOP/scratchpad/kernel (fora dos 32 MB de RAM EE) | 🟡 **PARTE 10 PLANO A APLICADO** (instrumentação): variáveis `failIndex`/`failReason`/`failXfer` + log mutex+`unordered_set` chaveado em `(dest<<32)^src`, máx 8 únicos. Comportamento mantido. PARTE 10 PLANO B no próximo round (provável: relaxar validação para ranges IOP) |
-| **2-5** | Inits do crt0 não rodados | Várias estruturas vazias após boot | Boot stub não chama todos 4 inits do crt0 | `kInitChain[]` no boot_stub |
-
-**Padrão dominante:** bugs **1, 6 e F** são todos da mesma família —
-"**estrutura global em BSS que depende de inicializador não-recompilado**".
-Quando aparecer um 7º caso parecido, suspeitar dessa família primeiro.
-
----
-
-## 🟡 ESTADO PARTE 4.5 (mantido para histórico)
-
-### Status: câmera escondida instalada (Opção A escolhida pelo Agente Cris)
-
-**O que o teste real provou (log_fix6_part3.txt, 388 linhas):**
-- ✅ `[boot_stub] FIX 1: ...` e `[boot_stub] FIX 6: ...` apareceram ANTES dos inits
-- ✅ 1ª chamada `13FAB8`: `READ32(sentinel)=0x2cbbb0` → saiu rápido (path "lista vazia")
-- ✅ `13FCA8`, `13FB48`, `182F68`, `182E88`, `140578` rodaram pela primeira vez
-- ✅ Trava de segurança disparou em 1M iter, PC do user NÃO travou:
-  ```
-  [13FAB8] !!! TRAVA DE SEGURANCA DISPARADA !!!
-  [13FAB8] *0x2cbbb0 = 0x0 (esperado: 0x2cbbb0 para lista vazia)
-  [13FAB8] forcando saida via path 'lista vazia' (label_13fb08)
-  ```
-- ✅ Programa terminou normalmente (volta pro prompt)
-- 🟡 Após trava, jogo avançou e travou em loop de **159 `[vif1:cmd]` vazios**
-  (VIF1 = pipeline gráfica do PS2 lendo DMA stream zerada)
-
-**Bug F descoberto:** algo zera `[0x2cbbb0]` DEPOIS da 1ª chamada bem-sucedida
-do `13FAB8`. As chamadas 2ª, 3ª e 4ª já encontram a sentinela em `0x0`.
-
-| # | a0 | sentinela | s1+4 | resultado |
-|---|---|---|---|---|
-| 1 | 0x4159c8 | 0x2cbbb0 ✓ | 0x1 | OK (insere via label_13fb08) |
-| 2 | 0x416488 | 0x0 ❌ | 0x1 | sai sem loop (sorte) |
-| 3 | 0x416f48 | 0x0 ❌ | 0x0 | sai sem loop (sorte) |
-| 4 | 0x417a08 | 0x0 ❌ | 0x2 | LOOP → trava disparou em 1M |
-
-**Suspeitos do sabotador:**
-1. `label_13fb08` (path de inserção do próprio `13FAB8`) — carrega `$v0=0x2c0000`
-   e usa como base; algum store offset pode cair em `0x2cbbb0`
-2. `sub_0013DA10` (chamada por `label_13fb0c`) — alocador suspeito
-3. Layout de BSS errado — `0x2cbbb0` faz parte de struct maior sobrescrita
-
-### 🆕 PARTE 4.5 — Opção A APLICADA (câmera escondida instalada)
-
-**O que mudou em `PS2Recomp/ps2xRuntime/include/ps2_runtime.h`:**
-- Constante nova `PS2_GLOBAL_WATCH_2_ADDR = 0x002CBBB0u` (8 bytes vigiados)
-- Função `ps2CheckGlobalWatch2(...)` espelha o vigia já existente do `0x32E854`
-- Hook em `ps2TraceGuestWrite` chama o vigia novo logo após o antigo
-- Até 256 logs por execução, com marcador `<<< CORRUPCAO PARA ZERO!`
-  quando alguém escreve zero no endereço exato da sentinela
-
-**Formato do log esperado:**
-```
-[watch:SENTINEL_0x2cbbb0] #N op=WRITE32 addr=0x2cbbb0 size=4 value=0x0 pc=0x???????? ra=0x????????  <<< CORRUPCAO PARA ZERO!
-```
-
-**Opção B (VIF1/DMA) e Opção C (INTC handlers) continuam disponíveis** caso
-a câmera não pegue ninguém em flagrante (o que indicaria que a corrupção
-vem de uma rota não rastreada — DMA, fastmem ou stub C++).
-
-### Comando para testar a PARTE 4.5
-
-```bash
-cd ~/Documentos/GitHub/godofwar
-git pull origin main
-bash build.sh
-PS2_TRACE=1 ./build/GodOfWarPCPort GOD_PC_PORT_FINAL/data/SCUS_973.99 2>&1 | tee log_watch_part5.txt
-grep "watch:SENTINEL" log_watch_part5.txt
-grep -E "FIX|13FAB8|TRAVA|CORRUPCAO" log_watch_part5.txt | head -100
-wc -l log_watch_part5.txt
-```
-
-A linha com `<<< CORRUPCAO PARA ZERO!` revela `pc=...` do escritor. Esse
-PC é o crachá do espião — abre `sub_<pc>.cpp` correspondente e a gente
-entende o que ele acha que está fazendo.
-
----
-
-## 🔴 ESTADO PARTE 3 (mantido para histórico)
-
-### Status: Fix 6 reposicionado para ANTES dos inits + trava de segurança em sub_0013FAB8
-
-**O que aconteceu na PARTE 2 (sessão anterior):** Fix 6 (sentinela `0x2cbbb0`)
-foi aplicado mas no lugar errado — DEPOIS das chamadas dos 4 inits do
-boot stub. Como `sub_00138D48` (4º init) entra em loop dentro de
-`sub_0013FAB8` antes de retornar, o boot_stub nunca chegava nas linhas que
-inicializam as sentinelas. Galinha-e-ovo. **Log do user provou:**
-- ❌ Mensagem `[boot_stub] FIX 6: sentinel lista circular #2 inicializado` NÃO apareceu
-- ❌ Mensagem `[boot_stub] sentinel lista circular inicializado em 0x2cf090` (Fix 1) NÃO apareceu
-- ❌ Mensagem `[boot_stub] init concluido, entry=0x2996b0` NÃO apareceu
-- 🔁 `[13FAB8] READ32(sentinel)=0x0` — sentinela ainda zerada
-- 🔁 Loop atingiu 6M iterações de novo
-
-**Sinais bons da PARTE 2 que continuam válidos:**
-- ✅ Fix 4 funcionou: `[boot_stub] init 0x138d48 (4o init, pre-main)` rodou
-- ✅ Fix 5 funcionou: entry chegou em `0x2996b0` (via 138D48 inteiro)
-- ✅ GS recebeu config: `GsPutIMR` + `GsSetCrt`
-- ✅ SIF inicializou: `SifCheckInit → SifInit`
-- ✅ Janela raylib abre (640x448, OpenGL 4.2 Mesa Intel HD 4000)
-
-### Mudanças PARTE 3 (esta sessão)
-
-**1. `PS2Recomp/ps2xRuntime/src/lib/ps2_runtime.cpp`**
-- Fix 1 (sentinela `0x2cf090`) e Fix 6 (sentinela `0x2cbbb0`) **MOVIDOS** pra
-  ANTES do `kInitChain[]`, logo depois de `[boot_stub] $gp configurado`.
-- Mensagens padronizadas: `[boot_stub] FIX 1: ...` e `[boot_stub] FIX 6: ...`.
-- Blocos antigos depois dos inits removidos (substituídos por nota explicando
-  que foram movidos).
-
-**2. `GOD_PC_PORT_FINAL/src/recompiled/sub_0013FAB8_0x13fab8.cpp`**
-- Trava de segurança no loop `label_13fae8`: se passar de **1.000.000 iterações**,
-  loga aviso completo (incluindo valor atual de `*0x2cbbb0`) e força saída via
-  `goto label_13fb08` (path "lista vazia"). Reseta o counter para não spammar.
-- **Objetivo:** nunca mais travar o PC do user. Loops infinitos viram aviso
-  visível em ~1 segundo em vez de freeze de minutos.
-
-### Comando para testar PARTE 3
-
-```bash
-cd ~/Documentos/GitHub/godofwar
-git pull origin main
-bash build.sh   # incremental, ~1 min (2 arquivos mudaram)
-PS2_TRACE=1 ./build/GodOfWarPCPort GOD_PC_PORT_FINAL/data/SCUS_973.99 2>&1 | tee log_fix6_part3.txt
-```
-
-**Filtrar antes de mandar:**
-```bash
-grep -E "FIX 1|FIX 6|13FAB8|init concluido|2996b0|frame:upload|nonBlack|ExitThread|TRAVA|SEGV|crash" log_fix6_part3.txt | head -150
-wc -l log_fix6_part3.txt
-```
-
-**Sinais de sucesso esperados na PARTE 3:**
-- `[boot_stub] FIX 1: sentinel lista circular #1 inicializado em 0x2cf090` ANTES dos inits
-- `[boot_stub] FIX 6: sentinel lista circular #2 inicializado em 0x2cbbb0` ANTES dos inits
-- `[13FAB8] sentinel_addr=0x2cbbb0 READ32(sentinel)=0x2cbbb0` (não `0x0`!)
-- Loop NÃO aparece (ou aparece <10 iterações)
-- `[boot_stub] init concluido, entry=0x2996b0 (real game main)` aparece
-- Janela do raylib responsiva (não trava, fecha quando user clica X)
-- Trace prossegue além de `13FAB8` → `13FCA8` → `182FF0`
-
-**Cenários alternativos:**
-- Se a TRAVA DE SEGURANÇA disparar (`[13FAB8] !!! TRAVA DE SEGURANCA DISPARADA !!!`),
-  significa que a sentinela está sendo zerada DEPOIS do Fix 6 por algum codepath
-  (provavelmente algum init que escreve em BSS). Investigar quem escreve em `0x2cbbb0`.
-- Se nenhum loop aparecer mas o jogo travar em outro lugar, é o "próximo guarda
-  interno" — análise normal continua.
-
-**Possíveis próximos bloqueadores:**
-- Mais funções do init chain de `sub_00138D48` (JALs 6-11/11)
-- `func_2996a8` ou `func_293840` (entry_2996b0 chama essas duas)
-- `func_293840` virando `ExitThread` se nenhuma tarefa for criada
-- Algum GS register não emulado
-- Algum SIF callback faltando
-- `SetupThread` (syscall 0x3c) ou `SetupHeap` (0x3d) não implementados
-
----
-
-## 🔴 ESTADO ANTERIOR (mantido para histórico) — sessão crt0-disassembly
-
-### Status: BOOT REESCRITO — entry point corrigido para 0x2996b0 (real main do jogo)
-
-**Três correções aplicadas nesta sessão:**
-
-#### Fix 2 REVERTIDO (Fix 2 estava ERRADO)
-`sub_001003C0_0x1003c0.cpp` linha ~129: `SET_GPR_U64(ctx, 5, 1u)` volta para `SET_GPR_U64(ctx, 5, 0u)`.
-
-**Por que Fix 2 era errado:** com `a1=1`, `func_238860` chamava `free(struct_root=0x2cf070)` todo frame. Com `a1=0`, ela retorna imediatamente (noop). O MIPS original passa `a1=0`.
-
-#### Fix 4 — Init chain completa: sub_00138D48 adicionado
-`PS2Recomp/ps2xRuntime/src/lib/ps2_runtime.cpp` — boot stub agora chama `sub_00138D48` (0x138d48) após os 3 inits existentes. Esta é a 4ª função de init chamada pelo crt0 real (em 0x1001c0).
-
-Argumentos corretos: `a0=0` (rdram[0x2c7080]=BSS=0), `a1=0x2c7084` (igual ao crt0).
-
-#### Fix 5 — Entry point corrigido: 0x100008 → 0x2996b0
-`ps2_runtime.cpp` — após a init chain, `m_cpuContext.pc` é setado para `0x2996b0` em vez de `0x100008`. **0x2996b0 é o real main do jogo**, confirmado pelo disassembly do crt0.
-
-A0 passado para 0x2996b0 = valor de retorno de sub_00138D48 (v0/r2 após a chamada).
-
----
-
-## 🔬 DIAGNÓSTICO DO CRT0 — DESCOBERTA DEFINITIVA (2026-04-26)
-
-### O crt0 original (gap 0x10008c-0x1003bf) dissassemblado
-
-O crt0 no gap do ELF foi dissassemblado com sucesso em Python (little-endian PS2 MIPS). A sequência real é:
-
-```
-0x10008c-0x100118: ctc1 (init FPU registers)
-0x10011c-0x100140: loop zerando BSS (0x2c7080 → 0x35c1a8)
-0x100148-0x100178: SetupThread syscall(0x3c):
-    a0 = 0x2cf070  (_gp = struct root da thread)
-    a1 = 0x1FF8000 (stack top)
-    a2 = 0x8000    (stack size)
-    a3 = 0x2c7080  (BSS start)
-    t0 = 0x1001d8
-0x100180-0x100194: SetupHeap syscall(0x3d):
-    a0 = 0x35c1a8  (heap start)
-0x100198: jal 0x2994a0  [1o init — NOSSO boot stub já faz]
-0x1001a0: jal 0x293ea0  [2o init — NOSSO boot stub já faz]
-0x1001a8: jal 0x138cb0  [3o init — NOSSO boot stub já faz]
-0x1001c0: jal 0x138d48  [4o init — FIX 4, agora adicionado]
-0x1001c8: j   0x2996b0  ← REAL MAIN DO JOGO [FIX 5, agora correto]
-           com a0 = retorno de 0x138d48
-```
-
-**Antes do Fix 5:** nosso boot stub setava `pc = 0x100008` → `entry_0x100008` → saltava para `0x1003c0` (sub_001003C0), que é uma função INTERNA do scheduler, não o main do jogo.
-
-**O gap também contém (0x100200-0x1003bc):** uma função secundária chamada de dentro do 4o init ou do game loop. Ela inicializa a struct de contexto com muitos campos, incluindo `sw $zero, 0x18($s3)` — confirma que rdram[0x2cf088] começa em 0 e é populado depois.
-
-### Por que `rdram[0x2cf088]=0` não era o root cause
-
-Era um SINTOMA. O root cause era que sub_001003C0 não é o main do jogo — é uma função interna de scheduler chamada pelo main via 0x2996b0 → func_293840. Com o Fix 5 (entry 0x2996b0), o boot segue o caminho correto e o jogo inicializa a struct normalmente.
-
-### Funções-chave no caminho real
-
-```
-0x2996b0 = entry_2996b0_0x2996e0   [REAL GAME MAIN — agora é o entry]
-  → jal 0x2996a8 (func_2996a8)
-  → j   0x293840 (func_293840 = ExitThread se nenhuma tarefa criada)
-
-0x138d48 = sub_00138D48_0x138d48   [4o init, 11 JAL internos]
-  → jal 0x283770  [1/11]
-  → jal 0x17aa88  [2/11]
-  → jal 0x17acb8  [3/11]
-  → jal 0x138b10  [4/11]
-  → jal 0x1838d0  [5/11]
-  → ... mais 6 JALs
-  → retorna handle em v0
-```
-
-### PS2_FORCE_A0 — ainda válido ou não?
-
-Com Fix 5, `entry_0x100008` NÃO É MAIS CHAMADO no path normal. O boot stub vai direto para 0x2996b0. A env var `PS2_FORCE_A0` fica como fallback caso `entry_0x100008` seja chamado de algum lugar inesperado, mas não é mais necessária para o boot normal.
-
----
-
-## Histórico de Fixes (em ordem cronológica)
-
-### Fix 1 — Sentinel da lista circular (CONFIRMADO FUNCIONANDO)
-`rdram[0x2cf090]` = 0 → loop infinito em `sub_00100408`.
-**Fix:** `ps2_runtime.cpp` boot stub: `rdram[0x2cf090] = rdram[0x2cf094] = 0x2cf090`.
-**Ainda válido:** sim, mantido no boot stub.
-
-### Fix 2 — a1=1 em func_238860 (FIX ERRADO — REVERTIDO)
-Forçar `a1=1` fazia `free(struct_root=0x2cf070)` todo frame.
-**Status:** REVERTIDO para `a1=0` (comportamento original MIPS).
-
-### Fix 3 — Loop em sub_001003C0 (MANTIDO, LEGADO)
-`cooperativeGuestYield() + goto label_1003ec` para manter janela aberta.
-Com Fix 5, sub_001003C0 não é mais o entry principal — este fix é um fallback seguro.
-
-### Fix 4 — sub_00138D48 no init chain (NOVO — 2026-04-26)
-Adicionado ao boot stub com a0=0, a1=0x2c7084.
-
-### Fix 5 — Entry point 0x100008 → 0x2996b0 (NOVO — 2026-04-26)
-**A mudança mais importante.** Boot stub agora termina setando `pc=0x2996b0`.
-
----
-
-## Comando para testar os novos fixes
-
-```bash
-# No Replit: workflow "Start application" já está rodando (build.sh)
-# Para testar manualmente após o build:
-PS2_FORCE_A0=0x2cf070 PS2_TRACE=1 ./build/GodOfWarPCPort GOD_PC_PORT_FINAL/data/SCUS_973.99 2>&1 | tee log_fix5.txt
-
-# Procurar no log:
-grep -E "boot_stub|138d48|2996b0|138D48|JAL|frame:upload|nonBlack" log_fix5.txt | head -50
-```
-
-**Sinais de sucesso com Fix 5:**
-- `[boot_stub] init 0x138d48 (4o init, pre-main)` → 4o init rodou
-- `[138D48] ENTRADA a0=0x00000000` → sub_00138D48 recebeu a0=0 correto
-- `[138D48] JAL [1/11] -> 0x283770` → inits internos chamados
-- `[boot_stub] entry=0x2996b0 (real game main)` → entry correto
-- `[frame:upload]` com `nonBlack>0` → **ALGO FOI RENDERIZADO!**
-
-**Se o jogo entrar em ExitThread imediatamente:**
-`entry_2996b0` chama `func_293840` que pode ser ExitThread se nenhuma tarefa foi criada.
-Fix: verificar o que `func_2996a8` e `func_293840` fazem — talvez precisem de subsistemas extras.
-
-**Se `sub_00138D48` crashar (um dos 11 JALs não registrado):**
-Verificar qual JAL falhou no log `[138D48] JAL [X/11] ... NAO REGISTRADA`.
-Pode ser necessário adicionar stub para essa função.
-
----
-
-## Estrutura do projeto
-
-```
-/home/runner/workspace/
-├── PS2Recomp/
-│   └── ps2xRuntime/src/lib/
-│       └── ps2_runtime.cpp         ⭐ CRÍTICO: boot stub + dispatchLoop
-│
-├── GOD_PC_PORT_FINAL/
-│   ├── data/
-│   │   ├── SCUS_973.99             ELF PS2 (God of War NTSC-U)
-│   │   └── part1.pak               4GB (dados do jogo, NÃO no git)
-│   └── src/recompiled/             ⭐ EDITAR AQUI (não em ./src/recompiled/)
-│       ├── sub_001003C0_0x1003c0.cpp  scheduler interno (Fix 2 revertido + Fix 3)
-│       ├── entry_0x100008.cpp         PS2_FORCE_A0 fallback (ainda ativo)
-│       ├── sub_00138D48_0x138d48.cpp  4o init (tem logging interno [138D48])
-│       ├── entry_2996b0_0x2996e0.cpp  REAL GAME MAIN (novo entry point)
-│       └── entry_131288_0x131300.cpp  func_131288: game engine update
-│
-├── build/GodOfWarPCPort            Executável final
-├── build.sh                        Build incremental (safe para recompilar)
-├── rebuild_runtime.sh              Build rápido só do runtime (~30s)
-└── tools/analisa_log.py            Análise de logs com --diff
-```
-
-**ARMADILHA:** Há DOIS `src/recompiled/`:
-- `GOD_PC_PORT_FINAL/src/recompiled/` → **USADO PELO BUILD** ← edite AQUI
-- `./src/recompiled/` → **IGNORADO** pelo CMakeLists.txt
-
----
-
-## Contexto do projeto
-
-**Objetivo:** Rodar God of War (PS2, NTSC-U) nativamente no PC via recompilação estática MIPS→C++ (PS2Recomp + Raylib). Sem emulador.
-
-**Hardware do usuário:** Linux Mint, Intel HD 4000, OpenGL 4.2.
-
-**Por que é difícil:** PS2 tem arquitetura muito mais complexa que N64 (EE + VU0/VU1 + GS + IOP + DMA). Nenhum port estático de PS2 existe publicamente — este projeto está na fronteira da engenharia reversa.
-
-**Descobertas de disassembly:**
-- O ELF carrega em 0x100000, filesz=0x1c7018, memsz=0x25d080
-- BSS vai de 0x2c7018 (ou 0x2c7080) até 0x35d080
-- `_gp` = 0x2cf070 (global pointer, struct root da thread principal)
-- Dispatch table em 0x32EC58 (BSS — zerada no boot, precisa ser preenchida pelos inits)
-- O crt0 real chama SetupThread(0x2cf070,...) e SetupHeap(0x35c1a8,...)
-
-**SetupThread syscall (0x3c)** — NÃO implementado ainda em ps2_syscalls.cpp. Por isso a struct em 0x2cf070 pode não estar totalmente inicializada como o real PS2 BIOS faria. Este pode ser o próximo bloqueador.
-
----
-
-## Próximos passos prioritários
-
-1. **🔴 Testar Fix 4 + Fix 5** — ver se o jogo avança além da tela preta
-2. **🔴 Verificar func_293840** — se o jogo entrar em ExitThread: `entry_293840_0x293900.cpp` pode estar sendo tratado como syscall Exit em vez do game loop real
-3. **🟡 Implementar SetupThread (syscall 0x3c)** em ps2_syscalls.cpp — inicializa struct em 0x2cf070 como o BIOS real faria
-4. **🟡 Implementar SetupHeap (syscall 0x3d)** — inicializa heap em 0x35c1a8
-5. **🟢 Investigar sub_00138D48 JALs** — se algum dos 11 JALs crashar, adicionar stub
+O round seguinte vai mostrar `[WaitSema:block] ... delta_ms_since_RPC_BIND=N` no log filtrado. Analista lê via curl e decide PASSO 3.
