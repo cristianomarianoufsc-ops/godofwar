@@ -326,29 +326,28 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 ---
 
-## 🟢 ESTADO ATUAL — Bug N corrigido — PASSO 4 (atualizado 2026-05-01)
+## 🟢 ESTADO ATUAL — PASSO 4 + detector retry-loop prontos, aguardando Push (atualizado 2026-05-01)
 
 ### ✅ Bug K — CONFIRMADO RESOLVIDO
 ### ✅ Bug L — CONFIRMADO RESOLVIDO (0x296a54 stub noop, 8 callbacks registrados no round)
 ### ✅ Bug M — Timeout insuficiente (90→300s) — RESOLVIDO
-### 🔧 Bug N — `*(outer_struct+0x24)` nunca preenchido → retry loop de ~148s — PASSO 4 APLICADO
+### 🔧 Bug N — retry loop em `entry_298910` — PASSO 4 + DETECTOR PRONTOS, PUSH PENDENTE
 
-**Bug N — Causa raiz:**
+**⚠️ PUSH PENDENTE — dois arquivos aguardam:**
+- `ps2_syscalls_flags.inl` — PASSO 4 (Bug N fix: escreve `*(s1+0x24)` ao forjar WaitSema) — requer rebuild runtime
+- `entry_298910_0x298a10.cpp` — detector `[retry-loop]` em `label_2989c4` — requer recompilação do jogo
 
-`sub_00297290` (0x297290) é a função de bind SIF. Ela recebe `a0=s1=outer_struct_ptr` (ex: 0x0032AF00) e no delay slot de 0x2972c4 executa `sw $zero, 0x24($s1)` zerando `*(outer_struct+0x24)`. Após o bind e o WaitSema (forjado pelo PASSO 3), retorna para `entry_298910` (0x298910) que checa `*(s0+0x24) == 0`. Como o PASSO 3 forjava só o WaitSema mas nunca preenchia esse campo, o jogo entrava em retry de 1M iterações (~148s) e reiniciava todo o processo de bind.
+**Bug N — Causa raiz (diagnóstico 2026-05-01):**
 
-No PS2 real, o handler de interrupção DMA SIF escreve `*(s1+0x24) = client_ptr` (o ponteiro do struct cliente retornado por `func_296E10`) ao receber a resposta do IOP. No port, esse handler não existe.
+`entry_298910` (0x298910) chama `sub_00297290` para fazer o bind SIF, depois checa `*(s0+0x24)`. Se zero → entra em `label_2989c4`: loop de 1M iters (~2s) e reinicia. No PS2 real, o handler DMA SIF escreve esse campo. No port não existe esse handler — PASSO 4 simula a escrita no momento do WaitSema forjado (pc=0x293c64, ra=0x297374).
 
-**Bug N — Fix aplicado (`ps2_syscalls_flags.inl`, PASSO 4):**
-
-Dentro de PASSO 3 (WaitSema forjado), quando `pc == 0x293c64 && ra == 0x297374` (o call site de bind em `sub_00297290`):
-```cpp
-s1_outer = gpr[17]  // callee-saved — outer_struct_ptr (jamais tocado por FUN_00293c60)
-s0_client = gpr[16] // callee-saved — client_ptr (retorno de func_296E10 = 0x30aaa8)
-*(rdram + s1_outer + 0x24) = s0_client  // simula handler DMA SIF
+**Detector adicionado em `entry_298910_0x298a10.cpp`:**
 ```
+[retry-loop] #N outer_struct=0x32AF00 *(s0+0x24)=0x0 global@0x2A4B60=0xXXXX
+```
+Com PASSO 4 ativo → **não deve aparecer**. Se aparecer → PASSO 4 não disparou (checar condição pc/ra).
 
-**Esperado no próximo round:** `[PASSO 4]` aparece no log; sids sobem continuamente 1→35 sem pausa de 148s; jogo conclui init IOP e revela próximo bloqueio.
+**Esperado no próximo round:** `[PASSO 4]` aparece; `[retry-loop]` não aparece; sids sobem além de 18; jogo conclui init IOP e revela próximo bloqueio.
 
 ---
 

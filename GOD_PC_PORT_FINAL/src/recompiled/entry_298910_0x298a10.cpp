@@ -253,6 +253,22 @@ label_2989a4:
     }
     ctx->pc = 0x2989C4u;
 label_2989c4:
+    // [retry-loop detector] Bug N: *(s0+0x24)==0 apos WaitSema — iniciando delay de 1M iters
+    {
+        static std::atomic<uint32_t> s_retryCount{0};
+        const uint32_t retryN = s_retryCount.fetch_add(1, std::memory_order_relaxed);
+        if (retryN < 32u || (retryN % 64u) == 0u) {
+            const uint32_t s0v = GPR_U32(ctx, 16);
+            const uint32_t field24 = (s0v != 0u && s0v + 0x28u <= 0x02000000u)
+                                     ? READ32(ADD32(s0v, 0x24u)) : 0xDEADBEEFu;
+            const uint32_t globalFlag = READ32(ADD32(GPR_U32(ctx, 18), 19296u));
+            std::cout << "[retry-loop] #" << retryN
+                      << " outer_struct=0x" << std::hex << s0v
+                      << " *(s0+0x24)=0x" << field24
+                      << " global@0x2A4B60=0x" << globalFlag
+                      << std::dec << std::endl;
+        }
+    }
     // 0x2989c4: 0x3c020010  lui         $v0, 0x10
     ctx->pc = 0x2989c4u;
     SET_GPR_S32(ctx, 2, (int32_t)((uint32_t)16 << 16));

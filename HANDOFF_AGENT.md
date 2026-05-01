@@ -94,13 +94,15 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-01 — Bug N diagnosticado e CORRIGIDO)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-01 — PASSO 4 + detector retry-loop prontos, aguardando Push)
 
 ### ✅ Bug K — CONFIRMADO RESOLVIDO
 ### ✅ Bug L — CONFIRMADO RESOLVIDO (stub 0x296a54 visível 8x no round: callbacks #0–#7)
 ### ✅ Bug M — Timeout insuficiente (RUN_TIMEOUT 90→300s) — RESOLVIDO
 
-### 🔧 Bug N — `*(outer_struct+0x24)` nunca preenchido após bind fake → retry loop de 148s
+### 🔧 Bug N — `*(outer_struct+0x24)` nunca preenchido após bind fake → retry loop — FIX PRONTO, AGUARDA PUSH
+
+**⚠️ PASSO 4 E DETECTOR JÁ COMMITADOS NO REPLIT — CRIS PRECISA CLICAR NO BOTÃO PUSH**
 
 **Causa raiz (diagnóstico completo 2026-05-01):**
 
@@ -122,7 +124,18 @@ Quando PASSO 3 forja o WaitSema COM condição `pc==0x293c64 && ra==0x297374` (o
 - `s0_client = gpr[16]` (callee-saved — client ptr retornado por func_296E10)
 - Escreve `*(rdram + s1_outer + 0x24) = s0_client` simulando a resposta do handler SIF
 
-**Consequência esperada:** loop de bind em `entry_298910` finalmente avança após cada bind confirmado (em vez de retornar ao topo de `label_2989c4`). O jogo deve carregar todos os 35 módulos IOP sem ficar preso.
+**Consequência esperada:** loop de bind em `entry_298910` finalmente avança após cada bind confirmado (em vez de retornar ao topo de `label_2989c4`). O jogo deve carregar todos os módulos IOP restantes.
+
+**Detector de retry-loop adicionado (2026-05-01) em `GOD_PC_PORT_FINAL/src/recompiled/entry_298910_0x298a10.cpp`:**
+
+```
+[retry-loop] #N outer_struct=0xXXXXXX *(s0+0x24)=0xXXXX global@0x2A4B60=0xXXXX
+```
+
+- Aparece em `label_2989c4` (entrada do loop de 1M iters)
+- Rate-limit: primeiros 32 + a cada 64 depois
+- Com PASSO 4 ativo: **NÃO deve aparecer nenhuma vez** (campo já preenchido antes do check)
+- Se aparecer: indica que PASSO 4 não está ativo ou a condição `pc/ra` não foi satisfeita
 
 ---
 
@@ -177,25 +190,29 @@ Testado contra log atual → detectou corretamente sid=34, 31 módulos acordados
 
 ---
 
-## 📋 Próxima ação do analista (atualizado 2026-05-01 — Bug N corrigido — PASSO 4)
+## 📋 Próxima ação do analista (atualizado 2026-05-01 — PASSO 4 + detector retry-loop prontos)
 
-**Fixes pendentes de push (Cris precisa clicar em Push):**
-- `ps2_syscalls_flags.inl` — **PASSO 4 Bug N fix**: em PASSO 3 (WaitSema forjado, pc=0x293c64, ra=0x297374), escreve `*(rdram+gpr[17]+0x24)=gpr[16]` simulando o handler DMA SIF que preenche o campo `confirmed_client` no outer_struct. **Requer rebuild do runtime (build.sh no PC do Cris).**
-- (já enviados em commit anterior, não precisam de push): `auto_round.sh` RUN_TIMEOUT=300, `tools/triage_round.py`, `tools/missing_to_seeds.py`, `ps2_runtime.cpp` boot-loop detector.
+**⚠️ PUSH PENDENTE — Cris precisa clicar em Push no Replit antes do próximo round.**
+
+**Arquivos modificados neste commit (todos prontos, nenhum push ainda):**
+- `ps2_syscalls_flags.inl` — **PASSO 4 Bug N**: escreve `*(rdram+gpr[17]+0x24)=gpr[16]` quando `pc=0x293c64 && ra=0x297374` — requer rebuild runtime
+- `entry_298910_0x298a10.cpp` — **detector `[retry-loop]`** em `label_2989c4` — requer recompilação do jogo
+- `HANDOFF_AGENT.md` + `replit.md` — documentação (não precisam de push imediato para o round)
 
 **Após o push e próximo round (300s), o analista deve:**
 ```bash
-# 1. Triagem completa em 1 comando:
+# Triagem completa em 1 comando:
 python3 tools/triage_round.py
 
-# 2. Resumo rápido:
+# Resumo rápido:
 python3 tools/triage_round.py --short
 ```
 
-**O que procurar:**
-- `[PASSO 4]` aparecendo ≥1x no log → Bug N fix está ativo
-- Se sids subirem de forma contínua (sid=1→2→3→...→35) sem pause de 148s → Bug N resolvido!
-- Se aparecer nova linha parada (ex: `func_XXXXXX not found`) → novo bug para análise
-- Se aparecer `SIGSEGV` → crash pós-bind, bug de runtime pós-carregamento de módulos
-- Se aparecer `[boot-loop:suspect]` → checar PC e a0 reportados
-- Se o jogo ainda terminar por SIGINT sem chegar nos 35 módulos → possível Bug O (outro campo ausente ou outro módulo com lógica diferente)
+**O que procurar no próximo round:**
+- `[PASSO 4]` aparecendo ≥1x → Bug N fix ativo ✅
+- `[retry-loop]` NÃO aparecendo → PASSO 4 eliminou o loop ✅ (se aparecer, PASSO 4 não está funcionando)
+- `[retry-loop]` aparecendo com `*(s0+0x24)=0x0` → PASSO 4 não disparou — checar condição pc/ra
+- Sids subindo além de 18 (sid=19, 20...) → Bug N resolvido, carregamento de módulos avançou ✅
+- `SIGSEGV` → crash pós-bind, novo bug de runtime
+- `func_XXXXXX not found` → nova função ausente, criar stub
+- `[boot-loop:suspect]` → checar PC e a0 reportados
