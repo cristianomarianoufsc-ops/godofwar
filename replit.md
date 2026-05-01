@@ -322,22 +322,25 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 ---
 
-## 🟢 ESTADO ATUAL — Bug K resolvido, jogo sobrevive 90s (atualizado 2026-05-01)
+## 🟢 ESTADO ATUAL — Bug M diagnosticado, timeout 90→300s (atualizado 2026-05-01)
 
 ### ✅ Bug K — CONFIRMADO RESOLVIDO
+### ✅ Bug L — CONFIRMADO RESOLVIDO (0x296a54 stub noop, 8 callbacks registrados no round)
 
-Round confirmou: 32 WaitSemas acordados (sids 4–35, deltas variando de 0ms a ~60s). Jogo sobreviveu os 90 segundos de timeout sem nenhum deadlock. Round terminou por SIGINT (timeout normal), não crash.
+### 🔍 Bug M — Timeout insuficiente para init IOP completo
 
-### Próximo bloqueio suspeito — VBlank `flag=0` após 5340 ticks
+**Diagnóstico (round 2026-05-01):**
+- Jogo carrega 25+ módulos IOP via SIF RPC_BIND (sids 4–28 visíveis, padrão `rpc_id = N*0x10000 + 5`)
+- Módulos 1–7 (sids 4–11): delta_ms=0 → carregamento instantâneo
+- Módulos 8+ (sids 12–28): delta_ms=3s a 64s cada → 2–5 segundos por módulo (poll de VBlank entre binds)
+- `RUN_TIMEOUT=90s` → corta em sid=28 (frame ~5340). Jogo **não está preso** — apenas precisa de mais tempo.
 
-O stub VBlank `0x182f28` imprime `flag=0 altCount=N` durante todo o run. O campo `flag` nunca muda de 0. No PS2 real, o IOP setaria essa flag ao concluir a inicialização dos módulos — o jogo provavelmente tem um polling loop que espera `flag != 0` para sair do boot e entrar na tela de intro.
+**Falso positivo descartado — VBlank `flag=0`:**
+O stub `0x182f28` faz `flag ^= 1` a cada tick (toggles corretamente). O log periódico captura só ticks múltiplos de 60 (pares), que por coincidência sempre têm `flag=0`. A flag alternates normalmente; não é bug.
 
-**Buffer `0x30aaa8` no VBlank #5000 (este round):**
-`80 82 32 20 21 00 00 00 23 00 00 00 ...` — mudou em relação ao round anterior (`09 00 00 00 0b 00 00 00`), confirmando que o jogo avançou no init.
+**Fix aplicado:** `auto_round.sh` linha 60: `RUN_TIMEOUT=90` → `RUN_TIMEOUT=300`
 
-**Bug L identificado e resolvido (2026-05-01):** `0x296a54` era a `FUN_00296a50` truncada a 2 instruções, chamada 33x como callback de módulo IOP. Stub noop registrado em `game_overrides.cpp` (`gow_stub_FUN_00296a54`). Range real `0x296a50-0x296c48` adicionado ao `truncation_overrides.csv` para regen futura via `regen_truncated.sh`.
-
-**Esperado no próximo round:** sem `Warning: Function at address 0x296a54 not found`; log limpo de `[stub:0x296a54] Bug L: callback IOP modulo #N`. Jogo deve avançar além do ponto atual.
+**Esperado no próximo round:** jogo carrega todos os módulos IOP e revela o próximo bloqueio (primeiro símbolo ou função não encontrada após boot completo, ou tela de intro travada).
 
 ---
 

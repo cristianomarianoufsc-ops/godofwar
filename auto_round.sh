@@ -29,7 +29,7 @@
 #
 # ----------------------------------------------------------------------------
 # DENTRO DE CADA ROUND (qualquer modo):
-#   - Janela do jogo abre sozinha, fica 90s, FECHA SOZINHA via timeout.
+#   - Janela do jogo abre sozinha, fica 300s, FECHA SOZINHA via timeout.
 #   - ❌ Você NÃO precisa apertar Ctrl+C no jogo nem no terminal.
 #   - ❌ NÃO feche a janela do jogo no X — deixe o timeout fazer o trabalho.
 # ----------------------------------------------------------------------------
@@ -57,7 +57,7 @@ set -u
 # ============================================================
 PROJECT_DIR="${PROJECT_DIR:-$HOME/Documentos/GitHub/godofwar}"
 POLL_INTERVAL=30                  # segundos entre checagens de novo commit
-RUN_TIMEOUT=90                    # segundos rodando o jogo (jogar.sh)
+RUN_TIMEOUT=300                   # segundos rodando o jogo (jogar.sh) — aumentado de 90→300 (Bug M: init IOP leva ~2min+)
 LOG_BRANCH="logs/auto"
 LOG_DIR_NAME="runs_automaticos"
 STATE_FILE_NAME=".auto_round_last_hash"

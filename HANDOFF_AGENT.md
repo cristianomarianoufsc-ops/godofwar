@@ -91,26 +91,25 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-01 — Bug K confirmado, jogo 90s)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-01 — Bug M, timeout 90→300s)
 
 ### ✅ Bug K — CONFIRMADO RESOLVIDO
+### ✅ Bug L — CONFIRMADO RESOLVIDO (stub 0x296a54 visível 8x no round: callbacks #0–#7)
 
-32 WaitSemas acordados (sids 4–35, deltas 0ms a ~60s). Jogo sobreviveu os 90 segundos inteiros sem deadlock. Round terminou por SIGINT (timeout normal do auto_round.sh), não por crash.
+### 🔍 Bug M — Timeout insuficiente (RUN_TIMEOUT 90→300s)
 
-### 🔍 Próximo suspeito — VBlank `flag=0` nunca muda
+**Diagnóstico do round mais recente:**
+- Jogo carrega 25+ módulos IOP via SIF RPC_BIND (sids 4–28 visíveis)
+- Módulos 1–7: delta_ms=0 → instantâneos
+- Módulos 8+ (rpc_id ≥ 0x80005): delta_ms=3s–64s cada, jogo faz poll de VBlank entre binds
+- Com 90s, corta em sid=28, frame ~5340 — jogo **não está preso**, só precisa de mais tempo
 
-O stub VBlank `0x182f28` registra `flag=0` durante TODO o run (5340 ticks). No PS2 real, o IOP setaria essa flag ao terminar o init dos módulos. O jogo provavelmente faz polling de `flag != 0` para sair do boot e entrar na tela de intro.
+**Falso positivo descartado — VBlank `flag=0`:**
+Stub faz `flag ^= 1` (toggle correto). Log periódico a cada 60 ticks (pares) → sempre captura flag=0. Não é bug.
 
-Buffer `0x30aaa8` mudou (confirmando progresso): antes `09 00 00 00 0b 00 00 00`, agora `21 00 00 00 23 00 00 00` (sid=33, sid=35 — últimos módulos carregados).
+**Fix aplicado:** `auto_round.sh` `RUN_TIMEOUT=90` → `RUN_TIMEOUT=300`
 
-**Bug L — identificado e resolvido (2026-05-01):**
-`0x296a54` era a `FUN_00296a50` truncada a apenas 2 instruções, chamada 33x como callback de módulo IOP (skip-prologue, ra=0). Sem IOP real, `mem[mem[0x327898]]==0` → early-return sempre tomado → stub noop é equivalente ao comportamento real.
-
-**Fix aplicado:**
-- `game_overrides.cpp`: stub `gow_stub_FUN_00296a54` registrado em `0x296A54`
-- `tools/truncation_overrides.csv`: range `FUN_00296a50,0x296a50,0x296c48` adicionado pra regen futura
-
-**Esperado no próximo round:** zero `Warning: Function at address 0x296a54 not found`; log mostrará `[stub:0x296a54] Bug L: callback IOP modulo #N` (até 8x). Jogo deve avançar além do ponto atual.
+**Esperado no próximo round (300s):** jogo termina de carregar todos os módulos IOP e revela o próximo bloqueio real.
 
 ---
 
@@ -135,17 +134,17 @@ Buffer `0x30aaa8` mudou (confirmando progresso): antes `09 00 00 00 0b 00 00 00`
 
 ---
 
-## 📋 Próxima ação do analista (atualizado 2026-05-01)
+## 📋 Próxima ação do analista (atualizado 2026-05-01 — após Bug M)
 
-**Push já foi feito.** O round com PASSO 2.8 compilado deve estar rodando ou ter rodado.
+**Fix aplicado:** `auto_round.sh` `RUN_TIMEOUT=90` → `RUN_TIMEOUT=300`. **Cris precisa clicar em Push.**
 
-Analista: ler o log via curl e verificar se `delta_ms_since_RPC_BIND` aparece:
-
+**Após o push e próximo round (300s), o analista deve:**
 ```bash
-curl -s "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/logs/auto/runs_automaticos/log_latest_full.txt" | grep -E "WaitSema|CreateSema|SignalSema|delta_ms"
+# Ver até onde o jogo chegou — quantos sids? qual foi o último?
+curl -s "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/logs/auto/runs_automaticos/log_latest_filtered.txt" | grep -E "CreateSema|WaitSema:block|stub:|Warning|SIGSEGV" | tail -40
 ```
 
-**Se aparecer `delta_ms_since_RPC_BIND=N`** → aplicar PASSO 3 conforme tabela acima.
-**Se ainda aparecer sem delta_ms** → round ainda está com binário antigo; Cris precisa rodar `Ctrl+C` no loop e `bash auto_round.sh loop` pra forçar rebuild.
-
-⚠️ **Nota sessão 2026-05-01 (agente confuso):** esta sessão adicionou um sentinel redundante em `rdram[0x20]` no boot stub e um JALR guard em `sub_00100408` que pode ou não ter sido novo. Essas mudanças são **inofensivas** (Bug D já estava resolvido, Fix 1/6 de sentinelas em 0x2cf090 intactos), mas foram desnecessárias. O analista desta sessão operou com contexto desatualizado do resumo automático do chat — Lição: **sempre ler replit.md e HANDOFF antes de qualquer edit**.
+**O que procurar:**
+- Se o log mostrar `sid=N` crescendo até parar e depois aparecer algo novo (erro, Warning, função not found) → Bug N identificado, diagnosticar
+- Se o jogo ainda terminar por SIGINT (timeout) sem erro → aumentar RUN_TIMEOUT mais ou investigar o inter-módulo delay
+- Se aparecer `SIGSEGV` ou crash → novo bug para análise
