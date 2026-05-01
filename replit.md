@@ -258,6 +258,7 @@ PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_teste.txt
 | **I** — `sceSifSetDma` rejeita `dest=0xffffffff` silenciosamente | 🟡 BLINDADO/ATIVO | `ps2_stubs_misc.inl` (PLANO A+B1) | PLANO B1: aceita `dest=0xffffffff` com log diagnóstico, retorna 1 fake | `replit_HISTORICO.md §BugI` |
 | **J** — `0x296a54` not found com `ra=0, a0=5` | 🟡 BLINDADO | `ps2_stubs_misc.inl` (PLANO C) | `if dmatAddr < 0x100000 return 0` — não trava nada | `HANDOFF_HISTORICO.md §BugJ` |
 | **K** — `WaitSema sid=12` bloqueia com `delta=2837ms` (> guard 100ms) | ✅ RESOLVIDO | `ps2_syscalls_flags.inl` | Removido `&& deltaMsSinceBind < 100` — condição agora só `deltaMsSinceBind >= 0` | 2026-05-01 |
+| **L** — `0x296a54 not found` 33x (FUN_00296a50 truncada a 2 instrucoes) | ✅ RESOLVIDO | `game_overrides.cpp` + `truncation_overrides.csv` | Stub noop registrado em `0x296a54`; override CSV com range real `0x296a50-0x296c48` pra regen futura | 2026-05-01 |
 
 ---
 
@@ -334,7 +335,9 @@ O stub VBlank `0x182f28` imprime `flag=0 altCount=N` durante todo o run. O campo
 **Buffer `0x30aaa8` no VBlank #5000 (este round):**
 `80 82 32 20 21 00 00 00 23 00 00 00 ...` — mudou em relação ao round anterior (`09 00 00 00 0b 00 00 00`), confirmando que o jogo avançou no init.
 
-**Próximo passo:** verificar o que o código em `0x182f28` verifica como `flag` e se há um sinal IOP que precisa ser forjado para destravá-lo.
+**Bug L identificado e resolvido (2026-05-01):** `0x296a54` era a `FUN_00296a50` truncada a 2 instruções, chamada 33x como callback de módulo IOP. Stub noop registrado em `game_overrides.cpp` (`gow_stub_FUN_00296a54`). Range real `0x296a50-0x296c48` adicionado ao `truncation_overrides.csv` para regen futura via `regen_truncated.sh`.
+
+**Esperado no próximo round:** sem `Warning: Function at address 0x296a54 not found`; log limpo de `[stub:0x296a54] Bug L: callback IOP modulo #N`. Jogo deve avançar além do ponto atual.
 
 ---
 

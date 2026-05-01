@@ -470,6 +470,25 @@ namespace
         ctx->pc = GPR_U32(ctx, 31);
     }
 
+    // Bug L (2026-05-01) — FUN_00296a50 truncada a 2 instrucoes; chamada via
+    // 0x296a54 (skip-prologue, ra=0) 33x como callback de modulo IOP.
+    // Sem IOP real, mem[mem[0x327898]] == 0 → early-return sempre tomado.
+    // Stub retorna 0 (equivalente ao caminho beqz $a1, 0x296b84 da funcao real).
+    // Solucao permanente: regen via truncation_overrides.csv entry 0x296a50-0x296c48.
+    void gow_stub_FUN_00296a54(uint8_t* /*rdram*/, R5900Context* ctx, PS2Runtime* /*runtime*/)
+    {
+        static std::atomic<uint32_t> s_log{0};
+        const uint32_t n = s_log.fetch_add(1, std::memory_order_relaxed);
+        if (n < 8u)
+        {
+            std::cout << "[stub:0x296a54] Bug L: callback IOP modulo #" << n
+                      << " — sem IOP, count=0, retornando 0 (early-exit)"
+                      << std::endl;
+        }
+        SET_GPR_S32(ctx, 2, 0);  // $v0 = 0
+        ctx->pc = GPR_U32(ctx, 31);  // return (ra=0 → dispatcher limpa)
+    }
+
     void apply_god_of_war_overrides(PS2Runtime& runtime)
     {
         runtime.registerFunction(0x0013DA10u, gow_stub_sub_0013DA10);
@@ -484,6 +503,11 @@ namespace
         std::cout << "[game_overrides] God of War: stub PARTE 8 PLANO A registrado em 0x00182F28 "
                   << "(handler INTC VBlank — replica fiel das 8 instrucoes em sub_00182EE8 "
                   << "que o detector PS2Recomp perdeu por estarem apos um jr $ra)"
+                  << std::endl;
+
+        runtime.registerFunction(0x00296A54u, gow_stub_FUN_00296a54);
+        std::cout << "[game_overrides] God of War: stub Bug L registrado em 0x00296A54 "
+                  << "(FUN_00296a50 truncada — callback IOP modulo, early-exit sem IOP)"
                   << std::endl;
     }
 }

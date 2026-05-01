@@ -103,7 +103,14 @@ O stub VBlank `0x182f28` registra `flag=0` durante TODO o run (5340 ticks). No P
 
 Buffer `0x30aaa8` mudou (confirmando progresso): antes `09 00 00 00 0b 00 00 00`, agora `21 00 00 00 23 00 00 00` (sid=33, sid=35 — últimos módulos carregados).
 
-**Próximo passo:** inspecionar o stub `0x182f28` — verificar qual endereço de memória é lido como `flag` e o que deveria escrevê-lo. Pode exigir instrumentar o código recompilado ao redor de `0x182f28` ou analisar via `mips_inspect.py`.
+**Bug L — identificado e resolvido (2026-05-01):**
+`0x296a54` era a `FUN_00296a50` truncada a apenas 2 instruções, chamada 33x como callback de módulo IOP (skip-prologue, ra=0). Sem IOP real, `mem[mem[0x327898]]==0` → early-return sempre tomado → stub noop é equivalente ao comportamento real.
+
+**Fix aplicado:**
+- `game_overrides.cpp`: stub `gow_stub_FUN_00296a54` registrado em `0x296A54`
+- `tools/truncation_overrides.csv`: range `FUN_00296a50,0x296a50,0x296c48` adicionado pra regen futura
+
+**Esperado no próximo round:** zero `Warning: Function at address 0x296a54 not found`; log mostrará `[stub:0x296a54] Bug L: callback IOP modulo #N` (até 8x). Jogo deve avançar além do ponto atual.
 
 ---
 
@@ -122,6 +129,7 @@ Buffer `0x30aaa8` mudou (confirmando progresso): antes `09 00 00 00 0b 00 00 00`
 | **I** — `sceSifSetDma` rejeita `dest=0xffffffff` | 🟡 BLINDADO | `ps2_stubs_misc.inl` (PLANO B1) | Aceita `dest=0xffffffff`, retorna 1 fake |
 | **J** — `0x296a54` not found, `ra=0` | 🟡 BLINDADO | `ps2_stubs_misc.inl` (PLANO C) | `if dmatAddr < 0x100000 return 0` |
 | **K** — `WaitSema sid=12` delta=2837ms > guard 100ms | ✅ RESOLVIDO | `ps2_syscalls_flags.inl` | Removido `&& deltaMsSinceBind < 100` — condição agora só `deltaMsSinceBind >= 0` |
+| **L** — `0x296a54 not found` 33x (FUN_00296a50 truncada a 2 instr.) | ✅ RESOLVIDO | `game_overrides.cpp` + `truncation_overrides.csv` | Stub noop em `0x296A54`; CSV com range real `0x296a50-0x296c48` pra regen futura |
 
 > **Detalhe completo de cada bug** (diagnóstico, dumps, hipóteses descartadas, código aplicado) → `HANDOFF_HISTORICO.md`.
 

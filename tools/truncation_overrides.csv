@@ -23,3 +23,4 @@
 # Estender o range faz o ps2_recomp descobrir esses sub-entries via
 # o passo de "Discovered additional entry point(s)".
 entry,0x100008,0x100db8
+FUN_00296a50,0x296a50,0x296c48
