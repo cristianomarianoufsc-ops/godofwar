@@ -166,15 +166,17 @@ Confirmado também que:
 
 ---
 
-## 📋 Comandos pro Agente Cris (próxima ação)
+## 📋 Próxima ação do analista (atualizado 2026-05-01)
 
-Após clicar **Push** no Replit (para mandar PASSO 2.8 + fix `auto_round.sh`):
+**Push já foi feito.** O round com PASSO 2.8 compilado deve estar rodando ou ter rodado.
+
+Analista: ler o log via curl e verificar se `delta_ms_since_RPC_BIND` aparece:
 
 ```bash
-# Se quiser que o fix do log_latest valha já no PRÓXIMO round
-# (senão só no round seguinte porque o script em execução é a versão antiga):
-Ctrl+C no terminal do loop
-bash auto_round.sh loop
+curl -s "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/logs/auto/runs_automaticos/log_latest_full.txt" | grep -E "WaitSema|CreateSema|SignalSema|delta_ms"
 ```
 
-O round seguinte vai mostrar `[WaitSema:block] ... delta_ms_since_RPC_BIND=N` no log filtrado. Analista lê via curl e decide PASSO 3.
+**Se aparecer `delta_ms_since_RPC_BIND=N`** → aplicar PASSO 3 conforme tabela acima.
+**Se ainda aparecer sem delta_ms** → round ainda está com binário antigo; Cris precisa rodar `Ctrl+C` no loop e `bash auto_round.sh loop` pra forçar rebuild.
+
+⚠️ **Nota sessão 2026-05-01 (agente confuso):** esta sessão adicionou um sentinel redundante em `rdram[0x20]` no boot stub e um JALR guard em `sub_00100408` que pode ou não ter sido novo. Essas mudanças são **inofensivas** (Bug D já estava resolvido, Fix 1/6 de sentinelas em 0x2cf090 intactos), mas foram desnecessárias. O analista desta sessão operou com contexto desatualizado do resumo automático do chat — Lição: **sempre ler replit.md e HANDOFF antes de qualquer edit**.
