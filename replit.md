@@ -339,38 +339,63 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 ---
 
-## 🟢 ESTADO ATUAL — Bug X: StartThread nunca chamado para thread id=2 (atualizado 2026-05-01)
+## 🟢 ESTADO ATUAL — Bug X RESOLVIDO + Bug P RESOLVIDO (atualizado 2026-05-01)
 
 ### ✅ Bugs K, L, M, N, O — RESOLVIDOS
-### ✅ Bugs P–W — regen executada pelo Agente Cris via `bash tools/regen_truncated.sh`
-### 🔴 Bug X — StartThread NUNCA chamado para tid=2 (entry=0x2947c8) — bloqueador atual
+### ✅ Bugs P–W — regen executada + Bug P corrigido manualmente (veja abaixo)
+### ✅ Bug X — RESOLVIDO (2026-05-01)
 
-**DIAGNÓSTICO Bug X (2026-05-01 — confirmado pelo `triage_round.py` atualizado):**
+---
 
-O round pós-regen (P–W) **não mudou o comportamento observável** porque o problema atual é anterior à execução das funções regeneadas: a thread 2 é **criada** (`CreateThread id=2 entry=0x2947c8`) mas `StartThread` **jamais é chamado** para ela.
+### BUG X — CAUSA RAIZ E FIX
 
-- `CreateThread id=2 entry=0x2947c8 prio=1` → aparece no log ✅
-- `StartThread id=2` → **AUSENTE** em todo o log 🔴
-- Após sid=19 acordar → jogo entra em VBlank loop até timeout de 300s (17940 frames = 299s)
-- Nenhuma nova atividade (nenhum `CreateSema`, `RPC_BIND`, `StartThread`) depois de sid=19
+**Causa raiz:** `R5900Context::cop0_status` inicializado como `0x00000000` → IE=0 (interrupts disabled).
 
-**O que o `triage_round.py` agora detecta automaticamente:**
+A função `func_294618` (0x294618) é um helper de 3 instruções:
+```mips
+mfc0 $v0, Status   ; lê COP0 Status
+xori $v0, $v0, 1   ; flip bit 0 (IE)
+andi $v0, $v0, 1   ; → retorna 1 se IE=0, 0 se IE=1
 ```
-── THREADS EE (CreateThread / StartThread) ────────────────────────────
-  id=  2  entry=0x2947c8  prio=1  →  🔴 StartThread NUNCA chamado
+Em `sub_00294AF8` (chamado logo após CreateThread), na linha ELF 0x294b18:
+```cpp
+if (func_294618() != 0) goto label_294c58;  // pula StartThread!
+```
+Com `cop0_status=0`, IE=0 → `func_294618` sempre retorna 1 → StartThread **SEMPRE pulado** via `goto label_294c58`.
 
-DIAGNÓSTICO: 🔴 Thread(s) criada(s) mas StartThread NUNCA chamado: id(s)=2
+**Fix aplicado** em `PS2Recomp/ps2xRuntime/include/ps2_runtime.h` linha 151:
+```cpp
+// ANTES:
+cop0_status = 0x00000000;
+// DEPOIS:
+cop0_status = 0x00010001;  // IE=1 (bit0) + EIE=1 (bit16) = user-mode normal
 ```
 
-**Por que regen P–W não resolveu:** as funções regeneadas são o *corpo* da thread 2. Se `StartThread` nunca é chamado, o corpo nunca executa. O problema está em quem deveria chamar `StartThread` após o bind loop IOP.
+---
 
-**Próximo passo — identificar o chamador de StartThread:**
-```bash
-# Quem chama StartThread(tid=2) no ELF?
-python3 tools/mips_inspect.py --callers 0x2947c8
-# Ver o caminho de execução após sid=19 acordar (ra=0x297374):
-python3 tools/mips_inspect.py 0x297374
-```
+### BUG P — CAUSA RAIZ E FIX
+
+**Causa raiz:** `FUN_002947c8_0x2947c8.cpp` truncado para 1 instrução porque o range 0x2947c8–0x2948a0 estava dentro de `sub_00294760_0x294760.cpp` (0x294760–0x2948a0). O PS2Recomp não conseguiu regen correto por overlap.
+
+**Fix aplicado** em `GOD_PC_PORT_FINAL/src/recompiled/FUN_002947c8_0x2947c8.cpp`:
+Reescrito manualmente com o corpo completo da thread 2 (IOP event dispatch loop), extraído das linhas 171–479 de `sub_00294760_0x294760.cpp`. A thread implementa um loop infinito:
+- Aguarda sema (`jal 0x293C60` = WaitSema)
+- Lê byte do ring buffer via `$s1`
+- Despacha por tipo: 0 → `0x293B50`, 1 → `0x293AD0`, 2 → `0x293B90`, outros → `0x296440`
+- Volta ao loop via `goto label_294808`
+
+---
+
+**Arquivos modificados (precisa rebuild no PC do Cris):**
+1. `PS2Recomp/ps2xRuntime/include/ps2_runtime.h` — linha 151: `cop0_status = 0x00010001`
+2. `GOD_PC_PORT_FINAL/src/recompiled/FUN_002947c8_0x2947c8.cpp` — reescrito (230 linhas)
+
+**Comando de rebuild:** `bash rebuild_runtime.sh && bash build.sh` (ou só `rebuild_runtime.sh` se quiser testar o runtime isolado)
+
+**Resultado esperado após fix:**
+- `[StartThread] id=2 entry=0x2947c8` aparece no log ✅
+- Thread 2 entra no loop de dispatch de eventos IOP ✅
+- Bind loop IOP prossegue além de sid=19 ✅
 
 ---
 

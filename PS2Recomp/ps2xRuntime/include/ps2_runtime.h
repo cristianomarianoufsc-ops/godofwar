@@ -140,7 +140,12 @@ struct alignas(16) R5900Context
         // cop0_status = 0x400000; // BEV set, ERL clear, kernel mode
         // 0x00400000 = BEV (Boot Exception Vectors).
         // 0x00000000 = Normal mode (after BIOS handoff).
-        cop0_status = 0x00000000;
+        // BUG X FIX (2026-05-01): IE (bit 0) + EIE (bit 16) devem ser 1 para que o
+        // SDK do PS2 permita StartThread. Com cop0_status=0, func_294618 retorna 1
+        // ("interrupts desabilitados") e sub_00294AF8 sempre pula o jal 0x293A40
+        // (StartThread) via goto label_294c58. Valor 0x00010001 = estado user-mode
+        // normal apos BIOS handoff: EIE=1 (bit16) + IE=1 (bit0).
+        cop0_status = 0x00010001;
         cop0_prid = 0x00002e20; // CPU ID for R5900
 
         in_delay_slot = false;
