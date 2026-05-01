@@ -24,3 +24,8 @@
 # o passo de "Discovered additional entry point(s)".
 entry,0x100008,0x100db8
 FUN_00296a50,0x296a50,0x296c48
+# Bug P (2026-05-01) — FUN_002947c8: thread id=2, entry da thread principal pós-init IOP.
+# Truncada a 1 instrução (addiu $sp,-0x80) — faltavam 452 bytes.
+# Range real confirmado via mips_inspect.py --gap: jr $ra em 0x294984, epilogue 0x294988.
+# Sem essa regen, thread 2 nunca executa: jogo fica em VBlank infinito após sid=35.
+FUN_002947c8,0x2947c8,0x294990

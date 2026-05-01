@@ -204,7 +204,9 @@ O usuário não é engenheiro de baixo nível. O progresso técnico é traduzido
 | Sensor de injeção rebobinado: cabo do computador de bordo agora chega numa centralinha auxiliar | PARTE 8: stub `gow_intc_handler_0x182f28` em `game_overrides.cpp`, replica 8 instruções MIPS perdidas | ✅ Bug G resolvido |
 | 4 botões pneumáticos ligados à fonte central | PARTE 9: syscalls SIF poll 0x79/0x7A/0x7B/0x7D implementados em `ps2_syscalls.cpp`, retornam `-1` | ✅ Bug H resolvido |
 | Sensor diagnóstico no acoplamento SIF + stub permissivo para `dest=0xffffffff` | PARTE 10 PLANO A+B1: `sceSifSetDma` instrumentado + aceita stage transfer | ✅ Bug I ativo/blindado |
-| Ignição de emergência no portão SIF: porteiro aprende a dar o sinal sozinho quando o caminhão passa | PARTE 10 PASSO 3: `WaitSema` com `delta_ms < 100` incrementa `sema->count` antes do wait, desbloqueando o deadlock IOP | 🟡 **AGUARDANDO ROUND** |
+| Ignição de emergência no portão SIF: porteiro aprende a dar o sinal sozinho quando o caminhão passa | PARTE 10 PASSO 3: `WaitSema` forja `iSignalSema` — 35 binds SIF concluídos | ✅ sid=4..35 OK |
+| Checklist de peças: cobrador do armazém responde "chegou" em vez de "ainda não" | Bug O: stub `0x296a54` retorna 1 — sid=4..11 delta=0ms | ✅ Bug O |
+| Segundo motorista recebe o roteiro de entrega completo (estava com a pasta vazia) | Bug P: regen `FUN_002947c8` 0x2947c8→0x294990 — thread id=2 executa de verdade | 🔴 AGUARDANDO REGEN |
 | Carburador, transmissão, suspensão | Subsistemas: GS (gráficos), DMA, áudio, controle | 🔜 depois |
 | Test drive | Jogo rodando até a primeira fase jogável | 🔜 longe |
 
@@ -219,7 +221,9 @@ O usuário não é engenheiro de baixo nível. O progresso técnico é traduzido
 | Agente de tráfego no cruzamento (VBlank sinaleiro) | PARTE 8: stub INTC `0x182f28` em `game_overrides.cpp` | ✅ Bug G |
 | Operador no switchboard das 4 portas biométricas | PARTE 9: syscalls SIF poll 0x79-0x7D em `ps2_syscalls.cpp` | ✅ Bug H |
 | Portão de carga SIF: sensor diagnóstico + stub permissivo instalados | PARTE 10 PLANO A+B1: `sceSifSetDma` instrumentado + aceita `dest=0xffffffff` | ✅ Bug I blindado |
-| Agente infiltrado acorda o guarda adormecido: intercepta o sinal que o IOP nunca mandou e forja a resposta | PARTE 10 PASSO 3: WaitSema com delta_ms < 100 sinaliza semáforo sozinho, desbloqueando o deadlock | 🟡 **AGUARDANDO ROUND** |
+| Agente infiltrado acorda o guarda adormecido: intercepta o sinal que o IOP nunca mandou e forja a resposta | PARTE 10 PASSO 3: WaitSema forja `iSignalSema` — 35 binds SIF concluídos | ✅ sid=4..35 OK |
+| Informante diz "já recebi as encomendas" em vez de "ainda não chegou" | Bug O: stub `0x296a54` retorna 1 — eliminando poll infinito dos primeiros 8 módulos | ✅ Bug O |
+| Agente 2 finalmente recebe o dossiê completo — não mais uma pasta com só a capa | Bug P: regen `FUN_002947c8` 0x2947c8→0x294990 — thread id=2 opera de verdade | 🔴 AGUARDANDO REGEN |
 | Próximos guardas internos previstos | VIF1/DMA com payloads válidos, GS, áudio, controle | 🔜 ato 3 |
 | Fuga com o alvo | Jogo rodando até a primeira fase jogável | 🔜 final |
 
@@ -264,6 +268,8 @@ PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_teste.txt
 | **L** — `0x296a54 not found` 33x (FUN_00296a50 truncada a 2 instrucoes) | ✅ RESOLVIDO | `game_overrides.cpp` + `truncation_overrides.csv` | Stub noop registrado em `0x296a54`; override CSV com range real `0x296a50-0x296c48` pra regen futura | 2026-05-01 |
 | **M** — Timeout insuficiente (90s), cortava em sid=28 | ✅ RESOLVIDO | `auto_round.sh` | `RUN_TIMEOUT=90` → `300` | 2026-05-01 |
 | **N** — PASSO 4 era regressão (escrevia em 0x30AACC em vez de 0x32AF24) | ✅ REVERTIDO | `ps2_syscalls_flags.inl` | Bloco PASSO 4 removido; sem ele, `sub_00297290` preenche 0x32AF24 naturalmente — sid=35+ confirmado sem PASSO 4 | 2026-05-01 |
+| **O** — stub `0x296a54` retornava 0 → deltas crescentes, sid=12+: ~1600ms/módulo | ✅ CONFIRMADO | `game_overrides.cpp` | `$v0=0` → `$v0=1` — sid=4..11 agora delta=0ms; sid=12+ melhora ~15% (causa secundária persiste) | 2026-05-01 |
+| **P** — `FUN_002947c8` truncada a 1 instrução (thread id=2, entry pós-init IOP) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_002947c8,0x2947c8,0x294990` adicionada — regen + rebuild necessários no PC | 2026-05-01 |
 
 ---
 
@@ -328,28 +334,40 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 ---
 
-## 🟢 ESTADO ATUAL — Bug O APLICADO, aguardando Push (atualizado 2026-05-01)
+## 🟢 ESTADO ATUAL — Bug P identificado, override CSV adicionado (atualizado 2026-05-01)
 
 ### ✅ Bug K — CONFIRMADO RESOLVIDO
-### ✅ Bug L — CONFIRMADO RESOLVIDO (0x296a54 stub noop, 8 callbacks registrados no round)
-### ✅ Bug M — Timeout insuficiente (90→300s) — RESOLVIDO
-### ✅ Bug N — PASSO 4 era REGRESSÃO — REVERTIDO (2026-05-01)
-### 🟡 Bug O — Fix aplicado, aguardando round (2026-05-01)
+### ✅ Bug L — CONFIRMADO RESOLVIDO
+### ✅ Bug M — RESOLVIDO
+### ✅ Bug N — REVERTIDO
+### ✅ Bug O — CONFIRMADO ($v0=1 no callback 0x296a54 — sid=4..11 agora delta=0ms)
+### 🔴 Bug P — FUN_002947c8 truncada — override CSV adicionado, aguardando regen no PC
 
-**DIAGNÓSTICO Bug O (detectado lendo log do round pós-Bug N):**
-- Callback `0x296a54` (stub Bug L) retornava `$v0=0` para todos os 32+ módulos IOP.
-- O jogo interpreta 0 como "módulo IOP não pronto" → busy-wait retry entre cada RPC BIND.
-- Prova: deltas crescentes — sid=12: 1871ms, sid=15: 9649ms, sid=35: 56823ms.
-- Após sid=35: VBlank infinito por ~243s sem mais eventos → timeout.
-- **Fix:** stub agora retorna `$v0=1` ("módulo pronto"), eliminando os retry loops.
+**DIAGNÓSTICO Bug O (confirmado no round pós-fix):**
+- Callback 0x296a54 agora retorna 1 — sid=4..11: delta=0ms ✅
+- sid=12+ ainda tem deltas crescentes (~1600ms/módulo) — causa separada, secundária
+- VBlank loop ainda ocorre após sid=35 — Bug P é o bloqueador principal
 
-**⚠️ PUSH PENDENTE:**
-- `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp` — Bug O fix ($v0=0 → $v0=1 em gow_stub_FUN_00296a54) — requer `bash rebuild_runtime.sh`
+**DIAGNÓSTICO Bug P (2026-05-01):**
+- `FUN_002947c8_0x2947c8.cpp`: range declarado = 0x2947c8-0x2947cc (1 instrução, 4 bytes)
+- Range real confirmado via `mips_inspect.py --gap`: 0x2947c8-0x294990 (456 bytes, ~114 instruções)
+- Função é a **thread principal pós-init IOP** (thread id=2, entry=0x2947c8): processa estados de módulos IOP em loop, inicia subsistemas do jogo
+- Sem a regen, thread 2 executa só o prologue e retorna → jogo nunca avança após sid=35
+- **Fix:** entry adicionada em `tools/truncation_overrides.csv`: `FUN_002947c8,0x2947c8,0x294990`
 
-**O que esperar no próximo round:**
-- Deltas devem voltar a 0ms para todos os sids (sem retry-loop)
+**⚠️ AÇÃO NECESSÁRIA NO PC DO AGENTE CRIS:**
+```bash
+# 1. Push do Replit
+# 2. No PC:
+git pull origin main
+bash tools/regen_truncated.sh   # regenera FUN_002947c8 e FUN_00296a50
+bash rebuild_runtime.sh --run   # rebuild + round
+```
+
+**O que esperar após a regen:**
+- Thread 2 executa código real (loop de módulos IOP)
 - Jogo deve progredir além do VBlank loop pós-sid=35
-- Novo bloqueio a identificar após os binds
+- Novo bloqueio ou crash a diagnosticar
 
 ---
 

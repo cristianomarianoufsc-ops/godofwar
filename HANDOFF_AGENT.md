@@ -94,7 +94,7 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-01 — Bug O APLICADO, aguardando round)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-01 — Bug P: regen FUN_002947c8 necessária)
 
 ### ✅ Bug K — CONFIRMADO RESOLVIDO
 ### ✅ Bug L — CONFIRMADO RESOLVIDO (stub 0x296a54 visível 8x no round: callbacks #0–#7)
@@ -157,7 +157,8 @@ No round `6625971` (sem PASSO 4, melhor resultado histórico):
 | **L** — `0x296a54 not found` 33x (FUN_00296a50 truncada a 2 instr.) | ✅ RESOLVIDO | `game_overrides.cpp` + `truncation_overrides.csv` | Stub noop em `0x296A54`; CSV com range real `0x296a50-0x296c48` pra regen futura |
 | **M** — Timeout insuficiente (90s), cortava em sid=28 | ✅ RESOLVIDO | `auto_round.sh` | `RUN_TIMEOUT=90` → `300` |
 | **N** — PASSO 4 era regressão (escrevia em 0x30AACC em vez de 0x32AF24) | ✅ REVERTIDO | `ps2_syscalls_flags.inl` | Bloco PASSO 4 removido; sem PASSO 4, `sub_00297290` preenche o campo certo naturalmente |
-| **O** — stub `0x296a54` retornava 0 → retry-loop crescente (sid=35: 57s) → VBlank infinito | 🟡 FIX APLICADO | `game_overrides.cpp` (`gow_stub_FUN_00296a54`) | `$v0=0` → `$v0=1` ("módulo IOP pronto") — elimina busy-wait entre binds |
+| **O** — stub `0x296a54` retornava 0 → deltas crescentes (sid=12+: ~1600ms/módulo) | ✅ CONFIRMADO | `game_overrides.cpp` | `$v0=0` → `$v0=1` — sid=4..11 delta=0ms; sid=12+ melhora ~15% (causa secundária persiste) |
+| **P** — `FUN_002947c8` truncada a 1 instrução (thread id=2 pós-init IOP, 456 bytes faltando) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_002947c8,0x2947c8,0x294990` adicionada — precisa `regen_truncated.sh` + rebuild no PC |
 
 > **Detalhe completo de cada bug** (diagnóstico, dumps, hipóteses descartadas, código aplicado) → `HANDOFF_HISTORICO.md`.
 
@@ -191,23 +192,32 @@ Testado contra log atual → detectou corretamente sid=34, 31 módulos acordados
 
 ---
 
-## 📋 Próxima ação do analista (atualizado 2026-05-01 — Bug O APLICADO)
+## 📋 Próxima ação do analista (atualizado 2026-05-01 — Bug P: regen necessária)
 
-**⚠️ PUSH PENDENTE — Cris precisa clicar em Push no Replit antes do próximo round.**
+**⚠️ PUSH PENDENTE + AÇÃO ESPECIAL NO PC**
 
 **Arquivos modificados neste commit:**
-- `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp` — **Bug O fix** (`$v0=0` → `$v0=1` em `gow_stub_FUN_00296a54`) — requer `bash rebuild_runtime.sh`
+- `tools/truncation_overrides.csv` — Bug P: entry `FUN_002947c8,0x2947c8,0x294990` adicionada
 - `HANDOFF_AGENT.md` + `replit.md` — documentação atualizada
 
-**O que esperar no próximo round (com Bug O fix):**
-- `[stub:0x296a54] Bug O: callback IOP modulo #N — retornando 1 (modulo pronto...)` nos primeiros 8
-- Deltas entre RPC BINDs devem voltar a 0ms (sem retry-loop)
-- sid=4..35 carregados muito mais rápido (< 5s total em vez de 57s)
-- Jogo deve progredir ALÉM do VBlank loop pós-sid=35 — novo território!
+**ATENÇÃO — este fix NÃO é só rebuild do runtime. Precisa de regen completa:**
+```bash
+# No PC do Agente Cris, após o Push:
+git pull origin main
+bash tools/regen_truncated.sh       # regenera FUN_002947c8 e FUN_00296a50 via ps2_recomp
+# (regen leva poucos segundos — apenas 2 arquivos)
+bash rebuild_runtime.sh --run       # rebuild + round automático
+```
 
-**Se os deltas continuarem crescendo:** o retry-loop tem outra causa — investigar o código que chama `0x296a54` e o que faz com o retorno `$v0=1`.
+**O que esperar após a regen:**
+- `FUN_002947c8_0x2947c8.cpp` passa de 1 instrução para ~114 instruções
+- Thread id=2 executa o loop de módulos IOP de verdade
+- Jogo deve sair do VBlank loop pós-sid=35
+- Possíveis novos crashes/stubs ausentes a diagnosticar
+
+**Se a regen não estiver disponível imediatamente**, o analista pode preparar um stub manual para `0x2947c8` em `game_overrides.cpp` como medida temporária — mas a regen é o fix correto.
 
 **Após o round, o analista deve:**
 ```bash
-curl -s "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/logs/auto/runs_automaticos/log_latest_filtered.txt" | grep -E "(WaitSema|PASSO 3|stub:0x296|CreateSema|SIGSEGV|not found)" | head -60
+curl -s "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/logs/auto/runs_automaticos/log_latest_filtered.txt" | grep -E "(WaitSema|not found|SIGSEGV|CreateThread|StartThread|0x2947)" | head -40
 ```
