@@ -412,8 +412,10 @@ namespace
     constexpr uint32_t kGowVblankFlagAddr        = 0x0029C7D8u;
     constexpr uint32_t kGowVblankFrameCountAddr  = 0x0029C7D4u;
     constexpr uint32_t kGowVblankAltCountAddr    = 0x00334F58u;
+    constexpr uint32_t kGowGameModeAddr          = 0x0029C838u;
 
     std::atomic<uint64_t> g_gowVblankTickCount{0u};
+    static uint32_t s_gowLastGameMode = 0xFFFFFFFFu;
 
     void gow_intc_handler_0x182f28(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime)
     {
@@ -430,6 +432,18 @@ namespace
         // sync + ei sao no-op no host: o dispatcher ja serializa handlers
         // via mutex e o cop0_status->ie nao tem efeito real no recompilado.
 
+        const uint32_t gameMode = READ32(kGowGameModeAddr);
+
+        // Detecta transicao de game mode e loga imediatamente
+        if (gameMode != s_gowLastGameMode)
+        {
+            std::cerr << "[stub:0x182f28] GAME_MODE_CHANGE: "
+                      << s_gowLastGameMode << " -> " << std::dec << gameMode
+                      << " @tick #" << (g_gowVblankTickCount.load(std::memory_order_relaxed) + 1u)
+                      << std::endl;
+            s_gowLastGameMode = gameMode;
+        }
+
         const uint64_t tick = g_gowVblankTickCount.fetch_add(1u, std::memory_order_relaxed) + 1u;
         if (tick <= 4u || (tick % 60u) == 0u)
         {
@@ -437,6 +451,7 @@ namespace
                       << " — frameCount=" << (frameCount + 1u)
                       << " flag=" << ((flag ^ 1u) & 1u)
                       << " altCount=" << (altCount + 1u)
+                      << " gameMode=" << gameMode
                       << std::endl;
         }
 
