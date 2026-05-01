@@ -12,6 +12,7 @@ OUTPUTS:
     Relatório estruturado no stdout com:
       - Progresso dos módulos IOP (sids carregados, último delta_ms)
       - Último frame VBlank
+      - Threads EE: CreateThread vs StartThread (detecta threads criadas sem start)
       - Erros/crashes/funções ausentes
       - Boot-loop suspects
       - Diagnóstico resumido do término do round
@@ -73,8 +74,13 @@ _RE_ALLOC        = re.compile(
     r"\[stub:sub_0013DA10\].*alloc #(\d+).*guestPtr=(0x\w+)")
 _RE_CALLBACK     = re.compile(
     r"\[stub:0x296a54\] Bug L: callback IOP modulo #(\d+)")
-_RE_MISSING_FUNC = re.compile(
+_RE_MISSING_FUNC  = re.compile(
     r"func_(0x[0-9a-fA-F]+).*not found", re.IGNORECASE)
+_RE_THREAD_CREATE = re.compile(
+    r"\[CreateThread\] id=(\d+) entry=(0x\w+)"
+    r"(?:\s+stack=(0x\w+))?(?:\s+size=(0x\w+))?(?:\s+gp=(0x\w+))?(?:\s+prio=(\d+))?")
+_RE_THREAD_START  = re.compile(
+    r"\[StartThread\] id=(\d+)")
 
 
 def fetch_url(url: str) -> str:
@@ -113,6 +119,8 @@ def parse_log(text: str) -> dict:
         "crash":           False,
         "last_lines":      [],   # últimas 10 linhas
         "total_lines":     0,
+        "threads_created": [],   # [{id, entry, prio}]
+        "threads_started": [],   # [id]
     }
 
     lines = text.splitlines()
@@ -148,6 +156,14 @@ def parse_log(text: str) -> dict:
             d["allocs"].append((int(m.group(1)), m.group(2)))
         if m := _RE_CALLBACK.search(line):
             d["iop_callbacks"].append(int(m.group(1)))
+        if m := _RE_THREAD_CREATE.search(line):
+            d["threads_created"].append({
+                "id": int(m.group(1)),
+                "entry": m.group(2),
+                "prio": int(m.group(6)) if m.group(6) else None,
+            })
+        if m := _RE_THREAD_START.search(line):
+            d["threads_started"].append(int(m.group(1)))
         if _RE_SIGSEGV.search(line):
             d["sigsegv"] = True
         if _RE_CRASH.search(line):
@@ -216,6 +232,17 @@ def report(d: dict, short: bool = False) -> None:
             print("  Nenhum VBlank registrado.")
 
         print()
+        print("── THREADS EE (CreateThread / StartThread) ───────────────────────────")
+        if d["threads_created"]:
+            for t in d["threads_created"]:
+                started = t["id"] in d["threads_started"]
+                status  = "✅ StartThread chamado" if started else "🔴 StartThread NUNCA chamado"
+                prio_str = f"  prio={t['prio']}" if t["prio"] is not None else ""
+                print(f"  id={t['id']:>3}  entry={t['entry']}{prio_str}  →  {status}")
+        else:
+            print("  Nenhum CreateThread registrado.")
+
+        print()
         print("── ALOCAÇÕES (almoxarifado stub_0013DA10) ────────────────────────────")
         if d["allocs"]:
             print(f"  Total de allocs       : {d['allocs'][-1][0]}")
@@ -255,6 +282,10 @@ def report(d: dict, short: bool = False) -> None:
     print("  DIAGNÓSTICO RESUMIDO")
     print("=" * 70)
 
+    # Threads criadas mas nunca iniciadas
+    threads_pendentes = [t for t in d["threads_created"]
+                         if t["id"] not in d["threads_started"]]
+
     # Determinar estado do round
     if d["sigsegv"]:
         estado = "🔴 CRASH — SIGSEGV. Novo bug para investigar."
@@ -262,8 +293,13 @@ def report(d: dict, short: bool = False) -> None:
         estado = "🔴 CRASH (sinal fatal). Novo bug para investigar."
     elif not d["semas_created"]:
         estado = "🔴 Log vazio ou round não completou nem o boot."
+    elif threads_pendentes:
+        ids_str = ", ".join(str(t["id"]) for t in threads_pendentes)
+        entries_str = ", ".join(t["entry"] for t in threads_pendentes)
+        estado = (f"🔴 Thread(s) criada(s) mas StartThread NUNCA chamado: "
+                  f"id(s)={ids_str}  entry(s)={entries_str}. "
+                  f"Bug atual — investigar quem deveria chamar StartThread.")
     elif last_wake and last_block and last_wake["sid"] == last_block["sid"]:
-        # Último módulo acordou mas pode ter sido cortado depois
         if d["sigint"] or (last_vblank and last_vblank[1] > 5000):
             estado = (f"🟡 Round cortado por SIGINT/timeout após sid={last_sid}. "
                       f"Jogo ainda carregando módulos IOP.")
@@ -287,6 +323,13 @@ def report(d: dict, short: bool = False) -> None:
     print("  Próximo passo sugerido:")
     if d["sigsegv"] or d["crash"]:
         print("  → Analisar backtrace. Bug novo (SIGSEGV) — identificar PC do crash.")
+    elif threads_pendentes:
+        for t in threads_pendentes:
+            print(f"  → BUG ATUAL: StartThread nunca chamado para tid={t['id']} "
+                  f"(entry={t['entry']}).")
+        print("  → Identificar quem deveria chamar StartThread após o bind loop IOP.")
+        print("  → Buscar chamadas a StartThread no ELF: "
+              "python3 tools/mips_inspect.py --callers StartThread")
     elif d["not_found"]:
         print("  → Funções ausentes detectadas. Rodar:")
         print("    python3 tools/missing_to_seeds.py --log build/ps2_missing.log --min-calls 1")

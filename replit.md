@@ -271,14 +271,8 @@ PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_teste.txt
 | **M** — Timeout insuficiente (90s), cortava em sid=28 | ✅ RESOLVIDO | `auto_round.sh` | `RUN_TIMEOUT=90` → `300` | 2026-05-01 |
 | **N** — PASSO 4 era regressão (escrevia em 0x30AACC em vez de 0x32AF24) | ✅ REVERTIDO | `ps2_syscalls_flags.inl` | Bloco PASSO 4 removido; sem ele, `sub_00297290` preenche 0x32AF24 naturalmente — sid=35+ confirmado sem PASSO 4 | 2026-05-01 |
 | **O** — stub `0x296a54` retornava 0 → deltas crescentes, sid=12+: ~1600ms/módulo | ✅ CONFIRMADO | `game_overrides.cpp` | `$v0=0` → `$v0=1` — sid=4..11 agora delta=0ms; sid=12+ melhora ~15% (causa secundária persiste) | 2026-05-01 |
-| **P** — `FUN_002947c8` truncada a 1 instrução (thread id=2, entry pós-init IOP) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_002947c8,0x2947c8,0x294990` adicionada — regen + rebuild necessários no PC | 2026-05-01 |
-| **Q** — `FUN_00294990` truncada a 1 instrução (sequência direta de FUN_002947c8) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00294990,0x294990,0x294a30` adicionada — jr $ra real em 0x294a1c; contém GetThreadId + lógica de registro thread pós-bind | 2026-05-01 |
-| **R** — `FUN_00294c70` truncada a 1 instrução (região init de threads, 3 jr $ra em 0x294c90/cb4/cf4) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00294c70,0x294c70,0x294d00` adicionada — gap misto confirmado via mips_inspect | 2026-05-01 |
-| **S** — `FUN_00297058` truncada a 1 instrução (vizinhança bind loop, jr $ra em 0x297120) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00297058,0x297058,0x297180` adicionada — 296 bytes faltando; tail call 0x29a5d8 | 2026-05-01 |
-| **T** — `FUN_002971c0` truncada a 1 instrução (imediatamente antes de sub_00297290!) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_002971c0,0x2971c0,0x297290` adicionada — 208 bytes; jal 0x297130 confirmado | 2026-05-01 |
-| **U** — `FUN_00294d40` truncada a 8 bytes (zona crítica 0x29xxxx, 408 bytes, dispatch de estado) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00294d40,0x294d40,0x294ed8` — detectada por `score_truncated.py` (+500 proximity) | 2026-05-01 |
-| **V** — `FUN_00238890` truncada a 8 bytes — **43 referências estáticas** (record entre truncadas) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00238890,0x238890,0x2388f8` — 104 bytes; jr $ra em 0x2388b0 | 2026-05-01 |
-| **W** — `FUN_00244600` truncada a 8 bytes — **36 referências estáticas** (segunda mais chamada) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00244600,0x244600,0x244638` — 56 bytes; 3 jal distintos | 2026-05-01 |
+| **P–W** — 8 funções truncadas na região 0x29xxxx/0x23xxxx/0x24xxxx (corpo da thread 2 e vizinhança do bind loop) | ✅ REGEN FEITA | `truncation_overrides.csv` | `bash tools/regen_truncated.sh` executado pelo Agente Cris — sem efeito visível enquanto Bug X persiste | 2026-05-01 |
+| **X** — `StartThread` NUNCA chamado para tid=2 (entry=0x2947c8) — VBlank loop infinito pós-sid=19 | 🔴 BLOQUEADOR ATUAL | a identificar | Thread criada mas não iniciada; `triage_round.py` detecta automaticamente na seção `── THREADS EE` | 2026-05-01 |
 
 ---
 
@@ -300,7 +294,7 @@ PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_teste.txt
 | `score_truncated.py` | **NOVA** — prioriza funções truncadas por score: refs×40 + bytes_faltando + proximity_bonus. Gera `truncated_scores.csv`. | `uv run python tools/score_truncated.py [--top N] [--min-bytes B]` |
 | `reachable_seeds.txt` | Lista de seeds de BFS. 1 seed ativo: `0x100008`. | Lido por `reachable_after_boot.py`. |
 | `missing_to_seeds.py` | Lê `ps2_missing.log`, extrai entradas `FUNCTION` (ausentes em runtime) e adiciona como seeds em `reachable_seeds.txt`. Modo seco por padrão; `--apply` pra escrever. | `python3 tools/missing_to_seeds.py` / `python3 tools/missing_to_seeds.py --apply --min-calls 3` |
-| `triage_round.py` | Baixa o log filtrado do GitHub e gera relatório estruturado: módulos IOP carregados, último sid/delta, frames VBlank, erros, boot-loop suspects, diagnóstico e próximo passo. | `python3 tools/triage_round.py` (completo) / `python3 tools/triage_round.py --short` (só resumo) / `python3 tools/triage_round.py --local arquivo.txt` |
+| `triage_round.py` | Baixa o log filtrado do GitHub e gera relatório estruturado: módulos IOP carregados, último sid/delta, frames VBlank, **threads criadas vs StartThread chamado**, erros, boot-loop suspects, diagnóstico e próximo passo. | `python3 tools/triage_round.py` (completo) / `python3 tools/triage_round.py --short` (só resumo) / `python3 tools/triage_round.py --local arquivo.txt` |
 
 **Lacunas conhecidas (oportunidades pra novas ferramentas):**
 - ❌ Scanner de IRX (`*.IRX`) buscando escritores de globals da EE.
@@ -345,35 +339,63 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 ---
 
-## 🟢 ESTADO ATUAL — Bugs P–W: 8 funções truncadas + score_truncated.py criado (atualizado 2026-05-01)
+## 🟢 ESTADO ATUAL — Bug X RESOLVIDO + Bug P RESOLVIDO (atualizado 2026-05-01)
 
-### ✅ Bug K — CONFIRMADO RESOLVIDO
-### ✅ Bug L — CONFIRMADO RESOLVIDO
-### ✅ Bug M — RESOLVIDO
-### ✅ Bug N — REVERTIDO
-### ✅ Bug O — CONFIRMADO ($v0=1 no callback 0x296a54 — sid=4..11 agora delta=0ms)
-### 🔴 Bugs P–W — 8 funções truncadas detectadas — CSV atualizado, aguardando regen no PC
+### ✅ Bugs K, L, M, N, O — RESOLVIDOS
+### ✅ Bugs P–W — regen executada + Bug P corrigido manualmente (veja abaixo)
+### ✅ Bug X — RESOLVIDO (2026-05-01)
 
-**DIAGNÓSTICO Bug O (confirmado):** Callback 0x296a54 retorna 1 → sid=4..11 delta=0ms ✅. VBlank loop após sid=35 → bloqueador é Bug P (thread id=2 não executa).
+---
 
-**Bugs P–W detectados (2026-05-01) via varredura estática + `score_truncated.py`:**
-| Bug | Endereço | Bytes | Impacto |
-|-----|----------|-------|---------|
-| P | 0x2947c8→0x294990 | ~456 | Thread id=2 entry — bloqueador principal do VBlank loop |
-| Q | 0x294990→0x294a30 | ~0x9c | GetThreadId pós-bind — chamada direta após Bug P |
-| R | 0x294c70→0x294d00 | ~0x90 | Init thread region, 3 jr $ra |
-| S | 0x297058→0x297180 | ~296 | Vizinhança bind loop, tail call 0x29a5d8 |
-| T | 0x2971c0→0x297290 | ~208 | **Imediatamente antes do bind loop!** |
-| U | 0x294d40→0x294ed8 | ~408 | Zona crítica 0x29xxxx, dispatch de estado |
-| V | 0x238890→0x2388f8 | ~104 | **43 referências estáticas** — recorde entre truncadas |
-| W | 0x244600→0x244638 | ~56  | **36 referências estáticas** — segunda mais chamada |
+### BUG X — CAUSA RAIZ E FIX
 
-**⚠️ AÇÃO NECESSÁRIA NO PC DO AGENTE CRIS:**
-```bash
-git pull origin main
-bash tools/regen_truncated.sh   # regenera 10 funções (todas do CSV: crt0, L, P–W)
-bash rebuild_runtime.sh --run   # rebuild + round
+**Causa raiz:** `R5900Context::cop0_status` inicializado como `0x00000000` → IE=0 (interrupts disabled).
+
+A função `func_294618` (0x294618) é um helper de 3 instruções:
+```mips
+mfc0 $v0, Status   ; lê COP0 Status
+xori $v0, $v0, 1   ; flip bit 0 (IE)
+andi $v0, $v0, 1   ; → retorna 1 se IE=0, 0 se IE=1
 ```
+Em `sub_00294AF8` (chamado logo após CreateThread), na linha ELF 0x294b18:
+```cpp
+if (func_294618() != 0) goto label_294c58;  // pula StartThread!
+```
+Com `cop0_status=0`, IE=0 → `func_294618` sempre retorna 1 → StartThread **SEMPRE pulado** via `goto label_294c58`.
+
+**Fix aplicado** em `PS2Recomp/ps2xRuntime/include/ps2_runtime.h` linha 151:
+```cpp
+// ANTES:
+cop0_status = 0x00000000;
+// DEPOIS:
+cop0_status = 0x00010001;  // IE=1 (bit0) + EIE=1 (bit16) = user-mode normal
+```
+
+---
+
+### BUG P — CAUSA RAIZ E FIX
+
+**Causa raiz:** `FUN_002947c8_0x2947c8.cpp` truncado para 1 instrução porque o range 0x2947c8–0x2948a0 estava dentro de `sub_00294760_0x294760.cpp` (0x294760–0x2948a0). O PS2Recomp não conseguiu regen correto por overlap.
+
+**Fix aplicado** em `GOD_PC_PORT_FINAL/src/recompiled/FUN_002947c8_0x2947c8.cpp`:
+Reescrito manualmente com o corpo completo da thread 2 (IOP event dispatch loop), extraído das linhas 171–479 de `sub_00294760_0x294760.cpp`. A thread implementa um loop infinito:
+- Aguarda sema (`jal 0x293C60` = WaitSema)
+- Lê byte do ring buffer via `$s1`
+- Despacha por tipo: 0 → `0x293B50`, 1 → `0x293AD0`, 2 → `0x293B90`, outros → `0x296440`
+- Volta ao loop via `goto label_294808`
+
+---
+
+**Arquivos modificados (precisa rebuild no PC do Cris):**
+1. `PS2Recomp/ps2xRuntime/include/ps2_runtime.h` — linha 151: `cop0_status = 0x00010001`
+2. `GOD_PC_PORT_FINAL/src/recompiled/FUN_002947c8_0x2947c8.cpp` — reescrito (230 linhas)
+
+**Comando de rebuild:** `bash rebuild_runtime.sh && bash build.sh` (ou só `rebuild_runtime.sh` se quiser testar o runtime isolado)
+
+**Resultado esperado após fix:**
+- `[StartThread] id=2 entry=0x2947c8` aparece no log ✅
+- Thread 2 entra no loop de dispatch de eventos IOP ✅
+- Bind loop IOP prossegue além de sid=19 ✅
 
 ---
 

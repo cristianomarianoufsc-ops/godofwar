@@ -94,7 +94,7 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-01 — Bugs P+Q: regen de 3 funções necessária)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-01 — Bug X: StartThread nunca chamado)
 
 ### ✅ Bug K — CONFIRMADO RESOLVIDO
 ### ✅ Bug L — CONFIRMADO RESOLVIDO (stub 0x296a54 visível 8x no round: callbacks #0–#7)
@@ -123,19 +123,25 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-### 🔍 BLOQUEIO PÓS-sid=35 — NOVO BLOQUEIO A INVESTIGAR
+### 🔴 Bug X — StartThread NUNCA chamado para tid=2 (entry=0x2947c8) — BLOQUEADOR ATUAL (2026-05-01)
 
-No round `6625971` (sem PASSO 4, melhor resultado histórico):
-- sid=4..35 carregados com sucesso — 32 módulos IOP via SIF bind
-- Após sid=35 (WaitSema desbloqueado pelo PASSO 3), jogo entrou em VBlank loop por ~140s sem mais eventos
-- `delta_ms_since_RPC_BIND` para sid=35 era 62228ms — deltas crescentes indicam que entre binds o jogo faz busy-wait (~2s por loop de retry interno)
-- Buffer `0x30aaa8` no dump @VBlank #5000 após sid=35: `+0x00=0x20328280 +0x04=0x21 +0x08=0x23` — rpc_id incremental continua
+**Contexto:** Agente Cris rodou `bash tools/regen_truncated.sh && bash recompilar.sh && bash auto_round.sh` — o round pós-regen P–W **não mudou o comportamento**. Diagnóstico via `triage_round.py` atualizado revelou a causa raiz.
 
-**Próximo bloqueio provável:** após todos os binds SIF necessários, o jogo aguarda resposta de outro tipo — provavelmente um DMA de retorno IOP→EE que preenche `0x3277c0` (o callback buffer do INIT packet), ou um sinal via semáforo diferente de `pc=0x293c64`.
+**Evidência direta no log:**
+- `[CreateThread] id=2 entry=0x2947c8 prio=1` → aparece no início ✅
+- `[StartThread] id=2` → **AUSENTE em todo o log** 🔴
+- Após sid=19 acordar (`WaitSema:wake sid=19`), **zero nova atividade**: sem `CreateSema`, sem `RPC_BIND`, sem `StartThread`
+- VBlank loop até timeout: 17940 ticks = 299s = cortado pelo `RUN_TIMEOUT=300`
 
-**`FUN_002947c8_0x2947c8` (thread id=2, entry=0x2947c8) — TRUNCADA** — apenas 1 instrução (`addiu $sp,-0x80`), não faz nada. Pode ser Bug O. Checar se o thread 2 deveria processar callbacks IOP.
+**Por que regen P–W não ajudou:** os bugs P–W são o *corpo* da thread 2 (funções que ela executa). Se `StartThread` nunca é chamado, o corpo nunca roda. O problema está em quem deveria chamar `StartThread` **após o bind loop IOP terminar**.
 
-**Próximo passo:** aguardar round com PASSO 4 revertido → ver se sid volta a 35+ → identificar o novo bloqueio.
+**Ferramenta atualizada:** `triage_round.py` agora detecta automaticamente threads criadas sem `StartThread`, com seção dedicada `── THREADS EE` e diagnóstico vermelho quando aplica.
+
+**Próximo passo — investigar chamador de StartThread:**
+```bash
+python3 tools/mips_inspect.py --callers 0x2947c8   # quem chama StartThread(tid=2)?
+python3 tools/mips_inspect.py 0x297374              # caminho após sid=19 acordar (ra=0x297374)
+```
 
 ---
 
@@ -158,14 +164,9 @@ No round `6625971` (sem PASSO 4, melhor resultado histórico):
 | **M** — Timeout insuficiente (90s), cortava em sid=28 | ✅ RESOLVIDO | `auto_round.sh` | `RUN_TIMEOUT=90` → `300` |
 | **N** — PASSO 4 era regressão (escrevia em 0x30AACC em vez de 0x32AF24) | ✅ REVERTIDO | `ps2_syscalls_flags.inl` | Bloco PASSO 4 removido; sem PASSO 4, `sub_00297290` preenche o campo certo naturalmente |
 | **O** — stub `0x296a54` retornava 0 → deltas crescentes (sid=12+: ~1600ms/módulo) | ✅ CONFIRMADO | `game_overrides.cpp` | `$v0=0` → `$v0=1` — sid=4..11 delta=0ms; sid=12+ melhora ~15% (causa secundária persiste) |
-| **P** — `FUN_002947c8` truncada a 1 instrução (thread id=2 pós-init IOP, 456 bytes faltando) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_002947c8,0x2947c8,0x294990` adicionada — precisa `regen_truncated.sh` + rebuild no PC |
-| **Q** — `FUN_00294990` truncada a 1 instrução (sequência direta após FUN_002947c8, ~0x9c bytes faltando) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00294990,0x294990,0x294a30` adicionada — jr $ra real em 0x294a1c; contém GetThreadId + lógica pós-bind |
-| **R** — `FUN_00294c70` truncada a 1 instrução (região de init de threads, 3 saídas jr $ra: 0x294c90/cb4/cf4) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00294c70,0x294c70,0x294d00` adicionada — gap misto confirmado |
-| **S** — `FUN_00297058` truncada a 1 instrução (vizinhança do bind loop, jr $ra em 0x297120) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00297058,0x297058,0x297180` adicionada — 296 bytes faltando, contém tail call para 0x29a5d8 |
-| **T** — `FUN_002971c0` truncada a 1 instrução (IMEDIATAMENTE antes de sub_00297290 = bind loop!) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_002971c0,0x2971c0,0x297290` adicionada — 208 bytes faltando; altíssima probabilidade de ser chamada pelo caminho crítico |
-| **U** — `FUN_00294d40` truncada a 8 bytes (zona crítica 0x29xxxx, dispatch de estado de thread) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00294d40,0x294d40,0x294ed8` adicionada — 408 bytes faltando; beq/slti/bnez no gap confirmado; 3 refs |
-| **V** — `FUN_00238890` truncada a 8 bytes — **43 referências estáticas** (mais chamada entre as truncadas) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00238890,0x238890,0x2388f8` — jr $ra em 0x2388b0; 104 bytes faltando |
-| **W** — `FUN_00244600` truncada a 8 bytes — **36 referências estáticas** (segunda mais chamada) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00244600,0x244600,0x244638` — 56 bytes; jal 0x13e090, 0x13dc78, 0x259f70 |
+| **P–W** — 8 funções truncadas na região 0x29xxxx/0x23xxxx/0x24xxxx | ✅ REGEN FEITA | `truncation_overrides.csv` | `bash tools/regen_truncated.sh` rodado pelo Agente Cris — corpo da thread 2 agora completo, mas sem efeito enquanto Bug X persiste |
+| **X** — `StartThread` NUNCA chamado para tid=2 (entry=0x2947c8) — VBlank loop pós-sid=19 | 🔴 BLOQUEADOR ATUAL | a identificar | `CreateThread id=2` aparece, mas `StartThread id=2` está 100% ausente no log — `triage_round.py` detecta automaticamente |
+| **Q–W** — (incluídos em P–W acima) | ✅ REGEN FEITA | — | Todos cobertos pelo `regen_truncated.sh` executado pelo Agente Cris |
 
 > **Detalhe completo de cada bug** (diagnóstico, dumps, hipóteses descartadas, código aplicado) → `HANDOFF_HISTORICO.md`.
 
@@ -185,9 +186,9 @@ python3 tools/reachable_after_boot.py   # usa os novos seeds
 
 Ferramenta Universal (sem endereços GoW hard-coded). Sintaxe verificada (py_compile, exit 0).
 
-**`tools/triage_round.py`** — triagem automática pós-round em 1 comando
+**`tools/triage_round.py`** — triagem automática pós-round em 1 comando (atualizado 2026-05-01)
 
-Baixa o log filtrado do GitHub via urllib e gera relatório estruturado: módulos IOP (sids, deltas), último VBlank, alocações, erros/SIGSEGV, boot-loop suspects, diagnóstico resumido e próximo passo sugerido.
+Baixa o log filtrado do GitHub via urllib e gera relatório estruturado: módulos IOP (sids, deltas), último VBlank, **seção `── THREADS EE` com CreateThread vs StartThread** (detecta thread criada sem start), alocações, erros/SIGSEGV, boot-loop suspects, diagnóstico e próximo passo.
 
 ```bash
 python3 tools/triage_round.py              # relatório completo (GitHub)
@@ -195,46 +196,36 @@ python3 tools/triage_round.py --short      # só o resumo (para uso rápido)
 python3 tools/triage_round.py --local arquivo.txt   # arquivo local
 ```
 
-Testado contra log atual → detectou corretamente sid=34, 31 módulos acordados, frame=5340, cortado por timeout. Sintaxe verificada (py_compile, exit 0).
+Testado contra log atual (2026-05-01) → detectou corretamente Bug X: `🔴 id=2 entry=0x2947c8 prio=1 → StartThread NUNCA chamado`. Sintaxe verificada (exit 0).
 
 ---
 
-## 📋 Próxima ação do analista (atualizado 2026-05-01 — Bugs P–W: regen de 10 funções)
+## 📋 Próxima ação do analista (atualizado 2026-05-01 — Bug X: StartThread ausente)
 
-**⚠️ PUSH PENDENTE + AÇÃO ESPECIAL NO PC**
+**⚠️ PUSH PENDENTE (só documentação — NÃO precisa de rebuild no PC)**
 
 **Arquivos modificados neste commit:**
-- `tools/truncation_overrides.csv` — Bugs P–W adicionados = 10 funções totais a regenerar (+ crt0)
-- `tools/score_truncated.py` — **NOVA FERRAMENTA**: prioriza truncadas por referências × bytes × proximidade
-- `HANDOFF_AGENT.md` + `replit.md` — documentação atualizada
+- `tools/triage_round.py` — nova seção `── THREADS EE`, detecta `StartThread` ausente, diagnóstico Bug X
+- `HANDOFF_AGENT.md` + `replit.md` — estado atual atualizado para Bug X
 
-**ATENÇÃO — este fix NÃO é só rebuild do runtime. Precisa de regen completa:**
+**Situação:** regen P–W já foi executada pelo Agente Cris. O log não mudou porque o problema não estava nas funções do corpo da thread 2, mas em quem as deveria iniciar.
+
+**Ação analítica a fazer antes do próximo round:**
 ```bash
-# No PC do Agente Cris, após o Push:
-git pull origin main
-bash tools/regen_truncated.sh       # regenera TODAS as entradas do CSV (10 funções)
-bash rebuild_runtime.sh --run       # rebuild + round automático
+# Quem chama StartThread para a thread 2?
+# (syscall EE: StartThread recebe tid como argumento)
+# Buscar no ELF quem chama StartThread após o bind loop IOP (pós-sid=19)
+python3 tools/mips_inspect.py 0x297374       # ra de todos os WaitSema:block — início da função que deveria iniciar thread 2
+python3 tools/mips_inspect.py --gap 0x297374 # ver se a função está truncada
 ```
 
-**Funções a regenerar:**
-| Endereço | Bug | Bytes | Destaque |
-|----------|-----|-------|----------|
-| 0x2947c8→0x294990 | P | ~456 | Thread id=2 entry — bloqueador principal |
-| 0x294990→0x294a30 | Q | ~0x9c | GetThreadId pós-bind |
-| 0x294c70→0x294d00 | R | ~0x90 | Init thread region, 3 jr $ra |
-| 0x297058→0x297180 | S | ~296 | Vizinhança bind loop |
-| 0x2971c0→0x297290 | T | ~208 | Antes de sub_00297290 |
-| 0x294d40→0x294ed8 | U | ~408 | Zona crítica, dispatch de estado |
-| 0x238890→0x2388f8 | V | ~104 | **43 referências estáticas** |
-| 0x244600→0x244638 | W | ~56  | **36 referências estáticas** |
-| 0x296a50→0x296c48 | L | -    | Range correto (já estava) |
+**O que procurar:**
+- A syscall `StartThread` no PS2 EE é o syscall `0x0A` (ID decimal 10). No runtime é `ps2_syscalls_thread.inl::StartThread`.
+- Quem chama ela com `a0 = tid_da_thread_2` é o culpado ausente.
+- `ra=0x297374` é o endereço de retorno de todo `WaitSema:block` no bind loop — é o ponto de saída de cada módulo IOP carregado.
 
-**O que esperar após a regen:**
-- Jogo sai do VBlank loop pós-sid=35 (P+Q desbloqueiam thread id=2)
-- R, S, T, U eliminam bloqueios na vizinhança do bind loop
-- V e W eliminam crashes/stubs ausentes causados pelas funções mais chamadas
-
-**Após o round, o analista deve:**
+**Após identificar e corrigir, verificar com:**
 ```bash
-curl -s "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/logs/auto/runs_automaticos/log_latest_filtered.txt" | grep -E "(WaitSema|not found|SIGSEGV|CreateThread|StartThread|0x2947|0x2949|0x2971)" | head -40
+python3 tools/triage_round.py --short
+# Deve mostrar: id=2 entry=0x2947c8 → ✅ StartThread chamado
 ```
