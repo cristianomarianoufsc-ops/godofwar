@@ -321,9 +321,12 @@ void WaitSema(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
         // RPC_BIND esperando o IOP sinalizar. Como nao temos IOP real,
         // incrementamos count agora (lock ja segurado) para que o cv.wait
         // abaixo retorne sem bloquear, exatamente como o IOP faria.
-        // Guard < 100ms evita sinalizar semaforos nao relacionados ao BIND.
+        // Bug K (2026-05-01): sid=12 chegou com delta=2837ms — guard de 100ms
+        // era estreito demais. Agora a condicao e apenas deltaMsSinceBind >= 0
+        // (ao menos um RPC_BIND aconteceu) — suficientemente seguro porque todos
+        // os WaitSema que bloqueiam em pc=0x293c64 sao respostas IOP.
         static std::atomic<uint32_t> s_passo3Logs{0};
-        if (deltaMsSinceBind >= 0 && deltaMsSinceBind < 100 &&
+        if (deltaMsSinceBind >= 0 &&
             sema->count < sema->maxCount)
         {
             const uint32_t p3Log = s_passo3Logs.fetch_add(1, std::memory_order_relaxed);

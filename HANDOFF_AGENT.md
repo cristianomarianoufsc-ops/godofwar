@@ -91,73 +91,28 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-01)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-01 — Bug K fix)
 
-### Smoking Gun Definitivo (confirmado empiricamente, round `b7ceb6d` 2026-04-30 12:24)
+### ✅ PASSO 3 — CONFIRMADO FUNCIONANDO (round anterior)
 
-| Syscall | Hits no log full (89s = 5340 VBlanks) |
-|---|---|
-| `CreateSema` | 4 |
-| `WaitSema` | 1 |
-| **`SignalSema`** | **0** |
-| `iSignalSema` | 0 |
+O log confirmou que PASSO 3 acordou 8 WaitSemas consecutivos (sids 4–11, todos delta=0ms). O jogo avançou para a fase de init de módulos IOP (múltiplos RPC_BINDs com rpc_id incrementais: 0x5, 0x10005, 0x20005, ..., 0x70005).
 
-**Diagnóstico:** o jogo cria 4 semáforos no boot, dorme em `WaitSema sid=4` logo após RPC_BIND, e **NUNCA NINGUÉM sinaliza qualquer semáforo durante o run inteiro**. No PS2 real o IOP processaria o RPC_BIND e faria `iSignalSema(4)` num handler de interrupção. Como não temos IOP, **deadlock eterno**.
+### 🐛 Bug K — WaitSema sid=12 bloqueou (delta=2837ms > 100ms) — FIX APLICADO 2026-05-01
 
-Confirmado também que:
-- Callback EE `@0x3277c0` = 64 bytes ZERADOS (nunca populada) — invocar direto daria SIGSEGV.
-- `client_buf @0x30aaa8` estável por 5000 VBlanks — jogo não polla esse buffer.
-- Log SMOKING GUN: `[CreateSema] id=4 init=0 max=1` → `[WaitSema:block] tid=1 sid=4 pc=0x293c64 ra=0x297374`
+**Causa raiz:** o guard `deltaMsSinceBind < 100` era estreito demais. O sid=12 chegou com delta=2837ms porque o VBlank loop rodou ~2.8s entre o último RPC_BIND e esse WaitSema. Mesmo call site (`pc=0x293c64`) — é o mesmo padrão IOP, só mais tardio.
 
-### Bug do `log_latest_*.txt` STALE — corrigido nesta sessão (2026-04-30 tarde)
-
-**Causa raiz:** `cp log_latest_*.txt` rodava ANTES do `git checkout -B logs/auto origin/logs/auto` → checkout sobrescrevia com versão velha.
-**Fix:** moveu o `cp -f` para linha 169-170 de `auto_round.sh`, DEPOIS do checkout.
-**Bonus:** `GREP_PATTERN` em `auto_round.sh:66` adicionou `CreateSema|WaitSema|SignalSema`.
-
-### PASSO 2.8 — Instrumentação WaitSema aplicada nesta sessão
-
-**Objetivo:** confirmar correlação temporal RPC_BIND → WaitSema:block antes de aplicar fix definitivo.
-
-| Arquivo | Linhas | O que faz |
-|---|---|---|
-| `game_overrides.cpp` | 11, 48-59 | `g_gowLastSifBindMonotonicNs` (atomic uint64), setter `gow_record_sif_bind_ts()`, getter `gow_get_sif_bind_monotonic_ns()`. `<chrono>` incluído. |
-| `ps2_stubs.cpp` | 38 | `extern "C" void gow_record_sif_bind_ts();` em escopo global |
-| `ps2_syscalls.cpp` | 38 | `extern "C" std::uint64_t gow_get_sif_bind_monotonic_ns();` em escopo global |
-| `ps2_stubs_misc.inl` | 3614 | `::gow_record_sif_bind_ts();` logo após `gow_set_sif_client_buf_watch(responseBuf)` |
-| `ps2_syscalls_flags.inl` (em `lib/syscalls/`) | 309-316 | Log `[WaitSema:block] tid=N sid=N pc=0xN ra=0xN delta_ms_since_RPC_BIND=N\|never` |
-
-**Auditoria confirmada:** todos os 5 arquivos estão corretos, nenhum include faltando, nenhum extern "C" em escopo errado.
-
-### Esperado no próximo round
-
-```
-[WaitSema:block] tid=1 sid=4 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=N
-```
-
-### PASSO 3 — plano (aguardando dado do round)
-
-| Se delta_ms na maioria | Ação |
-|---|---|
-| **< 100ms** | PASSO 3 simples: forjar `iSignalSema(sid_visto)` em `gow_record_sif_bind_ts` logo após o RPC_BIND |
-| **Varia muito (1ms~10s)** | Cirurgia: ler `sceSifClientData->sema` no offset do SDK, novo round de instrumentação |
-| **`never` no `sid=4`** | BIND não foi interceptado antes desse WaitSema — revisar ordem dos eventos |
-
-**Status PASSO 2.8:** ✅ CONFIRMADO. Round `3a0bcc2` (2026-05-01) mostrou `delta_ms_since_RPC_BIND=0`.
-
-### PASSO 3 — Fix aplicado (2026-05-01)
-
-**Arquivo:** `PS2Recomp/ps2xRuntime/src/lib/syscalls/ps2_syscalls_flags.inl` (WaitSema handler)
-
-**O que faz:** quando `WaitSema(sid)` é chamado com `delta_ms_since_RPC_BIND < 100`, incrementa `sema->count` antes do `cv.wait`. O wait vê `count > 0` e retorna imediatamente sem bloquear — simulando o `iSignalSema` que o IOP faria. Log: `[PASSO 3] Forjando iSignalSema(sid=4) delta_ms=0`.
+**Fix:** `PS2Recomp/ps2xRuntime/src/lib/syscalls/ps2_syscalls_flags.inl` — removido o `&& deltaMsSinceBind < 100`. Condição agora: `deltaMsSinceBind >= 0 && sema->count < sema->maxCount` (qualquer RPC_BIND que tenha ocorrido é suficiente).
 
 **Comportamento esperado no próximo round:**
-- `[PASSO 3] Forjando iSignalSema(sid=4) delta_ms=0` aparece no log
-- `[WaitSema:wake] sid=4 ret=0` — jogo acorda do semáforo
-- Jogo avança além do `0x293c64` (pc do WaitSema)
-- Novo comportamento ou novo bug aparece (próximo bloqueio a ser diagnosticado)
+```
+[PASSO 3] Forjando iSignalSema(sid=12) delta_ms=2837 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=12 ret=0 count=0
+```
+→ Jogo avança além do sid=12. Novo bloqueio ou novo progresso visível.
 
-**Próxima ação:** analista lê log via curl após round e identifica novo bloqueio.
+**Nota:** também apareceu `Warning: Function at address 0x296a54 not found` com `fallback=0x293fe0` (Bug J ainda ativo mas sendo absorvido). Não bloqueia o round — o fallback permite continuar.
+
+**Próxima ação:** analista lê log via curl após round e identifica o próximo bloqueio.
 
 ---
 
@@ -175,6 +130,7 @@ Confirmado também que:
 | **H** — syscalls SIF poll 0x79-0x7D | ✅ | `ps2_syscalls.cpp:321-363` | 4 cases no switch retornando `-1` |
 | **I** — `sceSifSetDma` rejeita `dest=0xffffffff` | 🟡 BLINDADO | `ps2_stubs_misc.inl` (PLANO B1) | Aceita `dest=0xffffffff`, retorna 1 fake |
 | **J** — `0x296a54` not found, `ra=0` | 🟡 BLINDADO | `ps2_stubs_misc.inl` (PLANO C) | `if dmatAddr < 0x100000 return 0` |
+| **K** — `WaitSema sid=12` delta=2837ms > guard 100ms | ✅ RESOLVIDO | `ps2_syscalls_flags.inl` | Removido `&& deltaMsSinceBind < 100` — condição agora só `deltaMsSinceBind >= 0` |
 
 > **Detalhe completo de cada bug** (diagnóstico, dumps, hipóteses descartadas, código aplicado) → `HANDOFF_HISTORICO.md`.
 

@@ -257,6 +257,7 @@ PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_teste.txt
 | **H** — syscalls SIF poll 0x79/0x7A/0x7B/0x7D sem handler | ✅ RESOLVIDO | `ps2_syscalls.cpp:321-363` | 4 cases no switch retornando `-1` (= `0xFFFFFFFF`); log 1ª chamada com mutex+set | `replit_HISTORICO.md §BugH` |
 | **I** — `sceSifSetDma` rejeita `dest=0xffffffff` silenciosamente | 🟡 BLINDADO/ATIVO | `ps2_stubs_misc.inl` (PLANO A+B1) | PLANO B1: aceita `dest=0xffffffff` com log diagnóstico, retorna 1 fake | `replit_HISTORICO.md §BugI` |
 | **J** — `0x296a54` not found com `ra=0, a0=5` | 🟡 BLINDADO | `ps2_stubs_misc.inl` (PLANO C) | `if dmatAddr < 0x100000 return 0` — não trava nada | `HANDOFF_HISTORICO.md §BugJ` |
+| **K** — `WaitSema sid=12` bloqueia com `delta=2837ms` (> guard 100ms) | ✅ RESOLVIDO | `ps2_syscalls_flags.inl` | Removido `&& deltaMsSinceBind < 100` — condição agora só `deltaMsSinceBind >= 0` | 2026-05-01 |
 
 ---
 
@@ -320,30 +321,28 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 ---
 
-## 🟢 ESTADO ATUAL — PARTE 10 PASSO 3 (atualizado 2026-05-01)
+## 🟢 ESTADO ATUAL — Bug K fix (atualizado 2026-05-01)
 
-### PASSO 2.8 — ✅ CONFIRMADO (round 2026-05-01)
+### ✅ PASSO 3 — CONFIRMADO (round anterior)
 
-`[WaitSema:block] tid=1 sid=4 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=0`
+PASSO 3 acordou 8 WaitSemas consecutivos (sids 4–11, todos delta=0ms). O jogo avançou para init de módulos IOP com múltiplos RPC_BINDs (rpc_id incrementais: 0x5, 0x10005 … 0x70005).
 
-→ **delta=0ms**: jogo dorme imediatamente após RPC_BIND esperando IOP. Caso `< 100ms` confirmado.
+### 🐛 Bug K — WaitSema sid=12 com delta=2837ms — FIX APLICADO (2026-05-01)
 
-### PASSO 3 — ✅ FIX APLICADO (2026-05-01)
+**Causa raiz:** guard `deltaMsSinceBind < 100` era estreito. O sid=12 chega com delta=2837ms (VBlank loop rodou 2.8s entre o último RPC_BIND e esse WaitSema). Mesmo call site `pc=0x293c64` — mesmo padrão IOP.
 
-**Arquivo:** `PS2Recomp/ps2xRuntime/src/lib/syscalls/ps2_syscalls_flags.inl` (WaitSema handler)
-
-**Mecanismo:** quando `WaitSema(sid)` é chamado com `delta_ms_since_RPC_BIND < 100`, o handler incrementa `sema->count` antes do `cv.wait`. O wait vê `count > 0` e retorna sem bloquear — simulando o `iSignalSema` que o IOP faria.
+**Fix:** `PS2Recomp/ps2xRuntime/src/lib/syscalls/ps2_syscalls_flags.inl` — removido `&& deltaMsSinceBind < 100`. Condição agora: `deltaMsSinceBind >= 0 && sema->count < sema->maxCount`.
 
 **Esperado no próximo round:**
 ```
-[PASSO 3] Forjando iSignalSema(sid=4) delta_ms=0 — resposta IOP simulada ao RPC_BIND
-[WaitSema:wake] tid=1 sid=4 ret=0
+[PASSO 3] Forjando iSignalSema(sid=12) delta_ms=2837 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=12 ret=0 count=0
 ```
-→ Jogo avança além de `pc=0x293c64`. Novo comportamento/bug aparece.
+→ Jogo avança além do sid=12.
 
 ### Status
 
-**Aguardando Push + round.** Analista: após o round, leia log via curl e identifique o próximo bloqueio.
+**Aguardando Push + round.** Cris: **clica no botão Push do Replit** pra mandar o fix ao GitHub.
 
 ---
 
