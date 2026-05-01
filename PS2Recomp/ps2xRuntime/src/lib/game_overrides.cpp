@@ -471,9 +471,14 @@ namespace
     }
 
     // Bug L (2026-05-01) — FUN_00296a50 truncada a 2 instrucoes; chamada via
-    // 0x296a54 (skip-prologue, ra=0) 33x como callback de modulo IOP.
-    // Sem IOP real, mem[mem[0x327898]] == 0 → early-return sempre tomado.
-    // Stub retorna 0 (equivalente ao caminho beqz $a1, 0x296b84 da funcao real).
+    // 0x296a54 (skip-prologue, ra=0) como callback de modulo IOP.
+    // Sem IOP real, mem[mem[0x327898]] == 0 → early-return sempre tomado → $v0=0.
+    //
+    // Bug O (2026-05-01) — retornar 0 causa retry-loop crescente entre cada RPC BIND:
+    //   sid=12: 1871ms, sid=15: 9649ms, sid=35: 56823ms → VBlank infinito apos sid=35.
+    //   O jogo interpreta $v0=0 como "modulo IOP nao pronto" e fica em busy-wait.
+    //   Fix: retornar 1 ("modulo IOP carregado/pronto") para eliminar os retries.
+    //
     // Solucao permanente: regen via truncation_overrides.csv entry 0x296a50-0x296c48.
     void gow_stub_FUN_00296a54(uint8_t* /*rdram*/, R5900Context* ctx, PS2Runtime* /*runtime*/)
     {
@@ -481,11 +486,11 @@ namespace
         const uint32_t n = s_log.fetch_add(1, std::memory_order_relaxed);
         if (n < 8u)
         {
-            std::cout << "[stub:0x296a54] Bug L: callback IOP modulo #" << n
-                      << " — sem IOP, count=0, retornando 0 (early-exit)"
+            std::cout << "[stub:0x296a54] Bug O: callback IOP modulo #" << n
+                      << " — retornando 1 (modulo pronto, elimina retry-loop)"
                       << std::endl;
         }
-        SET_GPR_S32(ctx, 2, 0);  // $v0 = 0
+        SET_GPR_S32(ctx, 2, 1);  // $v0 = 1 (Bug O fix: modulo IOP pronto)
         ctx->pc = GPR_U32(ctx, 31);  // return (ra=0 → dispatcher limpa)
     }
 

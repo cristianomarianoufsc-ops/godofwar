@@ -94,7 +94,7 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-01 — PASSO 4 REVERTIDO, bloqueio pós-sid=35)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-01 — Bug O APLICADO, aguardando round)
 
 ### ✅ Bug K — CONFIRMADO RESOLVIDO
 ### ✅ Bug L — CONFIRMADO RESOLVIDO (stub 0x296a54 visível 8x no round: callbacks #0–#7)
@@ -157,6 +157,7 @@ No round `6625971` (sem PASSO 4, melhor resultado histórico):
 | **L** — `0x296a54 not found` 33x (FUN_00296a50 truncada a 2 instr.) | ✅ RESOLVIDO | `game_overrides.cpp` + `truncation_overrides.csv` | Stub noop em `0x296A54`; CSV com range real `0x296a50-0x296c48` pra regen futura |
 | **M** — Timeout insuficiente (90s), cortava em sid=28 | ✅ RESOLVIDO | `auto_round.sh` | `RUN_TIMEOUT=90` → `300` |
 | **N** — PASSO 4 era regressão (escrevia em 0x30AACC em vez de 0x32AF24) | ✅ REVERTIDO | `ps2_syscalls_flags.inl` | Bloco PASSO 4 removido; sem PASSO 4, `sub_00297290` preenche o campo certo naturalmente |
+| **O** — stub `0x296a54` retornava 0 → retry-loop crescente (sid=35: 57s) → VBlank infinito | 🟡 FIX APLICADO | `game_overrides.cpp` (`gow_stub_FUN_00296a54`) | `$v0=0` → `$v0=1` ("módulo IOP pronto") — elimina busy-wait entre binds |
 
 > **Detalhe completo de cada bug** (diagnóstico, dumps, hipóteses descartadas, código aplicado) → `HANDOFF_HISTORICO.md`.
 
@@ -190,29 +191,23 @@ Testado contra log atual → detectou corretamente sid=34, 31 módulos acordados
 
 ---
 
-## 📋 Próxima ação do analista (atualizado 2026-05-01 — PASSO 4 REVERTIDO)
+## 📋 Próxima ação do analista (atualizado 2026-05-01 — Bug O APLICADO)
 
 **⚠️ PUSH PENDENTE — Cris precisa clicar em Push no Replit antes do próximo round.**
 
 **Arquivos modificados neste commit:**
-- `ps2_syscalls_flags.inl` — **PASSO 4 REVERTIDO** (era regressão: escrevia em 0x30AACC em vez de 0x32AF24) — requer rebuild runtime
+- `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp` — **Bug O fix** (`$v0=0` → `$v0=1` em `gow_stub_FUN_00296a54`) — requer `bash rebuild_runtime.sh`
 - `HANDOFF_AGENT.md` + `replit.md` — documentação atualizada
 
-**Após o push e próximo round (300s), o analista deve:**
+**O que esperar no próximo round (com Bug O fix):**
+- `[stub:0x296a54] Bug O: callback IOP modulo #N — retornando 1 (modulo pronto...)` nos primeiros 8
+- Deltas entre RPC BINDs devem voltar a 0ms (sem retry-loop)
+- sid=4..35 carregados muito mais rápido (< 5s total em vez de 57s)
+- Jogo deve progredir ALÉM do VBlank loop pós-sid=35 — novo território!
+
+**Se os deltas continuarem crescendo:** o retry-loop tem outra causa — investigar o código que chama `0x296a54` e o que faz com o retorno `$v0=1`.
+
+**Após o round, o analista deve:**
 ```bash
-python3 tools/triage_round.py
-python3 tools/triage_round.py --short
+curl -s "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/logs/auto/runs_automaticos/log_latest_filtered.txt" | grep -E "(WaitSema|PASSO 3|stub:0x296|CreateSema|SIGSEGV|not found)" | head -60
 ```
-
-**O que esperar no próximo round (com PASSO 4 revertido):**
-- sid=4..35+ carregados — deve replicar resultado do round `6625971` ✅
-- `[PASSO 4]` NÃO deve aparecer (foi removido) ✅
-- `[retry-loop]` pode aparecer — se aparecer, verificar valor de `*(s0+0x24)` e `outer_struct`
-- Após sid=35: VBlank loop por ~140s — **esse é o PRÓXIMO bloqueio a investigar**
-
-**Investigação do bloqueio pós-sid=35:**
-- Verificar se FUN_002947c8 (thread id=2, 1 instrução apenas) deveria processar callbacks IOP
-- Verificar se `sceSifCallRpc` ou similar está sendo chamado após os binds
-- Verificar se `0x3277c0` (callback buffer do INIT packet) precisa ser preenchido
-- Aumentar timeout para 600s? Ou cortar o busy-wait de 1M iters nos binds para acelerar sid=35+
-- Checar `FUN_002947c8_0x2947c8.cpp` — Bug O: apenas 1 instrução, truncada

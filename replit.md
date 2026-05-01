@@ -328,25 +328,28 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 ---
 
-## 🟢 ESTADO ATUAL — PASSO 4 REVERTIDO, aguardando Push (atualizado 2026-05-01)
+## 🟢 ESTADO ATUAL — Bug O APLICADO, aguardando Push (atualizado 2026-05-01)
 
 ### ✅ Bug K — CONFIRMADO RESOLVIDO
 ### ✅ Bug L — CONFIRMADO RESOLVIDO (0x296a54 stub noop, 8 callbacks registrados no round)
 ### ✅ Bug M — Timeout insuficiente (90→300s) — RESOLVIDO
 ### ✅ Bug N — PASSO 4 era REGRESSÃO — REVERTIDO (2026-05-01)
+### 🟡 Bug O — Fix aplicado, aguardando round (2026-05-01)
 
-**DIAGNÓSTICO Bug N (comparação de rounds):**
-- Round `6625971` (SEM PASSO 4): sid=4..35, 32 módulos SIF carregados — **melhor resultado histórico**
-- Round `2b2a957` (COM PASSO 4): sid=4..5 apenas — PASSO 4 escrevia em `0x30AACC` (response_buf+0x24) enquanto o campo real é `0x32AF24` (outer_struct+0x24)
-- Sem PASSO 4: `sub_00297290` preenche `*(s1+0x24)` naturalmente após WaitSema acordar
+**DIAGNÓSTICO Bug O (detectado lendo log do round pós-Bug N):**
+- Callback `0x296a54` (stub Bug L) retornava `$v0=0` para todos os 32+ módulos IOP.
+- O jogo interpreta 0 como "módulo IOP não pronto" → busy-wait retry entre cada RPC BIND.
+- Prova: deltas crescentes — sid=12: 1871ms, sid=15: 9649ms, sid=35: 56823ms.
+- Após sid=35: VBlank infinito por ~243s sem mais eventos → timeout.
+- **Fix:** stub agora retorna `$v0=1` ("módulo pronto"), eliminando os retry loops.
 
 **⚠️ PUSH PENDENTE:**
-- `ps2_syscalls_flags.inl` — PASSO 4 removido — requer rebuild runtime
-- `HANDOFF_AGENT.md` + `replit.md` — documentação (não requer rebuild)
+- `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp` — Bug O fix ($v0=0 → $v0=1 em gow_stub_FUN_00296a54) — requer `bash rebuild_runtime.sh`
 
-**Detector `[retry-loop]` em `entry_298910_0x298a10.cpp` MANTIDO** — útil para diagnóstico futuro.
-
-**Próximo bloqueio a investigar:** após sid=35, jogo entra em VBlank loop por ~140s sem mais eventos. Investigar FUN_002947c8 (thread id=2, truncada a 1 instrução — Bug O) e callback buffer 0x3277c0.
+**O que esperar no próximo round:**
+- Deltas devem voltar a 0ms para todos os sids (sem retry-loop)
+- Jogo deve progredir além do VBlank loop pós-sid=35
+- Novo bloqueio a identificar após os binds
 
 ---
 
