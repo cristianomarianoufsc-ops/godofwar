@@ -14,6 +14,9 @@
 >
 > 🛑🛑🛑 FIM DO AVISO OBRIGATÓRIO 🛑🛑🛑
 
+> ## 🇧🇷 IDIOMA OBRIGATÓRIO: PORTUGUÊS BRASILEIRO 🇧🇷
+> **Responda SEMPRE em português brasileiro, desde a primeira mensagem, sem exceção. Não espere o usuário pedir.**
+
 Port estático do God of War (PS2) para PC usando o PS2Recomp.
 
 ---
