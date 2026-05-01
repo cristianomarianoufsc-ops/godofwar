@@ -279,10 +279,11 @@ PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_teste.txt
 | `truncation_overrides.csv` | **Edite à mão** — overrides manuais de ranges. 1 override ativo: `entry,0x100008,0x100db8`. | Lido por `fix_truncated.py`. |
 | `reachable_seeds.txt` | Lista de seeds de BFS. 1 seed ativo: `0x100008`. | Lido por `reachable_after_boot.py`. |
 | `missing_to_seeds.py` | Lê `ps2_missing.log`, extrai entradas `FUNCTION` (ausentes em runtime) e adiciona como seeds em `reachable_seeds.txt`. Modo seco por padrão; `--apply` pra escrever. | `python3 tools/missing_to_seeds.py` / `python3 tools/missing_to_seeds.py --apply --min-calls 3` |
+| `triage_round.py` | Baixa o log filtrado do GitHub e gera relatório estruturado: módulos IOP carregados, último sid/delta, frames VBlank, erros, boot-loop suspects, diagnóstico e próximo passo. | `python3 tools/triage_round.py` (completo) / `python3 tools/triage_round.py --short` (só resumo) / `python3 tools/triage_round.py --local arquivo.txt` |
 
 **Lacunas conhecidas (oportunidades pra novas ferramentas):**
 - ❌ Scanner de IRX (`*.IRX`) buscando escritores de globals da EE.
-- ❌ Detector de "boot loop" no runtime (mesma função N vezes com args idênticos).
+- ✅ Detector de "boot loop" no runtime — já implementado em `ps2_runtime.cpp` linha ~2119 (`[boot-loop:suspect]`, threshold via `PS2_SAME_CALL_REPORT_AFTER`).
 
 ---
 
