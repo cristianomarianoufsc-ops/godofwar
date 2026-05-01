@@ -201,7 +201,7 @@ O usuário não é engenheiro de baixo nível. O progresso técnico é traduzido
 | Sensor de injeção rebobinado: cabo do computador de bordo agora chega numa centralinha auxiliar | PARTE 8: stub `gow_intc_handler_0x182f28` em `game_overrides.cpp`, replica 8 instruções MIPS perdidas | ✅ Bug G resolvido |
 | 4 botões pneumáticos ligados à fonte central | PARTE 9: syscalls SIF poll 0x79/0x7A/0x7B/0x7D implementados em `ps2_syscalls.cpp`, retornam `-1` | ✅ Bug H resolvido |
 | Sensor diagnóstico no acoplamento SIF + stub permissivo para `dest=0xffffffff` | PARTE 10 PLANO A+B1: `sceSifSetDma` instrumentado + aceita stage transfer | ✅ Bug I ativo/blindado |
-| **Cronômetro entre "caminhão saiu do portão SIF" e "motor dorme"** | **PARTE 10 PASSO 2.8: WaitSema instrumentado com `delta_ms_since_RPC_BIND` + fix `log_latest_*.txt` stale no `auto_round.sh`** | 🟡 **AGUARDANDO ROUND** |
+| Ignição de emergência no portão SIF: porteiro aprende a dar o sinal sozinho quando o caminhão passa | PARTE 10 PASSO 3: `WaitSema` com `delta_ms < 100` incrementa `sema->count` antes do wait, desbloqueando o deadlock IOP | 🟡 **AGUARDANDO ROUND** |
 | Carburador, transmissão, suspensão | Subsistemas: GS (gráficos), DMA, áudio, controle | 🔜 depois |
 | Test drive | Jogo rodando até a primeira fase jogável | 🔜 longe |
 
@@ -216,7 +216,7 @@ O usuário não é engenheiro de baixo nível. O progresso técnico é traduzido
 | Agente de tráfego no cruzamento (VBlank sinaleiro) | PARTE 8: stub INTC `0x182f28` em `game_overrides.cpp` | ✅ Bug G |
 | Operador no switchboard das 4 portas biométricas | PARTE 9: syscalls SIF poll 0x79-0x7D em `ps2_syscalls.cpp` | ✅ Bug H |
 | Portão de carga SIF: sensor diagnóstico + stub permissivo instalados | PARTE 10 PLANO A+B1: `sceSifSetDma` instrumentado + aceita `dest=0xffffffff` | ✅ Bug I blindado |
-| **Câmera com cronômetro instalada no posto de guarda do semáforo** | **PARTE 10 PASSO 2.8: WaitSema loga `delta_ms_since_RPC_BIND`. Smoking gun: SignalSema=0 no run inteiro. Jogo dorme em `sid=4`, ninguém acorda.** | 🟡 **AGUARDANDO ROUND** |
+| Agente infiltrado acorda o guarda adormecido: intercepta o sinal que o IOP nunca mandou e forja a resposta | PARTE 10 PASSO 3: WaitSema com delta_ms < 100 sinaliza semáforo sozinho, desbloqueando o deadlock | 🟡 **AGUARDANDO ROUND** |
 | Próximos guardas internos previstos | VIF1/DMA com payloads válidos, GS, áudio, controle | 🔜 ato 3 |
 | Fuga com o alvo | Jogo rodando até a primeira fase jogável | 🔜 final |
 
@@ -320,51 +320,30 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 ---
 
-## 🟢 ESTADO ATUAL — PARTE 10 PLANO B2 PASSO 2.8 (atualizado 2026-04-30 tarde)
+## 🟢 ESTADO ATUAL — PARTE 10 PASSO 3 (atualizado 2026-05-01)
 
-### Smoking Gun Definitivo (confirmado empiricamente, round `b7ceb6d` 2026-04-30 12:24)
+### PASSO 2.8 — ✅ CONFIRMADO (round 2026-05-01)
 
-| Syscall | Hits no log full (89s = 5340 VBlanks) |
-|---|---|
-| `CreateSema` | 4 |
-| `WaitSema` | 1 |
-| **`SignalSema`** | **0** |
-| `iSignalSema` | 0 |
+`[WaitSema:block] tid=1 sid=4 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=0`
 
-**Diagnóstico:** o jogo cria 4 semáforos no boot, dorme em `WaitSema sid=4` logo após RPC_BIND, e **NUNCA NINGUÉM sinaliza qualquer semáforo no run inteiro**. No PS2 real, o IOP processaria o RPC_BIND e faria `iSignalSema(4)` num handler de interrupção. Como não temos IOP, **deadlock eterno**.
+→ **delta=0ms**: jogo dorme imediatamente após RPC_BIND esperando IOP. Caso `< 100ms` confirmado.
 
-### O que o PASSO 2.8 faz (aplicado, aguardando round)
+### PASSO 3 — ✅ FIX APLICADO (2026-05-01)
 
-5 arquivos modificados para medir correlação temporal RPC_BIND → WaitSema:block:
+**Arquivo:** `PS2Recomp/ps2xRuntime/src/lib/syscalls/ps2_syscalls_flags.inl` (WaitSema handler)
 
-| Arquivo | O que faz |
-|---|---|
-| `game_overrides.cpp` | `g_gowLastSifBindMonotonicNs` (atomic uint64) + setter `gow_record_sif_bind_ts()` + getter |
-| `ps2_stubs.cpp` | `extern "C" void gow_record_sif_bind_ts();` (escopo global) |
-| `ps2_syscalls.cpp` | `extern "C" std::uint64_t gow_get_sif_bind_monotonic_ns();` (escopo global) |
-| `ps2_stubs_misc.inl:3614` | Chama `::gow_record_sif_bind_ts()` logo após `gow_set_sif_client_buf_watch(responseBuf)` |
-| `ps2_syscalls_flags.inl` (em `lib/syscalls/`) | Log `[WaitSema:block] tid=N sid=N pc=0xN ra=0xN delta_ms_since_RPC_BIND=N` |
+**Mecanismo:** quando `WaitSema(sid)` é chamado com `delta_ms_since_RPC_BIND < 100`, o handler incrementa `sema->count` antes do `cv.wait`. O wait vê `count > 0` e retorna sem bloquear — simulando o `iSignalSema` que o IOP faria.
 
-**Fix bonus no mesmo commit:** `auto_round.sh` — bug do `log_latest_*.txt` stale corrigido (o `cp -f` agora vem DEPOIS do `git checkout -B logs/auto`). `GREP_PATTERN` adicionou `CreateSema|WaitSema|SignalSema`.
-
-### Esperado no próximo round
-
+**Esperado no próximo round:**
 ```
-[WaitSema:block] tid=1 sid=4 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=N
+[PASSO 3] Forjando iSignalSema(sid=4) delta_ms=0 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=4 ret=0
 ```
+→ Jogo avança além de `pc=0x293c64`. Novo comportamento/bug aparece.
 
-### PASSO 3 — plano em espera do dado do PASSO 2.8
+### Status
 
-| Se delta_ms na maioria | Ação |
-|---|---|
-| **< 100ms** | PASSO 3 simples: forjar `iSignalSema(sid_visto)` dentro de `gow_record_sif_bind_ts` logo após o RPC_BIND |
-| **Varia muito (1ms~10s)** | Cirurgia: ler `sceSifClientData->sema` no offset do SDK, novo round de instrumentação |
-| **`never` no `sid=4`** | BIND não foi interceptado antes desse WaitSema — revisar ordem dos eventos |
-
-### Status do round
-
-**Aguardando Cris clicar Push pra disparar o round com PASSO 2.8.**
-- Se loop está rodando a versão ANTIGA do `auto_round.sh` (iniciado antes deste commit), o fix do `log_latest_*.txt` só vale no round seguinte. Para que valha já no próximo: `Ctrl+C` + `bash auto_round.sh loop`.
+**Aguardando Push + round.** Analista: após o round, leia log via curl e identifique o próximo bloqueio.
 
 ---
 

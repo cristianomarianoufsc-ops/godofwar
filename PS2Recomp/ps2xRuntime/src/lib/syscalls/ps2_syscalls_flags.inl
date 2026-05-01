@@ -285,27 +285,27 @@ void WaitSema(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
 
     if (sema->count == 0)
     {
+        // PASSO 2.8/3 — calcula delta_ms desde o ultimo RPC_BIND interceptado.
+        // OBRIGATORIO fora do rate-limit: PASSO 3 precisa do delta em todo block,
+        // nao so nos primeiros 256.
+        const uint64_t bindNs = ::gow_get_sif_bind_monotonic_ns();
+        int64_t deltaMsSinceBind = -1;
+        if (bindNs != 0u)
+        {
+            auto now = std::chrono::steady_clock::now().time_since_epoch();
+            auto nowNs = static_cast<uint64_t>(
+                std::chrono::duration_cast<std::chrono::nanoseconds>(now).count());
+            if (nowNs >= bindNs)
+            {
+                deltaMsSinceBind = static_cast<int64_t>((nowNs - bindNs) / 1000000ull);
+            }
+        }
+
+        // Log rate-limitado (primeiros 256 blocks).
         static std::atomic<uint32_t> s_waitSemaBlockLogs{0};
         const uint32_t blockLog = s_waitSemaBlockLogs.fetch_add(1, std::memory_order_relaxed);
         if (blockLog < 256u)
         {
-            // PASSO 2.8 — calcula delta_ms desde ultimo RPC_BIND interceptado.
-            // Setter em ps2_stubs_misc.inl (PASSO 2 REVERTIDO), getter em
-            // game_overrides.cpp. Se delta_ms_since_bind < 100 na maioria dos
-            // blocks, confirma "jogo dorme em sema apos BIND" -> PASSO 3
-            // forja iSignalSema(sid).
-            const uint64_t bindNs = ::gow_get_sif_bind_monotonic_ns();
-            int64_t deltaMsSinceBind = -1;
-            if (bindNs != 0u)
-            {
-                auto now = std::chrono::steady_clock::now().time_since_epoch();
-                auto nowNs = static_cast<uint64_t>(
-                    std::chrono::duration_cast<std::chrono::nanoseconds>(now).count());
-                if (nowNs >= bindNs)
-                {
-                    deltaMsSinceBind = static_cast<int64_t>((nowNs - bindNs) / 1000000ull);
-                }
-            }
             std::cout << "[WaitSema:block] tid=" << g_currentThreadId
                       << " sid=" << sid
                       << " pc=0x" << std::hex << ctx->pc
@@ -314,6 +314,27 @@ void WaitSema(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
                       << " delta_ms_since_RPC_BIND="
                       << ((deltaMsSinceBind < 0) ? std::string("never") : std::to_string(deltaMsSinceBind))
                       << std::endl;
+        }
+
+        // PASSO 3 — forja iSignalSema simulando resposta do IOP ao RPC_BIND.
+        // Round b7ceb6d confirmou: delta=0ms → jogo dorme imediatamente apos
+        // RPC_BIND esperando o IOP sinalizar. Como nao temos IOP real,
+        // incrementamos count agora (lock ja segurado) para que o cv.wait
+        // abaixo retorne sem bloquear, exatamente como o IOP faria.
+        // Guard < 100ms evita sinalizar semaforos nao relacionados ao BIND.
+        static std::atomic<uint32_t> s_passo3Logs{0};
+        if (deltaMsSinceBind >= 0 && deltaMsSinceBind < 100 &&
+            sema->count < sema->maxCount)
+        {
+            const uint32_t p3Log = s_passo3Logs.fetch_add(1, std::memory_order_relaxed);
+            if (p3Log < 64u)
+            {
+                std::cout << "[PASSO 3] Forjando iSignalSema(sid=" << sid
+                          << ") delta_ms=" << deltaMsSinceBind
+                          << " — resposta IOP simulada ao RPC_BIND" << std::endl;
+            }
+            sema->count++;
+            // cv.wait abaixo ve count > 0 e retorna imediatamente.
         }
 
         if (info)

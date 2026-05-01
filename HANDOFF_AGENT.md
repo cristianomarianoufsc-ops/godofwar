@@ -68,9 +68,9 @@ Versão expandida com exemplos vive em `replit.md §🦆 LIÇÕES METODOLÓGICAS
 
 ## 📖 ANALOGIAS — estado atual (2026-04-30 tarde)
 
-**Carro:** motor deu 1ª partida (Fix 4+5); guarda neutralizado (Fixes 1+6); bomba aftermarket (PARTE 7 Bug F ✅); sensor de injeção rebobinado (PARTE 8 Bug G ✅); 4 botões pneumáticos (PARTE 9 Bug H ✅); sensor diagnóstico + stub permissivo no acoplamento SIF (PARTE 10 Bugs I/J blindados). **PARTE 10 PASSO 2.8: cronômetro instalado entre "caminhão saiu do portão SIF" e "motor dorme em semáforo". Smoking gun: motor dorme, ninguém acorda. Aguardando próximo dossiê.**
+**Carro:** motor deu 1ª partida (Fix 4+5); guarda neutralizado (Fixes 1+6); bomba aftermarket (PARTE 7 ✅); sensor de injeção rebobinado (PARTE 8 ✅); 4 botões pneumáticos (PARTE 9 ✅); sensor diagnóstico + stub permissivo no acoplamento SIF (PARTE 10 Bugs I/J ✅). **PASSO 2.8 confirmou delta=0ms. PASSO 3 APLICADO: porteiro do semáforo agora dá o sinal sozinho quando o caminhão SIF passa (WaitSema forja iSignalSema). Aguardando round com novo fix.**
 
-**Espionagem:** cofre aberto (Fix 4+5); guardas 1/2 neutralizados; agente duplo no almoxarifado (PARTE 7 ✅); agente de tráfego no cruzamento (PARTE 8 ✅); operador no switchboard (PARTE 9 ✅); sensor diagnóstico + stub no portão SIF (PARTE 10 ✅). **PARTE 10 PASSO 2.8: câmera com cronômetro instalada no posto do guarda semáforo. Smoking gun: SignalSema=0 no run inteiro. Agente dorme, ninguém acorda. Aguardando próximo dossiê.**
+**Espionagem:** cofre aberto (Fix 4+5); guardas 1/2 neutralizados; almoxarifado (PARTE 7 ✅); cruzamento (PARTE 8 ✅); switchboard (PARTE 9 ✅); portão SIF (PARTE 10 ✅). **PASSO 3 APLICADO: agente infiltrado forja o sinal do IOP — acorda o guarda adormecido em WaitSema(sid=4). Aguardando round para ver o próximo bloqueio.**
 
 ---
 
@@ -91,7 +91,7 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-04-30 tarde)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-01)
 
 ### Smoking Gun Definitivo (confirmado empiricamente, round `b7ceb6d` 2026-04-30 12:24)
 
@@ -143,7 +143,21 @@ Confirmado também que:
 | **Varia muito (1ms~10s)** | Cirurgia: ler `sceSifClientData->sema` no offset do SDK, novo round de instrumentação |
 | **`never` no `sid=4`** | BIND não foi interceptado antes desse WaitSema — revisar ordem dos eventos |
 
-**Status:** aguardando Cris clicar Push → round dispara → analista próximo lê via curl e decide PASSO 3.
+**Status PASSO 2.8:** ✅ CONFIRMADO. Round `3a0bcc2` (2026-05-01) mostrou `delta_ms_since_RPC_BIND=0`.
+
+### PASSO 3 — Fix aplicado (2026-05-01)
+
+**Arquivo:** `PS2Recomp/ps2xRuntime/src/lib/syscalls/ps2_syscalls_flags.inl` (WaitSema handler)
+
+**O que faz:** quando `WaitSema(sid)` é chamado com `delta_ms_since_RPC_BIND < 100`, incrementa `sema->count` antes do `cv.wait`. O wait vê `count > 0` e retorna imediatamente sem bloquear — simulando o `iSignalSema` que o IOP faria. Log: `[PASSO 3] Forjando iSignalSema(sid=4) delta_ms=0`.
+
+**Comportamento esperado no próximo round:**
+- `[PASSO 3] Forjando iSignalSema(sid=4) delta_ms=0` aparece no log
+- `[WaitSema:wake] sid=4 ret=0` — jogo acorda do semáforo
+- Jogo avança além do `0x293c64` (pc do WaitSema)
+- Novo comportamento ou novo bug aparece (próximo bloqueio a ser diagnosticado)
+
+**Próxima ação:** analista lê log via curl após round e identifica novo bloqueio.
 
 ---
 
