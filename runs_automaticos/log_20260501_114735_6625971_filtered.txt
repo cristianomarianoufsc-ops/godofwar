@@ -1,0 +1,491 @@
+[CreateSema] id=1 init=1 max=1
+[CreateSema] id=2 init=1 max=1
+[CreateSema] id=3 init=0 max=255
+[CreateThread] id=2 entry=0x2947c8 stack=0x326b40 size=0x400 gp=0x2cf070 prio=1
+[stub:sub_0013DA10] PARTE 7 PLANO A: alloc #1 guestPtr=0x1000000 (a0=0x0 ra=0x13fb14)
+[stub:sub_0013DA10] PARTE 7 PLANO A: alloc #2 guestPtr=0x1000040 (a0=0x0 ra=0x13fb14)
+[stub:sub_0013DA10] PARTE 7 PLANO A: alloc #3 guestPtr=0x1000080 (a0=0x0 ra=0x13fb14)
+[stub:sub_0013DA10] PARTE 7 PLANO A: alloc #4 guestPtr=0x10000c0 (a0=0x0 ra=0x13fb14)
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1 — frameCount=1 flag=1 altCount=1
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2 — frameCount=2 flag=0 altCount=2
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3 — frameCount=3 flag=1 altCount=3
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4 — frameCount=4 flag=0 altCount=4
+[PARTE 10 PLANO B1] aceitando SIF RPC stage transfer (dest=0xffffffff, IOP decide pelo header) — xfer.src=0x327880 xfer.size=0x14 xfer.attr=0x44 ra=0x2969ac
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0000 sifBit=1 hdrFlags=0x0 hdrSize=0x14 INIT{ callback=0x3277c0 } (xfer.src=0x327880 size=0x14)
+[PARTE 10 PLANO B2 PASSO 2.7] dump callback target @0x3277c0:
+[stub:0x296a54] Bug L: callback IOP modulo #0 — sem IOP, count=0, retornando 0 (early-exit)
+[CreateSema] id=4 init=0 max=1
+[PARTE 10 PLANO B1] aceitando SIF RPC stage transfer (dest=0xffffffff, IOP decide pelo header) — xfer.src=0x20327ac0 xfer.size=0x40 xfer.attr=0x44 ra=0x2969ac
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0x5 self=0x20327ac0 payload_words=2 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327ac0 size=0x40)
+[PARTE 10 PLANO B2 PASSO 2.5] dump natural @0x30aaa8:
+[PARTE 10 PLANO B2 PASSO 2 REVERTIDO] RPC_BIND opcode=0x9 sid=0x80000592 rpc_id=0x5 client=0x30aaa8 — NAO escrevendo (round f8cb6a5 confirmou que jogo nao polla, espera callback EE em 0x3277c0). Aguardando dump 2.7 revelar layout do callback.
+[stub:0x296a54] Bug L: callback IOP modulo #1 — sem IOP, count=0, retornando 0 (early-exit)
+[WaitSema:block] tid=1 sid=4 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=0
+[PASSO 3] Forjando iSignalSema(sid=4) delta_ms=0 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=4 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #60 — frameCount=60 flag=0 altCount=60
+[stub:0x182f28] PARTE 10 PLANO B2 PASSO 2.5 — dump @VBlank #100 buf=0x30aaa8:
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #120 — frameCount=120 flag=0 altCount=120
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #180 — frameCount=180 flag=0 altCount=180
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #240 — frameCount=240 flag=0 altCount=240
+[CreateSema] id=5 init=0 max=1
+[PARTE 10 PLANO B1] aceitando SIF RPC stage transfer (dest=0xffffffff, IOP decide pelo header) — xfer.src=0x20327b00 xfer.size=0x40 xfer.attr=0x44 ra=0x2969ac
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0x10005 self=0x20327b00 payload_words=3 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327b00 size=0x40)
+[PARTE 10 PLANO B2 PASSO 2.5] dump natural @0x30aaa8:
+[PARTE 10 PLANO B2 PASSO 2 REVERTIDO] RPC_BIND opcode=0x9 sid=0x80000592 rpc_id=0x10005 client=0x30aaa8 — NAO escrevendo (round f8cb6a5 confirmou que jogo nao polla, espera callback EE em 0x3277c0). Aguardando dump 2.7 revelar layout do callback.
+[stub:0x296a54] Bug L: callback IOP modulo #2 — sem IOP, count=0, retornando 0 (early-exit)
+[WaitSema:block] tid=1 sid=5 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=0
+[PASSO 3] Forjando iSignalSema(sid=5) delta_ms=0 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=5 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #300 — frameCount=300 flag=0 altCount=300
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #360 — frameCount=360 flag=0 altCount=360
+[CreateSema] id=6 init=0 max=1
+[PARTE 10 PLANO B1] aceitando SIF RPC stage transfer (dest=0xffffffff, IOP decide pelo header) — xfer.src=0x20327b40 xfer.size=0x40 xfer.attr=0x44 ra=0x2969ac
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0x20005 self=0x20327b40 payload_words=4 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327b40 size=0x40)
+[PARTE 10 PLANO B2 PASSO 2.5] dump natural @0x30aaa8:
+[PARTE 10 PLANO B2 PASSO 2 REVERTIDO] RPC_BIND opcode=0x9 sid=0x80000592 rpc_id=0x20005 client=0x30aaa8 — NAO escrevendo (round f8cb6a5 confirmou que jogo nao polla, espera callback EE em 0x3277c0). Aguardando dump 2.7 revelar layout do callback.
+[stub:0x296a54] Bug L: callback IOP modulo #3 — sem IOP, count=0, retornando 0 (early-exit)
+[WaitSema:block] tid=1 sid=6 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=0
+[PASSO 3] Forjando iSignalSema(sid=6) delta_ms=0 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=6 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #420 — frameCount=420 flag=0 altCount=420
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #480 — frameCount=480 flag=0 altCount=480
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #540 — frameCount=540 flag=0 altCount=540
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #600 — frameCount=600 flag=0 altCount=600
+[CreateSema] id=7 init=0 max=1
+[PARTE 10 PLANO B1] aceitando SIF RPC stage transfer (dest=0xffffffff, IOP decide pelo header) — xfer.src=0x20327b80 xfer.size=0x40 xfer.attr=0x44 ra=0x2969ac
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0x30005 self=0x20327b80 payload_words=5 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327b80 size=0x40)
+[PARTE 10 PLANO B2 PASSO 2.5] dump natural @0x30aaa8:
+[PARTE 10 PLANO B2 PASSO 2 REVERTIDO] RPC_BIND opcode=0x9 sid=0x80000592 rpc_id=0x30005 client=0x30aaa8 — NAO escrevendo (round f8cb6a5 confirmou que jogo nao polla, espera callback EE em 0x3277c0). Aguardando dump 2.7 revelar layout do callback.
+[stub:0x296a54] Bug L: callback IOP modulo #4 — sem IOP, count=0, retornando 0 (early-exit)
+[WaitSema:block] tid=1 sid=7 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=0
+[PASSO 3] Forjando iSignalSema(sid=7) delta_ms=0 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=7 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #660 — frameCount=660 flag=0 altCount=660
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #720 — frameCount=720 flag=0 altCount=720
+[CreateSema] id=8 init=0 max=1
+[PARTE 10 PLANO B1] aceitando SIF RPC stage transfer (dest=0xffffffff, IOP decide pelo header) — xfer.src=0x20327bc0 xfer.size=0x40 xfer.attr=0x44 ra=0x2969ac
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0x40005 self=0x20327bc0 payload_words=6 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327bc0 size=0x40)
+[PARTE 10 PLANO B2 PASSO 2.5] dump natural @0x30aaa8:
+[PARTE 10 PLANO B2 PASSO 2 REVERTIDO] RPC_BIND opcode=0x9 sid=0x80000592 rpc_id=0x40005 client=0x30aaa8 — NAO escrevendo (round f8cb6a5 confirmou que jogo nao polla, espera callback EE em 0x3277c0). Aguardando dump 2.7 revelar layout do callback.
+[stub:0x296a54] Bug L: callback IOP modulo #5 — sem IOP, count=0, retornando 0 (early-exit)
+[WaitSema:block] tid=1 sid=8 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=0
+[PASSO 3] Forjando iSignalSema(sid=8) delta_ms=0 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=8 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #780 — frameCount=780 flag=0 altCount=780
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #840 — frameCount=840 flag=0 altCount=840
+[CreateSema] id=9 init=0 max=1
+[PARTE 10 PLANO B1] aceitando SIF RPC stage transfer (dest=0xffffffff, IOP decide pelo header) — xfer.src=0x20327c00 xfer.size=0x40 xfer.attr=0x44 ra=0x2969ac
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0x50005 self=0x20327c00 payload_words=7 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327c00 size=0x40)
+[PARTE 10 PLANO B2 PASSO 2.5] dump natural @0x30aaa8:
+[PARTE 10 PLANO B2 PASSO 2 REVERTIDO] RPC_BIND opcode=0x9 sid=0x80000592 rpc_id=0x50005 client=0x30aaa8 — NAO escrevendo (round f8cb6a5 confirmou que jogo nao polla, espera callback EE em 0x3277c0). Aguardando dump 2.7 revelar layout do callback.
+[stub:0x296a54] Bug L: callback IOP modulo #6 — sem IOP, count=0, retornando 0 (early-exit)
+[WaitSema:block] tid=1 sid=9 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=0
+[PASSO 3] Forjando iSignalSema(sid=9) delta_ms=0 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=9 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #900 — frameCount=900 flag=0 altCount=900
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #960 — frameCount=960 flag=0 altCount=960
+[stub:0x182f28] PARTE 10 PLANO B2 PASSO 2.5 — dump @VBlank #1000 buf=0x30aaa8:
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1020 — frameCount=1020 flag=0 altCount=1020
+[CreateSema] id=10 init=0 max=1
+[PARTE 10 PLANO B1] aceitando SIF RPC stage transfer (dest=0xffffffff, IOP decide pelo header) — xfer.src=0x20327c40 xfer.size=0x40 xfer.attr=0x44 ra=0x2969ac
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0x60005 self=0x20327c40 payload_words=8 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327c40 size=0x40)
+[PARTE 10 PLANO B2 PASSO 2.5] dump natural @0x30aaa8:
+[PARTE 10 PLANO B2 PASSO 2 REVERTIDO] RPC_BIND opcode=0x9 sid=0x80000592 rpc_id=0x60005 client=0x30aaa8 — NAO escrevendo (round f8cb6a5 confirmou que jogo nao polla, espera callback EE em 0x3277c0). Aguardando dump 2.7 revelar layout do callback.
+[stub:0x296a54] Bug L: callback IOP modulo #7 — sem IOP, count=0, retornando 0 (early-exit)
+[WaitSema:block] tid=1 sid=10 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=0
+[PASSO 3] Forjando iSignalSema(sid=10) delta_ms=0 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=10 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1080 — frameCount=1080 flag=0 altCount=1080
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1140 — frameCount=1140 flag=0 altCount=1140
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1200 — frameCount=1200 flag=0 altCount=1200
+[CreateSema] id=11 init=0 max=1
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0x70005 self=0x20327c80 payload_words=9 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327c80 size=0x40)
+[PARTE 10 PLANO B2 PASSO 2.5] dump natural @0x30aaa8:
+[PARTE 10 PLANO B2 PASSO 2 REVERTIDO] RPC_BIND opcode=0x9 sid=0x80000592 rpc_id=0x70005 client=0x30aaa8 — NAO escrevendo (round f8cb6a5 confirmou que jogo nao polla, espera callback EE em 0x3277c0). Aguardando dump 2.7 revelar layout do callback.
+[WaitSema:block] tid=1 sid=11 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=0
+[PASSO 3] Forjando iSignalSema(sid=11) delta_ms=0 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=11 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1260 — frameCount=1260 flag=0 altCount=1260
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1320 — frameCount=1320 flag=0 altCount=1320
+[CreateSema] id=12 init=0 max=1
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0x80005 self=0x20327cc0 payload_words=10 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327cc0 size=0x40)
+[WaitSema:block] tid=1 sid=12 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=1997
+[PASSO 3] Forjando iSignalSema(sid=12) delta_ms=1997 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=12 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1380 — frameCount=1380 flag=0 altCount=1380
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1440 — frameCount=1440 flag=0 altCount=1440
+[CreateSema] id=13 init=0 max=1
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0x90005 self=0x20327d00 payload_words=11 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327d00 size=0x40)
+[WaitSema:block] tid=1 sid=13 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=4173
+[PASSO 3] Forjando iSignalSema(sid=13) delta_ms=4173 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=13 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1500 — frameCount=1500 flag=0 altCount=1500
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1560 — frameCount=1560 flag=0 altCount=1560
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1620 — frameCount=1620 flag=0 altCount=1620
+[CreateSema] id=14 init=0 max=1
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0xa0005 self=0x20327d40 payload_words=12 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327d40 size=0x40)
+[WaitSema:block] tid=1 sid=14 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=7744
+[PASSO 3] Forjando iSignalSema(sid=14) delta_ms=7744 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=14 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1680 — frameCount=1680 flag=0 altCount=1680
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1740 — frameCount=1740 flag=0 altCount=1740
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1800 — frameCount=1800 flag=0 altCount=1800
+[CreateSema] id=15 init=0 max=1
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0xb0005 self=0x20327d80 payload_words=13 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327d80 size=0x40)
+[WaitSema:block] tid=1 sid=15 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=10006
+[PASSO 3] Forjando iSignalSema(sid=15) delta_ms=10006 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=15 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1860 — frameCount=1860 flag=0 altCount=1860
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1920 — frameCount=1920 flag=0 altCount=1920
+[CreateSema] id=16 init=0 max=1
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0xc0005 self=0x20327dc0 payload_words=14 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327dc0 size=0x40)
+[WaitSema:block] tid=1 sid=16 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=11974
+[PASSO 3] Forjando iSignalSema(sid=16) delta_ms=11974 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=16 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1980 — frameCount=1980 flag=0 altCount=1980
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2040 — frameCount=2040 flag=0 altCount=2040
+[CreateSema] id=17 init=0 max=1
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0xd0005 self=0x20327e00 payload_words=15 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327e00 size=0x40)
+[WaitSema:block] tid=1 sid=17 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=14471
+[PASSO 3] Forjando iSignalSema(sid=17) delta_ms=14471 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=17 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2100 — frameCount=2100 flag=0 altCount=2100
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2160 — frameCount=2160 flag=0 altCount=2160
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2220 — frameCount=2220 flag=0 altCount=2220
+[CreateSema] id=18 init=0 max=1
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0xe0005 self=0x20327e40 payload_words=16 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327e40 size=0x40)
+[WaitSema:block] tid=1 sid=18 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=17395
+[PASSO 3] Forjando iSignalSema(sid=18) delta_ms=17395 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=18 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2280 — frameCount=2280 flag=0 altCount=2280
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2340 — frameCount=2340 flag=0 altCount=2340
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2400 — frameCount=2400 flag=0 altCount=2400
+[CreateSema] id=19 init=0 max=1
+[WaitSema:block] tid=1 sid=19 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=20333
+[PASSO 3] Forjando iSignalSema(sid=19) delta_ms=20333 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=19 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2460 — frameCount=2460 flag=0 altCount=2460
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2520 — frameCount=2520 flag=0 altCount=2520
+[CreateSema] id=20 init=0 max=1
+[WaitSema:block] tid=1 sid=20 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=22277
+[PASSO 3] Forjando iSignalSema(sid=20) delta_ms=22277 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=20 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2580 — frameCount=2580 flag=0 altCount=2580
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2640 — frameCount=2640 flag=0 altCount=2640
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2700 — frameCount=2700 flag=0 altCount=2700
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2760 — frameCount=2760 flag=0 altCount=2760
+[CreateSema] id=21 init=0 max=1
+[WaitSema:block] tid=1 sid=21 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=26025
+[PASSO 3] Forjando iSignalSema(sid=21) delta_ms=26025 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=21 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2820 — frameCount=2820 flag=0 altCount=2820
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2880 — frameCount=2880 flag=0 altCount=2880
+[CreateSema] id=22 init=0 max=1
+[WaitSema:block] tid=1 sid=22 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=28146
+[PASSO 3] Forjando iSignalSema(sid=22) delta_ms=28146 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=22 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2940 — frameCount=2940 flag=0 altCount=2940
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3000 — frameCount=3000 flag=0 altCount=3000
+[CreateSema] id=23 init=0 max=1
+[WaitSema:block] tid=1 sid=23 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=30683
+[PASSO 3] Forjando iSignalSema(sid=23) delta_ms=30683 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=23 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3060 — frameCount=3060 flag=0 altCount=3060
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3120 — frameCount=3120 flag=0 altCount=3120
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3180 — frameCount=3180 flag=0 altCount=3180
+[CreateSema] id=24 init=0 max=1
+[WaitSema:block] tid=1 sid=24 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=32934
+[PASSO 3] Forjando iSignalSema(sid=24) delta_ms=32934 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=24 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3240 — frameCount=3240 flag=0 altCount=3240
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3300 — frameCount=3300 flag=0 altCount=3300
+[CreateSema] id=25 init=0 max=1
+[WaitSema:block] tid=1 sid=25 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=35074
+[PASSO 3] Forjando iSignalSema(sid=25) delta_ms=35074 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=25 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3360 — frameCount=3360 flag=0 altCount=3360
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3420 — frameCount=3420 flag=0 altCount=3420
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3480 — frameCount=3480 flag=0 altCount=3480
+[CreateSema] id=26 init=0 max=1
+[WaitSema:block] tid=1 sid=26 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=38766
+[PASSO 3] Forjando iSignalSema(sid=26) delta_ms=38766 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=26 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3540 — frameCount=3540 flag=0 altCount=3540
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3600 — frameCount=3600 flag=0 altCount=3600
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3660 — frameCount=3660 flag=0 altCount=3660
+[CreateSema] id=27 init=0 max=1
+[WaitSema:block] tid=1 sid=27 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=40910
+[PASSO 3] Forjando iSignalSema(sid=27) delta_ms=40910 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=27 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3720 — frameCount=3720 flag=0 altCount=3720
+[CreateSema] id=28 init=0 max=1
+[WaitSema:block] tid=1 sid=28 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=42771
+[PASSO 3] Forjando iSignalSema(sid=28) delta_ms=42771 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=28 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3780 — frameCount=3780 flag=0 altCount=3780
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3840 — frameCount=3840 flag=0 altCount=3840
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3900 — frameCount=3900 flag=0 altCount=3900
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3960 — frameCount=3960 flag=0 altCount=3960
+[CreateSema] id=29 init=0 max=1
+[WaitSema:block] tid=1 sid=29 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=46476
+[PASSO 3] Forjando iSignalSema(sid=29) delta_ms=46476 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=29 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4020 — frameCount=4020 flag=0 altCount=4020
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4080 — frameCount=4080 flag=0 altCount=4080
+[CreateSema] id=30 init=0 max=1
+[WaitSema:block] tid=1 sid=30 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=48502
+[PASSO 3] Forjando iSignalSema(sid=30) delta_ms=48502 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=30 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4140 — frameCount=4140 flag=0 altCount=4140
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4200 — frameCount=4200 flag=0 altCount=4200
+[CreateSema] id=31 init=0 max=1
+[WaitSema:block] tid=1 sid=31 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=50608
+[PASSO 3] Forjando iSignalSema(sid=31) delta_ms=50608 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=31 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4260 — frameCount=4260 flag=0 altCount=4260
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4320 — frameCount=4320 flag=0 altCount=4320
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4380 — frameCount=4380 flag=0 altCount=4380
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4440 — frameCount=4440 flag=0 altCount=4440
+[CreateSema] id=32 init=0 max=1
+[WaitSema:block] tid=1 sid=32 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=53988
+[PASSO 3] Forjando iSignalSema(sid=32) delta_ms=53988 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=32 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4500 — frameCount=4500 flag=0 altCount=4500
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4560 — frameCount=4560 flag=0 altCount=4560
+[CreateSema] id=33 init=0 max=1
+[WaitSema:block] tid=1 sid=33 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=56227
+[PASSO 3] Forjando iSignalSema(sid=33) delta_ms=56227 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=33 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4620 — frameCount=4620 flag=0 altCount=4620
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4680 — frameCount=4680 flag=0 altCount=4680
+[CreateSema] id=34 init=0 max=1
+[WaitSema:block] tid=1 sid=34 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=58189
+[PASSO 3] Forjando iSignalSema(sid=34) delta_ms=58189 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=34 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4740 — frameCount=4740 flag=0 altCount=4740
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4800 — frameCount=4800 flag=0 altCount=4800
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4860 — frameCount=4860 flag=0 altCount=4860
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4920 — frameCount=4920 flag=0 altCount=4920
+[CreateSema] id=35 init=0 max=1
+[WaitSema:block] tid=1 sid=35 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=62228
+[PASSO 3] Forjando iSignalSema(sid=35) delta_ms=62228 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=35 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4980 — frameCount=4980 flag=0 altCount=4980
+[stub:0x182f28] PARTE 10 PLANO B2 PASSO 2.5 — dump @VBlank #5000 buf=0x30aaa8:
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #5040 — frameCount=5040 flag=0 altCount=5040
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #5100 — frameCount=5100 flag=0 altCount=5100
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #5160 — frameCount=5160 flag=0 altCount=5160
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #5220 — frameCount=5220 flag=0 altCount=5220
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #5280 — frameCount=5280 flag=0 altCount=5280
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #5340 — frameCount=5340 flag=0 altCount=5340
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #5400 — frameCount=5400 flag=0 altCount=5400
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #5460 — frameCount=5460 flag=0 altCount=5460
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #5520 — frameCount=5520 flag=0 altCount=5520
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #5580 — frameCount=5580 flag=0 altCount=5580
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #5640 — frameCount=5640 flag=0 altCount=5640
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #5700 — frameCount=5700 flag=0 altCount=5700
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #5760 — frameCount=5760 flag=0 altCount=5760
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #5820 — frameCount=5820 flag=0 altCount=5820
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #5880 — frameCount=5880 flag=0 altCount=5880
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #5940 — frameCount=5940 flag=0 altCount=5940
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #6000 — frameCount=6000 flag=0 altCount=6000
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #6060 — frameCount=6060 flag=0 altCount=6060
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #6120 — frameCount=6120 flag=0 altCount=6120
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #6180 — frameCount=6180 flag=0 altCount=6180
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #6240 — frameCount=6240 flag=0 altCount=6240
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #6300 — frameCount=6300 flag=0 altCount=6300
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #6360 — frameCount=6360 flag=0 altCount=6360
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #6420 — frameCount=6420 flag=0 altCount=6420
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #6480 — frameCount=6480 flag=0 altCount=6480
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #6540 — frameCount=6540 flag=0 altCount=6540
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #6600 — frameCount=6600 flag=0 altCount=6600
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #6660 — frameCount=6660 flag=0 altCount=6660
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #6720 — frameCount=6720 flag=0 altCount=6720
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #6780 — frameCount=6780 flag=0 altCount=6780
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #6840 — frameCount=6840 flag=0 altCount=6840
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #6900 — frameCount=6900 flag=0 altCount=6900
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #6960 — frameCount=6960 flag=0 altCount=6960
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #7020 — frameCount=7020 flag=0 altCount=7020
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #7080 — frameCount=7080 flag=0 altCount=7080
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #7140 — frameCount=7140 flag=0 altCount=7140
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #7200 — frameCount=7200 flag=0 altCount=7200
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #7260 — frameCount=7260 flag=0 altCount=7260
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #7320 — frameCount=7320 flag=0 altCount=7320
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #7380 — frameCount=7380 flag=0 altCount=7380
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #7440 — frameCount=7440 flag=0 altCount=7440
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #7500 — frameCount=7500 flag=0 altCount=7500
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #7560 — frameCount=7560 flag=0 altCount=7560
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #7620 — frameCount=7620 flag=0 altCount=7620
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #7680 — frameCount=7680 flag=0 altCount=7680
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #7740 — frameCount=7740 flag=0 altCount=7740
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #7800 — frameCount=7800 flag=0 altCount=7800
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #7860 — frameCount=7860 flag=0 altCount=7860
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #7920 — frameCount=7920 flag=0 altCount=7920
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #7980 — frameCount=7980 flag=0 altCount=7980
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #8040 — frameCount=8040 flag=0 altCount=8040
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #8100 — frameCount=8100 flag=0 altCount=8100
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #8160 — frameCount=8160 flag=0 altCount=8160
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #8220 — frameCount=8220 flag=0 altCount=8220
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #8280 — frameCount=8280 flag=0 altCount=8280
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #8340 — frameCount=8340 flag=0 altCount=8340
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #8400 — frameCount=8400 flag=0 altCount=8400
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #8460 — frameCount=8460 flag=0 altCount=8460
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #8520 — frameCount=8520 flag=0 altCount=8520
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #8580 — frameCount=8580 flag=0 altCount=8580
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #8640 — frameCount=8640 flag=0 altCount=8640
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #8700 — frameCount=8700 flag=0 altCount=8700
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #8760 — frameCount=8760 flag=0 altCount=8760
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #8820 — frameCount=8820 flag=0 altCount=8820
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #8880 — frameCount=8880 flag=0 altCount=8880
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #8940 — frameCount=8940 flag=0 altCount=8940
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #9000 — frameCount=9000 flag=0 altCount=9000
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #9060 — frameCount=9060 flag=0 altCount=9060
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #9120 — frameCount=9120 flag=0 altCount=9120
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #9180 — frameCount=9180 flag=0 altCount=9180
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #9240 — frameCount=9240 flag=0 altCount=9240
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #9300 — frameCount=9300 flag=0 altCount=9300
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #9360 — frameCount=9360 flag=0 altCount=9360
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #9420 — frameCount=9420 flag=0 altCount=9420
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #9480 — frameCount=9480 flag=0 altCount=9480
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #9540 — frameCount=9540 flag=0 altCount=9540
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #9600 — frameCount=9600 flag=0 altCount=9600
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #9660 — frameCount=9660 flag=0 altCount=9660
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #9720 — frameCount=9720 flag=0 altCount=9720
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #9780 — frameCount=9780 flag=0 altCount=9780
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #9840 — frameCount=9840 flag=0 altCount=9840
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #9900 — frameCount=9900 flag=0 altCount=9900
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #9960 — frameCount=9960 flag=0 altCount=9960
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #10020 — frameCount=10020 flag=0 altCount=10020
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #10080 — frameCount=10080 flag=0 altCount=10080
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #10140 — frameCount=10140 flag=0 altCount=10140
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #10200 — frameCount=10200 flag=0 altCount=10200
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #10260 — frameCount=10260 flag=0 altCount=10260
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #10320 — frameCount=10320 flag=0 altCount=10320
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #10380 — frameCount=10380 flag=0 altCount=10380
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #10440 — frameCount=10440 flag=0 altCount=10440
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #10500 — frameCount=10500 flag=0 altCount=10500
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #10560 — frameCount=10560 flag=0 altCount=10560
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #10620 — frameCount=10620 flag=0 altCount=10620
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #10680 — frameCount=10680 flag=0 altCount=10680
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #10740 — frameCount=10740 flag=0 altCount=10740
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #10800 — frameCount=10800 flag=0 altCount=10800
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #10860 — frameCount=10860 flag=0 altCount=10860
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #10920 — frameCount=10920 flag=0 altCount=10920
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #10980 — frameCount=10980 flag=0 altCount=10980
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #11040 — frameCount=11040 flag=0 altCount=11040
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #11100 — frameCount=11100 flag=0 altCount=11100
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #11160 — frameCount=11160 flag=0 altCount=11160
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #11220 — frameCount=11220 flag=0 altCount=11220
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #11280 — frameCount=11280 flag=0 altCount=11280
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #11340 — frameCount=11340 flag=0 altCount=11340
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #11400 — frameCount=11400 flag=0 altCount=11400
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #11460 — frameCount=11460 flag=0 altCount=11460
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #11520 — frameCount=11520 flag=0 altCount=11520
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #11580 — frameCount=11580 flag=0 altCount=11580
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #11640 — frameCount=11640 flag=0 altCount=11640
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #11700 — frameCount=11700 flag=0 altCount=11700
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #11760 — frameCount=11760 flag=0 altCount=11760
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #11820 — frameCount=11820 flag=0 altCount=11820
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #11880 — frameCount=11880 flag=0 altCount=11880
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #11940 — frameCount=11940 flag=0 altCount=11940
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #12000 — frameCount=12000 flag=0 altCount=12000
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #12060 — frameCount=12060 flag=0 altCount=12060
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #12120 — frameCount=12120 flag=0 altCount=12120
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #12180 — frameCount=12180 flag=0 altCount=12180
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #12240 — frameCount=12240 flag=0 altCount=12240
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #12300 — frameCount=12300 flag=0 altCount=12300
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #12360 — frameCount=12360 flag=0 altCount=12360
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #12420 — frameCount=12420 flag=0 altCount=12420
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #12480 — frameCount=12480 flag=0 altCount=12480
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #12540 — frameCount=12540 flag=0 altCount=12540
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #12600 — frameCount=12600 flag=0 altCount=12600
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #12660 — frameCount=12660 flag=0 altCount=12660
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #12720 — frameCount=12720 flag=0 altCount=12720
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #12780 — frameCount=12780 flag=0 altCount=12780
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #12840 — frameCount=12840 flag=0 altCount=12840
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #12900 — frameCount=12900 flag=0 altCount=12900
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #12960 — frameCount=12960 flag=0 altCount=12960
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #13020 — frameCount=13020 flag=0 altCount=13020
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #13080 — frameCount=13080 flag=0 altCount=13080
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #13140 — frameCount=13140 flag=0 altCount=13140
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #13200 — frameCount=13200 flag=0 altCount=13200
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #13260 — frameCount=13260 flag=0 altCount=13260
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #13320 — frameCount=13320 flag=0 altCount=13320
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #13380 — frameCount=13380 flag=0 altCount=13380
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #13440 — frameCount=13440 flag=0 altCount=13440
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #13500 — frameCount=13500 flag=0 altCount=13500
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #13560 — frameCount=13560 flag=0 altCount=13560
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #13620 — frameCount=13620 flag=0 altCount=13620
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #13680 — frameCount=13680 flag=0 altCount=13680
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #13740 — frameCount=13740 flag=0 altCount=13740
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #13800 — frameCount=13800 flag=0 altCount=13800
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #13860 — frameCount=13860 flag=0 altCount=13860
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #13920 — frameCount=13920 flag=0 altCount=13920
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #13980 — frameCount=13980 flag=0 altCount=13980
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #14040 — frameCount=14040 flag=0 altCount=14040
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #14100 — frameCount=14100 flag=0 altCount=14100
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #14160 — frameCount=14160 flag=0 altCount=14160
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #14220 — frameCount=14220 flag=0 altCount=14220
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #14280 — frameCount=14280 flag=0 altCount=14280
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #14340 — frameCount=14340 flag=0 altCount=14340
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #14400 — frameCount=14400 flag=0 altCount=14400
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #14460 — frameCount=14460 flag=0 altCount=14460
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #14520 — frameCount=14520 flag=0 altCount=14520
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #14580 — frameCount=14580 flag=0 altCount=14580
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #14640 — frameCount=14640 flag=0 altCount=14640
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #14700 — frameCount=14700 flag=0 altCount=14700
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #14760 — frameCount=14760 flag=0 altCount=14760
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #14820 — frameCount=14820 flag=0 altCount=14820
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #14880 — frameCount=14880 flag=0 altCount=14880
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #14940 — frameCount=14940 flag=0 altCount=14940
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #15000 — frameCount=15000 flag=0 altCount=15000
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #15060 — frameCount=15060 flag=0 altCount=15060
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #15120 — frameCount=15120 flag=0 altCount=15120
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #15180 — frameCount=15180 flag=0 altCount=15180
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #15240 — frameCount=15240 flag=0 altCount=15240
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #15300 — frameCount=15300 flag=0 altCount=15300
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #15360 — frameCount=15360 flag=0 altCount=15360
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #15420 — frameCount=15420 flag=0 altCount=15420
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #15480 — frameCount=15480 flag=0 altCount=15480
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #15540 — frameCount=15540 flag=0 altCount=15540
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #15600 — frameCount=15600 flag=0 altCount=15600
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #15660 — frameCount=15660 flag=0 altCount=15660
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #15720 — frameCount=15720 flag=0 altCount=15720
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #15780 — frameCount=15780 flag=0 altCount=15780
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #15840 — frameCount=15840 flag=0 altCount=15840
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #15900 — frameCount=15900 flag=0 altCount=15900
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #15960 — frameCount=15960 flag=0 altCount=15960
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #16020 — frameCount=16020 flag=0 altCount=16020
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #16080 — frameCount=16080 flag=0 altCount=16080
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #16140 — frameCount=16140 flag=0 altCount=16140
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #16200 — frameCount=16200 flag=0 altCount=16200
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #16260 — frameCount=16260 flag=0 altCount=16260
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #16320 — frameCount=16320 flag=0 altCount=16320
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #16380 — frameCount=16380 flag=0 altCount=16380
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #16440 — frameCount=16440 flag=0 altCount=16440
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #16500 — frameCount=16500 flag=0 altCount=16500
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #16560 — frameCount=16560 flag=0 altCount=16560
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #16620 — frameCount=16620 flag=0 altCount=16620
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #16680 — frameCount=16680 flag=0 altCount=16680
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #16740 — frameCount=16740 flag=0 altCount=16740
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #16800 — frameCount=16800 flag=0 altCount=16800
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #16860 — frameCount=16860 flag=0 altCount=16860
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #16920 — frameCount=16920 flag=0 altCount=16920
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #16980 — frameCount=16980 flag=0 altCount=16980
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #17040 — frameCount=17040 flag=0 altCount=17040
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #17100 — frameCount=17100 flag=0 altCount=17100
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #17160 — frameCount=17160 flag=0 altCount=17160
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #17220 — frameCount=17220 flag=0 altCount=17220
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #17280 — frameCount=17280 flag=0 altCount=17280
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #17340 — frameCount=17340 flag=0 altCount=17340
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #17400 — frameCount=17400 flag=0 altCount=17400
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #17460 — frameCount=17460 flag=0 altCount=17460
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #17520 — frameCount=17520 flag=0 altCount=17520
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #17580 — frameCount=17580 flag=0 altCount=17580
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #17640 — frameCount=17640 flag=0 altCount=17640
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #17700 — frameCount=17700 flag=0 altCount=17700
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #17760 — frameCount=17760 flag=0 altCount=17760
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #17820 — frameCount=17820 flag=0 altCount=17820
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #17880 — frameCount=17880 flag=0 altCount=17880
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #17940 — frameCount=17940 flag=0 altCount=17940

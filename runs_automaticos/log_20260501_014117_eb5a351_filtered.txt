@@ -1,0 +1,274 @@
+[CreateSema] id=1 init=1 max=1
+[CreateSema] id=2 init=1 max=1
+[CreateSema] id=3 init=0 max=255
+[CreateThread] id=2 entry=0x2947c8 stack=0x326b40 size=0x400 gp=0x2cf070 prio=1
+[stub:sub_0013DA10] PARTE 7 PLANO A: alloc #1 guestPtr=0x1000000 (a0=0x0 ra=0x13fb14)
+[stub:sub_0013DA10] PARTE 7 PLANO A: alloc #2 guestPtr=0x1000040 (a0=0x0 ra=0x13fb14)
+[stub:sub_0013DA10] PARTE 7 PLANO A: alloc #3 guestPtr=0x1000080 (a0=0x0 ra=0x13fb14)
+[stub:sub_0013DA10] PARTE 7 PLANO A: alloc #4 guestPtr=0x10000c0 (a0=0x0 ra=0x13fb14)
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1 — frameCount=1 flag=1 altCount=1
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2 — frameCount=2 flag=0 altCount=2
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3 — frameCount=3 flag=1 altCount=3
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4 — frameCount=4 flag=0 altCount=4
+[PARTE 10 PLANO B1] aceitando SIF RPC stage transfer (dest=0xffffffff, IOP decide pelo header) — xfer.src=0x327880 xfer.size=0x14 xfer.attr=0x44 ra=0x2969ac
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0000 sifBit=1 hdrFlags=0x0 hdrSize=0x14 INIT{ callback=0x3277c0 } (xfer.src=0x327880 size=0x14)
+[PARTE 10 PLANO B2 PASSO 2.7] dump callback target @0x3277c0:
+[PARTE 10 PLANO C] sceSifSetDma com dmat lixo (rastro pra Bug J): a0(dmat)=0x5 a1(count)=0x20 ra=0x0 sp=0x1ffbf50 gp=0x2cf070 pc=0x293fe4
+[CreateSema] id=4 init=0 max=1
+[PARTE 10 PLANO B1] aceitando SIF RPC stage transfer (dest=0xffffffff, IOP decide pelo header) — xfer.src=0x20327ac0 xfer.size=0x40 xfer.attr=0x44 ra=0x2969ac
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0x5 self=0x20327ac0 payload_words=2 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327ac0 size=0x40)
+[PARTE 10 PLANO B2 PASSO 2.5] dump natural @0x30aaa8:
+[PARTE 10 PLANO B2 PASSO 2 REVERTIDO] RPC_BIND opcode=0x9 sid=0x80000592 rpc_id=0x5 client=0x30aaa8 — NAO escrevendo (round f8cb6a5 confirmou que jogo nao polla, espera callback EE em 0x3277c0). Aguardando dump 2.7 revelar layout do callback.
+[WaitSema:block] tid=1 sid=4 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=0
+[PASSO 3] Forjando iSignalSema(sid=4) delta_ms=0 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=4 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #60 — frameCount=60 flag=0 altCount=60
+[stub:0x182f28] PARTE 10 PLANO B2 PASSO 2.5 — dump @VBlank #100 buf=0x30aaa8:
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #120 — frameCount=120 flag=0 altCount=120
+[CreateSema] id=5 init=0 max=1
+[PARTE 10 PLANO B1] aceitando SIF RPC stage transfer (dest=0xffffffff, IOP decide pelo header) — xfer.src=0x20327b00 xfer.size=0x40 xfer.attr=0x44 ra=0x2969ac
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0x10005 self=0x20327b00 payload_words=3 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327b00 size=0x40)
+[PARTE 10 PLANO B2 PASSO 2.5] dump natural @0x30aaa8:
+[PARTE 10 PLANO B2 PASSO 2 REVERTIDO] RPC_BIND opcode=0x9 sid=0x80000592 rpc_id=0x10005 client=0x30aaa8 — NAO escrevendo (round f8cb6a5 confirmou que jogo nao polla, espera callback EE em 0x3277c0). Aguardando dump 2.7 revelar layout do callback.
+[WaitSema:block] tid=1 sid=5 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=0
+[PASSO 3] Forjando iSignalSema(sid=5) delta_ms=0 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=5 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #180 — frameCount=180 flag=0 altCount=180
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #240 — frameCount=240 flag=0 altCount=240
+[CreateSema] id=6 init=0 max=1
+[PARTE 10 PLANO B1] aceitando SIF RPC stage transfer (dest=0xffffffff, IOP decide pelo header) — xfer.src=0x20327b40 xfer.size=0x40 xfer.attr=0x44 ra=0x2969ac
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0x20005 self=0x20327b40 payload_words=4 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327b40 size=0x40)
+[PARTE 10 PLANO B2 PASSO 2.5] dump natural @0x30aaa8:
+[PARTE 10 PLANO B2 PASSO 2 REVERTIDO] RPC_BIND opcode=0x9 sid=0x80000592 rpc_id=0x20005 client=0x30aaa8 — NAO escrevendo (round f8cb6a5 confirmou que jogo nao polla, espera callback EE em 0x3277c0). Aguardando dump 2.7 revelar layout do callback.
+[WaitSema:block] tid=1 sid=6 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=0
+[PASSO 3] Forjando iSignalSema(sid=6) delta_ms=0 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=6 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #300 — frameCount=300 flag=0 altCount=300
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #360 — frameCount=360 flag=0 altCount=360
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #420 — frameCount=420 flag=0 altCount=420
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #480 — frameCount=480 flag=0 altCount=480
+[CreateSema] id=7 init=0 max=1
+[PARTE 10 PLANO B1] aceitando SIF RPC stage transfer (dest=0xffffffff, IOP decide pelo header) — xfer.src=0x20327b80 xfer.size=0x40 xfer.attr=0x44 ra=0x2969ac
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0x30005 self=0x20327b80 payload_words=5 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327b80 size=0x40)
+[PARTE 10 PLANO B2 PASSO 2.5] dump natural @0x30aaa8:
+[PARTE 10 PLANO B2 PASSO 2 REVERTIDO] RPC_BIND opcode=0x9 sid=0x80000592 rpc_id=0x30005 client=0x30aaa8 — NAO escrevendo (round f8cb6a5 confirmou que jogo nao polla, espera callback EE em 0x3277c0). Aguardando dump 2.7 revelar layout do callback.
+[WaitSema:block] tid=1 sid=7 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=0
+[PASSO 3] Forjando iSignalSema(sid=7) delta_ms=0 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=7 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #540 — frameCount=540 flag=0 altCount=540
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #600 — frameCount=600 flag=0 altCount=600
+[CreateSema] id=8 init=0 max=1
+[PARTE 10 PLANO B1] aceitando SIF RPC stage transfer (dest=0xffffffff, IOP decide pelo header) — xfer.src=0x20327bc0 xfer.size=0x40 xfer.attr=0x44 ra=0x2969ac
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0x40005 self=0x20327bc0 payload_words=6 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327bc0 size=0x40)
+[PARTE 10 PLANO B2 PASSO 2.5] dump natural @0x30aaa8:
+[PARTE 10 PLANO B2 PASSO 2 REVERTIDO] RPC_BIND opcode=0x9 sid=0x80000592 rpc_id=0x40005 client=0x30aaa8 — NAO escrevendo (round f8cb6a5 confirmou que jogo nao polla, espera callback EE em 0x3277c0). Aguardando dump 2.7 revelar layout do callback.
+[WaitSema:block] tid=1 sid=8 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=0
+[PASSO 3] Forjando iSignalSema(sid=8) delta_ms=0 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=8 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #660 — frameCount=660 flag=0 altCount=660
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #720 — frameCount=720 flag=0 altCount=720
+[CreateSema] id=9 init=0 max=1
+[PARTE 10 PLANO B1] aceitando SIF RPC stage transfer (dest=0xffffffff, IOP decide pelo header) — xfer.src=0x20327c00 xfer.size=0x40 xfer.attr=0x44 ra=0x2969ac
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0x50005 self=0x20327c00 payload_words=7 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327c00 size=0x40)
+[PARTE 10 PLANO B2 PASSO 2.5] dump natural @0x30aaa8:
+[PARTE 10 PLANO B2 PASSO 2 REVERTIDO] RPC_BIND opcode=0x9 sid=0x80000592 rpc_id=0x50005 client=0x30aaa8 — NAO escrevendo (round f8cb6a5 confirmou que jogo nao polla, espera callback EE em 0x3277c0). Aguardando dump 2.7 revelar layout do callback.
+[WaitSema:block] tid=1 sid=9 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=0
+[PASSO 3] Forjando iSignalSema(sid=9) delta_ms=0 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=9 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #780 — frameCount=780 flag=0 altCount=780
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #840 — frameCount=840 flag=0 altCount=840
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #900 — frameCount=900 flag=0 altCount=900
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #960 — frameCount=960 flag=0 altCount=960
+[stub:0x182f28] PARTE 10 PLANO B2 PASSO 2.5 — dump @VBlank #1000 buf=0x30aaa8:
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1020 — frameCount=1020 flag=0 altCount=1020
+[CreateSema] id=10 init=0 max=1
+[PARTE 10 PLANO B1] aceitando SIF RPC stage transfer (dest=0xffffffff, IOP decide pelo header) — xfer.src=0x20327c40 xfer.size=0x40 xfer.attr=0x44 ra=0x2969ac
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0x60005 self=0x20327c40 payload_words=8 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327c40 size=0x40)
+[PARTE 10 PLANO B2 PASSO 2.5] dump natural @0x30aaa8:
+[PARTE 10 PLANO B2 PASSO 2 REVERTIDO] RPC_BIND opcode=0x9 sid=0x80000592 rpc_id=0x60005 client=0x30aaa8 — NAO escrevendo (round f8cb6a5 confirmou que jogo nao polla, espera callback EE em 0x3277c0). Aguardando dump 2.7 revelar layout do callback.
+[WaitSema:block] tid=1 sid=10 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=0
+[PASSO 3] Forjando iSignalSema(sid=10) delta_ms=0 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=10 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1080 — frameCount=1080 flag=0 altCount=1080
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1140 — frameCount=1140 flag=0 altCount=1140
+[CreateSema] id=11 init=0 max=1
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0x70005 self=0x20327c80 payload_words=9 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327c80 size=0x40)
+[PARTE 10 PLANO B2 PASSO 2.5] dump natural @0x30aaa8:
+[PARTE 10 PLANO B2 PASSO 2 REVERTIDO] RPC_BIND opcode=0x9 sid=0x80000592 rpc_id=0x70005 client=0x30aaa8 — NAO escrevendo (round f8cb6a5 confirmou que jogo nao polla, espera callback EE em 0x3277c0). Aguardando dump 2.7 revelar layout do callback.
+[WaitSema:block] tid=1 sid=11 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=0
+[PASSO 3] Forjando iSignalSema(sid=11) delta_ms=0 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=11 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1200 — frameCount=1200 flag=0 altCount=1200
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1260 — frameCount=1260 flag=0 altCount=1260
+[CreateSema] id=12 init=0 max=1
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0x80005 self=0x20327cc0 payload_words=10 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327cc0 size=0x40)
+[WaitSema:block] tid=1 sid=12 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=2153
+[PASSO 3] Forjando iSignalSema(sid=12) delta_ms=2153 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=12 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1320 — frameCount=1320 flag=0 altCount=1320
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1380 — frameCount=1380 flag=0 altCount=1380
+[CreateSema] id=13 init=0 max=1
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0x90005 self=0x20327d00 payload_words=11 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327d00 size=0x40)
+[WaitSema:block] tid=1 sid=13 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=4040
+[PASSO 3] Forjando iSignalSema(sid=13) delta_ms=4040 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=13 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1440 — frameCount=1440 flag=0 altCount=1440
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1500 — frameCount=1500 flag=0 altCount=1500
+[CreateSema] id=14 init=0 max=1
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0xa0005 self=0x20327d40 payload_words=12 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327d40 size=0x40)
+[WaitSema:block] tid=1 sid=14 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=6063
+[PASSO 3] Forjando iSignalSema(sid=14) delta_ms=6063 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=14 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1560 — frameCount=1560 flag=0 altCount=1560
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1620 — frameCount=1620 flag=0 altCount=1620
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1680 — frameCount=1680 flag=0 altCount=1680
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1740 — frameCount=1740 flag=0 altCount=1740
+[CreateSema] id=15 init=0 max=1
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0xb0005 self=0x20327d80 payload_words=13 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327d80 size=0x40)
+[WaitSema:block] tid=1 sid=15 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=9987
+[PASSO 3] Forjando iSignalSema(sid=15) delta_ms=9987 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=15 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1800 — frameCount=1800 flag=0 altCount=1800
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1860 — frameCount=1860 flag=0 altCount=1860
+[CreateSema] id=16 init=0 max=1
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0xc0005 self=0x20327dc0 payload_words=14 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327dc0 size=0x40)
+[WaitSema:block] tid=1 sid=16 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=12001
+[PASSO 3] Forjando iSignalSema(sid=16) delta_ms=12001 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=16 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1920 — frameCount=1920 flag=0 altCount=1920
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1980 — frameCount=1980 flag=0 altCount=1980
+[CreateSema] id=17 init=0 max=1
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0xd0005 self=0x20327e00 payload_words=15 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327e00 size=0x40)
+[WaitSema:block] tid=1 sid=17 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=14302
+[PASSO 3] Forjando iSignalSema(sid=17) delta_ms=14302 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=17 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2040 — frameCount=2040 flag=0 altCount=2040
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2100 — frameCount=2100 flag=0 altCount=2100
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2160 — frameCount=2160 flag=0 altCount=2160
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2220 — frameCount=2220 flag=0 altCount=2220
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2280 — frameCount=2280 flag=0 altCount=2280
+[CreateSema] id=18 init=0 max=1
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0xe0005 self=0x20327e40 payload_words=16 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327e40 size=0x40)
+[WaitSema:block] tid=1 sid=18 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=18726
+[PASSO 3] Forjando iSignalSema(sid=18) delta_ms=18726 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=18 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2340 — frameCount=2340 flag=0 altCount=2340
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2400 — frameCount=2400 flag=0 altCount=2400
+[CreateSema] id=19 init=0 max=1
+[WaitSema:block] tid=1 sid=19 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=21207
+[PASSO 3] Forjando iSignalSema(sid=19) delta_ms=21207 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=19 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2460 — frameCount=2460 flag=0 altCount=2460
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2520 — frameCount=2520 flag=0 altCount=2520
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2580 — frameCount=2580 flag=0 altCount=2580
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2640 — frameCount=2640 flag=0 altCount=2640
+[CreateSema] id=20 init=0 max=1
+[WaitSema:block] tid=1 sid=20 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=25556
+[PASSO 3] Forjando iSignalSema(sid=20) delta_ms=25556 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=20 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2700 — frameCount=2700 flag=0 altCount=2700
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2760 — frameCount=2760 flag=0 altCount=2760
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2820 — frameCount=2820 flag=0 altCount=2820
+[CreateSema] id=21 init=0 max=1
+[WaitSema:block] tid=1 sid=21 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=28160
+[PASSO 3] Forjando iSignalSema(sid=21) delta_ms=28160 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=21 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2880 — frameCount=2880 flag=0 altCount=2880
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2940 — frameCount=2940 flag=0 altCount=2940
+[CreateSema] id=22 init=0 max=1
+[WaitSema:block] tid=1 sid=22 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=30429
+[PASSO 3] Forjando iSignalSema(sid=22) delta_ms=30429 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=22 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3000 — frameCount=3000 flag=0 altCount=3000
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3060 — frameCount=3060 flag=0 altCount=3060
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3120 — frameCount=3120 flag=0 altCount=3120
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3180 — frameCount=3180 flag=0 altCount=3180
+[CreateSema] id=23 init=0 max=1
+[WaitSema:block] tid=1 sid=23 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=33996
+[PASSO 3] Forjando iSignalSema(sid=23) delta_ms=33996 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=23 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3240 — frameCount=3240 flag=0 altCount=3240
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3300 — frameCount=3300 flag=0 altCount=3300
+[CreateSema] id=24 init=0 max=1
+[WaitSema:block] tid=1 sid=24 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=36093
+[PASSO 3] Forjando iSignalSema(sid=24) delta_ms=36093 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=24 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3360 — frameCount=3360 flag=0 altCount=3360
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3420 — frameCount=3420 flag=0 altCount=3420
+[CreateSema] id=25 init=0 max=1
+[WaitSema:block] tid=1 sid=25 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=38086
+[PASSO 3] Forjando iSignalSema(sid=25) delta_ms=38086 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=25 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3480 — frameCount=3480 flag=0 altCount=3480
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3540 — frameCount=3540 flag=0 altCount=3540
+[CreateSema] id=26 init=0 max=1
+[WaitSema:block] tid=1 sid=26 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=39959
+[PASSO 3] Forjando iSignalSema(sid=26) delta_ms=39959 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=26 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3600 — frameCount=3600 flag=0 altCount=3600
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3660 — frameCount=3660 flag=0 altCount=3660
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3720 — frameCount=3720 flag=0 altCount=3720
+[CreateSema] id=27 init=0 max=1
+[WaitSema:block] tid=1 sid=27 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=43522
+[PASSO 3] Forjando iSignalSema(sid=27) delta_ms=43522 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=27 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3780 — frameCount=3780 flag=0 altCount=3780
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3840 — frameCount=3840 flag=0 altCount=3840
+[CreateSema] id=28 init=0 max=1
+[WaitSema:block] tid=1 sid=28 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=45326
+[PASSO 3] Forjando iSignalSema(sid=28) delta_ms=45326 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=28 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3900 — frameCount=3900 flag=0 altCount=3900
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3960 — frameCount=3960 flag=0 altCount=3960
+[CreateSema] id=29 init=0 max=1
+[WaitSema:block] tid=1 sid=29 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=47292
+[PASSO 3] Forjando iSignalSema(sid=29) delta_ms=47292 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=29 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4020 — frameCount=4020 flag=0 altCount=4020
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4080 — frameCount=4080 flag=0 altCount=4080
+[CreateSema] id=30 init=0 max=1
+[WaitSema:block] tid=1 sid=30 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=48986
+[PASSO 3] Forjando iSignalSema(sid=30) delta_ms=48986 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=30 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4140 — frameCount=4140 flag=0 altCount=4140
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4200 — frameCount=4200 flag=0 altCount=4200
+[CreateSema] id=31 init=0 max=1
+[WaitSema:block] tid=1 sid=31 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=50668
+[PASSO 3] Forjando iSignalSema(sid=31) delta_ms=50668 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=31 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4260 — frameCount=4260 flag=0 altCount=4260
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4320 — frameCount=4320 flag=0 altCount=4320
+[CreateSema] id=32 init=0 max=1
+[WaitSema:block] tid=1 sid=32 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=52801
+[PASSO 3] Forjando iSignalSema(sid=32) delta_ms=52801 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=32 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4380 — frameCount=4380 flag=0 altCount=4380
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4440 — frameCount=4440 flag=0 altCount=4440
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4500 — frameCount=4500 flag=0 altCount=4500
+[CreateSema] id=33 init=0 max=1
+[WaitSema:block] tid=1 sid=33 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=55925
+[PASSO 3] Forjando iSignalSema(sid=33) delta_ms=55925 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=33 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4560 — frameCount=4560 flag=0 altCount=4560
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4620 — frameCount=4620 flag=0 altCount=4620
+[CreateSema] id=34 init=0 max=1
+[WaitSema:block] tid=1 sid=34 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=57666
+[PASSO 3] Forjando iSignalSema(sid=34) delta_ms=57666 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=34 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4680 — frameCount=4680 flag=0 altCount=4680
+[CreateSema] id=35 init=0 max=1
+[WaitSema:block] tid=1 sid=35 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=59478
+[PASSO 3] Forjando iSignalSema(sid=35) delta_ms=59478 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=35 ret=0 count=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4740 — frameCount=4740 flag=0 altCount=4740
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4800 — frameCount=4800 flag=0 altCount=4800
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4860 — frameCount=4860 flag=0 altCount=4860
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4920 — frameCount=4920 flag=0 altCount=4920
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4980 — frameCount=4980 flag=0 altCount=4980
+[stub:0x182f28] PARTE 10 PLANO B2 PASSO 2.5 — dump @VBlank #5000 buf=0x30aaa8:
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #5040 — frameCount=5040 flag=0 altCount=5040
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #5100 — frameCount=5100 flag=0 altCount=5100
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #5160 — frameCount=5160 flag=0 altCount=5160
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #5220 — frameCount=5220 flag=0 altCount=5220
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #5280 — frameCount=5280 flag=0 altCount=5280
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #5340 — frameCount=5340 flag=0 altCount=5340
