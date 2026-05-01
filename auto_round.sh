@@ -63,7 +63,7 @@ LOG_DIR_NAME="runs_automaticos"
 STATE_FILE_NAME=".auto_round_last_hash"
 
 # Padrão grep pra extrair as linhas que importam pro próximo round
-GREP_PATTERN="PARTE 10 PLANO|Unknown syscall|VBlank tick #|sceSifSetDma|SIGSEGV|Morto|CreateThread|stub:|INTC:|CreateSema|WaitSema|SignalSema"
+GREP_PATTERN="PARTE 10 PLANO|Unknown syscall|VBlank tick #|sceSifSetDma|SIGSEGV|Morto|CreateThread|stub:|INTC:|CreateSema|WaitSema|SignalSema|boot-loop:suspect"
 
 # ============================================================
 # HELPERS

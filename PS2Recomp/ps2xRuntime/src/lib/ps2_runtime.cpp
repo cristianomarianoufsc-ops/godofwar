@@ -2116,6 +2116,64 @@ void PS2Runtime::dispatchLoop(uint8_t *rdram, R5900Context *ctx)
             }
         }
 
+        // ----- Detector de boot-loop por args (mesmo PC + mesmo a0+a1 repetidos) -----
+        // Complementa o cycle-detector (que pega padrao de 2-8 PCs) cobrindo o
+        // caso de polling loops onde o PC nao e consecutivo mas os args sao sempre
+        // os mesmos: ex. func_X(sema=4) chamada 50000x intercalada com VBlank.
+        // Ativado sempre; threshold configuravel via PS2_SAME_CALL_REPORT_AFTER.
+        {
+            struct SameCallDetector
+            {
+                uint32_t lastPc    = 0u;
+                uint32_t lastA0    = 0u;
+                uint32_t lastA1    = 0u;
+                uint64_t count     = 0u;
+                uint64_t lastReport= 0u;
+            };
+            thread_local SameCallDetector g_sameCall;
+
+            static const uint64_t kSameCallThreshold = []() -> uint64_t {
+                const char *e = std::getenv("PS2_SAME_CALL_REPORT_AFTER");
+                if (e && *e) { try { return std::stoull(e); } catch (...) {} }
+                return 10000ull;
+            }();
+
+            if (kSameCallThreshold > 0u)
+            {
+                const uint32_t a0 = static_cast<uint32_t>(_mm_extract_epi32(ctx->r[4], 0));
+                const uint32_t a1 = static_cast<uint32_t>(_mm_extract_epi32(ctx->r[5], 0));
+
+                if (dispatchedPc == g_sameCall.lastPc &&
+                    a0 == g_sameCall.lastA0 &&
+                    a1 == g_sameCall.lastA1)
+                {
+                    ++g_sameCall.count;
+                    if (g_sameCall.count >= kSameCallThreshold &&
+                        (g_sameCall.count - g_sameCall.lastReport) >= kSameCallThreshold)
+                    {
+                        g_sameCall.lastReport = g_sameCall.count;
+                        const uint32_t a2 = static_cast<uint32_t>(_mm_extract_epi32(ctx->r[6], 0));
+                        const uint32_t a3 = static_cast<uint32_t>(_mm_extract_epi32(ctx->r[7], 0));
+                        std::cerr << "[boot-loop:suspect] pc=0x" << std::hex << dispatchedPc
+                                  << " a0=0x" << a0 << " a1=0x" << a1
+                                  << " a2=0x" << a2 << " a3=0x" << a3
+                                  << " ra=0x" << dispatchedRa
+                                  << " repeated=" << std::dec << g_sameCall.count
+                                  << " (set PS2_SAME_CALL_REPORT_AFTER=N to tune)"
+                                  << std::endl;
+                    }
+                }
+                else
+                {
+                    g_sameCall.lastPc     = dispatchedPc;
+                    g_sameCall.lastA0     = a0;
+                    g_sameCall.lastA1     = a1;
+                    g_sameCall.count      = 1u;
+                    g_sameCall.lastReport = 0u;
+                }
+            }
+        }
+
         // Registra a chamada de função no tracer (ativado via PS2_TRACE=1)
         g_callTracer.trace(dispatchedPc, dispatchedRa, dispatchedSp);
 

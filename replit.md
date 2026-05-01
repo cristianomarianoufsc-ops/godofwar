@@ -340,7 +340,9 @@ O stub `0x182f28` faz `flag ^= 1` a cada tick (toggles corretamente). O log peri
 
 **Fix aplicado:** `auto_round.sh` linha 60: `RUN_TIMEOUT=90` → `RUN_TIMEOUT=300`
 
-**Esperado no próximo round:** jogo carrega todos os módulos IOP e revela o próximo bloqueio (primeiro símbolo ou função não encontrada após boot completo, ou tela de intro travada).
+**Feature adicionada:** `ps2_runtime.cpp` — detector `[boot-loop:suspect]` no dispatch loop. Rastreia `(pc, a0, a1)` consecutivos; loga quando a mesma combinação se repete ≥10000x. Configurável via `PS2_SAME_CALL_REPORT_AFTER=N`. Capturado automaticamente no `log_latest_filtered.txt` (padrão `boot-loop:suspect` adicionado ao `auto_round.sh`).
+
+**Esperado no próximo round:** jogo carrega todos os módulos IOP e revela o próximo bloqueio (primeiro símbolo ou função não encontrada após boot completo, ou tela de intro travada). Se o jogo entrar em polling loop, o detector vai mostrar `[boot-loop:suspect] pc=0xXXXX a0=0xYYYY repeated=N`.
 
 ---
 
