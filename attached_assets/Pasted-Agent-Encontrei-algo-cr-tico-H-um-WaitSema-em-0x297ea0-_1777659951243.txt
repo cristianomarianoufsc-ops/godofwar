@@ -1,0 +1,48 @@
+Agent
+Encontrei algo crítico. Há um WaitSema em 0x297ea0 com ra=0x297ea4 (diferente de 0x297374) — pode estar bloqueando sem ser forjado pelo PASSO 3. Deixa eu verificar o código do WaitSema.
+
+Preciso verificar qual é o syscall de StartThread e se está sendo chamado. Vou disassemblar o wrapper de syscall relevante.
+
+O log é filtrado. Preciso verificar o que o filtro inclui — pode estar bloqueando StartThread.
+
+StartThread não está no filtro — pode estar acontecendo mas invisível. Vou puxar o log completo.
+
+Agora verifico o log completo por qualquer chamada a stubs de pad ou IOP RPC após sid=35.
+
+Após o último bind (sid=35), o game loop roda mas nunca chama nenhum stub. Preciso entender o que acontece ENTRE os VBlanks — o código que o game executa em cada frame.
+
+Preciso entender por que o stub de VBlank (0x182f28) tick exatamente a 60fps — deve ter rate-limiting. E o que a "body" do loop faz.
+
+Preciso rastrear a call stack completa pós-sid=35 para encontrar onde o game loop começa.
+
+O game loop roda a ~56fps mas sem output visível. Vou verificar se há chamadas a sub_00296898 (sceSifCallRpc) pós-bind e se o game está escrevendo para GS.
+
+Vou checar o que é 0x188f10 e traçar de onde vem a chamada para o loop do game.
+
+Confirmo: VBlank ticks = game mode em [1..11]. Vou ver a tabela de salto dos modos do game.
+
+Preciso adicionar log do game mode [0x29c838] ao stub VBlank para ver em qual modo o jogo está rodando.
+
+Vou adicionar log do game mode ([0x29c838]) ao stub VBlank e adicionar StartThread ao filtro do log para diagnóstico completo.
+
+Agora atualizo o filtro em auto_round.sh para incluir GAME_MODE_CHANGE e StartThread:
+
+Bom. Agora vou checar se o runtime dispara VBlank via timer (INTC) — que explicaria os ticks mesmo com game_mode=0.
+
+Ahh! O VBlank é disparado por uma thread irq separada, não pelo game thread! Então os ticks de VBlank não provam que o game loop roda. O game thread pode estar preso. O game mode em [0x29c838] vai revelar se o game thread chegou ao game loop ou está preso na init.
+
+Agora preciso entender o que o game thread faz após o último bind. Vou analisar o caller do bind loop:
+
+Encontrei o bug real! Após PASSO 3 forjar o WaitSema do bind, o jogo verifica [módulo+0x24] (callback de resposta IOP) que continua zerado → loop infinito de retry. Preciso setar esse campo para 1 no PASSO 3.
+
+Tenho que entender exatamente o que 0x2969d0 (chamado antes do WaitSema) faz — ele pode ser o que deve setar [s1+0x24]:
+
+Encontrei o problema real: na sub_00297290, $s1 é setado como $a0 (o struct do módulo). Após PASSO 3 forjar o WaitSema, [s1+0x24] permanece 0, fazendo o loop de retry rodar infinitamente. Preciso reimplementar PASSO 4 corretamente para setar esse campo:
+
+Vou verificar o log mais recente para confirmar o ponto exato onde o jogo está travado agora:
+
+Análise crítica: após o último bind (sid=35), o game thread não bloqueia mais — está em spin loop silencioso. Preciso verificar o callback EE em 0x3277c0 (que deveria ser chamado pelo IOP para sair desse loop):
+
+Preciso ver o loop de retry completo em sub_0026B6D0 para entender como o game está avançando entre binds:
+
+Agora entendo o loop! Vou ver o padrão completo dos RPC_BIND para entender quantas tentativas há por módulo:
