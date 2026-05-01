@@ -35,3 +35,15 @@ FUN_002947c8,0x2947c8,0x294990
 # Chamada por sub_00297290 (bind loop) via j 0x294990, e por entry_2948a0, sub_002994A0.
 # Contém GetThreadId (syscall -0x2f) + lógica de registro de thread pós-bind.
 FUN_00294990,0x294990,0x294a30
+# Bug R (2026-05-01) — FUN_00294c70: função truncada a 1 instrução na região de init de threads.
+# 3 saídas jr $ra detectadas em 0x294c90, 0x294cb4, 0x294cf4 → range real vai até 0x294d00.
+# Gap misto confirmado via mips_inspect.py --gap.
+FUN_00294c70,0x294c70,0x294d00
+# Bug S (2026-05-01) — FUN_00297058: função truncada a 1 instrução, vizinhança do bind loop.
+# jr $ra detectado em 0x297120; gap completo 0x297058→0x297180 (296 bytes faltando).
+# Contém chamada a 0x29a5d8 via j (tail call) + lógica condicional.
+FUN_00297058,0x297058,0x297180
+# Bug T (2026-05-01) — FUN_002971c0: função truncada a 1 instrução IMEDIATAMENTE antes do bind loop (sub_00297290).
+# Gap completo 0x2971c0→0x297290 (208 bytes). Altíssima probabilidade de estar no caminho crítico.
+# Contém chamadas a 0x297130 (jal) e lógica de store/branch.
+FUN_002971c0,0x2971c0,0x297290

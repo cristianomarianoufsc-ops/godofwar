@@ -160,6 +160,9 @@ No round `6625971` (sem PASSO 4, melhor resultado histórico):
 | **O** — stub `0x296a54` retornava 0 → deltas crescentes (sid=12+: ~1600ms/módulo) | ✅ CONFIRMADO | `game_overrides.cpp` | `$v0=0` → `$v0=1` — sid=4..11 delta=0ms; sid=12+ melhora ~15% (causa secundária persiste) |
 | **P** — `FUN_002947c8` truncada a 1 instrução (thread id=2 pós-init IOP, 456 bytes faltando) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_002947c8,0x2947c8,0x294990` adicionada — precisa `regen_truncated.sh` + rebuild no PC |
 | **Q** — `FUN_00294990` truncada a 1 instrução (sequência direta após FUN_002947c8, ~0x9c bytes faltando) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00294990,0x294990,0x294a30` adicionada — jr $ra real em 0x294a1c; contém GetThreadId + lógica pós-bind |
+| **R** — `FUN_00294c70` truncada a 1 instrução (região de init de threads, 3 saídas jr $ra: 0x294c90/cb4/cf4) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00294c70,0x294c70,0x294d00` adicionada — gap misto confirmado |
+| **S** — `FUN_00297058` truncada a 1 instrução (vizinhança do bind loop, jr $ra em 0x297120) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00297058,0x297058,0x297180` adicionada — 296 bytes faltando, contém tail call para 0x29a5d8 |
+| **T** — `FUN_002971c0` truncada a 1 instrução (IMEDIATAMENTE antes de sub_00297290 = bind loop!) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_002971c0,0x2971c0,0x297290` adicionada — 208 bytes faltando; altíssima probabilidade de ser chamada pelo caminho crítico |
 
 > **Detalhe completo de cada bug** (diagnóstico, dumps, hipóteses descartadas, código aplicado) → `HANDOFF_HISTORICO.md`.
 
@@ -193,35 +196,38 @@ Testado contra log atual → detectou corretamente sid=34, 31 módulos acordados
 
 ---
 
-## 📋 Próxima ação do analista (atualizado 2026-05-01 — Bugs P+Q: regen de 3 funções)
+## 📋 Próxima ação do analista (atualizado 2026-05-01 — Bugs P+Q+R+S+T: regen de 7 funções)
 
 **⚠️ PUSH PENDENTE + AÇÃO ESPECIAL NO PC**
 
 **Arquivos modificados neste commit:**
-- `tools/truncation_overrides.csv` — Bug P: `FUN_002947c8,0x2947c8,0x294990` + **Bug Q NOVO: `FUN_00294990,0x294990,0x294a30`**
-- `HANDOFF_AGENT.md` + `replit.md` — documentação atualizada (Bug Q adicionado)
+- `tools/truncation_overrides.csv` — 5 bugs novos adicionados (P, Q, R, S, T) = 7 funções totais a regenerar
+- `HANDOFF_AGENT.md` + `replit.md` — documentação atualizada
 
 **ATENÇÃO — este fix NÃO é só rebuild do runtime. Precisa de regen completa:**
 ```bash
 # No PC do Agente Cris, após o Push:
 git pull origin main
-bash tools/regen_truncated.sh       # regenera FUN_002947c8 + FUN_00294990 + FUN_00296a50 (3 funções)
-# (regen leva poucos segundos — apenas 3 arquivos)
+bash tools/regen_truncated.sh       # regenera TODAS as entradas do CSV (7 funções)
 bash rebuild_runtime.sh --run       # rebuild + round automático
 ```
 
-**O que esperar após a regen:**
-- `FUN_002947c8_0x2947c8.cpp` passa de 1 instrução para ~114 instruções → thread id=2 executa de verdade
-- `FUN_00294990_0x294990.cpp` passa de 1 instrução para ~16 instruções → GetThreadId + lógica de registro pós-bind funciona
-- Jogo deve sair do VBlank loop pós-sid=35
-- Prováveis: novos crashes, stubs ausentes, ou próximo bloqueio após thread 2 iniciar
+**Funções a regenerar (6 novas + crt0 que já estava):**
+| Endereço | Bug | Bytes faltando | Descrição |
+|----------|-----|----------------|-----------|
+| 0x2947c8→0x294990 | P | ~456 | Thread id=2 entry pós-init IOP |
+| 0x294990→0x294a30 | Q | ~0x9c | GetThreadId + registro thread pós-bind |
+| 0x294c70→0x294d00 | R | ~0x90 | Init thread, 3 saídas jr $ra |
+| 0x297058→0x297180 | S | ~296 | Vizinhança do bind loop, tail call 0x29a5d8 |
+| 0x2971c0→0x297290 | T | ~208 | **Imediatamente antes de sub_00297290!** |
+| 0x296a50→0x296c48 | L | - | Já estava; regen atualiza com range correto |
 
-**Bug Q — detalhe técnico:**
-`FUN_00294990` (0x294990→0x294a30) é chamada pelo bind loop (`sub_00297290` via `j 0x294990`)
-e também por `entry_2948a0` e `sub_002994A0`. Contém `syscall -0x2f` = `GetThreadId`.
-Com a função truncada, qualquer chamada para ela retorna imediatamente sem registrar o thread.
+**O que esperar após a regen:**
+- Jogo sai do VBlank loop pós-sid=35 (P+Q desbloqueiam thread id=2)
+- Funções R, S, T provavelmente eliminam mais "not found" próximos do bind loop
+- Prováveis: novos crashes, stubs ausentes, ou avanço no init do EE kernel
 
 **Após o round, o analista deve:**
 ```bash
-curl -s "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/logs/auto/runs_automaticos/log_latest_filtered.txt" | grep -E "(WaitSema|not found|SIGSEGV|CreateThread|StartThread|0x2947|0x2949)" | head -40
+curl -s "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/logs/auto/runs_automaticos/log_latest_filtered.txt" | grep -E "(WaitSema|not found|SIGSEGV|CreateThread|StartThread|0x2947|0x2949|0x2971)" | head -40
 ```

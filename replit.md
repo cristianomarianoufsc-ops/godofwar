@@ -273,6 +273,9 @@ PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_teste.txt
 | **O** — stub `0x296a54` retornava 0 → deltas crescentes, sid=12+: ~1600ms/módulo | ✅ CONFIRMADO | `game_overrides.cpp` | `$v0=0` → `$v0=1` — sid=4..11 agora delta=0ms; sid=12+ melhora ~15% (causa secundária persiste) | 2026-05-01 |
 | **P** — `FUN_002947c8` truncada a 1 instrução (thread id=2, entry pós-init IOP) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_002947c8,0x2947c8,0x294990` adicionada — regen + rebuild necessários no PC | 2026-05-01 |
 | **Q** — `FUN_00294990` truncada a 1 instrução (sequência direta de FUN_002947c8) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00294990,0x294990,0x294a30` adicionada — jr $ra real em 0x294a1c; contém GetThreadId + lógica de registro thread pós-bind | 2026-05-01 |
+| **R** — `FUN_00294c70` truncada a 1 instrução (região init de threads, 3 jr $ra em 0x294c90/cb4/cf4) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00294c70,0x294c70,0x294d00` adicionada — gap misto confirmado via mips_inspect | 2026-05-01 |
+| **S** — `FUN_00297058` truncada a 1 instrução (vizinhança bind loop, jr $ra em 0x297120) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00297058,0x297058,0x297180` adicionada — 296 bytes faltando; tail call 0x29a5d8 | 2026-05-01 |
+| **T** — `FUN_002971c0` truncada a 1 instrução (imediatamente antes de sub_00297290!) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_002971c0,0x2971c0,0x297290` adicionada — 208 bytes; jal 0x297130 confirmado | 2026-05-01 |
 
 ---
 
@@ -337,40 +340,32 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 ---
 
-## 🟢 ESTADO ATUAL — Bug P identificado, override CSV adicionado (atualizado 2026-05-01)
+## 🟢 ESTADO ATUAL — Bugs P–T: 5 funções truncadas novas + CSV atualizado (atualizado 2026-05-01)
 
 ### ✅ Bug K — CONFIRMADO RESOLVIDO
 ### ✅ Bug L — CONFIRMADO RESOLVIDO
 ### ✅ Bug M — RESOLVIDO
 ### ✅ Bug N — REVERTIDO
 ### ✅ Bug O — CONFIRMADO ($v0=1 no callback 0x296a54 — sid=4..11 agora delta=0ms)
-### 🔴 Bug P — FUN_002947c8 truncada — override CSV adicionado, aguardando regen no PC
+### 🔴 Bugs P–T — 5 funções truncadas detectadas — CSV atualizado, aguardando regen no PC
 
-**DIAGNÓSTICO Bug O (confirmado no round pós-fix):**
-- Callback 0x296a54 agora retorna 1 — sid=4..11: delta=0ms ✅
-- sid=12+ ainda tem deltas crescentes (~1600ms/módulo) — causa separada, secundária
-- VBlank loop ainda ocorre após sid=35 — Bug P é o bloqueador principal
+**DIAGNÓSTICO Bug O (confirmado):** Callback 0x296a54 retorna 1 → sid=4..11 delta=0ms ✅. VBlank loop após sid=35 → bloqueador é Bug P (thread id=2 não executa).
 
-**DIAGNÓSTICO Bug P (2026-05-01):**
-- `FUN_002947c8_0x2947c8.cpp`: range declarado = 0x2947c8-0x2947cc (1 instrução, 4 bytes)
-- Range real confirmado via `mips_inspect.py --gap`: 0x2947c8-0x294990 (456 bytes, ~114 instruções)
-- Função é a **thread principal pós-init IOP** (thread id=2, entry=0x2947c8): processa estados de módulos IOP em loop, inicia subsistemas do jogo
-- Sem a regen, thread 2 executa só o prologue e retorna → jogo nunca avança após sid=35
-- **Fix:** entry adicionada em `tools/truncation_overrides.csv`: `FUN_002947c8,0x2947c8,0x294990`
+**Bugs P–T detectados (2026-05-01) via varredura estática:**
+| Bug | Endereço | Bytes | Impacto |
+|-----|----------|-------|---------|
+| P | 0x2947c8→0x294990 | ~456 | Thread id=2 entry — bloqueador principal do VBlank loop |
+| Q | 0x294990→0x294a30 | ~0x9c | GetThreadId pós-bind — chamada direta após Bug P |
+| R | 0x294c70→0x294d00 | ~0x90 | Init thread region, 3 jr $ra |
+| S | 0x297058→0x297180 | ~296 | Vizinhança bind loop, tail call 0x29a5d8 |
+| T | 0x2971c0→0x297290 | ~208 | **Imediatamente antes do bind loop!** |
 
 **⚠️ AÇÃO NECESSÁRIA NO PC DO AGENTE CRIS:**
 ```bash
-# 1. Push do Replit
-# 2. No PC:
 git pull origin main
-bash tools/regen_truncated.sh   # regenera FUN_002947c8 e FUN_00296a50
+bash tools/regen_truncated.sh   # regenera 7 funções (todas do CSV)
 bash rebuild_runtime.sh --run   # rebuild + round
 ```
-
-**O que esperar após a regen:**
-- Thread 2 executa código real (loop de módulos IOP)
-- Jogo deve progredir além do VBlank loop pós-sid=35
-- Novo bloqueio ou crash a diagnosticar
 
 ---
 
