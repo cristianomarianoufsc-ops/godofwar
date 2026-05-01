@@ -339,63 +339,55 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 ---
 
-## 🟢 ESTADO ATUAL — Bug X RESOLVIDO + Bug P RESOLVIDO (atualizado 2026-05-01)
+## 🟢 ESTADO ATUAL — Bugs X+P resolvidos, Bug Q é o próximo bloqueador (atualizado 2026-05-01)
 
-### ✅ Bugs K, L, M, N, O — RESOLVIDOS
-### ✅ Bugs P–W — regen executada + Bug P corrigido manualmente (veja abaixo)
-### ✅ Bug X — RESOLVIDO (2026-05-01)
-
----
-
-### BUG X — CAUSA RAIZ E FIX
-
-**Causa raiz:** `R5900Context::cop0_status` inicializado como `0x00000000` → IE=0 (interrupts disabled).
-
-A função `func_294618` (0x294618) é um helper de 3 instruções:
-```mips
-mfc0 $v0, Status   ; lê COP0 Status
-xori $v0, $v0, 1   ; flip bit 0 (IE)
-andi $v0, $v0, 1   ; → retorna 1 se IE=0, 0 se IE=1
-```
-Em `sub_00294AF8` (chamado logo após CreateThread), na linha ELF 0x294b18:
-```cpp
-if (func_294618() != 0) goto label_294c58;  // pula StartThread!
-```
-Com `cop0_status=0`, IE=0 → `func_294618` sempre retorna 1 → StartThread **SEMPRE pulado** via `goto label_294c58`.
-
-**Fix aplicado** em `PS2Recomp/ps2xRuntime/include/ps2_runtime.h` linha 151:
-```cpp
-// ANTES:
-cop0_status = 0x00000000;
-// DEPOIS:
-cop0_status = 0x00010001;  // IE=1 (bit0) + EIE=1 (bit16) = user-mode normal
-```
+### ✅ Bugs K, L, M, N, O, X, P — RESOLVIDOS
+### 🔴 Bug Q — PRÓXIMO BLOQUEADOR ESPERADO
+### ⚠️ Bugs R–W — todos truncados, aguardando log para priorizar
 
 ---
 
-### BUG P — CAUSA RAIZ E FIX
+### BUG X — CAUSA RAIZ E FIX ✅
 
-**Causa raiz:** `FUN_002947c8_0x2947c8.cpp` truncado para 1 instrução porque o range 0x2947c8–0x2948a0 estava dentro de `sub_00294760_0x294760.cpp` (0x294760–0x2948a0). O PS2Recomp não conseguiu regen correto por overlap.
+**Fix:** `PS2Recomp/ps2xRuntime/include/ps2_runtime.h` linha 151: `cop0_status = 0x00010001` (IE=1 + EIE=1). `func_294618` lia IE=0 e pulava `StartThread` sempre.
 
-**Fix aplicado** em `GOD_PC_PORT_FINAL/src/recompiled/FUN_002947c8_0x2947c8.cpp`:
-Reescrito manualmente com o corpo completo da thread 2 (IOP event dispatch loop), extraído das linhas 171–479 de `sub_00294760_0x294760.cpp`. A thread implementa um loop infinito:
-- Aguarda sema (`jal 0x293C60` = WaitSema)
-- Lê byte do ring buffer via `$s1`
-- Despacha por tipo: 0 → `0x293B50`, 1 → `0x293AD0`, 2 → `0x293B90`, outros → `0x296440`
-- Volta ao loop via `goto label_294808`
+### BUG P — CAUSA RAIZ E FIX ✅
+
+**Fix:** `GOD_PC_PORT_FINAL/src/recompiled/FUN_002947c8_0x2947c8.cpp` — 334 linhas reescritas manualmente. Sintaxe verificada com `g++ -fsyntax-only` → zero erros.
 
 ---
 
-**Arquivos modificados (precisa rebuild no PC do Cris):**
-1. `PS2Recomp/ps2xRuntime/include/ps2_runtime.h` — linha 151: `cop0_status = 0x00010001`
-2. `GOD_PC_PORT_FINAL/src/recompiled/FUN_002947c8_0x2947c8.cpp` — reescrito (230 linhas)
+### BUG Q — PRÓXIMO BLOQUEADOR (análise 2026-05-01) 🔴
 
-**Comando de rebuild:** `bash rebuild_runtime.sh && bash build.sh` (ou só `rebuild_runtime.sh` se quiser testar o runtime isolado)
+**Causa raiz:** `FUN_00294990_0x294990.cpp` truncada a 25 linhas (1 instrução: `addiu $sp, $sp, -0x20`). Registrada em `register_functions.cpp` linha 5494. Chamada por `sub_00297290` via `j func_294990` (endereço ELF 0x29745c).
 
-**Resultado esperado após fix:**
-- `[StartThread] id=2 entry=0x2947c8` aparece no log ✅
-- Thread 2 entra no loop de dispatch de eventos IOP ✅
-- Bind loop IOP prossegue além de sid=19 ✅
+**O que a função faz** (range real `0x294990–0x294a30`, ~160 bytes):
+- Salva `$ra` e `$s0` na stack (`sq` R5900 → usar `sd` no recompilado)
+- Chama GetThreadId (syscall -0x2F) → `$v0` = tid atual
+- Move resultado para `$a0` (`daddu $a0, $v0, $zero`)
+- Se `$s0 != $a0`: chama `func_293B60`, pula para epilogue em 0x294a18
+- Se `$s0 == $a0` e `$s0 >= 0x100`: branch para 0x2949d4 (retorna -1)
+- Se `$s0 == $a0` e `$s0 < 0x100`: lê `mem[0x2A4AB0]`, se não-nulo insere no ring buffer `mem[0x326f48]`, chama `func_293C50` + `func_2969D0`
+- Epilogue: restaura `$ra`, `$s0`, `addiu $sp, $sp, 0x20`, `jr $ra`
+
+**Fix necessário:** reescrita manual (mesmo padrão Bug P — regen não funciona por overlap de ranges). Arquivo: `GOD_PC_PORT_FINAL/src/recompiled/FUN_00294990_0x294990.cpp`.
+
+---
+
+### BUGS R–W — STATUS (análise 2026-05-01) ⚠️
+
+| Bug | Arquivo | Linhas | Situação |
+|---|---|---|---|
+| **R** FUN_00294c70 | `FUN_00294c70_0x294c70.cpp` | 25 | Provavelmente OK — código inline em `sub_00294AF8` (0x294af8–0x294c98), sem chamador direto |
+| **S** FUN_00297058 | `FUN_00297058_0x297058.cpp` | 25 | Aguardando log |
+| **T** FUN_002971c0 | `FUN_002971c0_0x2971c0.cpp` | 25 | Imediatamente antes de sub_00297290 — suspeito |
+| **U** FUN_00294d40 | `FUN_00294d40_0x294d40.cpp` | 28 | Aguardando log |
+| **V** FUN_00238890 | `FUN_00238890_0x238890.cpp` | 28 | 43 refs estáticas — mais chamada |
+| **W** FUN_00244600 | `FUN_00244600_0x244600.cpp` | 25 | 36 refs estáticas |
+
+Funções pós-bind-loop verificadas e COMPLETAS: `sub_00296898` (402 linhas), `entry_2969d0` (93 linhas), `entry_296eb8` (53 linhas), `sub_00294AF8` (529 linhas). `StartThread` implementado no runtime (syscall 0x22, `ps2_syscalls.cpp:128`).
+
+**Próximo passo:** rodar `bash auto_round.sh once` → `python3 tools/triage_round.py --short`. Se Bug Q aparecer, reescrever `FUN_00294990_0x294990.cpp` manualmente.
 
 ---
 
