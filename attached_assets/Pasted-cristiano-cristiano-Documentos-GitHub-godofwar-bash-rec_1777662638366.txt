@@ -1,0 +1,64 @@
+cristiano@cristiano:~/Documentos/GitHub/godofwar$ bash recompilar.sh
+bash auto_round.sh        # roda com timeout de 300s e fecha sozinho
+=== Recompilação incremental ===
+Apenas arquivos modificados serão recompilados.
+
+[recompilar] Forcando touch em arquivos alterados nos ultimos 5 commits:
+  - GOD_PC_PORT_FINAL/src/recompiled/entry_298910_0x298a10.cpp
+  - PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp
+  - PS2Recomp/ps2xRuntime/src/lib/syscalls/ps2_syscalls_flags.inl
+
+[  0%] Building CXX object CMakeFiles/ps2runtime.dir/home/cristiano/Documentos/GitHub/godofwar/PS2Recomp/ps2xRuntime/src/lib/ps2_syscalls.cpp.o
+[  0%] Building CXX object CMakeFiles/ps2runtime.dir/home/cristiano/Documentos/GitHub/godofwar/PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp.o
+[  1%] Linking CXX static library libps2runtime.a
+[  1%] Built target ps2runtime
+[  1%] Building CXX object CMakeFiles/gow_recompiled.dir/src/recompiled/entry_298910_0x298a10.cpp.o
+[  1%] Linking CXX static library libgow_recompiled.a
+[100%] Built target gow_recompiled
+[100%] Linking CXX executable GodOfWarPCPort
+[100%] Built target GodOfWarPCPort
+
+=== Concluído! Executável atualizado: build/GodOfWarPCPort ===
+[2026-05-01 16:09:39] Modo loop ativo. Verificando novos commits a cada 30s.
+[2026-05-01 16:09:39] Branch monitorada: main → resultados em logs/auto
+[2026-05-01 16:09:39] Diretório dos logs: /home/cristiano/Documentos/GitHub/godofwar/runs_automaticos
+[2026-05-01 16:09:39] Pressione Ctrl+C pra parar.
+[2026-05-01 16:09:39] 
+[2026-05-01 16:09:40] Commit novo detectado: a2c921c1 (anterior: eb29bfa5)
+[2026-05-01 16:09:40] ================================================
+[2026-05-01 16:09:40] ROUND novo iniciando
+[2026-05-01 16:09:40] ================================================
+[2026-05-01 16:09:40] 1/5: git pull origin main...
+From https://github.com/cristianomarianoufsc-ops/godofwar
+ * branch            main       -> FETCH_HEAD
+error: Your local changes to the following files would be overwritten by merge:
+	HANDOFF_AGENT.md
+	PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp
+	auto_round.sh
+	replit.md
+	tools/truncation_overrides.csv
+Please commit your changes or stash them before you merge.
+Aborting
+Merge with strategy ort failed.
+[2026-05-01 16:09:43] ERRO: git pull falhou
+[2026-05-01 16:09:43] ERRO: Round falhou. Tentando novamente em 30s.
+[2026-05-01 16:10:13] Commit novo detectado: a2c921c1 (anterior: eb29bfa5)
+[2026-05-01 16:10:13] ================================================
+[2026-05-01 16:10:13] ROUND novo iniciando
+[2026-05-01 16:10:13] ================================================
+[2026-05-01 16:10:13] 1/5: git pull origin main...
+From https://github.com/cristianomarianoufsc-ops/godofwar
+ * branch            main       -> FETCH_HEAD
+error: Your local changes to the following files would be overwritten by merge:
+	HANDOFF_AGENT.md
+	PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp
+	auto_round.sh
+	replit.md
+	tools/truncation_overrides.csv
+Please commit your changes or stash them before you merge.
+Aborting
+Merge with strategy ort failed.
+[2026-05-01 16:10:15] ERRO: git pull falhou
+[2026-05-01 16:10:15] ERRO: Round falhou. Tentando novamente em 30s.
+
+
