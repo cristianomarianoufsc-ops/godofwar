@@ -94,48 +94,48 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-01 — PASSO 4 + detector retry-loop prontos, aguardando Push)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-01 — PASSO 4 REVERTIDO, bloqueio pós-sid=35)
 
 ### ✅ Bug K — CONFIRMADO RESOLVIDO
 ### ✅ Bug L — CONFIRMADO RESOLVIDO (stub 0x296a54 visível 8x no round: callbacks #0–#7)
 ### ✅ Bug M — Timeout insuficiente (RUN_TIMEOUT 90→300s) — RESOLVIDO
 
-### 🔧 Bug N — `*(outer_struct+0x24)` nunca preenchido após bind fake → retry loop — FIX PRONTO, AGUARDA PUSH
+### ✅ Bug N — REGRESSÃO DETECTADA E REVERTIDA (2026-05-01)
 
-**⚠️ PASSO 4 E DETECTOR JÁ COMMITADOS NO REPLIT — CRIS PRECISA CLICAR NO BOTÃO PUSH**
+**PASSO 4 foi REVERTIDO** — era uma regressão que escrevia no endereço errado.
 
-**Causa raiz (diagnóstico completo 2026-05-01):**
+**Diagnóstico da regressão (2026-05-01 comparando logs 6625971 vs 2b2a957):**
 
-| Componente | Endereço | Papel |
+| Round | PASSO 4 | Resultado |
 |---|---|---|
-| `entry_298910` | 0x298910 | Loop principal de bind: checa `*(s0+0x24)` após cada bind |
-| `sub_00297290` | 0x297290 | Executa o bind SIF; s1=a0=outer_struct_ptr=**0x0032AF00** |
-| delay slot em 0x2972c4 | — | `sw $zero, 0x24($s1)` — ZERA `*(0x0032AF24)` incondicionalmente |
-| `entry_298910` label_2989c4 | — | Retry loop: if `*(s0+0x24)==0` → delay 1M iters (~148s) → recomeça |
-| FUN_00293c60 + syscall 0x293c64 | — | WaitSema; PASSO 3 forjava o signal mas não preenchia o campo |
+| `6625971` (SEM PASSO 4) | ❌ ausente | **sid=4..35 (31 módulos carregados!)** — cortado por timeout |
+| `2b2a957` (COM PASSO 4) | ✅ ativo | **sid=4..5 apenas** — jogo desviou de rota após sid=5 |
 
-**No PS2 real:** handler de interrupção DMA SIF escreve `*(s1+0x24) = client_ptr` quando IOP responde ao bind.
-**No port:** PASSO 3 forjava o WaitSema mas jamais escrevia `*(s1+0x24)` → campo ficava 0 → retry infinito.
+**Por que PASSO 4 quebrava tudo:**
+- PASSO 4 escrevia em `*(gpr[17]+0x24)` = `*(0x30aaa8+0x24)` = `*(0x30AACC)` — o `response_buf`
+- `entry_298910` verifica `*(s0+0x24)` onde `s0 = 0x32AF00` → campo = `*(0x32AF24)` — **endereços completamente diferentes**
+- Após a escrita errada em `0x30AACC`, o jogo tomava um caminho de código alternativo (opcode=0xa, ra=0x297634) em vez do bind normal (opcode=0x9, ra=0x297374)
+- Sem PASSO 4: `sub_00297290` preenche `*(0x32AF24)` naturalmente após o WaitSema acordar
 
-**Fix aplicado — PASSO 4 em `ps2_syscalls_flags.inl`:**
+**Fix: revertido em `ps2_syscalls_flags.inl` — bloco PASSO 4 removido, comentário explicativo deixado.**
 
-Quando PASSO 3 forja o WaitSema COM condição `pc==0x293c64 && ra==0x297374` (o call site de bind):
-- `s1_outer = gpr[17]` (callee-saved — outer struct, jamais tocado por FUN_00293c60)
-- `s0_client = gpr[16]` (callee-saved — client ptr retornado por func_296E10)
-- Escreve `*(rdram + s1_outer + 0x24) = s0_client` simulando a resposta do handler SIF
+**Detector `[retry-loop]` no `entry_298910_0x298a10.cpp` MANTIDO** (útil pra diagnóstico futuro).
 
-**Consequência esperada:** loop de bind em `entry_298910` finalmente avança após cada bind confirmado (em vez de retornar ao topo de `label_2989c4`). O jogo deve carregar todos os módulos IOP restantes.
+---
 
-**Detector de retry-loop adicionado (2026-05-01) em `GOD_PC_PORT_FINAL/src/recompiled/entry_298910_0x298a10.cpp`:**
+### 🔍 BLOQUEIO PÓS-sid=35 — NOVO BLOQUEIO A INVESTIGAR
 
-```
-[retry-loop] #N outer_struct=0xXXXXXX *(s0+0x24)=0xXXXX global@0x2A4B60=0xXXXX
-```
+No round `6625971` (sem PASSO 4, melhor resultado histórico):
+- sid=4..35 carregados com sucesso — 32 módulos IOP via SIF bind
+- Após sid=35 (WaitSema desbloqueado pelo PASSO 3), jogo entrou em VBlank loop por ~140s sem mais eventos
+- `delta_ms_since_RPC_BIND` para sid=35 era 62228ms — deltas crescentes indicam que entre binds o jogo faz busy-wait (~2s por loop de retry interno)
+- Buffer `0x30aaa8` no dump @VBlank #5000 após sid=35: `+0x00=0x20328280 +0x04=0x21 +0x08=0x23` — rpc_id incremental continua
 
-- Aparece em `label_2989c4` (entrada do loop de 1M iters)
-- Rate-limit: primeiros 32 + a cada 64 depois
-- Com PASSO 4 ativo: **NÃO deve aparecer nenhuma vez** (campo já preenchido antes do check)
-- Se aparecer: indica que PASSO 4 não está ativo ou a condição `pc/ra` não foi satisfeita
+**Próximo bloqueio provável:** após todos os binds SIF necessários, o jogo aguarda resposta de outro tipo — provavelmente um DMA de retorno IOP→EE que preenche `0x3277c0` (o callback buffer do INIT packet), ou um sinal via semáforo diferente de `pc=0x293c64`.
+
+**`FUN_002947c8_0x2947c8` (thread id=2, entry=0x2947c8) — TRUNCADA** — apenas 1 instrução (`addiu $sp,-0x80`), não faz nada. Pode ser Bug O. Checar se o thread 2 deveria processar callbacks IOP.
+
+**Próximo passo:** aguardar round com PASSO 4 revertido → ver se sid volta a 35+ → identificar o novo bloqueio.
 
 ---
 
@@ -156,7 +156,7 @@ Quando PASSO 3 forja o WaitSema COM condição `pc==0x293c64 && ra==0x297374` (o
 | **K** — `WaitSema sid=12` delta=2837ms > guard 100ms | ✅ RESOLVIDO | `ps2_syscalls_flags.inl` | Removido `&& deltaMsSinceBind < 100` — condição agora só `deltaMsSinceBind >= 0` |
 | **L** — `0x296a54 not found` 33x (FUN_00296a50 truncada a 2 instr.) | ✅ RESOLVIDO | `game_overrides.cpp` + `truncation_overrides.csv` | Stub noop em `0x296A54`; CSV com range real `0x296a50-0x296c48` pra regen futura |
 | **M** — Timeout insuficiente (90s), cortava em sid=28 | ✅ RESOLVIDO | `auto_round.sh` | `RUN_TIMEOUT=90` → `300` |
-| **N** — `*(outer_struct+0x24)` nunca preenchido → retry loop 148s | ✅ CORRIGIDO | `ps2_syscalls_flags.inl` (PASSO 4) | Em WaitSema(pc=0x293c64,ra=0x297374): `*(rdram+gpr[17]+0x24)=gpr[16]` |
+| **N** — PASSO 4 era regressão (escrevia em 0x30AACC em vez de 0x32AF24) | ✅ REVERTIDO | `ps2_syscalls_flags.inl` | Bloco PASSO 4 removido; sem PASSO 4, `sub_00297290` preenche o campo certo naturalmente |
 
 > **Detalhe completo de cada bug** (diagnóstico, dumps, hipóteses descartadas, código aplicado) → `HANDOFF_HISTORICO.md`.
 
@@ -190,29 +190,29 @@ Testado contra log atual → detectou corretamente sid=34, 31 módulos acordados
 
 ---
 
-## 📋 Próxima ação do analista (atualizado 2026-05-01 — PASSO 4 + detector retry-loop prontos)
+## 📋 Próxima ação do analista (atualizado 2026-05-01 — PASSO 4 REVERTIDO)
 
 **⚠️ PUSH PENDENTE — Cris precisa clicar em Push no Replit antes do próximo round.**
 
-**Arquivos modificados neste commit (todos prontos, nenhum push ainda):**
-- `ps2_syscalls_flags.inl` — **PASSO 4 Bug N**: escreve `*(rdram+gpr[17]+0x24)=gpr[16]` quando `pc=0x293c64 && ra=0x297374` — requer rebuild runtime
-- `entry_298910_0x298a10.cpp` — **detector `[retry-loop]`** em `label_2989c4` — requer recompilação do jogo
-- `HANDOFF_AGENT.md` + `replit.md` — documentação (não precisam de push imediato para o round)
+**Arquivos modificados neste commit:**
+- `ps2_syscalls_flags.inl` — **PASSO 4 REVERTIDO** (era regressão: escrevia em 0x30AACC em vez de 0x32AF24) — requer rebuild runtime
+- `HANDOFF_AGENT.md` + `replit.md` — documentação atualizada
 
 **Após o push e próximo round (300s), o analista deve:**
 ```bash
-# Triagem completa em 1 comando:
 python3 tools/triage_round.py
-
-# Resumo rápido:
 python3 tools/triage_round.py --short
 ```
 
-**O que procurar no próximo round:**
-- `[PASSO 4]` aparecendo ≥1x → Bug N fix ativo ✅
-- `[retry-loop]` NÃO aparecendo → PASSO 4 eliminou o loop ✅ (se aparecer, PASSO 4 não está funcionando)
-- `[retry-loop]` aparecendo com `*(s0+0x24)=0x0` → PASSO 4 não disparou — checar condição pc/ra
-- Sids subindo além de 18 (sid=19, 20...) → Bug N resolvido, carregamento de módulos avançou ✅
-- `SIGSEGV` → crash pós-bind, novo bug de runtime
-- `func_XXXXXX not found` → nova função ausente, criar stub
-- `[boot-loop:suspect]` → checar PC e a0 reportados
+**O que esperar no próximo round (com PASSO 4 revertido):**
+- sid=4..35+ carregados — deve replicar resultado do round `6625971` ✅
+- `[PASSO 4]` NÃO deve aparecer (foi removido) ✅
+- `[retry-loop]` pode aparecer — se aparecer, verificar valor de `*(s0+0x24)` e `outer_struct`
+- Após sid=35: VBlank loop por ~140s — **esse é o PRÓXIMO bloqueio a investigar**
+
+**Investigação do bloqueio pós-sid=35:**
+- Verificar se FUN_002947c8 (thread id=2, 1 instrução apenas) deveria processar callbacks IOP
+- Verificar se `sceSifCallRpc` ou similar está sendo chamado após os binds
+- Verificar se `0x3277c0` (callback buffer do INIT packet) precisa ser preenchido
+- Aumentar timeout para 600s? Ou cortar o busy-wait de 1M iters nos binds para acelerar sid=35+
+- Checar `FUN_002947c8_0x2947c8.cpp` — Bug O: apenas 1 instrução, truncada

@@ -262,6 +262,8 @@ PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_teste.txt
 | **J** — `0x296a54` not found com `ra=0, a0=5` | 🟡 BLINDADO | `ps2_stubs_misc.inl` (PLANO C) | `if dmatAddr < 0x100000 return 0` — não trava nada | `HANDOFF_HISTORICO.md §BugJ` |
 | **K** — `WaitSema sid=12` bloqueia com `delta=2837ms` (> guard 100ms) | ✅ RESOLVIDO | `ps2_syscalls_flags.inl` | Removido `&& deltaMsSinceBind < 100` — condição agora só `deltaMsSinceBind >= 0` | 2026-05-01 |
 | **L** — `0x296a54 not found` 33x (FUN_00296a50 truncada a 2 instrucoes) | ✅ RESOLVIDO | `game_overrides.cpp` + `truncation_overrides.csv` | Stub noop registrado em `0x296a54`; override CSV com range real `0x296a50-0x296c48` pra regen futura | 2026-05-01 |
+| **M** — Timeout insuficiente (90s), cortava em sid=28 | ✅ RESOLVIDO | `auto_round.sh` | `RUN_TIMEOUT=90` → `300` | 2026-05-01 |
+| **N** — PASSO 4 era regressão (escrevia em 0x30AACC em vez de 0x32AF24) | ✅ REVERTIDO | `ps2_syscalls_flags.inl` | Bloco PASSO 4 removido; sem ele, `sub_00297290` preenche 0x32AF24 naturalmente — sid=35+ confirmado sem PASSO 4 | 2026-05-01 |
 
 ---
 
@@ -326,28 +328,25 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 ---
 
-## 🟢 ESTADO ATUAL — PASSO 4 + detector retry-loop prontos, aguardando Push (atualizado 2026-05-01)
+## 🟢 ESTADO ATUAL — PASSO 4 REVERTIDO, aguardando Push (atualizado 2026-05-01)
 
 ### ✅ Bug K — CONFIRMADO RESOLVIDO
 ### ✅ Bug L — CONFIRMADO RESOLVIDO (0x296a54 stub noop, 8 callbacks registrados no round)
 ### ✅ Bug M — Timeout insuficiente (90→300s) — RESOLVIDO
-### 🔧 Bug N — retry loop em `entry_298910` — PASSO 4 + DETECTOR PRONTOS, PUSH PENDENTE
+### ✅ Bug N — PASSO 4 era REGRESSÃO — REVERTIDO (2026-05-01)
 
-**⚠️ PUSH PENDENTE — dois arquivos aguardam:**
-- `ps2_syscalls_flags.inl` — PASSO 4 (Bug N fix: escreve `*(s1+0x24)` ao forjar WaitSema) — requer rebuild runtime
-- `entry_298910_0x298a10.cpp` — detector `[retry-loop]` em `label_2989c4` — requer recompilação do jogo
+**DIAGNÓSTICO Bug N (comparação de rounds):**
+- Round `6625971` (SEM PASSO 4): sid=4..35, 32 módulos SIF carregados — **melhor resultado histórico**
+- Round `2b2a957` (COM PASSO 4): sid=4..5 apenas — PASSO 4 escrevia em `0x30AACC` (response_buf+0x24) enquanto o campo real é `0x32AF24` (outer_struct+0x24)
+- Sem PASSO 4: `sub_00297290` preenche `*(s1+0x24)` naturalmente após WaitSema acordar
 
-**Bug N — Causa raiz (diagnóstico 2026-05-01):**
+**⚠️ PUSH PENDENTE:**
+- `ps2_syscalls_flags.inl` — PASSO 4 removido — requer rebuild runtime
+- `HANDOFF_AGENT.md` + `replit.md` — documentação (não requer rebuild)
 
-`entry_298910` (0x298910) chama `sub_00297290` para fazer o bind SIF, depois checa `*(s0+0x24)`. Se zero → entra em `label_2989c4`: loop de 1M iters (~2s) e reinicia. No PS2 real, o handler DMA SIF escreve esse campo. No port não existe esse handler — PASSO 4 simula a escrita no momento do WaitSema forjado (pc=0x293c64, ra=0x297374).
+**Detector `[retry-loop]` em `entry_298910_0x298a10.cpp` MANTIDO** — útil para diagnóstico futuro.
 
-**Detector adicionado em `entry_298910_0x298a10.cpp`:**
-```
-[retry-loop] #N outer_struct=0x32AF00 *(s0+0x24)=0x0 global@0x2A4B60=0xXXXX
-```
-Com PASSO 4 ativo → **não deve aparecer**. Se aparecer → PASSO 4 não disparou (checar condição pc/ra).
-
-**Esperado no próximo round:** `[PASSO 4]` aparece; `[retry-loop]` não aparece; sids sobem além de 18; jogo conclui init IOP e revela próximo bloqueio.
+**Próximo bloqueio a investigar:** após sid=35, jogo entra em VBlank loop por ~140s sem mais eventos. Investigar FUN_002947c8 (thread id=2, truncada a 1 instrução — Bug O) e callback buffer 0x3277c0.
 
 ---
 

@@ -338,42 +338,11 @@ void WaitSema(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
             }
             sema->count++;
             // cv.wait abaixo ve count > 0 e retorna imediatamente.
-
-            // PASSO 4 — Bug N fix (2026-05-01):
-            // No PS2 real, o handler DMA SIF escreve *(s1+0x24) = client_ptr
-            // quando o IOP responde ao bind em sub_00297290 (0x297290).
-            // sub_00297290 zera *(s1+0x24) no delay slot (0x2972c4), e o campo
-            // so fica nao-zero quando o handler de interrupcao SIF o preenche.
-            // entry_298910 (0x298910) checa *(s0+0x24) != 0 para prosseguir;
-            // se for zero, entra em loop de retry (label_2989c4 → delay 1M iters
-            // → recomeça todo o bind = 148s de silencio puro).
-            // Fix: quando forjamos o WaitSema de bind (pc=0x293c64, ra=0x297374),
-            // s1=gpr[17]=outer_struct_ptr e s0=gpr[16]=client_ptr ainda estao
-            // validos (callee-saved, nao tocados por FUN_00293c60).
-            // Escrevemos *(s1+0x24) = s0 simulando a resposta do handler SIF.
-            const uint32_t pcNow = ctx->pc;
-            const uint32_t raNow = getRegU32(ctx, 31);
-            if (pcNow == 0x293c64u && raNow == 0x297374u && rdram)
-            {
-                const uint32_t s1_outer = getRegU32(ctx, 17);
-                const uint32_t s0_client = getRegU32(ctx, 16);
-                const uint32_t kRamSize = 0x02000000u;
-                const uint32_t kOffset24 = 0x24u;
-                if (s1_outer != 0u && (s1_outer + kOffset24 + 4u) <= kRamSize &&
-                    s0_client != 0u)
-                {
-                    uint8_t *ptr = rdram + s1_outer + kOffset24;
-                    std::memcpy(ptr, &s0_client, sizeof(s0_client));
-                    const uint32_t p4Log = s_passo3Logs.load(std::memory_order_relaxed);
-                    if (p4Log <= 64u)
-                    {
-                        std::cout << "[PASSO 4] Bug N fix: *(0x" << std::hex
-                                  << s1_outer << "+0x24)=0x" << s0_client
-                                  << " — bind confirm escrito (outer_struct->confirmed_client)"
-                                  << std::dec << std::endl;
-                    }
-                }
-            }
+            // NOTA (2026-05-01): PASSO 4 foi REVERTIDO — escrevia em gpr[17]+0x24
+            // (0x30aaa8+0x24 = response_buf+0x24) que e o endereco ERRADO.
+            // entry_298910 verifica *(s0+0x24) = *(0x32AF00+0x24) = 0x32AF24.
+            // Sem o PASSO 4, sub_00297290 preenche 0x32AF24 naturalmente apos
+            // o WaitSema acordar, e o jogo avanca para 35+ modulos SIF (log 6625971).
         }
 
         if (info)
