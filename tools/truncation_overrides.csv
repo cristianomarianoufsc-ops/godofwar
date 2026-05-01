@@ -47,3 +47,13 @@ FUN_00297058,0x297058,0x297180
 # Gap completo 0x2971c0→0x297290 (208 bytes). Altíssima probabilidade de estar no caminho crítico.
 # Contém chamadas a 0x297130 (jal) e lógica de store/branch.
 FUN_002971c0,0x2971c0,0x297290
+# Bug U (2026-05-01) — FUN_00294d40: zona crítica 0x29xxxx, 8 bytes declarados, gap real 408 bytes.
+# gap misto confirmado via mips_inspect; beq/slti/bnez visíveis → lógica de dispatch de estado de thread.
+# 3 referências estáticas; score_truncated.py detectou +500 proximity bonus.
+FUN_00294d40,0x294d40,0x294ed8
+# Bug V (2026-05-01) — FUN_00238890: 43 referências estáticas (função mais chamada entre as truncadas).
+# jr $ra real em 0x2388b0 (delay slot 0x2388b4); gap real 0x238890→0x2388f8 (104 bytes).
+FUN_00238890,0x238890,0x2388f8
+# Bug W (2026-05-01) — FUN_00244600: 36 referências estáticas (segunda mais chamada entre as truncadas).
+# gap real 0x244600→0x244638 (56 bytes); contém jal 0x13e090, 0x13dc78, 0x259f70.
+FUN_00244600,0x244600,0x244638

@@ -163,6 +163,9 @@ No round `6625971` (sem PASSO 4, melhor resultado histórico):
 | **R** — `FUN_00294c70` truncada a 1 instrução (região de init de threads, 3 saídas jr $ra: 0x294c90/cb4/cf4) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00294c70,0x294c70,0x294d00` adicionada — gap misto confirmado |
 | **S** — `FUN_00297058` truncada a 1 instrução (vizinhança do bind loop, jr $ra em 0x297120) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00297058,0x297058,0x297180` adicionada — 296 bytes faltando, contém tail call para 0x29a5d8 |
 | **T** — `FUN_002971c0` truncada a 1 instrução (IMEDIATAMENTE antes de sub_00297290 = bind loop!) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_002971c0,0x2971c0,0x297290` adicionada — 208 bytes faltando; altíssima probabilidade de ser chamada pelo caminho crítico |
+| **U** — `FUN_00294d40` truncada a 8 bytes (zona crítica 0x29xxxx, dispatch de estado de thread) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00294d40,0x294d40,0x294ed8` adicionada — 408 bytes faltando; beq/slti/bnez no gap confirmado; 3 refs |
+| **V** — `FUN_00238890` truncada a 8 bytes — **43 referências estáticas** (mais chamada entre as truncadas) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00238890,0x238890,0x2388f8` — jr $ra em 0x2388b0; 104 bytes faltando |
+| **W** — `FUN_00244600` truncada a 8 bytes — **36 referências estáticas** (segunda mais chamada) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00244600,0x244600,0x244638` — 56 bytes; jal 0x13e090, 0x13dc78, 0x259f70 |
 
 > **Detalhe completo de cada bug** (diagnóstico, dumps, hipóteses descartadas, código aplicado) → `HANDOFF_HISTORICO.md`.
 
@@ -196,36 +199,40 @@ Testado contra log atual → detectou corretamente sid=34, 31 módulos acordados
 
 ---
 
-## 📋 Próxima ação do analista (atualizado 2026-05-01 — Bugs P+Q+R+S+T: regen de 7 funções)
+## 📋 Próxima ação do analista (atualizado 2026-05-01 — Bugs P–W: regen de 10 funções)
 
 **⚠️ PUSH PENDENTE + AÇÃO ESPECIAL NO PC**
 
 **Arquivos modificados neste commit:**
-- `tools/truncation_overrides.csv` — 5 bugs novos adicionados (P, Q, R, S, T) = 7 funções totais a regenerar
+- `tools/truncation_overrides.csv` — Bugs P–W adicionados = 10 funções totais a regenerar (+ crt0)
+- `tools/score_truncated.py` — **NOVA FERRAMENTA**: prioriza truncadas por referências × bytes × proximidade
 - `HANDOFF_AGENT.md` + `replit.md` — documentação atualizada
 
 **ATENÇÃO — este fix NÃO é só rebuild do runtime. Precisa de regen completa:**
 ```bash
 # No PC do Agente Cris, após o Push:
 git pull origin main
-bash tools/regen_truncated.sh       # regenera TODAS as entradas do CSV (7 funções)
+bash tools/regen_truncated.sh       # regenera TODAS as entradas do CSV (10 funções)
 bash rebuild_runtime.sh --run       # rebuild + round automático
 ```
 
-**Funções a regenerar (6 novas + crt0 que já estava):**
-| Endereço | Bug | Bytes faltando | Descrição |
-|----------|-----|----------------|-----------|
-| 0x2947c8→0x294990 | P | ~456 | Thread id=2 entry pós-init IOP |
-| 0x294990→0x294a30 | Q | ~0x9c | GetThreadId + registro thread pós-bind |
-| 0x294c70→0x294d00 | R | ~0x90 | Init thread, 3 saídas jr $ra |
-| 0x297058→0x297180 | S | ~296 | Vizinhança do bind loop, tail call 0x29a5d8 |
-| 0x2971c0→0x297290 | T | ~208 | **Imediatamente antes de sub_00297290!** |
-| 0x296a50→0x296c48 | L | - | Já estava; regen atualiza com range correto |
+**Funções a regenerar:**
+| Endereço | Bug | Bytes | Destaque |
+|----------|-----|-------|----------|
+| 0x2947c8→0x294990 | P | ~456 | Thread id=2 entry — bloqueador principal |
+| 0x294990→0x294a30 | Q | ~0x9c | GetThreadId pós-bind |
+| 0x294c70→0x294d00 | R | ~0x90 | Init thread region, 3 jr $ra |
+| 0x297058→0x297180 | S | ~296 | Vizinhança bind loop |
+| 0x2971c0→0x297290 | T | ~208 | Antes de sub_00297290 |
+| 0x294d40→0x294ed8 | U | ~408 | Zona crítica, dispatch de estado |
+| 0x238890→0x2388f8 | V | ~104 | **43 referências estáticas** |
+| 0x244600→0x244638 | W | ~56  | **36 referências estáticas** |
+| 0x296a50→0x296c48 | L | -    | Range correto (já estava) |
 
 **O que esperar após a regen:**
 - Jogo sai do VBlank loop pós-sid=35 (P+Q desbloqueiam thread id=2)
-- Funções R, S, T provavelmente eliminam mais "not found" próximos do bind loop
-- Prováveis: novos crashes, stubs ausentes, ou avanço no init do EE kernel
+- R, S, T, U eliminam bloqueios na vizinhança do bind loop
+- V e W eliminam crashes/stubs ausentes causados pelas funções mais chamadas
 
 **Após o round, o analista deve:**
 ```bash

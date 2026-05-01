@@ -276,6 +276,9 @@ PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_teste.txt
 | **R** — `FUN_00294c70` truncada a 1 instrução (região init de threads, 3 jr $ra em 0x294c90/cb4/cf4) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00294c70,0x294c70,0x294d00` adicionada — gap misto confirmado via mips_inspect | 2026-05-01 |
 | **S** — `FUN_00297058` truncada a 1 instrução (vizinhança bind loop, jr $ra em 0x297120) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00297058,0x297058,0x297180` adicionada — 296 bytes faltando; tail call 0x29a5d8 | 2026-05-01 |
 | **T** — `FUN_002971c0` truncada a 1 instrução (imediatamente antes de sub_00297290!) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_002971c0,0x2971c0,0x297290` adicionada — 208 bytes; jal 0x297130 confirmado | 2026-05-01 |
+| **U** — `FUN_00294d40` truncada a 8 bytes (zona crítica 0x29xxxx, 408 bytes, dispatch de estado) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00294d40,0x294d40,0x294ed8` — detectada por `score_truncated.py` (+500 proximity) | 2026-05-01 |
+| **V** — `FUN_00238890` truncada a 8 bytes — **43 referências estáticas** (record entre truncadas) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00238890,0x238890,0x2388f8` — 104 bytes; jr $ra em 0x2388b0 | 2026-05-01 |
+| **W** — `FUN_00244600` truncada a 8 bytes — **36 referências estáticas** (segunda mais chamada) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00244600,0x244600,0x244638` — 56 bytes; 3 jal distintos | 2026-05-01 |
 
 ---
 
@@ -293,7 +296,8 @@ PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_teste.txt
 | `find_writer_32E854.py` / `find_writer_v2.py` / `find_writer_32E854_overlays.py` | Varredura de quem escreve/lê `0x32E854` no ELF. | `python3 tools/find_writer_v2.py` |
 | `diagnose_crt0.py` | Diagnóstico do crt0: verifica se as 9 instruções críticas foram traduzidas. | `uv run python tools/diagnose_crt0.py` |
 | `discovered_functions.csv` | CSV de funções descobertas pelo `gap_discover.py`. 75 entradas. | Consumido pelo `recompiler.toml`. |
-| `truncation_overrides.csv` | **Edite à mão** — overrides manuais de ranges. 1 override ativo: `entry,0x100008,0x100db8`. | Lido por `fix_truncated.py`. |
+| `truncation_overrides.csv` | **Edite à mão** — overrides manuais de ranges. 10 overrides ativos: crt0, L, P–W. | Lido por `fix_truncated.py`. |
+| `score_truncated.py` | **NOVA** — prioriza funções truncadas por score: refs×40 + bytes_faltando + proximity_bonus. Gera `truncated_scores.csv`. | `uv run python tools/score_truncated.py [--top N] [--min-bytes B]` |
 | `reachable_seeds.txt` | Lista de seeds de BFS. 1 seed ativo: `0x100008`. | Lido por `reachable_after_boot.py`. |
 | `missing_to_seeds.py` | Lê `ps2_missing.log`, extrai entradas `FUNCTION` (ausentes em runtime) e adiciona como seeds em `reachable_seeds.txt`. Modo seco por padrão; `--apply` pra escrever. | `python3 tools/missing_to_seeds.py` / `python3 tools/missing_to_seeds.py --apply --min-calls 3` |
 | `triage_round.py` | Baixa o log filtrado do GitHub e gera relatório estruturado: módulos IOP carregados, último sid/delta, frames VBlank, erros, boot-loop suspects, diagnóstico e próximo passo. | `python3 tools/triage_round.py` (completo) / `python3 tools/triage_round.py --short` (só resumo) / `python3 tools/triage_round.py --local arquivo.txt` |
@@ -301,6 +305,7 @@ PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_teste.txt
 **Lacunas conhecidas (oportunidades pra novas ferramentas):**
 - ❌ Scanner de IRX (`*.IRX`) buscando escritores de globals da EE.
 - ✅ Detector de "boot loop" no runtime — já implementado em `ps2_runtime.cpp` linha ~2119 (`[boot-loop:suspect]`, threshold via `PS2_SAME_CALL_REPORT_AFTER`).
+- ✅ Priorizador de funções truncadas — `score_truncated.py` (score = refs×40 + bytes + proximity).
 
 ---
 
@@ -340,18 +345,18 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 ---
 
-## 🟢 ESTADO ATUAL — Bugs P–T: 5 funções truncadas novas + CSV atualizado (atualizado 2026-05-01)
+## 🟢 ESTADO ATUAL — Bugs P–W: 8 funções truncadas + score_truncated.py criado (atualizado 2026-05-01)
 
 ### ✅ Bug K — CONFIRMADO RESOLVIDO
 ### ✅ Bug L — CONFIRMADO RESOLVIDO
 ### ✅ Bug M — RESOLVIDO
 ### ✅ Bug N — REVERTIDO
 ### ✅ Bug O — CONFIRMADO ($v0=1 no callback 0x296a54 — sid=4..11 agora delta=0ms)
-### 🔴 Bugs P–T — 5 funções truncadas detectadas — CSV atualizado, aguardando regen no PC
+### 🔴 Bugs P–W — 8 funções truncadas detectadas — CSV atualizado, aguardando regen no PC
 
 **DIAGNÓSTICO Bug O (confirmado):** Callback 0x296a54 retorna 1 → sid=4..11 delta=0ms ✅. VBlank loop após sid=35 → bloqueador é Bug P (thread id=2 não executa).
 
-**Bugs P–T detectados (2026-05-01) via varredura estática:**
+**Bugs P–W detectados (2026-05-01) via varredura estática + `score_truncated.py`:**
 | Bug | Endereço | Bytes | Impacto |
 |-----|----------|-------|---------|
 | P | 0x2947c8→0x294990 | ~456 | Thread id=2 entry — bloqueador principal do VBlank loop |
@@ -359,11 +364,14 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 | R | 0x294c70→0x294d00 | ~0x90 | Init thread region, 3 jr $ra |
 | S | 0x297058→0x297180 | ~296 | Vizinhança bind loop, tail call 0x29a5d8 |
 | T | 0x2971c0→0x297290 | ~208 | **Imediatamente antes do bind loop!** |
+| U | 0x294d40→0x294ed8 | ~408 | Zona crítica 0x29xxxx, dispatch de estado |
+| V | 0x238890→0x2388f8 | ~104 | **43 referências estáticas** — recorde entre truncadas |
+| W | 0x244600→0x244638 | ~56  | **36 referências estáticas** — segunda mais chamada |
 
 **⚠️ AÇÃO NECESSÁRIA NO PC DO AGENTE CRIS:**
 ```bash
 git pull origin main
-bash tools/regen_truncated.sh   # regenera 7 funções (todas do CSV)
+bash tools/regen_truncated.sh   # regenera 10 funções (todas do CSV: crt0, L, P–W)
 bash rebuild_runtime.sh --run   # rebuild + round
 ```
 
