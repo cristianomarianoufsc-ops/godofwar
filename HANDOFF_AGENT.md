@@ -94,7 +94,7 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-01 — Bug P: regen FUN_002947c8 necessária)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-01 — Bugs P+Q: regen de 3 funções necessária)
 
 ### ✅ Bug K — CONFIRMADO RESOLVIDO
 ### ✅ Bug L — CONFIRMADO RESOLVIDO (stub 0x296a54 visível 8x no round: callbacks #0–#7)
@@ -159,6 +159,7 @@ No round `6625971` (sem PASSO 4, melhor resultado histórico):
 | **N** — PASSO 4 era regressão (escrevia em 0x30AACC em vez de 0x32AF24) | ✅ REVERTIDO | `ps2_syscalls_flags.inl` | Bloco PASSO 4 removido; sem PASSO 4, `sub_00297290` preenche o campo certo naturalmente |
 | **O** — stub `0x296a54` retornava 0 → deltas crescentes (sid=12+: ~1600ms/módulo) | ✅ CONFIRMADO | `game_overrides.cpp` | `$v0=0` → `$v0=1` — sid=4..11 delta=0ms; sid=12+ melhora ~15% (causa secundária persiste) |
 | **P** — `FUN_002947c8` truncada a 1 instrução (thread id=2 pós-init IOP, 456 bytes faltando) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_002947c8,0x2947c8,0x294990` adicionada — precisa `regen_truncated.sh` + rebuild no PC |
+| **Q** — `FUN_00294990` truncada a 1 instrução (sequência direta após FUN_002947c8, ~0x9c bytes faltando) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00294990,0x294990,0x294a30` adicionada — jr $ra real em 0x294a1c; contém GetThreadId + lógica pós-bind |
 
 > **Detalhe completo de cada bug** (diagnóstico, dumps, hipóteses descartadas, código aplicado) → `HANDOFF_HISTORICO.md`.
 
@@ -192,32 +193,35 @@ Testado contra log atual → detectou corretamente sid=34, 31 módulos acordados
 
 ---
 
-## 📋 Próxima ação do analista (atualizado 2026-05-01 — Bug P: regen necessária)
+## 📋 Próxima ação do analista (atualizado 2026-05-01 — Bugs P+Q: regen de 3 funções)
 
 **⚠️ PUSH PENDENTE + AÇÃO ESPECIAL NO PC**
 
 **Arquivos modificados neste commit:**
-- `tools/truncation_overrides.csv` — Bug P: entry `FUN_002947c8,0x2947c8,0x294990` adicionada
-- `HANDOFF_AGENT.md` + `replit.md` — documentação atualizada
+- `tools/truncation_overrides.csv` — Bug P: `FUN_002947c8,0x2947c8,0x294990` + **Bug Q NOVO: `FUN_00294990,0x294990,0x294a30`**
+- `HANDOFF_AGENT.md` + `replit.md` — documentação atualizada (Bug Q adicionado)
 
 **ATENÇÃO — este fix NÃO é só rebuild do runtime. Precisa de regen completa:**
 ```bash
 # No PC do Agente Cris, após o Push:
 git pull origin main
-bash tools/regen_truncated.sh       # regenera FUN_002947c8 e FUN_00296a50 via ps2_recomp
-# (regen leva poucos segundos — apenas 2 arquivos)
+bash tools/regen_truncated.sh       # regenera FUN_002947c8 + FUN_00294990 + FUN_00296a50 (3 funções)
+# (regen leva poucos segundos — apenas 3 arquivos)
 bash rebuild_runtime.sh --run       # rebuild + round automático
 ```
 
 **O que esperar após a regen:**
-- `FUN_002947c8_0x2947c8.cpp` passa de 1 instrução para ~114 instruções
-- Thread id=2 executa o loop de módulos IOP de verdade
+- `FUN_002947c8_0x2947c8.cpp` passa de 1 instrução para ~114 instruções → thread id=2 executa de verdade
+- `FUN_00294990_0x294990.cpp` passa de 1 instrução para ~16 instruções → GetThreadId + lógica de registro pós-bind funciona
 - Jogo deve sair do VBlank loop pós-sid=35
-- Possíveis novos crashes/stubs ausentes a diagnosticar
+- Prováveis: novos crashes, stubs ausentes, ou próximo bloqueio após thread 2 iniciar
 
-**Se a regen não estiver disponível imediatamente**, o analista pode preparar um stub manual para `0x2947c8` em `game_overrides.cpp` como medida temporária — mas a regen é o fix correto.
+**Bug Q — detalhe técnico:**
+`FUN_00294990` (0x294990→0x294a30) é chamada pelo bind loop (`sub_00297290` via `j 0x294990`)
+e também por `entry_2948a0` e `sub_002994A0`. Contém `syscall -0x2f` = `GetThreadId`.
+Com a função truncada, qualquer chamada para ela retorna imediatamente sem registrar o thread.
 
 **Após o round, o analista deve:**
 ```bash
-curl -s "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/logs/auto/runs_automaticos/log_latest_filtered.txt" | grep -E "(WaitSema|not found|SIGSEGV|CreateThread|StartThread|0x2947)" | head -40
+curl -s "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/logs/auto/runs_automaticos/log_latest_filtered.txt" | grep -E "(WaitSema|not found|SIGSEGV|CreateThread|StartThread|0x2947|0x2949)" | head -40
 ```

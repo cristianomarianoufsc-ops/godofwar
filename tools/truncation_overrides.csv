@@ -29,3 +29,9 @@ FUN_00296a50,0x296a50,0x296c48
 # Range real confirmado via mips_inspect.py --gap: jr $ra em 0x294984, epilogue 0x294988.
 # Sem essa regen, thread 2 nunca executa: jogo fica em VBlank infinito após sid=35.
 FUN_002947c8,0x2947c8,0x294990
+# Bug Q (2026-05-01) — FUN_00294990: função imediatamente após FUN_002947c8.
+# Truncada a 1 instrução (addiu $sp,-0x20) — faltavam ~0x9c bytes.
+# Range real: jr $ra em 0x294a1c, delay slot 0x294a20, próxima função em 0x294a30.
+# Chamada por sub_00297290 (bind loop) via j 0x294990, e por entry_2948a0, sub_002994A0.
+# Contém GetThreadId (syscall -0x2f) + lógica de registro de thread pós-bind.
+FUN_00294990,0x294990,0x294a30

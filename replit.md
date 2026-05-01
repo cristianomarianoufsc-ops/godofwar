@@ -207,6 +207,7 @@ O usuário não é engenheiro de baixo nível. O progresso técnico é traduzido
 | Ignição de emergência no portão SIF: porteiro aprende a dar o sinal sozinho quando o caminhão passa | PARTE 10 PASSO 3: `WaitSema` forja `iSignalSema` — 35 binds SIF concluídos | ✅ sid=4..35 OK |
 | Checklist de peças: cobrador do armazém responde "chegou" em vez de "ainda não" | Bug O: stub `0x296a54` retorna 1 — sid=4..11 delta=0ms | ✅ Bug O |
 | Segundo motorista recebe o roteiro de entrega completo (estava com a pasta vazia) | Bug P: regen `FUN_002947c8` 0x2947c8→0x294990 — thread id=2 executa de verdade | 🔴 AGUARDANDO REGEN |
+| Checklist de chegada do segundo motorista (formulário de assinatura do portão) | Bug Q: regen `FUN_00294990` 0x294990→0x294a30 — chamada logo após FUN_002947c8 pelo bind loop | 🔴 AGUARDANDO REGEN |
 | Carburador, transmissão, suspensão | Subsistemas: GS (gráficos), DMA, áudio, controle | 🔜 depois |
 | Test drive | Jogo rodando até a primeira fase jogável | 🔜 longe |
 
@@ -224,6 +225,7 @@ O usuário não é engenheiro de baixo nível. O progresso técnico é traduzido
 | Agente infiltrado acorda o guarda adormecido: intercepta o sinal que o IOP nunca mandou e forja a resposta | PARTE 10 PASSO 3: WaitSema forja `iSignalSema` — 35 binds SIF concluídos | ✅ sid=4..35 OK |
 | Informante diz "já recebi as encomendas" em vez de "ainda não chegou" | Bug O: stub `0x296a54` retorna 1 — eliminando poll infinito dos primeiros 8 módulos | ✅ Bug O |
 | Agente 2 finalmente recebe o dossiê completo — não mais uma pasta com só a capa | Bug P: regen `FUN_002947c8` 0x2947c8→0x294990 — thread id=2 opera de verdade | 🔴 AGUARDANDO REGEN |
+| Porteiro do cofre assina a ficha de entrada do Agente 2 (sem assinatura ele não passa) | Bug Q: regen `FUN_00294990` 0x294990→0x294a30 — segunda função truncada no mesmo bloco | 🔴 AGUARDANDO REGEN |
 | Próximos guardas internos previstos | VIF1/DMA com payloads válidos, GS, áudio, controle | 🔜 ato 3 |
 | Fuga com o alvo | Jogo rodando até a primeira fase jogável | 🔜 final |
 
@@ -270,6 +272,7 @@ PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_teste.txt
 | **N** — PASSO 4 era regressão (escrevia em 0x30AACC em vez de 0x32AF24) | ✅ REVERTIDO | `ps2_syscalls_flags.inl` | Bloco PASSO 4 removido; sem ele, `sub_00297290` preenche 0x32AF24 naturalmente — sid=35+ confirmado sem PASSO 4 | 2026-05-01 |
 | **O** — stub `0x296a54` retornava 0 → deltas crescentes, sid=12+: ~1600ms/módulo | ✅ CONFIRMADO | `game_overrides.cpp` | `$v0=0` → `$v0=1` — sid=4..11 agora delta=0ms; sid=12+ melhora ~15% (causa secundária persiste) | 2026-05-01 |
 | **P** — `FUN_002947c8` truncada a 1 instrução (thread id=2, entry pós-init IOP) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_002947c8,0x2947c8,0x294990` adicionada — regen + rebuild necessários no PC | 2026-05-01 |
+| **Q** — `FUN_00294990` truncada a 1 instrução (sequência direta de FUN_002947c8) | 🔴 AGUARDANDO REGEN | `truncation_overrides.csv` | Entry `FUN_00294990,0x294990,0x294a30` adicionada — jr $ra real em 0x294a1c; contém GetThreadId + lógica de registro thread pós-bind | 2026-05-01 |
 
 ---
 
