@@ -321,28 +321,20 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 ---
 
-## 🟢 ESTADO ATUAL — Bug K fix (atualizado 2026-05-01)
+## 🟢 ESTADO ATUAL — Bug K resolvido, jogo sobrevive 90s (atualizado 2026-05-01)
 
-### ✅ PASSO 3 — CONFIRMADO (round anterior)
+### ✅ Bug K — CONFIRMADO RESOLVIDO
 
-PASSO 3 acordou 8 WaitSemas consecutivos (sids 4–11, todos delta=0ms). O jogo avançou para init de módulos IOP com múltiplos RPC_BINDs (rpc_id incrementais: 0x5, 0x10005 … 0x70005).
+Round confirmou: 32 WaitSemas acordados (sids 4–35, deltas variando de 0ms a ~60s). Jogo sobreviveu os 90 segundos de timeout sem nenhum deadlock. Round terminou por SIGINT (timeout normal), não crash.
 
-### 🐛 Bug K — WaitSema sid=12 com delta=2837ms — FIX APLICADO (2026-05-01)
+### Próximo bloqueio suspeito — VBlank `flag=0` após 5340 ticks
 
-**Causa raiz:** guard `deltaMsSinceBind < 100` era estreito. O sid=12 chega com delta=2837ms (VBlank loop rodou 2.8s entre o último RPC_BIND e esse WaitSema). Mesmo call site `pc=0x293c64` — mesmo padrão IOP.
+O stub VBlank `0x182f28` imprime `flag=0 altCount=N` durante todo o run. O campo `flag` nunca muda de 0. No PS2 real, o IOP setaria essa flag ao concluir a inicialização dos módulos — o jogo provavelmente tem um polling loop que espera `flag != 0` para sair do boot e entrar na tela de intro.
 
-**Fix:** `PS2Recomp/ps2xRuntime/src/lib/syscalls/ps2_syscalls_flags.inl` — removido `&& deltaMsSinceBind < 100`. Condição agora: `deltaMsSinceBind >= 0 && sema->count < sema->maxCount`.
+**Buffer `0x30aaa8` no VBlank #5000 (este round):**
+`80 82 32 20 21 00 00 00 23 00 00 00 ...` — mudou em relação ao round anterior (`09 00 00 00 0b 00 00 00`), confirmando que o jogo avançou no init.
 
-**Esperado no próximo round:**
-```
-[PASSO 3] Forjando iSignalSema(sid=12) delta_ms=2837 — resposta IOP simulada ao RPC_BIND
-[WaitSema:wake] tid=1 sid=12 ret=0 count=0
-```
-→ Jogo avança além do sid=12.
-
-### Status
-
-**Aguardando Push + round.** Cris: **clica no botão Push do Replit** pra mandar o fix ao GitHub.
+**Próximo passo:** verificar o que o código em `0x182f28` verifica como `flag` e se há um sinal IOP que precisa ser forjado para destravá-lo.
 
 ---
 

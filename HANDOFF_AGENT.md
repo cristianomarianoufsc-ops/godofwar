@@ -91,28 +91,19 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-01 — Bug K fix)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-01 — Bug K confirmado, jogo 90s)
 
-### ✅ PASSO 3 — CONFIRMADO FUNCIONANDO (round anterior)
+### ✅ Bug K — CONFIRMADO RESOLVIDO
 
-O log confirmou que PASSO 3 acordou 8 WaitSemas consecutivos (sids 4–11, todos delta=0ms). O jogo avançou para a fase de init de módulos IOP (múltiplos RPC_BINDs com rpc_id incrementais: 0x5, 0x10005, 0x20005, ..., 0x70005).
+32 WaitSemas acordados (sids 4–35, deltas 0ms a ~60s). Jogo sobreviveu os 90 segundos inteiros sem deadlock. Round terminou por SIGINT (timeout normal do auto_round.sh), não por crash.
 
-### 🐛 Bug K — WaitSema sid=12 bloqueou (delta=2837ms > 100ms) — FIX APLICADO 2026-05-01
+### 🔍 Próximo suspeito — VBlank `flag=0` nunca muda
 
-**Causa raiz:** o guard `deltaMsSinceBind < 100` era estreito demais. O sid=12 chegou com delta=2837ms porque o VBlank loop rodou ~2.8s entre o último RPC_BIND e esse WaitSema. Mesmo call site (`pc=0x293c64`) — é o mesmo padrão IOP, só mais tardio.
+O stub VBlank `0x182f28` registra `flag=0` durante TODO o run (5340 ticks). No PS2 real, o IOP setaria essa flag ao terminar o init dos módulos. O jogo provavelmente faz polling de `flag != 0` para sair do boot e entrar na tela de intro.
 
-**Fix:** `PS2Recomp/ps2xRuntime/src/lib/syscalls/ps2_syscalls_flags.inl` — removido o `&& deltaMsSinceBind < 100`. Condição agora: `deltaMsSinceBind >= 0 && sema->count < sema->maxCount` (qualquer RPC_BIND que tenha ocorrido é suficiente).
+Buffer `0x30aaa8` mudou (confirmando progresso): antes `09 00 00 00 0b 00 00 00`, agora `21 00 00 00 23 00 00 00` (sid=33, sid=35 — últimos módulos carregados).
 
-**Comportamento esperado no próximo round:**
-```
-[PASSO 3] Forjando iSignalSema(sid=12) delta_ms=2837 — resposta IOP simulada ao RPC_BIND
-[WaitSema:wake] tid=1 sid=12 ret=0 count=0
-```
-→ Jogo avança além do sid=12. Novo bloqueio ou novo progresso visível.
-
-**Nota:** também apareceu `Warning: Function at address 0x296a54 not found` com `fallback=0x293fe0` (Bug J ainda ativo mas sendo absorvido). Não bloqueia o round — o fallback permite continuar.
-
-**Próxima ação:** analista lê log via curl após round e identifica o próximo bloqueio.
+**Próximo passo:** inspecionar o stub `0x182f28` — verificar qual endereço de memória é lido como `flag` e o que deveria escrevê-lo. Pode exigir instrumentar o código recompilado ao redor de `0x182f28` ou analisar via `mips_inspect.py`.
 
 ---
 
