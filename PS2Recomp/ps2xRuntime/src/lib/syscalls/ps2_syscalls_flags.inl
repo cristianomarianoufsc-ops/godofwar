@@ -726,19 +726,38 @@ void WaitEventFlag(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
     uint32_t mode = getRegU32(ctx, 6);
     uint32_t resBitsAddr = getRegU32(ctx, 7);
 
+    // Bug AB (2026-05-02): God of War chama WaitEventFlag com bits de mode desconhecidos
+    // (e.g. 0x10000000, 0x70000000, 0x80000) — extensao nao-documentada do SDK.
+    // O BIOS real do EE simplesmente ignora esses bits e continua.
+    // Comportamento correto: mascarar os bits desconhecidos e tratar como "poll nao-bloqueante"
+    // (retornar KE_OK imediatamente sem esperar), pois o bit desconhecido provavelmente
+    // sinaliza "nao bloqueie se nao satisfeito" (similar a PollEventFlag).
     if ((mode & ~WEF_MODE_MASK) != 0)
     {
         static std::atomic<uint32_t> s_illegalModeLogs{0};
-        if (s_illegalModeLogs.fetch_add(1, std::memory_order_relaxed) < 16u)
+        const uint32_t logIdx = s_illegalModeLogs.fetch_add(1, std::memory_order_relaxed);
+        if (logIdx < 32u || logIdx % 500u == 0u)
         {
-            std::cout << "[WaitEventFlag:ILLEGAL_MODE] eid=" << eid
-                      << " waitBits=0x" << std::hex << waitBits
-                      << " mode=0x" << mode
-                      << " pc=0x" << ctx->pc
+            std::cout << "[WaitEventFlag:mode_compat] Bug AB — eid=" << eid
+                      << " unknown_bits=0x" << std::hex << (mode & ~WEF_MODE_MASK)
+                      << " full_mode=0x" << mode
+                      << " waitBits=0x" << waitBits
                       << " ra=0x" << getRegU32(ctx, 31)
-                      << std::dec << std::endl;
+                      << std::dec << " — mascando, retornando KE_OK (non-blocking)"
+                      << std::endl;
         }
-        setReturnS32(ctx, KE_ILLEGAL_MODE);
+        // Escreve bits atuais no resultado se solicitado
+        if (resBitsAddr != 0u)
+        {
+            auto info2 = lookupEventFlagInfo(eid);
+            if (info2)
+            {
+                std::lock_guard<std::mutex> lock2(info2->m);
+                uint32_t *p = reinterpret_cast<uint32_t *>(getMemPtr(rdram, resBitsAddr));
+                if (p) *p = info2->bits;
+            }
+        }
+        setReturnS32(ctx, KE_OK);
         return;
     }
 
@@ -907,9 +926,22 @@ void PollEventFlag(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
     uint32_t mode = getRegU32(ctx, 6);
     uint32_t resBitsAddr = getRegU32(ctx, 7);
 
+    // Bug AB (2026-05-02): mesma logica do WaitEventFlag — mascarar bits desconhecidos
+    // e retornar KE_OK nao-bloqueante em vez de KE_ILLEGAL_MODE.
     if ((mode & ~WEF_MODE_MASK) != 0)
     {
-        setReturnS32(ctx, KE_ILLEGAL_MODE);
+        static std::atomic<uint32_t> s_pollIllegalLogs{0};
+        if (s_pollIllegalLogs.fetch_add(1, std::memory_order_relaxed) < 8u)
+        {
+            std::cout << "[PollEventFlag:mode_compat] Bug AB — eid=" << eid
+                      << " unknown_bits=0x" << std::hex << (mode & ~WEF_MODE_MASK)
+                      << " full_mode=0x" << mode
+                      << " waitBits=0x" << waitBits
+                      << " ra=0x" << getRegU32(ctx, 31)
+                      << std::dec << " — mascando, retornando KE_OK"
+                      << std::endl;
+        }
+        setReturnS32(ctx, KE_OK);
         return;
     }
 

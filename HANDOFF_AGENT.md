@@ -98,12 +98,47 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z — RESOLVIDOS
 
-### 🔴 BLOQUEADOR ATUAL — PASSO 3c + 3c:auto implementados, aguardam round (2026-05-02)
+### 🔴 BLOQUEADOR ATUAL — Bug AB (WaitEventFlag ILLEGAL_MODE) aguarda round (2026-05-02)
 
-**Situação do último round** (VBlank até #53940, 900s timeout):
-- `[PASSO 3b]` disparou corretamente: `PollSema forjando KE_OK sid=7 calls=1 delta_ms=1`
-- Após KE_OK forjado: jogo lê `*(0x2a1710)` em 0x27a6f0 → estava 0 → cai em VBlank wait
-- `FUN_0x2963c0` (SIF receive handler, compilado) nunca é chamado → 900s de VBlank loop
+**🏆 Situação do último round** (log `258538d`, 2026-05-02 — PROGRESSO HISTÓRICO):
+- PASSO 3b + PASSO 3c funcionaram: `[PASSO 3c] Escrevendo 1 em *(0x2a1710)` ✅
+- sub_002963C0 executou → boot_stub avançou → `entry=0x2996b0` ← **MAIN REAL DO JOGO** ✅
+- `Starting execution at address 0x2996b0` ← primeira vez em toda a operação ✅
+- `INFO: TEXTURE: Texture loaded successfully (640x448)` ← renderer inicializando ✅
+- Jogo chama `WaitEventFlag` 30+ vezes com bits de mode desconhecidos (0x10000000, 0x70000000...)
+- Runtime retorna `KE_ILLEGAL_MODE` → jogo nunca chama `StartThread(tid=2)` → `activeThreads=0` → runtime sai
+
+**Análise Bug AB — WaitEventFlag ILLEGAL_MODE:**
+```
+[WaitEventFlag:ILLEGAL_MODE] eid=0 waitBits=0x0 mode=0x70000000 pc=0x29aa3c ra=0x29ab30
+[WaitEventFlag:ILLEGAL_MODE] eid=1 waitBits=0x6000 mode=0xffff8000 pc=0x29aa3c
+...  (eid=0..15, depois 30+ chamadas sem log pois contador atingiu limite 16)
+[syscall:ExitThread] tid=1 ra=0x00000000 sp=0x01fffff0 -- thread vai morrer
+Error during program execution: PS2 Thread Exit
+[run] exiting loop, activeThreads=0
+```
+- `WEF_MODE_MASK = WEF_OR(1) | WEF_CLEAR(0x10) | WEF_CLEAR_ALL(0x20) = 0x31`
+- Bits como `0x10000000`, `0x80000` são extensões não-documentadas do SDK Sony — BIOS real ignora
+- Comportamento correto: mascarar bits desconhecidos e retornar `KE_OK` imediatamente (non-blocking poll)
+
+**Fix aplicado — Bug AB** (`ps2_syscalls_flags.inl`, sessão 2026-05-02):
+- `WaitEventFlag`: ao detectar bits fora de `WEF_MODE_MASK`, loga e retorna `KE_OK` (sem bloquear)
+- `PollEventFlag`: mesma correção
+- Log: `[WaitEventFlag:mode_compat] Bug AB — unknown_bits=0x... — mascando, retornando KE_OK`
+
+**Fix adicional — Bug AA** (2026-05-02, `recompilar.sh` obrigatório):
+- `FUN_002962d8`: reconstruída (38→78 linhas) — chama `func_295218`
+- `FUN_00296300`: reconstruída (38→79 linhas) — chama `func_2952C8`
+- Fonte: corpo idêntico em `sub_00295568_0x295568.cpp` (linhas 7910-7965 e 8094-8150)
+
+**Fix adicional — GREP_PATTERN** (2026-05-02):
+- Adicionados: `WaitEventFlag`, `SetEventFlag`, `CreateEventFlag`, `mode_compat`, `Bug AB`, `boot_stub.*entry`, `Starting execution`, `BOOT#`, `SyscallOverride`
+
+**O que esperar no próximo round:**
+- `[WaitEventFlag:mode_compat] Bug AB` aparecem 30+ vezes (eid=0..N)
+- Depois: `[StartThread]` para tid=2 (entry=0x2947c8 = Bug P — aguarda `recompilar.sh`)
+- Se ainda travar: ou Bug P (FUN_002947c8) trava, ou há outro WaitEventFlag bloqueante
+- **`bash recompilar.sh` é necessário** para Bug P, Q, Y entrarem em campo
 
 **Análise do bloqueio (disassembly 0x27a6e4):**
 ```
