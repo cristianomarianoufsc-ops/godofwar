@@ -21,7 +21,21 @@
 | **Câmeras escondidas** | Watchpoints (`ps2CheckGlobalWatch*` em `ps2_runtime.h`) |
 | **Cofre / 6000 portas** | Imagem do executável recompilado (~6000 funções `sub_XXXXXX.cpp`) |
 
-**Regra de ouro:** ao explicar um achado novo, sempre as três camadas nesta ordem: 🕵️ espionagem → 🚗 carro → 🔧 técnico (código puro). Tom: relatório de inteligência calmo, não Hollywood.
+**Regra de ouro:** ao explicar um achado novo, SEMPRE as três camadas nesta ordem:
+1. 🕵️ **Espionagem** — narrativa da Operação Esparta (o agente, o cofre, a missão)
+2. 🚗 **Carro** — analogia do mundo real (motor, sensor, correia)
+3. 🔧 **Técnico** — código puro (endereços, funções, registradores)
+
+**O Agente Cris PRECISA das três camadas em toda resposta técnica, sem exceção.**
+Tom: relatório de inteligência calmo, não Hollywood.
+
+## 🗺️ CAMINHO DO PROJETO NO PC DO AGENTE CRIS
+
+```
+cristiano@cristiano:~/Documentos/GitHub/godofwar
+```
+
+**NUNCA esquecer:** todos os comandos de campo (`bash rebuild_runtime.sh`, `bash auto_round.sh`, etc.) rodam nesse diretório no PC Linux Mint do Cris. O Replit é APENAS sala de controle (edição/análise estática).
 
 ---
 
