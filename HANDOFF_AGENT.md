@@ -98,7 +98,7 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z — RESOLVIDOS
 
-### 🔴 BLOQUEADOR ATUAL — PASSO 3c aguarda round (2026-05-02)
+### 🔴 BLOQUEADOR ATUAL — PASSO 3c + 3c:auto implementados, aguardam round (2026-05-02)
 
 **Situação do último round** (VBlank até #53940, 900s timeout):
 - `[PASSO 3b]` disparou corretamente: `PollSema forjando KE_OK sid=7 calls=1 delta_ms=1`
@@ -115,16 +115,32 @@ blez $v1, VBlank_wait     // se *(0x2a1710) ≤ 0 → loop eterno
 jal  0x2963c0             // ← nunca alcançado (SIF receive handler)
 ```
 
-**Fix aplicado — PASSO 3c** (embutido em PASSO 3b):
+**Fix aplicado — PASSO 3c** (embutido em PASSO 3b, commit 33487515):
 - Quando PASSO 3b forja KE_OK: lê `*(0x2a1710)`, se ≤ 0 escreve 1 via `WRITE32(0x2a1710, 1)`
 - Log: `[PASSO 3c] Escrevendo 1 em *(0x2a1710) (era 0) — notificacao IOP simulada`
 - Isso faz o jogo chamar `FUN_0x2963c0` (sub_002963C0_0x2963c0.cpp — compilado e disponível)
-- `FUN_0x2963c0` processa o SIF receive channel e deve avançar o estado do jogo
+
+**Fix adicional — PASSO 3c:auto** (independente, `ps2_syscalls_flags.inl`, sessão 2026-05-02):
+- Problema identificado: PASSO 3c embutido só dispara em callCount==1 ou callCount%10000==0.
+  Nas iterações 2, 3, ... 9999 o jogo recebe KE_SEMA_ZERO, lê `*(0x2a1710)` que foi zerado por
+  `sub_002963C0` ao processar o pacote, e volta ao VBlank wait sem chamar o handler novamente.
+- Fix: bloco PASSO 3c independente APÓS o PASSO 3b, ativado em TODA `PollSema:zero` do
+  callsite `ra=0x27a6e4`, restaura `*(0x2a1710)=1` sempre que for ≤ 0.
+- Log: `[PASSO 3c:auto] *(0x2a1710)=0 -> restaurando 1 (callsite 0x27a6e4 sid=7 calls=N total_auto=N)`
+  (primeiras 5 ocorrências + a cada 1000)
+- Efeito: `FUN_0x2963c0` é chamada a cada iteração do loop VBlank, simulando IOP enviando
+  pacotes SIF continuamente (comportamento correto do PS2 real).
+
+**Fix adicional — VBlank log de `*(0x2a1710)`** (`game_overrides.cpp`, sessão 2026-05-02):
+- Adicionado `notify2a1710=N` ao log periódico do VBlank (todo tick % 60).
+- Permite rastrear se/quando `sub_002963C0` zera o endereço após processar.
 
 **O que esperar no próximo round:**
-- `[PASSO 3b]` + `[PASSO 3c]` aparecem juntos
-- `FUN_0x2963c0` executa → novo CreateSema ou WaitSema ou StartThread aparece no log
-- Se ainda travar: analisar o que `FUN_0x2963c0` faz internamente (sub_002963C0_0x2963c0.cpp)
+- `[PASSO 3b]` + `[PASSO 3c]` aparecem na 2ª iteração do PollSema(7)
+- `[PASSO 3c:auto]` aparece em iterações subsequentes
+- `FUN_0x2963c0` (sub_002963C0) executa → chama `func_295568` (SIF dispatch — 8281 linhas, completa)
+- VBlank log mostra `notify2a1710=1` (antes de chamar) e `notify2a1710=0` (se sub_002963C0 zerou)
+- Próximo bloqueio provável: dentro de `sub_00295568` via `jalr $v1` (função pointer) ou syscall desconhecida
 
 ### ⚠️ Bug Q — TRUNCADA, AGUARDA recompilar.sh
 

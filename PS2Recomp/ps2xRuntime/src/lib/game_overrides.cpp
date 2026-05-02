@@ -447,11 +447,13 @@ namespace
         const uint64_t tick = g_gowVblankTickCount.fetch_add(1u, std::memory_order_relaxed) + 1u;
         if (tick <= 4u || (tick % 60u) == 0u)
         {
+            const int32_t notify2a1710 = static_cast<int32_t>(READ32(0x2a1710u));
             std::cerr << "[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #" << std::dec << tick
                       << " — frameCount=" << (frameCount + 1u)
                       << " flag=" << ((flag ^ 1u) & 1u)
                       << " altCount=" << (altCount + 1u)
                       << " gameMode=" << gameMode
+                      << " notify2a1710=" << notify2a1710
                       << std::endl;
         }
 

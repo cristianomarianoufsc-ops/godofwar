@@ -513,6 +513,44 @@ void PollSema(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
         }
     }
 
+    // PASSO 3c independente — garante *(0x2a1710) > 0 em toda PollSema:zero
+    // do callsite ra=0x27a6e4 (loop VBlank do SIF receive em sub_0027XXXX).
+    // Razao: PASSO 3c embutido no PASSO 3b so dispara em callCount==1 ou
+    // callCount%10000==0. Nas iteracoes intermediarias (2, 3, ... 9999) o
+    // jogo recebe KE_SEMA_ZERO, le *(0x2a1710) que foi zerado por
+    // sub_002963C0 e volta ao VBlank wait sem chamar o SIF receive handler.
+    // Na pratica o IOP escreve 0x2a1710 via DMA a cada novo pacote SIF.
+    // Sem IOP, simulamos: restauramos 1 em toda chamada desse callsite.
+    {
+        static constexpr uint32_t NOTIFY_ADDR = 0x2a1710u;
+        static constexpr uint32_t CALLSITE_RA = 0x27a6e4u;
+        if (getRegU32(ctx, 31) == CALLSITE_RA)
+        {
+            const int32_t cur = static_cast<int32_t>(READ32(NOTIFY_ADDR));
+            if (cur <= 0)
+            {
+                static std::mutex s_3cAutoMutex;
+                static uint64_t   s_3cAutoCount = 0u;
+                bool doLog3c = false;
+                {
+                    std::lock_guard<std::mutex> lk(s_3cAutoMutex);
+                    ++s_3cAutoCount;
+                    doLog3c = (s_3cAutoCount <= 5u) || (s_3cAutoCount % 1000u == 0u);
+                }
+                if (doLog3c)
+                {
+                    std::cout << "[PASSO 3c:auto] *(0x2a1710)=" << cur
+                              << " -> restaurando 1 (callsite 0x27a6e4"
+                              << " sid=" << sid
+                              << " calls=" << callCount
+                              << " total_auto=" << s_3cAutoCount
+                              << ")" << std::endl;
+                }
+                WRITE32(NOTIFY_ADDR, 1u);
+            }
+        }
+    }
+
     setReturnS32(ctx, KE_SEMA_ZERO);
 }
 

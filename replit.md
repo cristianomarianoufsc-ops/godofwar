@@ -230,6 +230,7 @@ O usuário não é engenheiro de baixo nível. O progresso técnico é traduzido
 | Porteiro do cofre assina a ficha de entrada do Agente 2 (sem assinatura ele não passa) | Bug Q: regen `FUN_00294990` 182 linhas escrita, sintaxe ok — aguarda `bash recompilar.sh` | 🟡 FICHA PRONTA, AGUARDA ENTREGA |
 | Corredor com 32 câmeras: porteiro nunca assinava a ficha de liberação — câmera travada no ciclo de conferência | Bug Y: porteiro (`sub_00297290`) retornava 0 + ficha (`*(s1+0x24)`) em branco → supervisor (`entry_298910`) mandava o guarda aguardar 1M ciclos e tentar de novo. Fix: assinar a ficha e retornar 1. Aguarda `bash recompilar.sh` | 🟡 FICHA ASSINADA, AGUARDA ENTREGA |
 | Porteiro do VBlank acorda na primeira batida (não mais na 10.000ª) | Bug Z fase 2: `PollSema(sid=7)` era poll-por-VBlank (1 call/frame → nunca chegava a 10k calls). Fix: `callCount==1` adicionado ao PASSO 3b. | ✅ Bug Z RESOLVIDO |
+| Porteiro recebe reposição do bilhete de entrada a cada VBlank (não só na 1ª vez) | PASSO 3c:auto — `*(0x2a1710)` restaurado em toda `PollSema:zero` do callsite `0x27a6e4`, garantindo que `sub_002963C0` (SIF receive handler) seja chamado a cada iteração do loop VBlank, não só na 1ª | ✅ IMPLEMENTADO 2026-05-02 |
 | Próximos guardas internos previstos | VIF1/DMA com payloads válidos, GS, áudio, controle | 🔜 ato 3 |
 | Fuga com o alvo | Jogo rodando até a primeira fase jogável | 🔜 final |
 
@@ -346,8 +347,10 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 ## 🟢 ESTADO ATUAL — Round 2026-05-01: 32 módulos SIF bindados, 300s completos, Bug Y é o gargalo
 
-### ✅ Bugs K, L, M, N, O, X, P — RESOLVIDOS
-### ✅ Bug Q — CORRIGIDO ANTECIPADAMENTE (2026-05-01, aguarda rebuild)
+### ✅ Bugs K, L, M, N, O, X, P, Z — RESOLVIDOS
+### ✅ PASSO 3c:auto — IMPLEMENTADO 2026-05-02 (`ps2_syscalls_flags.inl`)
+### ✅ VBlank log notify2a1710 — IMPLEMENTADO 2026-05-02 (`game_overrides.cpp`)
+### ⚠️ Bug Q — CORRIGIDO ANTECIPADAMENTE (2026-05-01, aguarda recompilar.sh)
 ### ⚠️ Bugs R–W — todos truncados, aguardando log para priorizar
 
 ---
