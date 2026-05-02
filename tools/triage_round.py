@@ -88,6 +88,11 @@ _RE_POLL_OK   = re.compile(
 _RE_PASSO3B   = re.compile(
     r"\[PASSO 3b\] PollSema forjando KE_OK sid=(\d+) calls=(\d+)"
     r" delta_ms=(\d+) pc=(0x\w+) ra=(0x\w+)")
+_RE_POLL327_INICIO = re.compile(r"\[poll_327a40\] INICIO poll loop addr=(0x\w+)")
+_RE_POLL327_SPIN   = re.compile(r"\[poll_327a40\] spinning count=(\d+) addr=(0x\w+) val=(0x\w+)")
+_RE_POLL327_SAIU   = re.compile(r"\[poll_327a40\] SAIU poll_ok count=(\d+) addr=(0x\w+) val=(0x\w+)")
+_RE_BUGP_ENTRY     = re.compile(r"\[BugP_entry\] FUN_002947c8 START a0=(0x\w+) sp=(0x\w+)")
+_RE_BUGP_EXIT      = re.compile(r"\[BugP_exit\] FUN_002947c8 LOOP QUEBROU pc=(0x\w+)")
 
 
 def fetch_url(url: str) -> str:
@@ -131,6 +136,13 @@ def parse_log(text: str) -> dict:
         "poll_zero":       [],   # [{sid, calls, pc, ra}] — primeira ocorrência por sid
         "poll_ok":         [],   # [{sid, pc, ra}] — primeira vez que sid teve sucesso
         "passo3b":         [],   # [{sid, calls, delta_ms, pc, ra}] — primeira disparo por sid
+        "poll327_inicio":  False,
+        "poll327_spin_max": 0,
+        "poll327_saiu":    False,
+        "poll327_saiu_count": 0,
+        "bugp_entry_count": 0,
+        "bugp_entry_a0":   None,
+        "bugp_exit":       False,
     }
 
     lines = text.splitlines()
@@ -188,6 +200,19 @@ def parse_log(text: str) -> dict:
                      "delta_ms": int(m.group(3)), "pc": m.group(4), "ra": m.group(5)}
             if not any(e["sid"] == entry["sid"] for e in d["passo3b"]):
                 d["passo3b"].append(entry)
+        if _RE_POLL327_INICIO.search(line):
+            d["poll327_inicio"] = True
+        if m := _RE_POLL327_SPIN.search(line):
+            d["poll327_spin_max"] = max(d["poll327_spin_max"], int(m.group(1)))
+        if m := _RE_POLL327_SAIU.search(line):
+            d["poll327_saiu"] = True
+            d["poll327_saiu_count"] = int(m.group(1))
+        if m := _RE_BUGP_ENTRY.search(line):
+            d["bugp_entry_count"] += 1
+            if d["bugp_entry_a0"] is None:
+                d["bugp_entry_a0"] = m.group(1)
+        if _RE_BUGP_EXIT.search(line):
+            d["bugp_exit"] = True
         if _RE_SIGSEGV.search(line):
             d["sigsegv"] = True
         if _RE_CRASH.search(line):
@@ -267,6 +292,27 @@ def report(d: dict, short: bool = False) -> None:
             print("  Nenhum CreateThread registrado.")
 
         print()
+        print("── THREAD TID=2 / BUG P / POLL 0x327A40 ─────────────────────────────")
+        if d["bugp_entry_count"] > 0:
+            print(f"  [BugP_entry] FUN_002947c8 executou  : ✅ {d['bugp_entry_count']}x  "
+                  f"(a0={d['bugp_entry_a0']})")
+        else:
+            print("  [BugP_entry] FUN_002947c8 executou  : 🔴 NÃO — thread tid=2 não iniciou")
+        if d["poll327_inicio"]:
+            if d["poll327_saiu"]:
+                print(f"  [poll_327a40] flag 0x327a40         : ✅ SETADO — "
+                      f"saiu após {d['poll327_saiu_count']} iterações")
+            elif d["poll327_spin_max"] > 0:
+                print(f"  [poll_327a40] flag 0x327a40         : 🔴 NUNCA SETADO — "
+                      f"spinning até count={d['poll327_spin_max']} (Bug P não completou init)")
+            else:
+                print("  [poll_327a40] flag 0x327a40         : ⏳ poll iniciado, sem spin log ainda")
+        else:
+            print("  [poll_327a40] flag 0x327a40         : — poll não atingido")
+        if d["bugp_exit"]:
+            print("  [BugP_exit]  loop quebrou           : ⚠️  inesperado — loop infinito saiu")
+
+        print()
         print("── POLLSEMA (busy-poll / poll-por-VBlank) ────────────────────────────")
         if d["poll_zero"]:
             for pz in d["poll_zero"]:
@@ -339,6 +385,16 @@ def report(d: dict, short: bool = False) -> None:
         estado = "🔴 CRASH (sinal fatal). Novo bug para investigar."
     elif not d["semas_created"]:
         estado = "🔴 Log vazio ou round não completou nem o boot."
+    elif d["bugp_entry_count"] > 0 and d["poll327_inicio"] and not d["poll327_saiu"]:
+        spin = d["poll327_spin_max"]
+        estado = (f"🔴 Bug P: FUN_002947c8 iniciou mas *(0x327a40) nunca foi setado "
+                  f"(poll spinning até {spin} — próximo bug dentro de FUN_002947c8).")
+    elif d["bugp_entry_count"] > 0 and d["poll327_saiu"]:
+        estado = (f"🟢 Bug P PASSOU: thread tid=2 completou init (poll_327a40 saiu em "
+                  f"{d['poll327_saiu_count']} iters). Verificar próximo bloqueador.")
+    elif d["bugp_entry_count"] > 0 and not d["poll327_inicio"]:
+        estado = (f"🟡 FUN_002947c8 iniciou mas poll_327a40 não atingido ainda. "
+                  f"Verificar se entry_296c48 foi chamada.")
     elif threads_pendentes:
         ids_str = ", ".join(str(t["id"]) for t in threads_pendentes)
         entries_str = ", ".join(t["entry"] for t in threads_pendentes)
@@ -382,6 +438,15 @@ def report(d: dict, short: bool = False) -> None:
     print("  Próximo passo sugerido:")
     if d["sigsegv"] or d["crash"]:
         print("  → Analisar backtrace. Bug novo (SIGSEGV) — identificar PC do crash.")
+    elif d["bugp_entry_count"] > 0 and d["poll327_inicio"] and not d["poll327_saiu"]:
+        print("  → Bug P trava antes de setar *(0x327a40). Analisar FUN_002947c8:")
+        print("    Verificar quais sub-funções ela chama antes de setar o flag.")
+        print("    Provável: sub-função truncada ou syscall não implementada dentro dela.")
+    elif d["bugp_entry_count"] > 0 and d["poll327_saiu"]:
+        print("  → Bug P RESOLVIDO. Verificar próximo bloqueador nas últimas 10 linhas.")
+    elif d["bugp_entry_count"] == 0 and not threads_pendentes:
+        print("  → FUN_002947c8 não executou. Verificar se WaitEventFlag:mode_compat")
+        print("    apareceu (Bug AB) e se StartThread(tid=2) foi chamado.")
     elif d["passo3b"]:
         for p in d["passo3b"]:
             print(f"  → PASSO 3b desbloqueou sid={p['sid']} (ra={p['ra']}). "

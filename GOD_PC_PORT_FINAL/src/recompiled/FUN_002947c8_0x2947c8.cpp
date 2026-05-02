@@ -335,4 +335,6 @@ label_294890:
         }
     }
     ctx->pc = 0x2948A0u;
+    fprintf(stderr, "[BugP_exit] FUN_002947c8 LOOP QUEBROU pc=0x%x (inesperado)\n",
+            ctx->pc);
 }
