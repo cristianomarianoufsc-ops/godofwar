@@ -94,37 +94,37 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-02 — Bug Z diagnosticado: PollSema cega)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-02 — PASSO 3b+3c implementados)
 
-### ✅ Bugs K, L, M, N, O, X, P — RESOLVIDOS (sessões anteriores)
+### ✅ Bugs K, L, M, N, O, X, P, Z — RESOLVIDOS
 
-### 🔴 Bug Z — BLOQUEADOR ATUAL (2026-05-02)
+### 🔴 BLOQUEADOR ATUAL — PASSO 3c aguarda round (2026-05-02)
 
-**Situação do último log** (VBlank até #53880, ~15 min de execução):
-- Apenas **2 módulos SIF bindados** (sid=4, sid=5) — regressão de 32 para 2
-- Após wake do sid=5: jogo cria CreateSema 6 (init=1), 7 (init=1), 8 (init=1), 9 (init=0)
-- Depois de CreateSema 9: **silêncio absoluto** — só VBlank ticks até o timeout
-- `[WaitSema:block]` tem 256 slots; apenas 2 usados (sid=4, sid=5) → se WaitSema(9) fosse chamado, apareceria
-- `[StartThread]` tem logging extenso e **NÃO apareceu** → StartThread não foi chamado neste round
-- **Conclusão: jogo em busy-loop `PollSema(9)` — câmera completamente cega**
+**Situação do último round** (VBlank até #53940, 900s timeout):
+- `[PASSO 3b]` disparou corretamente: `PollSema forjando KE_OK sid=7 calls=1 delta_ms=1`
+- Após KE_OK forjado: jogo lê `*(0x2a1710)` em 0x27a6f0 → estava 0 → cai em VBlank wait
+- `FUN_0x2963c0` (SIF receive handler, compilado) nunca é chamado → 900s de VBlank loop
 
-**Fix aplicado:** `PS2Recomp/ps2xRuntime/src/lib/syscalls/ps2_syscalls_flags.inl` — PollSema com 2 camadas:
+**Análise do bloqueio (disassembly 0x27a6e4):**
+```
+lw   $v1, 0x172c($s0)    // $v1 = sema_id = 7
+beq  $v1, $v0, 0x27a718  // se sema_id==retval → nunca tomado (7≠0)
+lui  $v0, 0x2a            // delay: $v0=0x2a0000
+lw   $v1, 0x1710($v0)    // $v1 = *(0x2a1710)   ← IOP escreveria aqui
+blez $v1, VBlank_wait     // se *(0x2a1710) ≤ 0 → loop eterno
+jal  0x2963c0             // ← nunca alcançado (SIF receive handler)
+```
 
-**Camada 1 — Diagnóstico:**
-- `[PollSema:zero] sid=N calls=1 pc=0x... ra=0x...` na primeira falha por sid
-- Log a cada 1M chamadas por sid (confirma busy-loop)
-- `[PollSema:ok]` na primeira vez que um sid tem sucesso
-
-**Camada 2 — PASSO 3b (resolve o deadlock):**
-- A cada 10k chamadas sem sucesso por sid, se `deltaMsSinceBind >= 0` (ao menos 1 bind SIF ocorreu): retorna `KE_OK` forjado sem alterar `sema->count`
-- Log `[PASSO 3b] PollSema forjando KE_OK sid=N calls=N delta_ms=N pc=0x... ra=0x...`
-- Se o jogo chamar PollSema(sid) de novo, dispara novamente em callCount=20k, 30k, etc.
-- Mesmo princípio do PASSO 3 (WaitSema) — jogo nunca saberá que o IOP é fake
+**Fix aplicado — PASSO 3c** (embutido em PASSO 3b):
+- Quando PASSO 3b forja KE_OK: lê `*(0x2a1710)`, se ≤ 0 escreve 1 via `WRITE32(0x2a1710, 1)`
+- Log: `[PASSO 3c] Escrevendo 1 em *(0x2a1710) (era 0) — notificacao IOP simulada`
+- Isso faz o jogo chamar `FUN_0x2963c0` (sub_002963C0_0x2963c0.cpp — compilado e disponível)
+- `FUN_0x2963c0` processa o SIF receive channel e deve avançar o estado do jogo
 
 **O que esperar no próximo round:**
-- `[PollSema:zero] sid=9 calls=1` confirma a hipótese (diagnóstico)
-- `[PASSO 3b] ... sid=9 calls=10000` → jogo desbloqueado, avança além do CreateSema 9
-- Após o desbloqueio: novo código será executado → próximo bloqueador aparecerá no log
+- `[PASSO 3b]` + `[PASSO 3c]` aparecem juntos
+- `FUN_0x2963c0` executa → novo CreateSema ou WaitSema ou StartThread aparece no log
+- Se ainda travar: analisar o que `FUN_0x2963c0` faz internamente (sub_002963C0_0x2963c0.cpp)
 
 ### ⚠️ Bug Q — TRUNCADA, AGUARDA recompilar.sh
 
@@ -168,7 +168,7 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 | **W** — FUN_00244600 truncada | ⚠️ AGUARDANDO LOG | `truncation_overrides.csv` | 25 linhas; 36 referências estáticas |
 | **X** — `cop0_status=0` → IE=0 → StartThread sempre pulado | ✅ RESOLVIDO | `PS2Recomp/ps2xRuntime/include/ps2_runtime.h` linha 151 | `cop0_status = 0x00000000` → `0x00010001`; fix aguardando rebuild no PC |
 | **Y** — `sub_00297290` retorna 0 após WaitSema; `*(s1+0x24)` fica 0 (sem DMA do IOP) | 🟡 FIXADO, AGUARDA COMPILAR | `src/recompiled/sub_00297290_0x297290.cpp` linhas 387-395 e 456-460 | Dois problemas: (1) delay slot `daddu $v0,$zero,$zero` → $v0=0, `entry_298910@0x29895c` trata 0 como "não pronto" → spin 1M iters; (2) `*(s1+0x24)` nunca preenchido (IOP faria DMA de confirmação). Fix: `WRITE32(*(s1+0x24), 1)` + `$v0=1` nos dois caminhos de sucesso. Aguarda `bash recompilar.sh`. |
-| **Z** — `PollSema` sem logging + sem PASSO 3b → busy-loop em sid=9 invisível e eterno | 🟡 CORRIGIDO | `PS2Recomp/ps2xRuntime/src/lib/syscalls/ps2_syscalls_flags.inl` | (1) Log primeira chamada/sucesso por sid + a cada 1M (pc + ra). (2) PASSO 3b: a cada 10k calls sem sucesso, se deltaMsSinceBind >= 0, retorna KE_OK forjado — mesmo princípio do PASSO 3 (WaitSema). Aguarda `rebuild_runtime.sh` + round. |
+| **Z** — `PollSema` sem logging + sem PASSO 3b → poll-por-VBlank em sid=7 + IOP notify em 0x2a1710 | ✅ RESOLVIDO | `PS2Recomp/ps2xRuntime/src/lib/syscalls/ps2_syscalls_flags.inl` | (1) Log primeira falha/sucesso por sid. (2) PASSO 3b: `callCount==1 \|\| callCount%10000==0` → KE_OK forjado. (3) PASSO 3c (embutido): após KE_OK, escreve 1 em *(0x2a1710) via WRITE32 para habilitar chamada a FUN_0x2963c0. Aguarda round. |
 
 > **Detalhe completo de cada bug** (diagnóstico, dumps, hipóteses descartadas, código aplicado) → `HANDOFF_HISTORICO.md`.
 

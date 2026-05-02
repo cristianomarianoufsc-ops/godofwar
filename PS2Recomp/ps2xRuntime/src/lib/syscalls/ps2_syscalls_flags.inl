@@ -470,6 +470,11 @@ void PollSema(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
     //       callCount==1 captura a primeira falha e retorna KE_OK imediatamente.
     // Condicao: ao menos um RPC_BIND ja ocorreu (deltaMsSinceBind >= 0).
     // nao altera sema->count — apenas retorna KE_OK para que o jogo avance.
+    //
+    // PASSO 3c (embutido) — apos forjar KE_OK, se *(0x2a1710) <= 0 escreve 1 la.
+    // Razao: apos PollSema(7) → KE_OK, o jogo le *(0x2a1710) em 0x27a6f0 e se for
+    // <= 0 cai em VBlank wait sem chamar FUN_0x2963c0 (SIF receive handler).
+    // O IOP normalmente escreveria 0x2a1710 via DMA. Como nao temos IOP, forcamos.
     if (callCount == 1 || callCount % 10000u == 0)
     {
         const uint64_t bindNs = ::gow_get_sif_bind_monotonic_ns();
@@ -489,6 +494,19 @@ void PollSema(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
                           << " pc=0x" << std::hex << ctx->pc
                           << " ra=0x" << getRegU32(ctx, 31)
                           << std::dec << " — resposta IOP simulada" << std::endl;
+                // PASSO 3c: garantir que *(0x2a1710) > 0 para o jogo chamar
+                // FUN_0x2963c0 (SIF receive handler) apos o KE_OK forjado.
+                {
+                    static constexpr uint32_t NOTIFY_ADDR = 0x2a1710u;
+                    const int32_t cur = static_cast<int32_t>(READ32(NOTIFY_ADDR));
+                    if (cur <= 0)
+                    {
+                        std::cout << "[PASSO 3c] Escrevendo 1 em *(0x2a1710) "
+                                  << "(era " << cur << ") — notificacao IOP simulada"
+                                  << std::endl;
+                        WRITE32(NOTIFY_ADDR, 1u);
+                    }
+                }
                 setReturnS32(ctx, KE_OK);
                 return;
             }
