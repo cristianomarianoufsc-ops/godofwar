@@ -108,62 +108,80 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-02 — Bug S diagnosticado + PASSO 4 aplicado)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-02 — PASSO 5 implementado)
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
-
-### 🔴 BLOQUEADOR ATUAL — Bug S (loop `*(0x30A1C0)` em entry_26c658) — fix PASSO 4 aplicado, aguarda push + round
+### ✅ PASSO 4 (Bug S) — Compilado (rebuild_runtime.sh) — NUNCA DISPAROU (*(0x30A1C0) ficou 0 o tempo todo)
+### 🔴 BLOQUEADOR ATUAL — Poll `*(0x327a40)` em entry_296c48/label_296c88 — fix PASSO 5 aplicado, aguarda push + round
 
 ---
 
-**🏆 Situação do último round** (log `7117cbd`, 2026-05-02 — dados do round anterior):
-- PASSO 3b forja PollSema(sid=7) KE_OK ✅
-- PASSO 3c escreve `*(0x2a1710)=1` ✅
-- PASSO 3d zera `*(0x2a1734)` e `*(0x2a28d0)` ✅ (loops de entry_27a5a8 saem imediatamente)
-- VBlank #60 → #17940 sem nenhum outro evento — **Bug S**: thread principal presa em entry_26c658
+**🏆 Situação do último round analisado** (log completo do round com PASSO 4):
 
-**Causa raiz do Bug S — analisada em 2026-05-02:**
+- CreateSema id=1..9 ✅ (semas 4 e 5 com WaitSema:block, forjados por PASSO 3)
+- PollSema:ok sid=7 → PollSema:zero sid=7 → PASSO 3b/3c/3d disparam ✅
+- VBlank tick #60 → #17940 sem nenhum outro evento ← **BLOQUEADOR ATUAL**
+- PASSO 4 NUNCA disparou porque `*(0x30A1C0) = 0` o tempo todo (sceSifCallRpc nunca chamado)
+- `[poll_327a40] INICIO` NUNCA apareceu ← recompilar.sh não foi rodado (logs de diagnóstico não compilados)
+- Timeout de 300s mata o processo em tick #17940
 
-O thread principal (tid=1) fica preso na função `entry_26c658_0x26c728.cpp` no loop `label_26c6d0`:
+**Causa raiz confirmada (2026-05-02 — análise desta sessão):**
+
+Cadeia de chamadas confirmada via código fonte:
 
 ```
-// entry_26c658 — label_26c6d0 (busy-poll do SIF RPC client)
-label_26c6d0:
-  jal func_26B918(a0=0x30A1C0)       ← pump/yield SIF
-  jal func_294590(a0=0x30A1C0, a1=0x30A1FF)  ← sceSifCheckStatRpc
-  v0 = (*(0x30A1C0) < 1) ? 1 : 0    ← mode == 0 = done?
-  *(0x2A1350) = v0                   ← escreve status
-  if v0 == 0 → cooperativeGuestYield → goto label_26c6d0  ← LOOP ETERNO
-  // v0 == 1 → exit (mode zerado pelo IOP)
+entry_27a5a8 (VBlank-triggered)
+  → lê *(0x2A1710) (notify2a1710)
+  → se notify > 0: chama sub_002963C0(a0=0x2C4BC0)
+    → chama sub_00295568(a3=0x2C4BC0)
+      → lbu $a1, 0x0($s6)  onde $s6=0x2C4BC0
+      → se byte[0]@0x2C4BC0 == 0x00: EARLY-EXIT (goto label_29622c)
+      → func_294618 NUNCA chamada
+      → StartThread(tid=2) NUNCA chamado
+  → Thread 2 (FUN_002947c8) nunca roda
+  → *(0x327a40) fica 0 para sempre
+
+entry_296c48 → label_296c88 → func_296518
+  → busy-poll: while (*(0x327a40) == 0) cooperativeGuestYield()
+  → loop por 17940 VBlanks (~299s) → timeout mata o processo
 ```
 
-`*(0x30A1C0)` = campo `mode` do SIF RPC client buffer em 0x30A1C0. É setado para ≠ 0 por `sceSifCallRpc` e zerado quando o IOP envia a resposta. Sem IOP real → nunca zera → loop eterno.
+**Confirmação do endereço do buffer SIF:** `0x2C4BC0` — entry_27a5a8 computa:
+- `lui $a0, 0x2C` = 0x2C0000
+- `addiu $a0, $a0, 0x4BC0` → a0 = **0x2C4BC0** (delay slot do jal sub_002963C0)
 
-**Por que `*(0x2A1710)=1` persiste:**
-- `*(0x2A1710)=1` faz o VBlank chamar `FUN_2963C0 → sub_00295568` (SIF receive handler)
-- `sub_00295568` lê primeiro byte do buffer IOP→EE; sem IOP, é sempre 0 → early-exit
-- `FUN_2963C0` nunca reseta `*(0x2A1710)` → VBlank continua chamando a cada tick (17940x)
+**Fix PASSO 4 (já compilado, NÃO disparou — OK):**
+- PASSO 4 foi compilado em round anterior via rebuild_runtime.sh
+- NÃO disparou porque `*(0x30A1C0) == 0` (sceSifCallRpc nunca chamado neste fluxo)
+- PASSO 4 permanece ativo para eventual chamada futura
 
-**Fix aplicado — PASSO 4** (`game_overrides.cpp`, 2026-05-02):
+**Fix aplicado — PASSO 5** (`game_overrides.cpp`, 2026-05-02):
 
-Adicionado no handler VBlank `gow_intc_handler_0x182f28`:
-- Após tick 60 (1 segundo de setup legítimo), monitora `*(0x30A1C0)`
-- Se `*(0x30A1C0) != 0` por 5 VBlanks consecutivos:
-  - `WRITE32(0x30A1C0, 0)` → força "IOP respondeu" → thread sai do loop
-  - `WRITE32(0x2A1710, 0)` → para loop VBlank→FUN_2963C0 inútil
-- Log: `[PASSO 4 FIRE] forcou *(0x30A1C0)=0 e *(0x2A1710)=0 apos N VBlanks @tick #T`
-- s_passo4StallTicks reseta a 0 depois do fire → reativa automaticamente para próximas chamadas RPC
+Adicionado no handler VBlank `gow_intc_handler_0x182f28` após o bloco PASSO 4:
+- Monitora: `notify2a1710 != 0` E `*(0x327a40) == 0`
+- Após 60 VBlanks nessa condição:
+  - `WRITE32(0x327a40, 1u)` → força flag que thread 2 colocaria → poll loop sai
+  - Loga dump de `buf@0x2C4BC0[0..7]` para diagnóstico do próximo fix orgânico
+- Log chave: `[PASSO 5 FIRE]: escreveu *(0x327a40)=1 apos N ticks @tick #T`
 
-**Arquivos alterados:**
-- `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp` — PASSO 4 dentro de gow_intc_handler_0x182f28
+**Arquivos alterados nesta sessão:**
+- `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp` — PASSO 5 (constantes + statics + bloco no handler)
+
+**Build necessário:**
+- `bash rebuild_runtime.sh` SOMENTE (game_overrides.cpp é runtime, não recompilado)
+- `bash recompilar.sh` NÃO é necessário para PASSO 5 (opcional para ativar logs de entry_2964f0, Bug Y, Bug P)
 
 **O que esperar no próximo round:**
-- `[PASSO 4]: detectou *(0x30A1C0)=0xNN (SIF RPC pendente) @tick #65` (aprox.)
-- `[PASSO 4 FIRE]: forcou *(0x30A1C0)=0 e *(0x2A1710)=0 apos 5 VBlanks @tick #70`
-- Thread sai do loop em entry_26c658 → retorna v0=0 para o chamador
-- Possível: mais chamadas a `func_294590` (sceSifCheckStatRpc) com outros clientes RPC
-- Possível: PASSO 4 dispara múltiplas vezes (uma por módulo IOP inicializado)
-- Próximo bloqueio provável: novo `WaitSema` ou outro polling de SIF RPC client diferente de 0x30A1C0
+- `[PASSO 5]: detectou notify2a1710=1 e *(0x327a40)=0 @tick #~8 — buf@0x2C4BC0[0..3]=XX XX XX XX`
+- `[PASSO 5 FIRE]: escreveu *(0x327a40)=1 apos ~60 ticks @tick #~68`
+- Main thread sai do poll loop em entry_296c48
+- Próximo bloqueio desconhecido — novo log vai revelar
+
+**Fix orgânico futuro para *(0x327a40) (requer recompilar.sh):**
+- Escrever pacote SIF válido em `0x2C4BC0` (byte[0] != 0) para que sub_00295568 processe
+- sub_00295568 → func_294618 (IE=1 → retorna 0) → StartThread(tid=2) chamado organicamente
+- Bug P fix (FUN_002947c8 reescrita) seta `*(0x327a40)=1` por conta própria
+- Isso elimina a necessidade do PASSO 5 e do PASSO 4
 
 ---
 

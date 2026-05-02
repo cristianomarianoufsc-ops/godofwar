@@ -422,9 +422,26 @@ namespace
     constexpr uint32_t kGowSifRpcClientModeAddr = 0x0030A1C0u;
     constexpr uint32_t kGowSifNotifyAddr        = 0x002A1710u;
 
+    // PASSO 5 — *(0x327a40) poll unblock (StartThread(tid=2) nunca chamado)
+    // Causa raiz confirmada (round log_latest):
+    //   entry_27a5a8 (VBlank) le notify2a1710; se >0, chama sub_002963C0(a0=0x2C4BC0).
+    //   sub_002963C0 -> sub_00295568: lbu $a1, 0x0($s6) onde $s6=0x2C4BC0.
+    //   Sem IOP real, byte[0]@0x2C4BC0 = 0x00 -> early-exit -> func_294618 nunca chamada
+    //   -> StartThread(tid=2) nunca chamada -> *(0x327a40) fica 0 para sempre.
+    //   entry_296c48 (label_296c88) -> func_296518 busy-poll *(0x327a40) ate timeout (300s).
+    // Fix desta rodada: apos 60 ticks com notify2a1710=1 e *(0x327a40)==0,
+    //   escrever WRITE32(0x327a40, 1) diretamente desbloqueando o poll.
+    // Fix organico futuro (recompilar.sh): escrever pacote SIF valido em 0x2C4BC0
+    //   para que sub_00295568 processe -> StartThread(tid=2) chamado organicamente
+    //   -> Bug P fix (FUN_002947c8 reescrita) seta *(0x327a40)=1 por conta propria.
+    constexpr uint32_t kGowThread2ReadyAddr = 0x00327A40u;
+    constexpr uint32_t kGowSifRecvBufAddr   = 0x002C4BC0u;
+
     std::atomic<uint64_t> g_gowVblankTickCount{0u};
     static uint32_t s_gowLastGameMode   = 0xFFFFFFFFu;
     static uint32_t s_passo4StallTicks  = 0u;
+    static uint32_t s_passo5NotifyTicks = 0u;
+    static bool     s_passo5Fired       = false;
 
     void gow_intc_handler_0x182f28(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime)
     {
@@ -505,6 +522,73 @@ namespace
             else
             {
                 s_passo4StallTicks = 0u;
+            }
+        }
+
+        // ----------------------------------------------------------------
+        // PASSO 5 — forca *(0x327a40)=1 quando poll ficou preso
+        // Condicao: notify2a1710=1 E *(0x327a40)==0 por >=60 VBlanks consecutivos.
+        // Isso detecta exatamente o cenario onde sub_00295568 fez early-exit (byte[0]
+        // @0x2C4BC0==0) e StartThread(tid=2) nunca foi chamado.
+        if (!s_passo5Fired)
+        {
+            const uint32_t p5notify  = READ32(kGowSifNotifyAddr);
+            const uint32_t p5t2ready = READ32(kGowThread2ReadyAddr);
+
+            if (p5t2ready != 0u)
+            {
+                // *(0x327a40) ja e' nao-zero — ou PASSO 5 ja disparou, ou
+                // StartThread funcionou organicamente. Registra apenas uma vez.
+                s_passo5Fired = true;
+                std::cerr << "[stub:0x182f28] PASSO 5: *(0x327a40)=0x" << std::hex << p5t2ready
+                          << " (ja nao-zero, StartThread OK ou forja previa) @tick #"
+                          << std::dec << tick << std::endl;
+            }
+            else if (p5notify != 0u)
+            {
+                // notify2a1710=1 mas *(0x327a40) ainda 0 — contagem de stall
+                s_passo5NotifyTicks++;
+
+                if (s_passo5NotifyTicks == 1u)
+                {
+                    // Primeiro tick de stall: loga estado inicial do buf@0x2C4BC0
+                    const uint8_t* pb = rdram + kGowSifRecvBufAddr;
+                    std::cerr << "[stub:0x182f28] PASSO 5: detectou notify2a1710=1"
+                              << " e *(0x327a40)=0 @tick #" << std::dec << tick
+                              << " — buf@0x2C4BC0[0..3]="
+                              << std::hex
+                              << static_cast<unsigned>(pb[0]) << " "
+                              << static_cast<unsigned>(pb[1]) << " "
+                              << static_cast<unsigned>(pb[2]) << " "
+                              << static_cast<unsigned>(pb[3])
+                              << std::dec << " — iniciando contagem" << std::endl;
+                }
+
+                if (s_passo5NotifyTicks >= 60u)
+                {
+                    // 60 VBlanks (~1s) de stall confirmado: force-write 1
+                    WRITE32(kGowThread2ReadyAddr, 1u);
+                    s_passo5Fired = true;
+                    const uint8_t* pb = rdram + kGowSifRecvBufAddr;
+                    std::cerr << "[stub:0x182f28] PASSO 5 FIRE: escreveu *(0x327a40)=1"
+                              << " apos " << s_passo5NotifyTicks << " ticks de stall"
+                              << " @tick #" << std::dec << tick
+                              << " — buf@0x2C4BC0[0..7]=" << std::hex
+                              << static_cast<unsigned>(pb[0]) << " "
+                              << static_cast<unsigned>(pb[1]) << " "
+                              << static_cast<unsigned>(pb[2]) << " "
+                              << static_cast<unsigned>(pb[3]) << " "
+                              << static_cast<unsigned>(pb[4]) << " "
+                              << static_cast<unsigned>(pb[5]) << " "
+                              << static_cast<unsigned>(pb[6]) << " "
+                              << static_cast<unsigned>(pb[7])
+                              << std::dec << std::endl;
+                }
+            }
+            else
+            {
+                // notify2a1710==0: ainda nao chegamos no estado de stall
+                s_passo5NotifyTicks = 0u;
             }
         }
 
