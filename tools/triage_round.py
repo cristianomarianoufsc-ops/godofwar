@@ -88,6 +88,8 @@ _RE_POLL_OK   = re.compile(
 _RE_PASSO3B   = re.compile(
     r"\[PASSO 3b\] PollSema forjando KE_OK sid=(\d+) calls=(\d+)"
     r" delta_ms=(\d+) pc=(0x\w+) ra=(0x\w+)")
+_RE_BUGAB          = re.compile(
+    r"\[WaitEventFlag:mode_compat\].*unknown_bits=(0x\w+)")
 _RE_POLL327_INICIO = re.compile(r"\[poll_327a40\] INICIO poll loop addr=(0x\w+)")
 _RE_POLL327_SPIN   = re.compile(r"\[poll_327a40\] spinning count=(\d+) addr=(0x\w+) val=(0x\w+)")
 _RE_POLL327_SAIU   = re.compile(r"\[poll_327a40\] SAIU poll_ok count=(\d+) addr=(0x\w+) val=(0x\w+)")
@@ -136,6 +138,8 @@ def parse_log(text: str) -> dict:
         "poll_zero":       [],   # [{sid, calls, pc, ra}] — primeira ocorrência por sid
         "poll_ok":         [],   # [{sid, pc, ra}] — primeira vez que sid teve sucesso
         "passo3b":         [],   # [{sid, calls, delta_ms, pc, ra}] — primeira disparo por sid
+        "bugab_count":     0,
+        "bugab_bits":      [],   # bits únicos mascarados
         "poll327_inicio":  False,
         "poll327_spin_max": 0,
         "poll327_saiu":    False,
@@ -200,6 +204,11 @@ def parse_log(text: str) -> dict:
                      "delta_ms": int(m.group(3)), "pc": m.group(4), "ra": m.group(5)}
             if not any(e["sid"] == entry["sid"] for e in d["passo3b"]):
                 d["passo3b"].append(entry)
+        if m := _RE_BUGAB.search(line):
+            d["bugab_count"] += 1
+            bits = m.group(1)
+            if bits not in d["bugab_bits"]:
+                d["bugab_bits"].append(bits)
         if _RE_POLL327_INICIO.search(line):
             d["poll327_inicio"] = True
         if m := _RE_POLL327_SPIN.search(line):
@@ -290,6 +299,17 @@ def report(d: dict, short: bool = False) -> None:
                 print(f"  id={t['id']:>3}  entry={t['entry']}{prio_str}  →  {status}")
         else:
             print("  Nenhum CreateThread registrado.")
+
+        print()
+        print("── BUG AB / WaitEventFlag:mode_compat ────────────────────────────────")
+        if d["bugab_count"] > 0:
+            bits_str = ", ".join(d["bugab_bits"][:6])
+            if len(d["bugab_bits"]) > 6:
+                bits_str += f" ... (+{len(d['bugab_bits'])-6} outros)"
+            print(f"  WaitEventFlag mascarado       : ✅ {d['bugab_count']}x")
+            print(f"  Bits únicos ignorados         : {bits_str}")
+        else:
+            print("  WaitEventFlag mascarado       : — Bug AB não disparou neste round")
 
         print()
         print("── THREAD TID=2 / BUG P / POLL 0x327A40 ─────────────────────────────")
