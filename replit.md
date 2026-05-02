@@ -339,7 +339,7 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 ---
 
-## 🟢 ESTADO ATUAL — Bugs X+P resolvidos, Bug Q é o próximo bloqueador (atualizado 2026-05-01)
+## 🟢 ESTADO ATUAL — Round 2026-05-01: 32 módulos SIF bindados, 300s completos, Bug Y é o gargalo
 
 ### ✅ Bugs K, L, M, N, O, X, P — RESOLVIDOS
 ### ✅ Bug Q — CORRIGIDO ANTECIPADAMENTE (2026-05-01, aguarda rebuild)

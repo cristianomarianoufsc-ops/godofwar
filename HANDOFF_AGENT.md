@@ -94,7 +94,7 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-01 — Bugs X+P resolvidos, Bug Q é o próximo)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-01 — Round: 32 módulos SIF bindados, jogo rodou 300s)
 
 ### ✅ Bugs K, L, M, N, O — RESOLVIDOS
 ### ✅ Bug X — RESOLVIDO (2026-05-01)
@@ -159,6 +159,7 @@ O agente anterior mandou `bash build.sh` (errado — deveria ser `bash recompila
 | **V** — FUN_00238890 truncada | ⚠️ AGUARDANDO LOG | `truncation_overrides.csv` | 28 linhas; 43 referências estáticas — mais chamada entre as truncadas |
 | **W** — FUN_00244600 truncada | ⚠️ AGUARDANDO LOG | `truncation_overrides.csv` | 25 linhas; 36 referências estáticas |
 | **X** — `cop0_status=0` → IE=0 → StartThread sempre pulado | ✅ RESOLVIDO | `PS2Recomp/ps2xRuntime/include/ps2_runtime.h` linha 151 | `cop0_status = 0x00000000` → `0x00010001`; fix aguardando rebuild no PC |
+| **Y** — Retry delay crescente pós-módulo 7 | ⚠️ GARGALO ATIVO | `auto_round.sh` (timeout) | Módulos 0–7 bindados instantaneamente (delta=0ms); módulos 8–35 com delay ~1.7s/módulo crescente (1.7s → 47s); consumiu os 300s em 32 módulos. Fix temporário: `RUN_TIMEOUT=900`. Fix definitivo: identificar função de polling entre bind e WaitSema (suspeita: `DelayThread` no retry loop) |
 
 > **Detalhe completo de cada bug** (diagnóstico, dumps, hipóteses descartadas, código aplicado) → `HANDOFF_HISTORICO.md`.
 
@@ -192,39 +193,36 @@ Testado contra log atual (2026-05-01) → detectou corretamente Bug X: `🔴 id=
 
 ---
 
-## 📋 Próxima ação do analista (atualizado 2026-05-01 — Bugs X+P resolvidos, aguardando round)
+## 📋 Próxima ação do analista (atualizado 2026-05-01 — Round completado: 32 módulos SIF)
 
-**⚠️ PUSH PENDENTE** — `HANDOFF_AGENT.md` atualizado nesta sessão (documentação + análise). NÃO precisa de rebuild.
+### Resultado do round anterior (2026-05-01)
+- **32 módulos IOP bindados** (sids 4–35), todos acordados via PASSO 3
+- Jogo rodou **300 segundos completos** (timeout) — sem crash, sem SIGSEGV
+- Após sid=35: silêncio (só VBlank ticks) até o timeout — próxima fase não logada
+- Bug Q (FUN_00294990) e Bug P (FUN_002947c8) **NÃO estavam compilados** neste round (`rebuild_runtime.sh` não compila recompiled/*.cpp)
+- Bug X (cop0_status) **foi compilado** (rebuild_runtime.sh inclui ps2_runtime.h)
 
-**Situação:** Build em andamento no PC do Agente Cris (retomou de 44% após `bash build.sh` errado do agente anterior). Quando terminar:
-
-### Passo 1 — Rodar o round e ler o log
+### Passo 1 — Compilar Bug P e Bug Q (PRIORITÁRIO)
 ```bash
-bash auto_round.sh once
-# depois:
+# No PC do Agente Cris:
+bash recompilar.sh    # compila recompiled/*.cpp — inclui Bug P e Bug Q
+```
+`rebuild_runtime.sh` (usado pelo `auto_round.sh`) NÃO compila esses arquivos. É preciso rodar `recompilar.sh` UMA VEZ para empacotar os fixes. Depois `auto_round.sh` usa o binário já compilado.
+
+### Passo 2 — Rodar round com timeout estendido
+```bash
+bash auto_round.sh once   # RUN_TIMEOUT agora = 900s (atualizado nesta sessão)
 python3 tools/triage_round.py --short
 ```
 
-### Passo 2 — O que esperar no novo log
-- ✅ `[StartThread] id=2 entry=0x2947c8` deve aparecer agora (Bug X resolvido)
-- ✅ Thread 2 deve entrar no loop de dispatch (Bug P resolvido)
-- 🔴 Provável próximo travamento: **Bug Q** — `FUN_00294990` chamada por `sub_00297290` via `j func_294990`, executa 1 instrução e retorna sem fazer nada útil
+### Passo 3 — O que esperar no próximo round
+- Bug Y (delay crescente) ainda vai estar presente, mas com 900s o jogo vai bem além de sid=35
+- **StartThread** pode aparecer agora com Bug X compilado — se aparecer, Bug P entra em ação
+- Após o bind loop terminar: alguma função nova vai aparecer — provavelmente `Unknown syscall` ou `DelayThread`
+- Se delay ainda for problema: investigar a função de polling entre bind e WaitSema (delta > 1s)
 
-### Passo 3 — Bug Q JÁ CORRIGIDO (2026-05-01) — só rodar `bash recompilar.sh`
-
-`GOD_PC_PORT_FINAL/src/recompiled/FUN_00294990_0x294990.cpp` foi reescrito manualmente (182 linhas, **g++ -fsyntax-only = zero erros**) enquanto o build anterior rodava. Após o build terminar, Agente Cris deve:
-
-```bash
-bash recompilar.sh    # compila só os arquivos alterados (Bug Q + Bug P + Fix X)
-bash auto_round.sh once
-python3 tools/triage_round.py --short
-```
-
-### Passo 4 — O que esperar após Bug Q corrigido
-O próximo bloqueador provável é **Bug T (FUN_002971c0)** — mas sua relevância ainda é incerta (zero callers diretos encontrados em qualquer .cpp). O log vai revelar. Se travar, o disassembly já está disponível:
-```bash
-python3 tools/mips_inspect.py 0x2971c0   # range completo 0x2971c0–0x297284
-```
+### Passo 4 — Bug Y (delay crescente) — diagnóstico no próximo round
+O padrão `DelayThread|SleepThread` foi adicionado ao `GREP_PATTERN` nesta sessão. Se o retry loop usar sleep, vai aparecer no próximo log. Endereços do bind loop para investigação: `jal 0x293c60` (0x29736c = WaitSema), `jal 0x293c30` (0x297374 = SignalSema?), `jal 0x2969d0` (0x2973a4 = entry bind/callback).
 
 ### ⚠️ Lembrete ao analista
 Sempre pedir ao Agente Cris para clicar em **Push** no Replit após qualquer edição de código.

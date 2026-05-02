@@ -57,13 +57,13 @@ set -u
 # ============================================================
 PROJECT_DIR="${PROJECT_DIR:-$HOME/Documentos/GitHub/godofwar}"
 POLL_INTERVAL=30                  # segundos entre checagens de novo commit
-RUN_TIMEOUT=300                   # segundos rodando o jogo (jogar.sh) — aumentado de 90→300 (Bug M: init IOP leva ~2min+)
+RUN_TIMEOUT=900                   # segundos rodando o jogo (jogar.sh) — aumentado de 300→900 (Bug Y: delay crescente ~1.7s/módulo, 32 módulos em 300s; precisa de 900s pra ver pós-bind)
 LOG_BRANCH="logs/auto"
 LOG_DIR_NAME="runs_automaticos"
 STATE_FILE_NAME=".auto_round_last_hash"
 
 # Padrão grep pra extrair as linhas que importam pro próximo round
-GREP_PATTERN="PARTE 10 PLANO|Unknown syscall|VBlank tick #|sceSifSetDma|SIGSEGV|Morto|CreateThread|StartThread|stub:|INTC:|CreateSema|WaitSema|SignalSema|boot-loop:suspect|GAME_MODE"
+GREP_PATTERN="PARTE 10 PLANO|Unknown syscall|VBlank tick #[0-9]*000 |sceSifSetDma|SIGSEGV|Morto|CreateThread|StartThread|stub:|INTC:|CreateSema|WaitSema|SignalSema|boot-loop:suspect|GAME_MODE|DelayThread|SleepThread|ThreadEntry|ExitThread|TerminateThread"
 
 # ============================================================
 # HELPERS
