@@ -1,0 +1,478 @@
+=================================================
+  God of War PC Port
+=================================================
+  ELF: /home/cristiano/Documentos/GitHub/godofwar/GOD_PC_PORT_FINAL/data/SCUS_973.99
+
+=================================================
+  God of War PC Port
+=================================================
+[Config] Carregando configurações de config.toml
+ELF: /home/cristiano/Documentos/GitHub/godofwar/GOD_PC_PORT_FINAL/data/SCUS_973.99
+INFO: Initializing raylib 5.5
+INFO: Platform backend: DESKTOP (GLFW)
+INFO: Supported raylib modules:
+INFO:     > rcore:..... loaded (mandatory)
+INFO:     > rlgl:...... loaded (mandatory)
+INFO:     > rshapes:... loaded (optional)
+INFO:     > rtextures:. loaded (optional)
+INFO:     > rtext:..... loaded (optional)
+INFO:     > rmodels:... loaded (optional)
+INFO:     > raudio:.... loaded (optional)
+INFO: DISPLAY: Device initialized successfully
+INFO:     > Display size: 1366 x 768
+INFO:     > Screen size:  640 x 448
+INFO:     > Render size:  640 x 448
+INFO:     > Viewport offsets: 0, 0
+INFO: GLAD: OpenGL extensions loaded successfully
+INFO: GL: Supported extensions count: 207
+INFO: GL: OpenGL device information:
+INFO:     > Vendor:   Intel
+INFO:     > Renderer: Mesa Intel(R) HD Graphics 4000 (IVB GT2)
+INFO:     > Version:  4.2 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.1
+INFO:     > GLSL:     4.20
+INFO: GL: VAO extension detected, VAO functions loaded successfully
+INFO: GL: NPOT textures extension detected, full NPOT textures supported
+INFO: GL: DXT compressed textures supported
+INFO: GL: ETC2/EAC compressed textures supported
+INFO: PLATFORM: DESKTOP (GLFW - X11): Initialized successfully
+INFO: TEXTURE: [ID 1] Texture loaded successfully (1x1 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 1] Default texture loaded successfully
+INFO: SHADER: [ID 1] Vertex shader compiled successfully
+INFO: SHADER: [ID 2] Fragment shader compiled successfully
+INFO: SHADER: [ID 3] Program shader loaded successfully
+INFO: SHADER: [ID 3] Default shader loaded successfully
+INFO: RLGL: Render batch vertex buffers loaded successfully in RAM (CPU)
+INFO: RLGL: Render batch vertex buffers loaded successfully in VRAM (GPU)
+INFO: RLGL: Default OpenGL state initialized successfully
+INFO: TEXTURE: [ID 2] Texture loaded successfully (128x128 | GRAY_ALPHA | 1 mipmaps)
+INFO: FONT: Default font loaded successfully (224 glyphs)
+INFO: SYSTEM: Working Directory: /home/cristiano/Documentos/GitHub/godofwar
+INFO: TIMER: Target time per frame: 16.667 milliseconds
+INFO: AUDIO: Device initialized successfully
+INFO:     > Backend:       miniaudio | PulseAudio
+INFO:     > Format:        32-bit IEEE Floating Point -> 32-bit Signed Integer
+INFO:     > Channels:      2 -> 2
+INFO:     > Sample rate:   48000 -> 48000
+INFO:     > Periods size:  3600
+Janela: 640x448 | FPS: 60
+Registrando funções recompiladas...
+Mapeando 5625 funções recompiladas...
+[stub] 0x00080004 registrado (handler IOP — modo diagnostico)
+Carregando ELF: /home/cristiano/Documentos/GitHub/godofwar/GOD_PC_PORT_FINAL/data/SCUS_973.99
+Loading segment: 0x100000 - 0x35d080 (filesz: 0x1c7018, memsz: 0x25d080)
+Registered code region: 100000 - 35d080
+[game_overrides] applying 'GodOfWarPCPort:sub_0013DA10'
+[game_overrides] God of War: stub PARTE 7 PLANO A registrado em 0x0013DA10 (sub_0013DA10) — bump allocator de 16384 nos em [0x1000000..0x1100000]
+[game_overrides] God of War: stub PARTE 8 PLANO A registrado em 0x00182F28 (handler INTC VBlank — replica fiel das 8 instrucoes em sub_00182EE8 que o detector PS2Recomp perdeu por estarem apos um jr $ra)
+[game_overrides] God of War: stub Bug L registrado em 0x00296A54 (FUN_00296a50 truncada — callback IOP modulo, early-exit sem IOP)
+[game_overrides] applied 1 matching override(s).
+ELF file loaded successfully. Entry point: 0x100008
+Iniciando execução...
+[ps2_missing_report] ativado. Relatorio sera salvo em ./ps2_missing.log ao encerrar (ou Ctrl+C).
+[boot_stub] $gp configurado para 0x2cf070
+[boot_stub] FIX 1: sentinel lista circular #1 inicializado em 0x2cf090 -> lista vazia, sub_00100408 retornara imediatamente
+[boot_stub] FIX 6: sentinel lista circular #2 inicializado em 0x2cbbb0 -> lista vazia, sub_0013FAB8 nao loopa
+[boot_stub] init 0x2994a0
+[CreateSema] id=1 init=1 max=1
+[CreateSema] id=2 init=1 max=1
+[Syscall83:override] handler=0x299338 invoked=false pc=0x29937c ra=0x2993ec a0=0x80000000 a1=0x80080000 a2=0x299338 a3=0x2c7080 guestRet=0x0 builtinRet=0x8001218c guest-20c=0x0 builtin-20c=0x80011f80 guest-168=0x0 builtin-168=0x80012024 match=false
+[SyscallOverride:fallback] syscall=0x83 handler=0x299338 pc=0x29937c ra=0x2993ec
+[FindAddress:hit] pc=0x29937c start=0x80000000 end=0x80080000 alignedStart=0x80000000 alignedEnd=0x80080000 target=0x299338 targetNorm=0x299338 result=0x8001218c scannedWords=131072 allZero=false aborted=false
+  firstWords: [0x80000000]=0x0 [0x80000004]=0x0 [0x80000008]=0x0 [0x8000000c]=0x0 [0x80000010]=0x0 [0x80000014]=0x0 [0x80000018]=0x0 [0x8000001c]=0x0
+  nonZeroSample: [0x80000020]=0x20 [0x800002f0]=0x8001 [0x800002f8]=0x1f80 [0x800120e8]=0x299300 [0x8001218c]=0x299338
+  matches: [0x8001218c]=0x299338(exact)
+[Syscall83:override] handler=0x299338 invoked=false pc=0x29937c ra=0x299400 a0=0x80000000 a1=0x80080000 a2=0x299300 a3=0x2c7080 guestRet=0x0 builtinRet=0x800120e8 guest-20c=0x0 builtin-20c=0x80011edc guest-168=0x0 builtin-168=0x80011f80 match=false
+[SyscallOverride:fallback] syscall=0x83 handler=0x299338 pc=0x29937c ra=0x299400
+[FindAddress:hit] pc=0x29937c start=0x80000000 end=0x80080000 alignedStart=0x80000000 alignedEnd=0x80080000 target=0x299300 targetNorm=0x299300 result=0x800120e8 scannedWords=131072 allZero=false aborted=false
+  firstWords: [0x80000000]=0x0 [0x80000004]=0x0 [0x80000008]=0x0 [0x8000000c]=0x0 [0x80000010]=0x0 [0x80000014]=0x0 [0x80000018]=0x0 [0x8000001c]=0x0
+  nonZeroSample: [0x80000020]=0x20 [0x800002f0]=0x8001 [0x800002f8]=0x1f80 [0x800120e8]=0x299300 [0x8001218c]=0x299338
+  matches: [0x800120e8]=0x299300(exact)
+[SyscallOverride:fallback] syscall=0x5a handler=0x299700 pc=0x2996f4 ra=0x2997a8
+[SyscallOverride:fallback] syscall=0x5a handler=0x299700 pc=0x2996f4 ra=0x2997c0
+[SyscallOverride:fallback] syscall=0x5b handler=0x80076000 pc=0x29973c ra=0x2997e8
+[SyscallOverride:fallback] syscall=0x5b handler=0x80076000 pc=0x29973c ra=0x2997e8
+[SyscallOverride:fallback] syscall=0x5b handler=0x80076000 pc=0x29973c ra=0x2997e8
+[SyscallOverride:fallback] syscall=0x5b handler=0x80076000 pc=0x29973c ra=0x2997e8
+[SyscallOverride:fallback] syscall=0x5b handler=0x80076000 pc=0x29973c ra=0x2997e8
+[SyscallOverride:fallback] syscall=0x5b handler=0x80076000 pc=0x29973c ra=0x2997e8
+[CreateSema] id=3 init=0 max=255
+[CreateThread] id=2 entry=0x2947c8 stack=0x326b40 size=0x400 gp=0x2cf070 prio=1
+[SyscallOverride:fallback] syscall=0x5a handler=0x29a918 pc=0x29a90c ra=0x29a9b8
+[SyscallOverride:fallback] syscall=0x5b handler=0x80075000 pc=0x29a954 ra=0x29a9f0
+[SyscallOverride:fallback] syscall=0x5b handler=0x80075000 pc=0x29a954 ra=0x29a9f0
+[SyscallOverride:fallback] syscall=0x5b handler=0x80075000 pc=0x29a954 ra=0x29a9f0
+[SyscallOverride:fallback] syscall=0x5b handler=0x80075000 pc=0x29a954 ra=0x29a9f0
+[SyscallOverride:fallback] syscall=0x5b handler=0x80075000 pc=0x29a954 ra=0x29a9f0
+[SyscallOverride:fallback] syscall=0x5b handler=0x80075000 pc=0x29a954 ra=0x29aa14
+[boot_stub] init 0x293ea0
+[boot_stub] init 0x138cb0
+[boot_stub] init 0x138d48 (4o init, pre-main)
+[138D48] ENTRADA a0=0x0 a1=0x2c7084
+[138D48] JAL [1/11] -> 0x283770
+[138D48] JAL [1/11] 0x283770 NAO REGISTRADA - skip
+[138D48] JAL [1/11] retornou pc=0x138d64
+[138D48] JAL [2/11] -> 0x17aa88
+[138D48] JAL [2/11] retornou pc=0x138d88
+[138D48] JAL [3/11] -> 0x17acb8
+[138D48] JAL [3/11] 0x17acb8 NAO REGISTRADA - skip
+[138D48] JAL [3/11] retornou pc=0x138d90
+[138D48] JAL [4/11] -> 0x138b10
+[138D48] JAL [4/11] 0x138b10 NAO REGISTRADA - skip
+[138D48] JAL [4/11] retornou pc=0x138d98
+[138D48] JAL [5/11] -> 0x1838d0
+[138D48] JAL [5/11] 0x1838d0 NAO REGISTRADA - skip
+[138D48] JAL [5/11] retornou pc=0x138da0
+[138D48] JAL [6/11] -> 0x17a910
+[17A910] ENTRADA
+[17A910] call 1/3 (0x13F8A0) RETORNOU pc=0x17a920
+[watch:GLOBAL_0x32E854] #1 op=WRITE32 addr=0x32e854 size=4 value=0x0 pc=0x17a3d0 ra=0x17a928
+[17A910] call 2/3 (0x17A398) RETORNOU pc=0x17a928
+[182FF0] ENTRADA a0=0x2fd900
+[182FF0] JAL 279A40 (1a chamada)
+[279A40] ENTRADA (SifCheckInit?)
+[279A40] sif_struct=0x2a1690 sif+8=0x0
+[279A40] NAO INICIALIZADO -> func_2940B0 (SifInit?)
+[2940B0] ENTRADA (SifInit?)
+[182FF0] 279A40 (1a) RETORNOU v0=0x0
+[182FF0] JAL 183190 a0=0x2fd900
+[182FF0] 183190 RETORNOU
+[182FF0] JAL 1832E8
+PS2 GsPutIMR: Setting IMR=0xff00
+PS2 GsSetCrt: interlaced=0, videoMode=0, frameMode=0
+[182FF0] 1832E8 RETORNOU
+[182FF0] JAL 13FCA8 a0=0x5c800 a1=0x1 a2=0x0 a3=0x0
+[13FCA8] ENTRADA a0=0x5c800 a1=0x1 a2=0x0 a3=0x0
+[13FCA8] JAL 13D630 a0=0x678
+[13FCA8] 13D630 RETORNOU v0=0x35c338 (s1=v0)
+[13FCA8] loop99 completo, JAL 13E090
+[13FCA8] 13E090 RETORNOU v0=0x35c1b0
+[13FCA8] JAL 13DC78 a0=v0=0x35c1b0 a1=0xb9000 a2=0x40
+[13FCA8] 13DC78 OK, JAL 23AAB0 a0=0x35c338 a1=0x2
+[13FCA8] 23AAB0 OK, JAL 23AB28 a0=0x35c338
+[13FCA8] 23AB28 OK, JAL 13D630#2 a0=0x10
+[13FCA8] 13D630#2 OK, JAL 13FAB8 a0=v0=0x4159c8
+[13FAB8] ENTRADA a0=0x4159c8
+[13FAB8] sentinel_addr=0x2cbbb0 READ32(sentinel)=0x2cbbb0 (s0=0x2cbbb0)
+[13FAB8] s1(a0)=0x4159c8, s1+4=0x1
+[stub:sub_0013DA10] PARTE 7 PLANO A: alloc #1 guestPtr=0x1000000 (a0=0x0 ra=0x13fb14)
+[watch:SENTINEL_0x2cbbb0] #1 op=WRITE32 addr=0x2cbbb4 size=4 value=0x1000000 pc=0x13fb24 ra=0x13fb14
+[watch:SENTINEL_0x2cbbb0] #2 op=WRITE32 addr=0x2cbbb0 size=4 value=0x1000000 pc=0x13fb3c ra=0x13fde0
+[13FCA8] 13FAB8 OK → SAINDO de sub_0013FCA8 v0=s1=0x35c338
+[182FF0] 13FCA8 RETORNOU v0=0x35c338
+[182FF0] JAL 13FB48 a0=0x200 a1=0x1 a2=0x23e7a8 a3=0x4
+[13FAB8] ENTRADA a0=0x416488
+[13FAB8] sentinel_addr=0x2cbbb0 READ32(sentinel)=0x1000000 (s0=0x1000000)
+[13FAB8] s1(a0)=0x416488, s1+4=0x1
+[stub:sub_0013DA10] PARTE 7 PLANO A: alloc #2 guestPtr=0x1000040 (a0=0x0 ra=0x13fb14)
+[watch:SENTINEL_0x2cbbb0] #3 op=WRITE32 addr=0x2cbbb0 size=4 value=0x1000040 pc=0x13fb3c ra=0x13fc78
+[182FF0] 13FB48 RETORNOU v0=0x4159e0
+[182FF0] JAL 182F68
+[279A40] ENTRADA (SifCheckInit?)
+[279A40] sif_struct=0x2a1690 sif+8=0x0
+[279A40] NAO INICIALIZADO -> func_2940B0 (SifInit?)
+[2940B0] ENTRADA (SifInit?)
+[182FF0] 182F68 RETORNOU
+[182FF0] JAL 182E88
+PS2 GsGetIMR: Returning IMR=0xff00
+PS2 GsGetIMR: Returning IMR=0xff00
+PS2 GsPutIMR: Setting IMR=0x182dd80000fd00
+[182FF0] 182E88 RETORNOU
+[182FF0] JAL 140578
+[13FAB8] ENTRADA a0=0x416f48
+[13FAB8] sentinel_addr=0x2cbbb0 READ32(sentinel)=0x1000040 (s0=0x1000040)
+[13FAB8] s1(a0)=0x416f48, s1+4=0x0
+[stub:sub_0013DA10] PARTE 7 PLANO A: alloc #3 guestPtr=0x1000080 (a0=0x0 ra=0x13fb14)
+[watch:SENTINEL_0x2cbbb0] #4 op=WRITE32 addr=0x2cbbb0 size=4 value=0x1000080 pc=0x13fb3c ra=0x13fc78
+[13FAB8] ENTRADA a0=0x417a08
+[13FAB8] sentinel_addr=0x2cbbb0 READ32(sentinel)=0x1000080 (s0=0x1000080)
+[13FAB8] s1(a0)=0x417a08, s1+4=0x2
+[13FAB8] loop iter=1 s0=0x1000040 s0+4=0x1000080
+[13FAB8] loop iter=2 s0=0x1000000 s0+4=0x1000040
+[13FAB8] loop iter=3 s0=0x2cbbb0 s0+4=0x1000000
+[stub:sub_0013DA10] PARTE 7 PLANO A: alloc #4 guestPtr=0x10000c0 (a0=0x0 ra=0x13fb14)
+[watch:SENTINEL_0x2cbbb0] #5 op=WRITE32 addr=0x2cbbb4 size=4 value=0x10000c0 pc=0x13fb24 ra=0x13fb14
+[182FF0] 140578 RETORNOU — entry_182ff0 COMPLETA
+[17A910] call 3/3 (entry_182ff0) RETORNOU pc=0x17a934
+[138D48] JAL [6/11] retornou pc=0x138da8
+[138D48] JAL [7/11] -> 0x21ff60
+[stub:0x182f28] GAME_MODE_CHANGE: 4294967295 -> 0 @tick #1
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1 — frameCount=1 flag=1 altCount=1 gameMode=0 notify2a1710=0 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2 — frameCount=2 flag=0 altCount=2 gameMode=0 notify2a1710=0 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3 — frameCount=3 flag=1 altCount=3 gameMode=0 notify2a1710=0 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #4 — frameCount=4 flag=0 altCount=4 gameMode=0 notify2a1710=0 rpcBusy2a1734=0 sifClient2a28d0=0
+[vif1:cmd] idx=0 opcode=0x0 imm=0x5 num=0 irq=0
+[vif1:cmd] idx=1 opcode=0x10 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=2 opcode=0x0 imm=0xe num=0 irq=0
+[vif1:cmd] idx=3 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=4 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=5 opcode=0x0 imm=0x0 num=1 irq=0
+[vif1:cmd] idx=6 opcode=0x0 imm=0x50 num=0 irq=0
+[vif1:cmd] idx=7 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=8 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=9 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=10 opcode=0x0 imm=0x51 num=0 irq=0
+[vif1:cmd] idx=11 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=12 opcode=0x0 imm=0x8 num=0 irq=0
+[vif1:cmd] idx=13 opcode=0x0 imm=0x2 num=0 irq=0
+[vif1:cmd] idx=14 opcode=0x0 imm=0x52 num=0 irq=0
+[vif1:cmd] idx=15 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=16 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=17 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=18 opcode=0x0 imm=0x53 num=0 irq=0
+[vif1:cmd] idx=19 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=20 opcode=0x7f imm=0xffff num=255 irq=1
+[vif1:cmd] idx=21 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=22 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=23 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=24 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=25 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=26 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=27 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=28 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=29 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=30 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=31 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=32 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=33 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=34 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=35 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=36 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=37 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=38 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=39 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=40 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=41 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=42 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=43 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=44 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=45 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=46 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=47 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=48 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=49 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=50 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=51 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=52 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=53 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=54 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=55 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=56 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=57 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=58 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=59 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=60 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=61 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=62 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=63 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=64 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=65 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=66 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=67 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=68 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=69 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=70 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=71 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=72 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=73 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=74 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=75 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=76 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=77 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=78 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=79 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=80 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=81 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=82 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=83 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=84 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=85 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=86 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=87 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=88 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=89 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=90 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=91 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=92 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=93 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=94 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=95 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=96 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=97 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=98 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=99 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=100 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=101 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=102 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=103 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=104 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=105 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=106 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=107 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=108 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=109 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=110 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=111 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=112 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=113 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=114 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=115 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=116 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=117 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=118 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=119 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=120 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=121 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=122 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=123 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=124 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=125 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=126 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=127 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=128 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=129 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=130 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=131 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=132 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=133 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=134 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=135 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=136 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=137 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=138 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=139 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=140 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=141 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=142 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=143 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=144 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=145 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=146 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=147 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=148 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=149 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=150 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=151 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=152 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=153 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=154 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=155 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=156 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=157 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=158 opcode=0x0 imm=0x0 num=0 irq=0
+[vif1:cmd] idx=159 opcode=0x0 imm=0x0 num=0 irq=0
+[138D48] JAL [7/11] retornou pc=0x138db0
+[138D48] JAL [8/11] -> 0x17bc80
+[stub PARTE 9] syscall 0x7a primeira chamada -- retornando -1 (0xFFFFFFFF, destrava polls bit-mask) pc=0x294034 ra=0x2966c4 a0=0x80000000 a1=0x296a50 a3=0x20
+[PARTE 10 PLANO B1] aceitando SIF RPC stage transfer (dest=0xffffffff, IOP decide pelo header) — xfer.src=0x327880 xfer.size=0x14 xfer.attr=0x44 ra=0x2969ac
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0000 sifBit=1 hdrFlags=0x0 hdrSize=0x14 INIT{ callback=0x3277c0 } (xfer.src=0x327880 size=0x14)
+[PARTE 10 PLANO B2 PASSO 2.7] dump callback target @0x3277c0:
+  +0x00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  +0x10: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  +0x20: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  +0x30: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[stub:0x296a54] Bug O: callback IOP modulo #0 — retornando 1 (modulo pronto, elimina retry-loop)
+[CreateSema] id=4 init=0 max=1
+[PARTE 10 PLANO B1] aceitando SIF RPC stage transfer (dest=0xffffffff, IOP decide pelo header) — xfer.src=0x20327ac0 xfer.size=0x40 xfer.attr=0x44 ra=0x2969ac
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x0009 sifBit=1 hdrFlags=0x0 hdrSize=0x40 RPC{ rpc_id=0x5 self=0x20327ac0 payload_words=2 response_buf=0x30aaa8 sub_hdr=0x80000592 } (xfer.src=0x20327ac0 size=0x40)
+[PARTE 10 PLANO B2 PASSO 2.5] dump natural @0x30aaa8:
+  +0x00: c0 7a 32 20 02 00 00 00 04 00 00 00 00 00 00 00
+  +0x10: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  +0x20: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  +0x30: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[PARTE 10 PLANO B2 PASSO 2 REVERTIDO] RPC_BIND opcode=0x9 sid=0x80000592 rpc_id=0x5 client=0x30aaa8 — NAO escrevendo (round f8cb6a5 confirmou que jogo nao polla, espera callback EE em 0x3277c0). Aguardando dump 2.7 revelar layout do callback.
+[stub:0x296a54] Bug O: callback IOP modulo #1 — retornando 1 (modulo pronto, elimina retry-loop)
+[WaitSema:block] tid=1 sid=4 pc=0x293c64 ra=0x297374 delta_ms_since_RPC_BIND=0
+[PASSO 3] Forjando iSignalSema(sid=4) delta_ms=0 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=4 ret=0 count=0
+[CreateSema] id=5 init=0 max=1
+[PARTE 10 PLANO B1] aceitando SIF RPC stage transfer (dest=0xffffffff, IOP decide pelo header) — xfer.src=0x20327b00 xfer.size=0x40 xfer.attr=0x44 ra=0x2969ac
+[PARTE 10 PLANO B2 PASSO 1] SIF pkt decodificado — opcode=0x000a sifBit=1 hdrFlags=0x0 hdrSize=0x440 RPC{ rpc_id=0x10005 self=0x20327b00 payload_words=3 response_buf=0x30aaa8 sub_hdr=0x0 } (xfer.src=0x20327b00 size=0x40)
+[stub:0x296a54] Bug O: callback IOP modulo #2 — retornando 1 (modulo pronto, elimina retry-loop)
+[WaitSema:block] tid=1 sid=5 pc=0x293c64 ra=0x297634 delta_ms_since_RPC_BIND=0
+[PASSO 3] Forjando iSignalSema(sid=5) delta_ms=0 — resposta IOP simulada ao RPC_BIND
+[WaitSema:wake] tid=1 sid=5 ret=0 count=0
+[CreateSema] id=6 init=1 max=1
+[CreateSema] id=7 init=1 max=1
+[CreateSema] id=8 init=1 max=1
+[CreateSema] id=9 init=0 max=1
+[PollSema:ok] sid=7 pc=0x293c74 ra=0x27a6e4
+[PollSema:zero] sid=7 calls=1 pc=0x293c74 ra=0x27a6e4
+[PASSO 3b] PollSema forjando KE_OK sid=7 calls=1 delta_ms=1 pc=0x293c74 ra=0x27a6e4 [VBlank callsite] — resposta IOP simulada
+[PASSO 3c] Escrevendo 1 em *(0x2a1710) (era 0) — notificacao IOP simulada
+[PASSO 3d] RPC busy=0x2a1734:0->0  SIFclient=0x2a28d0[0]:0->0  sid=7 calls=1 — IOP RPC simulado como concluido
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #60 — frameCount=60 flag=0 altCount=60 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 10 PLANO B2 PASSO 2.5 — dump @VBlank #100 buf=0x30aaa8:
+  +0x00: 00 7b 32 20 03 00 00 00 05 00 00 00 00 00 00 00
+  +0x10: 00 00 00 00 00 00 00 00 70 f0 2c 00 00 00 00 00
+  +0x20: 00 00 00 00 01 00 00 00 00 00 00 00 00 00 00 00
+  +0x30: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #120 — frameCount=120 flag=0 altCount=120 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #180 — frameCount=180 flag=0 altCount=180 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #240 — frameCount=240 flag=0 altCount=240 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #300 — frameCount=300 flag=0 altCount=300 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #360 — frameCount=360 flag=0 altCount=360 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #420 — frameCount=420 flag=0 altCount=420 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #480 — frameCount=480 flag=0 altCount=480 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #540 — frameCount=540 flag=0 altCount=540 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #600 — frameCount=600 flag=0 altCount=600 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #660 — frameCount=660 flag=0 altCount=660 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #720 — frameCount=720 flag=0 altCount=720 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #780 — frameCount=780 flag=0 altCount=780 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #840 — frameCount=840 flag=0 altCount=840 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #900 — frameCount=900 flag=0 altCount=900 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #960 — frameCount=960 flag=0 altCount=960 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 10 PLANO B2 PASSO 2.5 — dump @VBlank #1000 buf=0x30aaa8:
+  +0x00: 00 7b 32 20 03 00 00 00 05 00 00 00 00 00 00 00
+  +0x10: 00 00 00 00 00 00 00 00 70 f0 2c 00 00 00 00 00
+  +0x20: 00 00 00 00 01 00 00 00 00 00 00 00 00 00 00 00
+  +0x30: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1020 — frameCount=1020 flag=0 altCount=1020 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1080 — frameCount=1080 flag=0 altCount=1080 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1140 — frameCount=1140 flag=0 altCount=1140 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1200 — frameCount=1200 flag=0 altCount=1200 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1260 — frameCount=1260 flag=0 altCount=1260 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1320 — frameCount=1320 flag=0 altCount=1320 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1380 — frameCount=1380 flag=0 altCount=1380 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1440 — frameCount=1440 flag=0 altCount=1440 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1500 — frameCount=1500 flag=0 altCount=1500 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1560 — frameCount=1560 flag=0 altCount=1560 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1620 — frameCount=1620 flag=0 altCount=1620 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1680 — frameCount=1680 flag=0 altCount=1680 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1740 — frameCount=1740 flag=0 altCount=1740 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1800 — frameCount=1800 flag=0 altCount=1800 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1860 — frameCount=1860 flag=0 altCount=1860 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1920 — frameCount=1920 flag=0 altCount=1920 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #1980 — frameCount=1980 flag=0 altCount=1980 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2040 — frameCount=2040 flag=0 altCount=2040 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2100 — frameCount=2100 flag=0 altCount=2100 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2160 — frameCount=2160 flag=0 altCount=2160 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2220 — frameCount=2220 flag=0 altCount=2220 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2280 — frameCount=2280 flag=0 altCount=2280 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2340 — frameCount=2340 flag=0 altCount=2340 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2400 — frameCount=2400 flag=0 altCount=2400 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2460 — frameCount=2460 flag=0 altCount=2460 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2520 — frameCount=2520 flag=0 altCount=2520 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2580 — frameCount=2580 flag=0 altCount=2580 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2640 — frameCount=2640 flag=0 altCount=2640 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2700 — frameCount=2700 flag=0 altCount=2700 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2760 — frameCount=2760 flag=0 altCount=2760 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2820 — frameCount=2820 flag=0 altCount=2820 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2880 — frameCount=2880 flag=0 altCount=2880 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #2940 — frameCount=2940 flag=0 altCount=2940 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3000 — frameCount=3000 flag=0 altCount=3000 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3060 — frameCount=3060 flag=0 altCount=3060 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3120 — frameCount=3120 flag=0 altCount=3120 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3180 — frameCount=3180 flag=0 altCount=3180 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3240 — frameCount=3240 flag=0 altCount=3240 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3300 — frameCount=3300 flag=0 altCount=3300 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3360 — frameCount=3360 flag=0 altCount=3360 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3420 — frameCount=3420 flag=0 altCount=3420 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3480 — frameCount=3480 flag=0 altCount=3480 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3540 — frameCount=3540 flag=0 altCount=3540 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3600 — frameCount=3600 flag=0 altCount=3600 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3660 — frameCount=3660 flag=0 altCount=3660 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3720 — frameCount=3720 flag=0 altCount=3720 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3780 — frameCount=3780 flag=0 altCount=3780 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3840 — frameCount=3840 flag=0 altCount=3840 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+[stub:0x182f28] PARTE 8 PLANO A: VBlank tick #3900 — frameCount=3900 flag=0 altCount=3900 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
