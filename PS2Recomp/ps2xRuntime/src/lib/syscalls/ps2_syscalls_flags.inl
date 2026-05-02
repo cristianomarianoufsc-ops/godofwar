@@ -462,6 +462,37 @@ void PollSema(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
                   << std::dec << std::endl;
     }
 
+    // PASSO 3b — forja resposta do IOP para PollSema bloqueada apos bind SIF.
+    // A cada 10k chamadas sem sucesso, se ao menos um RPC_BIND ja ocorreu
+    // (deltaMsSinceBind >= 0), o IOP jamais vai sinalizar → forja KE_OK.
+    // Mesmo mecanismo do PASSO 3 (WaitSema), adaptado para busy-poll:
+    // nao altera sema->count — apenas retorna KE_OK para que o jogo avance.
+    // Na proxima rodada de polling (callCount=20k, 30k, ...) repete se necessario.
+    if (callCount % 10000u == 0)
+    {
+        const uint64_t bindNs = ::gow_get_sif_bind_monotonic_ns();
+        if (bindNs != 0u)
+        {
+            auto nowNs = static_cast<uint64_t>(
+                std::chrono::duration_cast<std::chrono::nanoseconds>(
+                    std::chrono::steady_clock::now().time_since_epoch()).count());
+            const int64_t deltaMsSinceBind = (nowNs >= bindNs)
+                ? static_cast<int64_t>((nowNs - bindNs) / 1000000ull)
+                : -1;
+            if (deltaMsSinceBind >= 0 && sema->count < sema->maxCount)
+            {
+                std::cout << "[PASSO 3b] PollSema forjando KE_OK sid=" << sid
+                          << " calls=" << callCount
+                          << " delta_ms=" << deltaMsSinceBind
+                          << " pc=0x" << std::hex << ctx->pc
+                          << " ra=0x" << getRegU32(ctx, 31)
+                          << std::dec << " — resposta IOP simulada" << std::endl;
+                setReturnS32(ctx, KE_OK);
+                return;
+            }
+        }
+    }
+
     setReturnS32(ctx, KE_SEMA_ZERO);
 }
 

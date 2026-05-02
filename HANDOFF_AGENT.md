@@ -108,17 +108,23 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 - `[StartThread]` tem logging extenso e **NÃO apareceu** → StartThread não foi chamado neste round
 - **Conclusão: jogo em busy-loop `PollSema(9)` — câmera completamente cega**
 
-**Fix aplicado:** `PS2Recomp/ps2xRuntime/src/lib/syscalls/ps2_syscalls_flags.inl` — PollSema instrumentado:
-- Log primeira chamada por sid (`[PollSema:zero] sid=N calls=1 pc=0x... ra=0x...`)
-- Log a cada 1M chamadas por sid para confirmar busy-loop
-- Log primeira vez que PollSema tem sucesso por sid (`[PollSema:ok]`)
+**Fix aplicado:** `PS2Recomp/ps2xRuntime/src/lib/syscalls/ps2_syscalls_flags.inl` — PollSema com 2 camadas:
 
-**Próximo passo:** após push → `bash rebuild_runtime.sh --run` no PC → ler log com `[PollSema:zero]`
+**Camada 1 — Diagnóstico:**
+- `[PollSema:zero] sid=N calls=1 pc=0x... ra=0x...` na primeira falha por sid
+- Log a cada 1M chamadas por sid (confirma busy-loop)
+- `[PollSema:ok]` na primeira vez que um sid tem sucesso
+
+**Camada 2 — PASSO 3b (resolve o deadlock):**
+- A cada 10k chamadas sem sucesso por sid, se `deltaMsSinceBind >= 0` (ao menos 1 bind SIF ocorreu): retorna `KE_OK` forjado sem alterar `sema->count`
+- Log `[PASSO 3b] PollSema forjando KE_OK sid=N calls=N delta_ms=N pc=0x... ra=0x...`
+- Se o jogo chamar PollSema(sid) de novo, dispara novamente em callCount=20k, 30k, etc.
+- Mesmo princípio do PASSO 3 (WaitSema) — jogo nunca saberá que o IOP é fake
 
 **O que esperar no próximo round:**
-- `[PollSema:zero] sid=9 calls=1 pc=0x... ra=0x...` confirma a hipótese
-- `ra` identifica QUEM está chamando PollSema(9) → diz qual função está no loop
-- Se `[PollSema:zero]` NÃO aparecer → o jogo está num spin loop sem syscall (incomum)
+- `[PollSema:zero] sid=9 calls=1` confirma a hipótese (diagnóstico)
+- `[PASSO 3b] ... sid=9 calls=10000` → jogo desbloqueado, avança além do CreateSema 9
+- Após o desbloqueio: novo código será executado → próximo bloqueador aparecerá no log
 
 ### ⚠️ Bug Q — TRUNCADA, AGUARDA recompilar.sh
 
@@ -162,7 +168,7 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 | **W** — FUN_00244600 truncada | ⚠️ AGUARDANDO LOG | `truncation_overrides.csv` | 25 linhas; 36 referências estáticas |
 | **X** — `cop0_status=0` → IE=0 → StartThread sempre pulado | ✅ RESOLVIDO | `PS2Recomp/ps2xRuntime/include/ps2_runtime.h` linha 151 | `cop0_status = 0x00000000` → `0x00010001`; fix aguardando rebuild no PC |
 | **Y** — `sub_00297290` retorna 0 após WaitSema; `*(s1+0x24)` fica 0 (sem DMA do IOP) | 🟡 FIXADO, AGUARDA COMPILAR | `src/recompiled/sub_00297290_0x297290.cpp` linhas 387-395 e 456-460 | Dois problemas: (1) delay slot `daddu $v0,$zero,$zero` → $v0=0, `entry_298910@0x29895c` trata 0 como "não pronto" → spin 1M iters; (2) `*(s1+0x24)` nunca preenchido (IOP faria DMA de confirmação). Fix: `WRITE32(*(s1+0x24), 1)` + `$v0=1` nos dois caminhos de sucesso. Aguarda `bash recompilar.sh`. |
-| **Z** — `PollSema` sem logging → busy-loop em sid=9 invisível pós-CreateSema 9 | 🟡 INSTRUMENTADO | `PS2Recomp/ps2xRuntime/src/lib/syscalls/ps2_syscalls_flags.inl` | Log primeira chamada/sucesso por sid + a cada 1M por sid (pc + ra). Aguarda `rebuild_runtime.sh` + round. Próxima sessão: ver `[PollSema:zero] sid=9` no log e usar `ra` para identificar o caller. |
+| **Z** — `PollSema` sem logging + sem PASSO 3b → busy-loop em sid=9 invisível e eterno | 🟡 CORRIGIDO | `PS2Recomp/ps2xRuntime/src/lib/syscalls/ps2_syscalls_flags.inl` | (1) Log primeira chamada/sucesso por sid + a cada 1M (pc + ra). (2) PASSO 3b: a cada 10k calls sem sucesso, se deltaMsSinceBind >= 0, retorna KE_OK forjado — mesmo princípio do PASSO 3 (WaitSema). Aguarda `rebuild_runtime.sh` + round. |
 
 > **Detalhe completo de cada bug** (diagnóstico, dumps, hipóteses descartadas, código aplicado) → `HANDOFF_HISTORICO.md`.
 

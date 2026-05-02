@@ -277,7 +277,7 @@ PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_teste.txt
 | **O** — stub `0x296a54` retornava 0 → deltas crescentes, sid=12+: ~1600ms/módulo | ✅ CONFIRMADO | `game_overrides.cpp` | `$v0=0` → `$v0=1` — sid=4..11 agora delta=0ms; sid=12+ melhora ~15% (causa secundária persiste) | 2026-05-01 |
 | **P–W** — 8 funções truncadas na região 0x29xxxx/0x23xxxx/0x24xxxx (corpo da thread 2 e vizinhança do bind loop) | ✅ REGEN FEITA | `truncation_overrides.csv` | `bash tools/regen_truncated.sh` executado pelo Agente Cris — sem efeito visível enquanto Bug X persiste | 2026-05-01 |
 | **X** — `StartThread` NUNCA chamado para tid=2 (entry=0x2947c8) — VBlank loop infinito pós-sid=19 | ✅ RESOLVIDO | `PS2Recomp/ps2xRuntime/include/ps2_runtime.h` | `cop0_status = 0x00010001` — IE=1 faz `func_294618` retornar 0, branch cai em StartThread | 2026-05-01 |
-| **Z** — `PollSema` sem logging — busy-loop em sid=9 invisível pós-CreateSema 9 | 🟡 INSTRUMENTADO | `ps2_syscalls_flags.inl` | Log primeira chamada + a cada 1M por sid (pc + ra); aguarda rebuild_runtime + round para confirmar hipótese | 2026-05-02 |
+| **Z** — `PollSema` sem logging + sem PASSO 3b — busy-loop em sid=9 invisível e eterno | 🟡 CORRIGIDO | `ps2_syscalls_flags.inl` | (1) Log primeira falha/sucesso por sid + a cada 1M. (2) PASSO 3b: a cada 10k calls sem sucesso com deltaMsSinceBind ≥ 0 → retorna KE_OK forjado (mesmo mecanismo do PASSO 3 de WaitSema). Aguarda rebuild_runtime + round | 2026-05-02 |
 
 ---
 
