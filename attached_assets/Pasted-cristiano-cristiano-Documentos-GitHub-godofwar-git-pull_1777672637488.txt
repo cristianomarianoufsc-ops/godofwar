@@ -1,0 +1,60 @@
+cristiano@cristiano:~/Documentos/GitHub/godofwar$ git pull  # pegar os commits do Replit
+bash rebuild_runtime.sh  # recompila só o runtime (~segundos com ccache)
+bash build.sh            # build completo se necessário
+./god_of_war_pc
+error: You have not concluded your merge (MERGE_HEAD exists).
+hint: Please, commit your changes before merging.
+fatal: Exiting because of unfinished merge.
+[0/3] Forçando recompilação de ps2_stubs.cpp (caso .inl tenha mudado)...
+[1/3] Recompilando o runtime do PS2...
+[  0%] Building CXX object CMakeFiles/ps2runtime.dir/home/cristiano/Documentos/GitHub/godofwar/PS2Recomp/ps2xRuntime/src/lib/ps2_stubs.cpp.o
+[100%] Linking CXX static library libps2runtime.a
+[100%] Built target ps2runtime
+
+[2/3] Relinkando o executável GodOfWarPCPort...
+[  1%] Built target ps2runtime
+^Cgmake[3]: *** [CMakeFiles/gow_recompiled.dir/build.make:90125: CMakeFiles/gow_recompiled.dir/depend] Interrupção
+gmake[2]: *** [CMakeFiles/Makefile2:112: CMakeFiles/gow_recompiled.dir/all] Interrupção
+gmake[1]: *** [CMakeFiles/Makefile2:147: CMakeFiles/GodOfWarPCPort.dir/rule] Interrupção
+gmake: *** [Makefile:151: GodOfWarPCPort] Interrupção
+
+=== God of War PC Port - Build + Execução ===
+CMake já configurado. Pulando configuração e retomando compilação...
+
+Compilando... (retomando de onde parou, 0/5626 arquivos já prontos)
+^C
+bash: ./god_of_war_pc: Arquivo ou diretório inexistente
+cristiano@cristiano:~/Documentos/GitHub/godofwar$ # 1. Cancela o merge pendente
+git merge --abort
+
+# 2. Agora puxa os commits do Replit (Bug X + Bug P)
+git pull
+
+# 3. Confirma que os 2 arquivos modificados chegaram
+git log --oneline -3
+# deve mostrar: "Fix error preventing thread startup and a truncated function"
+
+# 4. Só agora reconstrói
+bash rebuild_runtime.sh
+bash build.sh
+./god_of_war_pc
+remote: Enumerating objects: 21, done.
+remote: Counting objects: 100% (21/21), done.
+remote: Compressing objects: 100% (2/2), done.
+remote: Total 11 (delta 9), reused 11 (delta 9), pack-reused 0 (from 0)
+Unpacking objects: 100% (11/11), 4.79 KiB | 223.00 KiB/s, done.
+From https://github.com/cristianomarianoufsc-ops/godofwar
+   81fbd41..87dc34f  main       -> origin/main
+Merge made by the 'ort' strategy.
+ .../src/recompiled/FUN_002947c8_0x2947c8.cpp       | 313 ++++++++++++++++++++-
+ HANDOFF_AGENT.md                                   |  93 +++---
+ PS2Recomp/ps2xRuntime/include/ps2_runtime.h        |   7 +-
+ replit.md                                          |  96 ++++---
+ tools/triage_round.py                              |  47 +++-
+ 5 files changed, 463 insertions(+), 93 deletions(-)
+f5a1b8e (HEAD -> main) Merge branch 'main' of https://github.com/cristianomarianoufsc-ops/godofwar
+87dc34f (origin/main, origin/HEAD) Fix error preventing thread startup and a truncated function
+81fbd41 Add new diagnostic to detect unstarted threads
+[0/3] Forçando recompilação de ps2_stubs.cpp (caso .inl tenha mudado)...
+[1/3] Recompilando o runtime do PS2...
+[  0%] Building CXX object CMakeFiles/ps2runtime.dir/home/cristiano/D
