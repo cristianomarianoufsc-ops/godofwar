@@ -94,88 +94,84 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-02 — análise intermediários + logs diagnóstico)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-02 — Bug R diagnosticado + PASSO 3d aplicado)
 
-### ✅ Bugs K, L, M, N, O, X, P, Z — RESOLVIDOS
+### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 
-### 🔴 BLOQUEADOR ATUAL — Bug AB (WaitEventFlag ILLEGAL_MODE) aguarda push + round (2026-05-02)
+### 🔴 BLOQUEADOR ATUAL — Bug R (loop `*(0x2a1734)` + FUN_297670) — fix PASSO 3d aplicado, aguarda push + round
 
-**🏆 Situação do último round** (log `258538d`, 2026-05-02 — PROGRESSO HISTÓRICO):
-- PASSO 3b + PASSO 3c funcionaram: `[PASSO 3c] Escrevendo 1 em *(0x2a1710)` ✅
-- sub_002963C0 executou → boot_stub avançou → `entry=0x2996b0` ← **MAIN REAL DO JOGO** ✅
-- `Starting execution at address 0x2996b0` ← primeira vez em toda a operação ✅
+---
+
+**🏆 Situação do último round** (log `7117cbd`, 2026-05-02):
+- PASSO 3b forja PollSema(sid=7) KE_OK ✅  
+- PASSO 3c escreve `*(0x2a1710)=1` ✅  
+- `FUN_0x2963c0` (sub_002963C0) chamada UMA vez ✅  
+- Depois: VBlank tick #60 → #17940 sem nenhum outro evento — loop infinito
+
+**Causa raiz do Bug R — analisada em 2026-05-02 a partir de `entry_27a5a8_0x27a648.cpp`:**
+
+Após `FUN_0x2963c0` retornar (endereço 0x27a5d4), o jogo entra em **dois loops aninhados**:
+
+```
+// Loop 1 — "RPC busy flag" — 0x2a1734
+label_27a5e8:
+  $v0 = *(0x2a1734)
+  if ($v0 != 0) → jal DelayThread(4ms) → goto label_27a5e8   ← TRAVA AQUI
+
+// Loop 2 — "SIF client status" — 0x2a28d0
+// (só chega aqui quando *(0x2a1734)==0)
+  jal FUN_0x297670(a0=0x2a28d0)
+  if ($v0 != 0) → jal DelayThread(4ms) → goto label_27a5e8
+  // $v0==0 → return (saiu com sucesso)
+```
+
+`FUN_0x297670` (entry_297670_0x2976c8.cpp) retorna:
+- **1 ("ainda ocupado")** se `*(0x2a28d0) != 0` E `*(*(0x2a28d0)+0x18) == *(0x2a28d0+0x4)` E `*(*(0x2a28d0)+0x10) & 1 != 0`
+- **0 ("pronto")** se `*(0x2a28d0) == 0` (null pointer → retorno imediato)
+
+Sem IOP: `*(0x2a1734)` fica no valor inicial (≠ 0 = "RPC em curso") para sempre → DelayThread(4ms) em loop.
+
+**Fix aplicado — PASSO 3d** (`ps2_syscalls_flags.inl`, 2026-05-02):
+1. Condição PASSO 3b ampliada: `callCount==1 || callCount%10000==0 || isVBlankPollCallsite`  
+   → PollSema do callsite `ra=0x27a6e4` **sempre** retorna KE_OK (IOP sempre "pronto")
+2. Dentro do bloco de forge, adicionado PASSO 3d:  
+   - `WRITE32(0x2a1734, 0)` → zera flag "RPC busy" → Loop 1 não entra  
+   - `WRITE32(0x2a28d0, 0)` → nulifica ponteiro SIF client → Loop 2: `*(0x2a28d0)==0` → retorna 0 → saída imediata  
+3. Logs adicionados: `[PASSO 3d] RPC busy=0x2a1734:N->0  SIFclient=0x2a28d0[0]:N->0 ...`
+4. Rate-limit PASSO 3b atualizado: 8 primeiros + a cada 1000 para callsite VBlank
+
+**Fix adicional — VBlank log de `0x2a1734` + `0x2a28d0`** (`game_overrides.cpp`, 2026-05-02):
+- Adicionado `rpcBusy2a1734=N` e `sifClient2a28d0=N` ao log periódico (todo tick % 60)
+- Permite rastrear se/quando esses endereços mudam após o fix
+
+**O que esperar no próximo round:**
+- `[PASSO 3b] ... [VBlank callsite]` em cada iteração do PollSema(7)
+- `[PASSO 3d] RPC busy=0x2a1734:N->0  SIFclient=0x2a28d0[0]:N->0` em cada forge
+- VBlank ticks com `rpcBusy2a1734=0 sifClient2a28d0=0` confirmando writes
+- `entry_27a5a8` retorna (sai do loop) → jogo avança para o próximo estágio de init
+- Próximo bloqueio provável: novo `WaitSema` ou `WaitEventFlag` dentro da init pós-SIF
+
+---
+
+**Histórico do round 258538d (2026-05-02 — PROGRESSO HISTÓRICO, referência):**
+- PASSO 3b + PASSO 3c funcionaram → sub_002963C0 executou → `entry=0x2996b0` ← **MAIN REAL** ✅
 - `INFO: TEXTURE: Texture loaded successfully (640x448)` ← renderer inicializando ✅
-- Jogo chama `WaitEventFlag` 30+ vezes com bits de mode desconhecidos (0x10000000, 0x70000000...)
-- Runtime retorna `KE_ILLEGAL_MODE` → jogo nunca chama `StartThread(tid=2)` → `activeThreads=0` → runtime sai
+- Jogo chama `WaitEventFlag` 30+ vezes com bits de mode desconhecidos → runtime retorna KE_ILLEGAL_MODE
+- **Fix Bug AB** aplicado: mascarar bits desconhecidos, retornar KE_OK imediatamente
 
-**Análise Bug AB — WaitEventFlag ILLEGAL_MODE:**
-```
-[WaitEventFlag:ILLEGAL_MODE] eid=0 waitBits=0x0 mode=0x70000000 pc=0x29aa3c ra=0x29ab30
-[WaitEventFlag:ILLEGAL_MODE] eid=1 waitBits=0x6000 mode=0xffff8000 pc=0x29aa3c
-...  (eid=0..15, depois 30+ chamadas sem log pois contador atingiu limite 16)
-[syscall:ExitThread] tid=1 ra=0x00000000 sp=0x01fffff0 -- thread vai morrer
-Error during program execution: PS2 Thread Exit
-[run] exiting loop, activeThreads=0
-```
-- `WEF_MODE_MASK = WEF_OR(1) | WEF_CLEAR(0x10) | WEF_CLEAR_ALL(0x20) = 0x31`
-- Bits como `0x10000000`, `0x80000` são extensões não-documentadas do SDK Sony — BIOS real ignora
-- Comportamento correto: mascarar bits desconhecidos e retornar `KE_OK` imediatamente (non-blocking poll)
+**Fix Bug AB** (`ps2_syscalls_flags.inl`):
+- `WaitEventFlag` + `PollEventFlag`: bits fora de `WEF_MODE_MASK=0x31` → loga + retorna KE_OK
+- Log: `[WaitEventFlag:mode_compat] Bug AB — unknown_bits=0x...`
 
-**Fix aplicado — Bug AB** (`ps2_syscalls_flags.inl`, sessão 2026-05-02):
-- `WaitEventFlag`: ao detectar bits fora de `WEF_MODE_MASK`, loga e retorna `KE_OK` (sem bloquear)
-- `PollEventFlag`: mesma correção
-- Log: `[WaitEventFlag:mode_compat] Bug AB — unknown_bits=0x... — mascando, retornando KE_OK`
+**Fix Bug AA** (2026-05-02):
+- `FUN_002962d8`: reconstruída (38→78 linhas); `FUN_00296300`: reconstruída (38→79 linhas)
 
-**Fix adicional — Bug AA** (2026-05-02, `recompilar.sh` obrigatório):
-- `FUN_002962d8`: reconstruída (38→78 linhas) — chama `func_295218`
-- `FUN_00296300`: reconstruída (38→79 linhas) — chama `func_2952C8`
-- Fonte: corpo idêntico em `sub_00295568_0x295568.cpp` (linhas 7910-7965 e 8094-8150)
+**Fix anterior — PASSO 3c** (embutido em PASSO 3b, histórico):
+- Após KE_OK: `WRITE32(0x2a1710, 1)` → habilita chamada a FUN_0x2963c0
 
-**Fix adicional — GREP_PATTERN** (2026-05-02):
-- Adicionados: `WaitEventFlag`, `SetEventFlag`, `CreateEventFlag`, `mode_compat`, `Bug AB`, `boot_stub.*entry`, `Starting execution`, `BOOT#`, `SyscallOverride`
-
-**O que esperar no próximo round:**
-- `[WaitEventFlag:mode_compat] Bug AB` aparecem 30+ vezes (eid=0..N)
-- Depois: `[StartThread]` para tid=2 (entry=0x2947c8 = Bug P — aguarda `recompilar.sh`)
-- Se ainda travar: ou Bug P (FUN_002947c8) trava, ou há outro WaitEventFlag bloqueante
-- **`bash recompilar.sh` é necessário** para Bug P, Q, Y entrarem em campo
-
-**Análise do bloqueio (disassembly 0x27a6e4):**
-```
-lw   $v1, 0x172c($s0)    // $v1 = sema_id = 7
-beq  $v1, $v0, 0x27a718  // se sema_id==retval → nunca tomado (7≠0)
-lui  $v0, 0x2a            // delay: $v0=0x2a0000
-lw   $v1, 0x1710($v0)    // $v1 = *(0x2a1710)   ← IOP escreveria aqui
-blez $v1, VBlank_wait     // se *(0x2a1710) ≤ 0 → loop eterno
-jal  0x2963c0             // ← nunca alcançado (SIF receive handler)
-```
-
-**Fix aplicado — PASSO 3c** (embutido em PASSO 3b, commit 33487515):
-- Quando PASSO 3b forja KE_OK: lê `*(0x2a1710)`, se ≤ 0 escreve 1 via `WRITE32(0x2a1710, 1)`
-- Log: `[PASSO 3c] Escrevendo 1 em *(0x2a1710) (era 0) — notificacao IOP simulada`
-- Isso faz o jogo chamar `FUN_0x2963c0` (sub_002963C0_0x2963c0.cpp — compilado e disponível)
-
-**Fix adicional — PASSO 3c:auto** (independente, `ps2_syscalls_flags.inl`, sessão 2026-05-02):
-- Problema identificado: PASSO 3c embutido só dispara em callCount==1 ou callCount%10000==0.
-  Nas iterações 2, 3, ... 9999 o jogo recebe KE_SEMA_ZERO, lê `*(0x2a1710)` que foi zerado por
-  `sub_002963C0` ao processar o pacote, e volta ao VBlank wait sem chamar o handler novamente.
-- Fix: bloco PASSO 3c independente APÓS o PASSO 3b, ativado em TODA `PollSema:zero` do
-  callsite `ra=0x27a6e4`, restaura `*(0x2a1710)=1` sempre que for ≤ 0.
-- Log: `[PASSO 3c:auto] *(0x2a1710)=0 -> restaurando 1 (callsite 0x27a6e4 sid=7 calls=N total_auto=N)`
-  (primeiras 5 ocorrências + a cada 1000)
-- Efeito: `FUN_0x2963c0` é chamada a cada iteração do loop VBlank, simulando IOP enviando
-  pacotes SIF continuamente (comportamento correto do PS2 real).
-
-**Fix adicional — VBlank log de `*(0x2a1710)`** (`game_overrides.cpp`, sessão 2026-05-02):
-- Adicionado `notify2a1710=N` ao log periódico do VBlank (todo tick % 60).
-- Permite rastrear se/quando `sub_002963C0` zera o endereço após processar.
-
-**O que esperar no próximo round:**
-- `[PASSO 3b]` + `[PASSO 3c]` aparecem na 2ª iteração do PollSema(7)
-- `[PASSO 3c:auto]` aparece em iterações subsequentes
-- `FUN_0x2963c0` (sub_002963C0) executa → chama `func_295568` (SIF dispatch — 8281 linhas, completa)
-- VBlank log mostra `notify2a1710=1` (antes de chamar) e `notify2a1710=0` (se sub_002963C0 zerou)
-- Próximo bloqueio provável: dentro de `sub_00295568` via `jalr $v1` (função pointer) ou syscall desconhecida
+**Fix anterior — PASSO 3c:auto** (independente, histórico):
+- Em toda `PollSema:zero` do callsite `ra=0x27a6e4`, restaura `*(0x2a1710)=1`
+- Log: `[PASSO 3c:auto] *(0x2a1710)=0 -> restaurando 1 ...`
 
 ### ⚠️ Bug Q — TRUNCADA, AGUARDA recompilar.sh
 

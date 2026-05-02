@@ -475,7 +475,17 @@ void PollSema(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
     // Razao: apos PollSema(7) → KE_OK, o jogo le *(0x2a1710) em 0x27a6f0 e se for
     // <= 0 cai em VBlank wait sem chamar FUN_0x2963c0 (SIF receive handler).
     // O IOP normalmente escreveria 0x2a1710 via DMA. Como nao temos IOP, forcamos.
-    if (callCount == 1 || callCount % 10000u == 0)
+    //
+    // Bug R (2026-05-02) — callsite ra=0x27a6e4 (loop VBlank em entry_27a5a8):
+    // apos FUN_0x2963c0, o jogo entra em dois loops adicionais:
+    //   1. while (*(0x2a1734) != 0) { delay(4ms); }   — "RPC busy flag"
+    //   2. while (FUN_0x297670(0x2a28d0) != 0) { delay(4ms); }
+    //      FUN_0x297670 retorna 1 se *(0x2a28d0) != 0 E flag de bit0 esta' set.
+    // IOP zera 0x2a1734 ao concluir o RPC. Sem IOP, nunca zera → loop infinito.
+    // Fix: sempre forjar KE_OK para ra=0x27a6e4 (IOP sempre "pronto" nesse callsite)
+    // e zerar 0x2a1734 + *(0x2a28d0) para liberar ambos os loops (PASSO 3d).
+    const bool isVBlankPollCallsite = (getRegU32(ctx, 31) == 0x27a6e4u);
+    if (callCount == 1 || callCount % 10000u == 0 || isVBlankPollCallsite)
     {
         const uint64_t bindNs = ::gow_get_sif_bind_monotonic_ns();
         if (bindNs != 0u)
@@ -488,12 +498,19 @@ void PollSema(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
                 : -1;
             if (deltaMsSinceBind >= 0 && sema->count < sema->maxCount)
             {
-                std::cout << "[PASSO 3b] PollSema forjando KE_OK sid=" << sid
-                          << " calls=" << callCount
-                          << " delta_ms=" << deltaMsSinceBind
-                          << " pc=0x" << std::hex << ctx->pc
-                          << " ra=0x" << getRegU32(ctx, 31)
-                          << std::dec << " — resposta IOP simulada" << std::endl;
+                static std::atomic<uint32_t> s_3bLogs{0};
+                const uint32_t p3bLog = s_3bLogs.fetch_add(1, std::memory_order_relaxed);
+                if (p3bLog < 8u || (isVBlankPollCallsite && p3bLog % 1000u == 0u))
+                {
+                    std::cout << "[PASSO 3b] PollSema forjando KE_OK sid=" << sid
+                              << " calls=" << callCount
+                              << " delta_ms=" << deltaMsSinceBind
+                              << " pc=0x" << std::hex << ctx->pc
+                              << " ra=0x" << getRegU32(ctx, 31)
+                              << std::dec
+                              << (isVBlankPollCallsite ? " [VBlank callsite]" : "")
+                              << " — resposta IOP simulada" << std::endl;
+                }
                 // PASSO 3c: garantir que *(0x2a1710) > 0 para o jogo chamar
                 // FUN_0x2963c0 (SIF receive handler) apos o KE_OK forjado.
                 {
@@ -501,11 +518,40 @@ void PollSema(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
                     const int32_t cur = static_cast<int32_t>(READ32(NOTIFY_ADDR));
                     if (cur <= 0)
                     {
-                        std::cout << "[PASSO 3c] Escrevendo 1 em *(0x2a1710) "
-                                  << "(era " << cur << ") — notificacao IOP simulada"
-                                  << std::endl;
+                        static std::atomic<uint32_t> s_3cLogs{0};
+                        if (s_3cLogs.fetch_add(1, std::memory_order_relaxed) < 8u)
+                        {
+                            std::cout << "[PASSO 3c] Escrevendo 1 em *(0x2a1710) "
+                                      << "(era " << cur << ") — notificacao IOP simulada"
+                                      << std::endl;
+                        }
                         WRITE32(NOTIFY_ADDR, 1u);
                     }
+                }
+                // PASSO 3d — Bug R: libera dois loops em entry_27a5a8 apos FUN_0x2963c0.
+                // Loop 1: while (*(0x2a1734) != 0) { delay(4ms); }
+                //   0x2a1734 = "RPC busy flag" — IOP zera ao concluir RPC. Forcamos 0.
+                // Loop 2: while (FUN_0x297670(0x2a28d0) != 0) { delay(4ms); }
+                //   FUN_0x297670(a0): le *(a0+0) como ponteiro p; se p==0 retorna 0.
+                //   Zerando *(0x2a28d0) forcamos retorno 0 ("nao ha RPC pendente").
+                {
+                    static constexpr uint32_t BUSY_FLAG  = 0x2a1734u;
+                    static constexpr uint32_t SIF_CLIENT = 0x2a28d0u;
+                    const int32_t busyCur   = static_cast<int32_t>(READ32(BUSY_FLAG));
+                    const int32_t clientCur = static_cast<int32_t>(READ32(SIF_CLIENT));
+                    static std::atomic<uint32_t> s_3dLogs{0};
+                    const uint32_t p3dLog = s_3dLogs.fetch_add(1, std::memory_order_relaxed);
+                    if (p3dLog < 8u || (isVBlankPollCallsite && p3dLog % 1000u == 0u))
+                    {
+                        std::cout << "[PASSO 3d] RPC busy=0x2a1734:" << busyCur
+                                  << "->0  SIFclient=0x2a28d0[0]:" << clientCur
+                                  << "->0  sid=" << sid
+                                  << " calls=" << callCount
+                                  << " — IOP RPC simulado como concluido"
+                                  << std::endl;
+                    }
+                    if (busyCur != 0)   WRITE32(BUSY_FLAG,  0u);
+                    if (clientCur != 0) WRITE32(SIF_CLIENT, 0u);
                 }
                 setReturnS32(ctx, KE_OK);
                 return;
