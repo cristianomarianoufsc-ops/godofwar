@@ -95,6 +95,11 @@ _RE_POLL327_SPIN   = re.compile(r"\[poll_327a40\] spinning count=(\d+) addr=(0x\
 _RE_POLL327_SAIU   = re.compile(r"\[poll_327a40\] SAIU poll_ok count=(\d+) addr=(0x\w+) val=(0x\w+)")
 _RE_BUGP_ENTRY     = re.compile(r"\[BugP_entry\] FUN_002947c8 START a0=(0x\w+) sp=(0x\w+)")
 _RE_BUGP_EXIT      = re.compile(r"\[BugP_exit\] FUN_002947c8 LOOP QUEBROU pc=(0x\w+)")
+_RE_PASSO3D        = re.compile(
+    r"\[PASSO 3d\] RPC busy=0x2a1734:(-?\d+)->0.*SIFclient=0x2a28d0\[0\]:(-?\d+)->0"
+    r".*sid=(\d+) calls=(\d+)")
+_RE_VBLANK_RPCBUSY = re.compile(
+    r"\[stub:0x182f28\].*rpcBusy2a1734=(-?\d+).*sifClient2a28d0=(-?\d+)")
 
 
 def fetch_url(url: str) -> str:
@@ -147,6 +152,8 @@ def parse_log(text: str) -> dict:
         "bugp_entry_count": 0,
         "bugp_entry_a0":   None,
         "bugp_exit":       False,
+        "passo3d":         [],   # [{busy_was, client_was, sid, calls}]
+        "vblank_rpcbusy":  [],   # [(rpcBusy, sifClient)] amostras do VBlank
     }
 
     lines = text.splitlines()
@@ -222,6 +229,16 @@ def parse_log(text: str) -> dict:
                 d["bugp_entry_a0"] = m.group(1)
         if _RE_BUGP_EXIT.search(line):
             d["bugp_exit"] = True
+        if m := _RE_PASSO3D.search(line):
+            d["passo3d"].append({
+                "busy_was":   int(m.group(1)),
+                "client_was": int(m.group(2)),
+                "sid":        int(m.group(3)),
+                "calls":      int(m.group(4)),
+            })
+        if m := _RE_VBLANK_RPCBUSY.search(line):
+            if len(d["vblank_rpcbusy"]) < 8:
+                d["vblank_rpcbusy"].append((int(m.group(1)), int(m.group(2))))
         if _RE_SIGSEGV.search(line):
             d["sigsegv"] = True
         if _RE_CRASH.search(line):
@@ -333,6 +350,30 @@ def report(d: dict, short: bool = False) -> None:
             print("  [BugP_exit]  loop quebrou           : ⚠️  inesperado — loop infinito saiu")
 
         print()
+        print("── BUG R / PASSO 3d (loop RPC busy 0x2a1734 + FUN_297670) ───────────")
+        if d["passo3d"]:
+            p = d["passo3d"][0]
+            total = len(d["passo3d"])
+            status_busy   = "✅ zerado" if p["busy_was"] != 0 else "— já era 0"
+            status_client = "✅ zerado" if p["client_was"] != 0 else "— já era 0"
+            print(f"  PASSO 3d disparou            : ✅ {total}x "
+                  f"(1º: sid={p['sid']} calls={p['calls']})")
+            print(f"  0x2a1734 busy_was={p['busy_was']}         : {status_busy}")
+            print(f"  0x2a28d0 client_was={p['client_was']}       : {status_client}")
+            if d["vblank_rpcbusy"]:
+                last_b, last_c = d["vblank_rpcbusy"][-1]
+                print(f"  VBlank confirma (última amostra): rpcBusy={last_b}  sifClient={last_c}")
+                if last_b == 0 and last_c == 0:
+                    print("  → 0x2a1734=0 + 0x2a28d0=0 confirmados no VBlank ✅")
+                else:
+                    print("  ⚠️  Algum valor não zerou — re-escrito pelo jogo após o forge?")
+        else:
+            print("  PASSO 3d disparou            : 🔴 NÃO — Bug R provavelmente ainda bloqueando")
+            if d["vblank_rpcbusy"]:
+                last_b, last_c = d["vblank_rpcbusy"][-1]
+                print(f"  VBlank (última amostra): rpcBusy={last_b}  sifClient={last_c}")
+
+        print()
         print("── POLLSEMA (busy-poll / poll-por-VBlank) ────────────────────────────")
         if d["poll_zero"]:
             for pz in d["poll_zero"]:
@@ -430,6 +471,20 @@ def report(d: dict, short: bool = False) -> None:
         sids_str = ", ".join(str(s["sid"]) for s in stuck)
         estado = (f"🔴 PollSema busy-loop em sid(s)={sids_str} — PASSO 3b não disparou. "
                   f"Verificar se bindNs > 0 (ao menos 1 bind SIF ocorreu).")
+    elif d["passo3d"] and not d["bugp_entry_count"] and not threads_pendentes:
+        p3d = d["passo3d"][0]
+        rpc_ok = any(b == 0 and c == 0 for b, c in d["vblank_rpcbusy"])
+        if rpc_ok:
+            estado = (f"🟡 Bug R: PASSO 3d disparou (sid={p3d['sid']} calls={p3d['calls']}) "
+                      f"e 0x2a1734+0x2a28d0 confirmados zerados no VBlank. "
+                      f"Jogo ainda não avançou para tid=2 — verificar próximo bloqueador.")
+        else:
+            estado = (f"🟡 Bug R: PASSO 3d disparou mas VBlank ainda mostra busy/client != 0. "
+                      f"Jogo re-escreveu 0x2a1734/0x2a28d0 após o forge — novo mecanismo a investigar.")
+    elif d["passo3b"] and not d["passo3d"]:
+        sids_str = ", ".join(str(p["sid"]) for p in d["passo3b"])
+        estado = (f"🟡 PASSO 3b desbloqueou PollSema sid(s)={sids_str} mas PASSO 3d não disparou. "
+                  f"Bug R ainda bloqueando (0x2a1734 nunca zerado) — verificar se fix chegou ao build.")
     elif d["passo3b"]:
         sids_str = ", ".join(str(p["sid"]) for p in d["passo3b"])
         estado = (f"🟡 PASSO 3b desbloqueou PollSema sid(s)={sids_str}. "
