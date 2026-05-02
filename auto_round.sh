@@ -63,7 +63,7 @@ LOG_DIR_NAME="runs_automaticos"
 STATE_FILE_NAME=".auto_round_last_hash"
 
 # Padrão grep pra extrair as linhas que importam pro próximo round
-GREP_PATTERN="PARTE 10 PLANO|Unknown syscall|VBlank tick #[0-9]*000 |sceSifSetDma|SIGSEGV|Morto|CreateThread|StartThread|stub:|INTC:|CreateSema|WaitSema|SignalSema|boot-loop:suspect|GAME_MODE|DelayThread|SleepThread|ThreadEntry|ExitThread|TerminateThread|PASSO 3[abc]|PollSema forj|notify2a1710|FUN_002962d8|FUN_00296300|sub_002963C0|sub_00295568|func_295218|func_2952C8|WaitEventFlag|SetEventFlag|CreateEventFlag|mode_compat|Bug AB|boot_stub.*entry|Starting execution|BOOT#|SyscallOverride|poll_327a40"
+GREP_PATTERN="PARTE 10 PLANO|Unknown syscall|VBlank tick #[0-9]*000 |sceSifSetDma|SIGSEGV|Morto|CreateThread|StartThread|stub:|INTC:|CreateSema|WaitSema|SignalSema|boot-loop:suspect|GAME_MODE|DelayThread|SleepThread|ThreadEntry|ExitThread|TerminateThread|PASSO 3[abc]|PollSema forj|notify2a1710|FUN_002962d8|FUN_00296300|sub_002963C0|sub_00295568|func_295218|func_2952C8|WaitEventFlag|SetEventFlag|CreateEventFlag|mode_compat|Bug AB|boot_stub.*entry|Starting execution|BOOT#|SyscallOverride|poll_327a40|FUN_002947c8"
 
 # ============================================================
 # HELPERS

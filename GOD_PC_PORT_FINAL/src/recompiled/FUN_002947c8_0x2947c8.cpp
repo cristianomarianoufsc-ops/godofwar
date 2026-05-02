@@ -10,6 +10,8 @@
 #include "ps2_log.h"
 #endif
 
+#include <cstdio>
+
 // Function: FUN_002947c8  (Bug P fix — 2026-05-01)
 // Address: 0x2947c8 - 0x2948a0
 // Entry point da Thread 2 (IOP event dispatch loop).
@@ -23,6 +25,8 @@ void FUN_002947c8_0x2947c8(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
 #endif
 
     ctx->pc = 0x2947c8u;
+    fprintf(stderr, "[BugP_entry] FUN_002947c8 START a0=0x%x sp=0x%x\n",
+            GPR_U32(ctx, 4), GPR_U32(ctx, 29));
 
     // 0x2947c8: 0x27bdff80  addiu       $sp, $sp, -0x80
     ctx->pc = 0x2947c8u;
