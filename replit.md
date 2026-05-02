@@ -206,8 +206,9 @@ O usuário não é engenheiro de baixo nível. O progresso técnico é traduzido
 | Sensor diagnóstico no acoplamento SIF + stub permissivo para `dest=0xffffffff` | PARTE 10 PLANO A+B1: `sceSifSetDma` instrumentado + aceita stage transfer | ✅ Bug I ativo/blindado |
 | Ignição de emergência no portão SIF: porteiro aprende a dar o sinal sozinho quando o caminhão passa | PARTE 10 PASSO 3: `WaitSema` forja `iSignalSema` — 35 binds SIF concluídos | ✅ sid=4..35 OK |
 | Checklist de peças: cobrador do armazém responde "chegou" em vez de "ainda não" | Bug O: stub `0x296a54` retorna 1 — sid=4..11 delta=0ms | ✅ Bug O |
-| Segundo motorista recebe o roteiro de entrega completo (estava com a pasta vazia) | Bug P: regen `FUN_002947c8` 0x2947c8→0x294990 — thread id=2 executa de verdade | 🔴 AGUARDANDO REGEN |
-| Checklist de chegada do segundo motorista (formulário de assinatura do portão) | Bug Q: regen `FUN_00294990` 0x294990→0x294a30 — chamada logo após FUN_002947c8 pelo bind loop | 🔴 AGUARDANDO REGEN |
+| Segundo motorista recebe o roteiro de entrega completo (estava com a pasta vazia) | Bug P: regen `FUN_002947c8` 334 linhas escrita — aguarda `bash recompilar.sh` | 🟡 ESCRITO, AGUARDA COMPILAR |
+| Checklist de chegada do segundo motorista (formulário de assinatura do portão) | Bug Q: regen `FUN_00294990` 182 linhas escrita, g++ -fsyntax-only ok — aguarda `bash recompilar.sh` | 🟡 ESCRITO, AGUARDA COMPILAR |
+| Portão SIF tem lombadas crescentes: 1ª livre, da 8ª em diante cada lombada leva 1,7s a mais | Bug Y: módulos 0–7 delta=0ms; módulos 8–35 delay crescente ~1,7s/módulo até 47s; timeout ampliado 300→900s | ⚠️ GARGALO ATIVO |
 | Carburador, transmissão, suspensão | Subsistemas: GS (gráficos), DMA, áudio, controle | 🔜 depois |
 | Test drive | Jogo rodando até a primeira fase jogável | 🔜 longe |
 
@@ -224,8 +225,9 @@ O usuário não é engenheiro de baixo nível. O progresso técnico é traduzido
 | Portão de carga SIF: sensor diagnóstico + stub permissivo instalados | PARTE 10 PLANO A+B1: `sceSifSetDma` instrumentado + aceita `dest=0xffffffff` | ✅ Bug I blindado |
 | Agente infiltrado acorda o guarda adormecido: intercepta o sinal que o IOP nunca mandou e forja a resposta | PARTE 10 PASSO 3: WaitSema forja `iSignalSema` — 35 binds SIF concluídos | ✅ sid=4..35 OK |
 | Informante diz "já recebi as encomendas" em vez de "ainda não chegou" | Bug O: stub `0x296a54` retorna 1 — eliminando poll infinito dos primeiros 8 módulos | ✅ Bug O |
-| Agente 2 finalmente recebe o dossiê completo — não mais uma pasta com só a capa | Bug P: regen `FUN_002947c8` 0x2947c8→0x294990 — thread id=2 opera de verdade | 🔴 AGUARDANDO REGEN |
-| Porteiro do cofre assina a ficha de entrada do Agente 2 (sem assinatura ele não passa) | Bug Q: regen `FUN_00294990` 0x294990→0x294a30 — segunda função truncada no mesmo bloco | 🔴 AGUARDANDO REGEN |
+| Agente 2 finalmente recebe o dossiê completo — não mais uma pasta com só a capa | Bug P: regen `FUN_002947c8` 334 linhas escrita — aguarda `bash recompilar.sh` para entrar em campo | 🟡 DOSSIÊ PRONTO, AGUARDA ENTREGA |
+| Porteiro do cofre assina a ficha de entrada do Agente 2 (sem assinatura ele não passa) | Bug Q: regen `FUN_00294990` 182 linhas escrita, sintaxe ok — aguarda `bash recompilar.sh` | 🟡 FICHA PRONTA, AGUARDA ENTREGA |
+| Corredor com 32 câmeras: as 8 primeiras têm sensor instantâneo; da 9ª em diante cada câmera demora 1,7s a mais pra resetar | Bug Y: módulos 0–7 delta=0ms; módulos 8–35 delay crescente; janela ampliada de 300→900s | ⚠️ CÂMERAS LENTAS |
 | Próximos guardas internos previstos | VIF1/DMA com payloads válidos, GS, áudio, controle | 🔜 ato 3 |
 | Fuga com o alvo | Jogo rodando até a primeira fase jogável | 🔜 final |
 
