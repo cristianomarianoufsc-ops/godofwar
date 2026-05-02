@@ -57,7 +57,7 @@ set -u
 # ============================================================
 PROJECT_DIR="${PROJECT_DIR:-$HOME/Documentos/GitHub/godofwar}"
 POLL_INTERVAL=30                  # segundos entre checagens de novo commit
-RUN_TIMEOUT=900                   # segundos rodando o jogo (jogar.sh) — aumentado de 300→900 (Bug Y: delay crescente ~1.7s/módulo, 32 módulos em 300s; precisa de 900s pra ver pós-bind)
+RUN_TIMEOUT=300                   # segundos rodando o jogo (jogar.sh) — reduzido de 900→300 (Bug AB fix: diagnóstico de Bug P é rápido; se precisar de mais tempo após Bug P, aumentar)
 LOG_BRANCH="logs/auto"
 LOG_DIR_NAME="runs_automaticos"
 STATE_FILE_NAME=".auto_round_last_hash"
