@@ -345,11 +345,14 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 ---
 
-## 🟢 ESTADO ATUAL — Round 2026-05-01: 32 módulos SIF bindados, 300s completos, Bug Y é o gargalo
+## 🟢 ESTADO ATUAL — 2026-05-02: cadeia Bug AB→Bug P verificada limpa, logs diagnóstico adicionados
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z — RESOLVIDOS
 ### ✅ PASSO 3c:auto — IMPLEMENTADO 2026-05-02 (`ps2_syscalls_flags.inl`)
 ### ✅ VBlank log notify2a1710 — IMPLEMENTADO 2026-05-02 (`game_overrides.cpp`)
+### ✅ Log poll loop (0x327a40) — IMPLEMENTADO 2026-05-02 (`entry_2964f0_0x296518.cpp`)
+### ✅ Log entrada Bug P — IMPLEMENTADO 2026-05-02 (`FUN_002947c8_0x2947c8.cpp`)
+### ⚠️ Bug AB — FIX PRONTO, AGUARDA PUSH DO CRIS
 ### ⚠️ Bug Q — CORRIGIDO ANTECIPADAMENTE (2026-05-01, aguarda recompilar.sh)
 ### ⚠️ Bugs R–W — todos truncados, aguardando log para priorizar
 
@@ -395,7 +398,19 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 Funções pós-bind-loop verificadas e COMPLETAS: `sub_00296898` (402 linhas), `entry_2969d0` (93 linhas), `entry_296eb8` (53 linhas), `sub_00294AF8` (529 linhas). `StartThread` implementado no runtime (syscall 0x22, `ps2_syscalls.cpp:128`).
 
-**Próximo passo:** rodar `bash auto_round.sh once` → `python3 tools/triage_round.py --short`. Se Bug Q aparecer, reescrever `FUN_00294990_0x294990.cpp` manualmente.
+**Próximo passo (2026-05-02):**
+1. Cris clica em **Push** no Replit
+2. `bash rebuild_runtime.sh` → Bug AB + PASSO 3c:auto + VBlank log
+3. `bash recompilar.sh` → Bug AA + Bug P + log poll_327a40 + log BugP_entry
+4. `bash auto_round.sh once`
+5. `python3 tools/triage_round.py --short`
+
+**Logs novos a monitorar no próximo round:**
+- `[poll_327a40] INICIO/spinning/SAIU` — `entry_2964f0_0x296518.cpp`
+- `[BugP_entry] FUN_002947c8 START` — `FUN_002947c8_0x2947c8.cpp`
+
+Se aparecer `[BugP_entry]` mas não `[poll_327a40] SAIU` → Bug P trava antes de setar `*(0x327a40)` → próximo bug dentro de `FUN_002947c8`.
+Se não aparecer `[BugP_entry]` → Bug AB não resolveu tudo → outro WaitEventFlag bloqueante.
 
 ---
 

@@ -94,11 +94,11 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-02 — PASSO 3b+3c implementados)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-02 — análise intermediários + logs diagnóstico)
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z — RESOLVIDOS
 
-### 🔴 BLOQUEADOR ATUAL — Bug AB (WaitEventFlag ILLEGAL_MODE) aguarda round (2026-05-02)
+### 🔴 BLOQUEADOR ATUAL — Bug AB (WaitEventFlag ILLEGAL_MODE) aguarda push + round (2026-05-02)
 
 **🏆 Situação do último round** (log `258538d`, 2026-05-02 — PROGRESSO HISTÓRICO):
 - PASSO 3b + PASSO 3c funcionaram: `[PASSO 3c] Escrevendo 1 em *(0x2a1710)` ✅
@@ -253,36 +253,82 @@ Testado contra log atual (2026-05-01) → detectou corretamente Bug X: `🔴 id=
 
 ---
 
-## 📋 Próxima ação do analista (atualizado 2026-05-01 — Round completado: 32 módulos SIF)
+## 📋 Próxima ação do analista (atualizado 2026-05-02 — análise cadeia intermediária completa)
 
-### Resultado do round anterior (2026-05-01)
-- **32 módulos IOP bindados** (sids 4–35), todos acordados via PASSO 3
-- Jogo rodou **300 segundos completos** (timeout) — sem crash, sem SIGSEGV
-- Após sid=35: silêncio (só VBlank ticks) até o timeout — próxima fase não logada
-- Bug Q (FUN_00294990) e Bug P (FUN_002947c8) **NÃO estavam compilados** neste round (`rebuild_runtime.sh` não compila recompiled/*.cpp)
-- Bug X (cop0_status) **foi compilado** (rebuild_runtime.sh inclui ps2_runtime.h)
+### O que foi feito nesta sessão (2026-05-02 — sem round novo)
 
-### Passo 1 — Compilar Bug P e Bug Q (PRIORITÁRIO)
-```bash
-# No PC do Agente Cris:
-bash recompilar.sh    # compila recompiled/*.cpp — inclui Bug P e Bug Q
+**Análise estática da cadeia Bug AB → Bug P — TODAS as funções intermediárias verificadas:**
+
+| Função | Linhas | Truncada? | Declarada |
+|---|---|---|---|
+| `entry_296c48` | 573 | ✅ Não | 0x296c48–0x296de8 |
+| `entry_296518` | 758 | ✅ Não | 0x296518–0x296798 |
+| `entry_2967d0` | 144 | ✅ Não | 0x2967d0–0x296848 |
+| `entry_2964f0` | 59 | ✅ Não | 0x2964f0–0x296518 |
+
+**Novo achado — poll loop em `entry_296c48` (label_296da0):**
+- `entry_2964f0(a0=0)` = `READ32(0x327a40)` — lê um flag de memória
+- Loop gira até `*(0x327a40) != 0` (flag setado pela thread tid=2 durante init)
+- Se Bug P impedir a thread de completar a init → poll gira para sempre (silent hang)
+- `cooperativeGuestYield()` presente no loop → runtime não trava, só parece lento
+
+**Logs de diagnóstico adicionados (compilam com `recompilar.sh`):**
+- `entry_2964f0_0x296518.cpp`: `[poll_327a40] INICIO` / `spinning count=N` (a cada 500) / `SAIU poll_ok`
+- `FUN_002947c8_0x2947c8.cpp`: `[BugP_entry] FUN_002947c8 START a0=0x... sp=0x...`
+
+**GREP_PATTERN atualizado:** `+poll_327a40 +FUN_002947c8`
+
+---
+
+### 🚨 PUSH PENDENTE — Cris precisa clicar em Push
+
+**Todos esses fixes estão prontos mas NÃO foram ao GitHub ainda:**
+
+| Arquivo | Fix | Script de build |
+|---|---|---|
+| `PS2Recomp/ps2xRuntime/src/lib/syscalls/ps2_syscalls_flags.inl` | Bug AB + PASSO 3c:auto | `rebuild_runtime.sh` |
+| `GOD_PC_PORT_FINAL/src/recompiled/FUN_002962d8_*.cpp` | Bug AA | `recompilar.sh` |
+| `GOD_PC_PORT_FINAL/src/recompiled/FUN_00296300_*.cpp` | Bug AA | `recompilar.sh` |
+| `GOD_PC_PORT_FINAL/src/recompiled/FUN_002947c8_0x2947c8.cpp` | Bug P + log entrada | `recompilar.sh` |
+| `GOD_PC_PORT_FINAL/src/recompiled/entry_2964f0_0x296518.cpp` | log poll_327a40 | `recompilar.sh` |
+| `game_overrides.cpp` | VBlank log notify2a1710 | `rebuild_runtime.sh` |
+| `auto_round.sh` | GREP_PATTERN expandido | (script, sem build) |
+
+**Após o Push do Cris:**
+1. `bash rebuild_runtime.sh` → compila Bug AB + PASSO 3c:auto + VBlank log
+2. `bash recompilar.sh` → compila Bug AA + Bug P + logs entry_2964f0
+3. `bash auto_round.sh once`
+
+---
+
+### O que o próximo log deve mostrar
+
+**Cenário A — Bug P funcionando (esperado):**
 ```
-`rebuild_runtime.sh` (usado pelo `auto_round.sh`) NÃO compila esses arquivos. É preciso rodar `recompilar.sh` UMA VEZ para empacotar os fixes. Depois `auto_round.sh` usa o binário já compilado.
-
-### Passo 2 — Rodar round com timeout estendido
-```bash
-bash auto_round.sh once   # RUN_TIMEOUT agora = 900s (atualizado nesta sessão)
-python3 tools/triage_round.py --short
+[WaitEventFlag:mode_compat] Bug AB — unknown_bits=0x... × 30+
+[CreateThread] ...
+[StartThread] tid=2 entry=0x2947c8
+[BugP_entry] FUN_002947c8 START a0=0x... sp=0x...
+[poll_327a40] INICIO poll loop addr=0x327a40
+... (thread roda) ...
+[poll_327a40] SAIU poll_ok count=N addr=0x327a40 val=0x1
 ```
 
-### Passo 3 — O que esperar no próximo round
-- Bug Y (delay crescente) ainda vai estar presente, mas com 900s o jogo vai bem além de sid=35
-- **StartThread** pode aparecer agora com Bug X compilado — se aparecer, Bug P entra em ação
-- Após o bind loop terminar: alguma função nova vai aparecer — provavelmente `Unknown syscall` ou `DelayThread`
-- Se delay ainda for problema: investigar a função de polling entre bind e WaitSema (delta > 1s)
+**Cenário B — Bug P trava antes de setar 0x327a40 (poll loop sem saída):**
+```
+[BugP_entry] FUN_002947c8 START ...
+[poll_327a40] INICIO poll loop addr=0x327a40
+[poll_327a40] spinning count=500 addr=0x327a40 val=0x0
+[poll_327a40] spinning count=1000 ...
+(sem SAIU — próximo bug dentro de FUN_002947c8)
+```
 
-### Passo 4 — Bug Y (delay crescente) — diagnóstico no próximo round
-O padrão `DelayThread|SleepThread` foi adicionado ao `GREP_PATTERN` nesta sessão. Se o retry loop usar sleep, vai aparecer no próximo log. Endereços do bind loop para investigação: `jal 0x293c60` (0x29736c = WaitSema), `jal 0x293c30` (0x297374 = SignalSema?), `jal 0x2969d0` (0x2973a4 = entry bind/callback).
+**Cenário C — StartThread não chamado (Bug AB não resolveu tudo):**
+```
+[WaitEventFlag:mode_compat] × 30+
+(sem [BugP_entry], sem [poll_327a40])
+→ Investigar se há outro WaitEventFlag bloqueante adiante de sub_0029AA88
+```
 
 ### ⚠️ Lembrete ao analista
 Sempre pedir ao Agente Cris para clicar em **Push** no Replit após qualquer edição de código.
