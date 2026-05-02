@@ -81,6 +81,13 @@ _RE_THREAD_CREATE = re.compile(
     r"(?:\s+stack=(0x\w+))?(?:\s+size=(0x\w+))?(?:\s+gp=(0x\w+))?(?:\s+prio=(\d+))?")
 _RE_THREAD_START  = re.compile(
     r"\[StartThread\] id=(\d+)")
+_RE_POLL_ZERO = re.compile(
+    r"\[PollSema:zero\] sid=(\d+) calls=(\d+) pc=(0x\w+) ra=(0x\w+)")
+_RE_POLL_OK   = re.compile(
+    r"\[PollSema:ok\] sid=(\d+) pc=(0x\w+) ra=(0x\w+)")
+_RE_PASSO3B   = re.compile(
+    r"\[PASSO 3b\] PollSema forjando KE_OK sid=(\d+) calls=(\d+)"
+    r" delta_ms=(\d+) pc=(0x\w+) ra=(0x\w+)")
 
 
 def fetch_url(url: str) -> str:
@@ -121,6 +128,9 @@ def parse_log(text: str) -> dict:
         "total_lines":     0,
         "threads_created": [],   # [{id, entry, prio}]
         "threads_started": [],   # [id]
+        "poll_zero":       [],   # [{sid, calls, pc, ra}] — primeira ocorrência por sid
+        "poll_ok":         [],   # [{sid, pc, ra}] — primeira vez que sid teve sucesso
+        "passo3b":         [],   # [{sid, calls, delta_ms, pc, ra}] — primeira disparo por sid
     }
 
     lines = text.splitlines()
@@ -164,6 +174,20 @@ def parse_log(text: str) -> dict:
             })
         if m := _RE_THREAD_START.search(line):
             d["threads_started"].append(int(m.group(1)))
+        if m := _RE_POLL_ZERO.search(line):
+            entry = {"sid": int(m.group(1)), "calls": int(m.group(2)),
+                     "pc": m.group(3), "ra": m.group(4)}
+            if not any(e["sid"] == entry["sid"] for e in d["poll_zero"]):
+                d["poll_zero"].append(entry)
+        if m := _RE_POLL_OK.search(line):
+            entry = {"sid": int(m.group(1)), "pc": m.group(2), "ra": m.group(3)}
+            if not any(e["sid"] == entry["sid"] for e in d["poll_ok"]):
+                d["poll_ok"].append(entry)
+        if m := _RE_PASSO3B.search(line):
+            entry = {"sid": int(m.group(1)), "calls": int(m.group(2)),
+                     "delta_ms": int(m.group(3)), "pc": m.group(4), "ra": m.group(5)}
+            if not any(e["sid"] == entry["sid"] for e in d["passo3b"]):
+                d["passo3b"].append(entry)
         if _RE_SIGSEGV.search(line):
             d["sigsegv"] = True
         if _RE_CRASH.search(line):
@@ -243,6 +267,24 @@ def report(d: dict, short: bool = False) -> None:
             print("  Nenhum CreateThread registrado.")
 
         print()
+        print("── POLLSEMA (busy-poll IOP) ──────────────────────────────────────────")
+        if d["poll_zero"]:
+            for pz in d["poll_zero"]:
+                sid = pz["sid"]
+                p3b = next((p for p in d["passo3b"] if p["sid"] == sid), None)
+                pk  = next((p for p in d["poll_ok"]  if p["sid"] == sid), None)
+                if p3b:
+                    status = (f"✅ PASSO 3b desbloqueou "
+                              f"(calls={p3b['calls']} delta_ms={p3b['delta_ms']}ms)")
+                elif pk:
+                    status = f"✅ ok — sinalizado por outro caminho"
+                else:
+                    status = f"🔴 BUSY-LOOP ATIVO — nunca desbloqueado"
+                print(f"  sid={sid:>3}  pc={pz['pc']}  ra={pz['ra']}  →  {status}")
+        else:
+            print("  Nenhum PollSema:zero registrado.")
+
+        print()
         print("── ALOCAÇÕES (almoxarifado stub_0013DA10) ────────────────────────────")
         if d["allocs"]:
             print(f"  Total de allocs       : {d['allocs'][-1][0]}")
@@ -299,6 +341,19 @@ def report(d: dict, short: bool = False) -> None:
         estado = (f"🔴 Thread(s) criada(s) mas StartThread NUNCA chamado: "
                   f"id(s)={ids_str}  entry(s)={entries_str}. "
                   f"Bug atual — investigar quem deveria chamar StartThread.")
+    elif d["poll_zero"] and not d["passo3b"] and not all(
+            any(pk["sid"] == pz["sid"] for pk in d["poll_ok"])
+            for pz in d["poll_zero"]):
+        stuck = [pz for pz in d["poll_zero"]
+                 if not any(p["sid"] == pz["sid"]
+                            for p in d["passo3b"] + d["poll_ok"])]
+        sids_str = ", ".join(str(s["sid"]) for s in stuck)
+        estado = (f"🔴 PollSema busy-loop em sid(s)={sids_str} — PASSO 3b não disparou. "
+                  f"Verificar se bindNs > 0 (ao menos 1 bind SIF ocorreu).")
+    elif d["passo3b"]:
+        sids_str = ", ".join(str(p["sid"]) for p in d["passo3b"])
+        estado = (f"🟡 PASSO 3b desbloqueou PollSema sid(s)={sids_str}. "
+                  f"Jogo avançou além do busy-poll — verificar próximo bloqueador.")
     elif last_wake and last_block and last_wake["sid"] == last_block["sid"]:
         if d["sigint"] or (last_vblank and last_vblank[1] > 5000):
             estado = (f"🟡 Round cortado por SIGINT/timeout após sid={last_sid}. "
@@ -323,6 +378,11 @@ def report(d: dict, short: bool = False) -> None:
     print("  Próximo passo sugerido:")
     if d["sigsegv"] or d["crash"]:
         print("  → Analisar backtrace. Bug novo (SIGSEGV) — identificar PC do crash.")
+    elif d["passo3b"]:
+        for p in d["passo3b"]:
+            print(f"  → PASSO 3b desbloqueou sid={p['sid']} (ra={p['ra']}). "
+                  f"Verificar último bloqueador no log após este ponto.")
+        print("  → Analisar últimas 10 linhas e próximo CreateSema/WaitSema/PollSema.")
     elif threads_pendentes:
         for t in threads_pendentes:
             print(f"  → BUG ATUAL: StartThread nunca chamado para tid={t['id']} "
