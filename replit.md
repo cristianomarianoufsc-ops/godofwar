@@ -229,7 +229,7 @@ O usuário não é engenheiro de baixo nível. O progresso técnico é traduzido
 | Agente 2 finalmente recebe o dossiê completo — não mais uma pasta com só a capa | Bug P: regen `FUN_002947c8` 334 linhas escrita — aguarda `bash recompilar.sh` para entrar em campo | 🟡 DOSSIÊ PRONTO, AGUARDA ENTREGA |
 | Porteiro do cofre assina a ficha de entrada do Agente 2 (sem assinatura ele não passa) | Bug Q: regen `FUN_00294990` 182 linhas escrita, sintaxe ok — aguarda `bash recompilar.sh` | 🟡 FICHA PRONTA, AGUARDA ENTREGA |
 | Corredor com 32 câmeras: porteiro nunca assinava a ficha de liberação — câmera travada no ciclo de conferência | Bug Y: porteiro (`sub_00297290`) retornava 0 + ficha (`*(s1+0x24)`) em branco → supervisor (`entry_298910`) mandava o guarda aguardar 1M ciclos e tentar de novo. Fix: assinar a ficha e retornar 1. Aguarda `bash recompilar.sh` | 🟡 FICHA ASSINADA, AGUARDA ENTREGA |
-| Câmera oculta instalada no corredor pós-CreateSema 9: vigia invisível pego em flagrante | Bug Z: `PollSema` não tinha nenhum log — busy-loop em sid=9 era câmera cega. Adicionado log primeira chamada + a cada 1M por sid (pc + ra). Aguarda `rebuild_runtime.sh` + round. | 🟡 CÂMERA INSTALADA, AGUARDA ENTREGA |
+| Porteiro do VBlank acorda na primeira batida (não mais na 10.000ª) | Bug Z fase 2: `PollSema(sid=7)` era poll-por-VBlank (1 call/frame → nunca chegava a 10k calls). Fix: `callCount==1` adicionado ao PASSO 3b. | ✅ Bug Z RESOLVIDO |
 | Próximos guardas internos previstos | VIF1/DMA com payloads válidos, GS, áudio, controle | 🔜 ato 3 |
 | Fuga com o alvo | Jogo rodando até a primeira fase jogável | 🔜 final |
 
@@ -277,7 +277,7 @@ PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_teste.txt
 | **O** — stub `0x296a54` retornava 0 → deltas crescentes, sid=12+: ~1600ms/módulo | ✅ CONFIRMADO | `game_overrides.cpp` | `$v0=0` → `$v0=1` — sid=4..11 agora delta=0ms; sid=12+ melhora ~15% (causa secundária persiste) | 2026-05-01 |
 | **P–W** — 8 funções truncadas na região 0x29xxxx/0x23xxxx/0x24xxxx (corpo da thread 2 e vizinhança do bind loop) | ✅ REGEN FEITA | `truncation_overrides.csv` | `bash tools/regen_truncated.sh` executado pelo Agente Cris — sem efeito visível enquanto Bug X persiste | 2026-05-01 |
 | **X** — `StartThread` NUNCA chamado para tid=2 (entry=0x2947c8) — VBlank loop infinito pós-sid=19 | ✅ RESOLVIDO | `PS2Recomp/ps2xRuntime/include/ps2_runtime.h` | `cop0_status = 0x00010001` — IE=1 faz `func_294618` retornar 0, branch cai em StartThread | 2026-05-01 |
-| **Z** — `PollSema` sem logging + sem PASSO 3b — busy-loop em sid=9 invisível e eterno | 🟡 CORRIGIDO | `ps2_syscalls_flags.inl` | (1) Log primeira falha/sucesso por sid + a cada 1M. (2) PASSO 3b: a cada 10k calls sem sucesso com deltaMsSinceBind ≥ 0 → retorna KE_OK forjado (mesmo mecanismo do PASSO 3 de WaitSema). Aguarda rebuild_runtime + round | 2026-05-02 |
+| **Z** — `PollSema` sem logging + sem PASSO 3b — poll-por-VBlank em sid=7 (e busy-loop em sid=9) | ✅ RESOLVIDO | `ps2_syscalls_flags.inl` | (1) Log primeira falha/sucesso por sid + a cada 1M. (2) PASSO 3b fase 1: a cada 10k calls (busy-loop). (3) PASSO 3b fase 2 (2026-05-02): `callCount==1 \|\| callCount%10000==0` — captura também poll-por-VBlank (1 call/frame, nunca chega a 10k). `[PollSema:zero] sid=7 calls=1` → PASSO 3b dispara imediatamente. Aguarda rebuild_runtime + round. | 2026-05-02 |
 
 ---
 

@@ -463,12 +463,14 @@ void PollSema(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
     }
 
     // PASSO 3b — forja resposta do IOP para PollSema bloqueada apos bind SIF.
-    // A cada 10k chamadas sem sucesso, se ao menos um RPC_BIND ja ocorreu
-    // (deltaMsSinceBind >= 0), o IOP jamais vai sinalizar → forja KE_OK.
-    // Mesmo mecanismo do PASSO 3 (WaitSema), adaptado para busy-poll:
+    // Dois padrao de uso detectados:
+    //   (a) Busy-loop: jogo chama PollSema em loop apertado → callCount chega a 10k rapido.
+    //   (b) Poll-por-VBlank: jogo chama PollSema 1x/frame, entra em VBlank loop se SEMA_ZERO.
+    //       Neste caso callCount=1 nunca chegaria a 10k dentro do timeout.
+    //       callCount==1 captura a primeira falha e retorna KE_OK imediatamente.
+    // Condicao: ao menos um RPC_BIND ja ocorreu (deltaMsSinceBind >= 0).
     // nao altera sema->count — apenas retorna KE_OK para que o jogo avance.
-    // Na proxima rodada de polling (callCount=20k, 30k, ...) repete se necessario.
-    if (callCount % 10000u == 0)
+    if (callCount == 1 || callCount % 10000u == 0)
     {
         const uint64_t bindNs = ::gow_get_sif_bind_monotonic_ns();
         if (bindNs != 0u)

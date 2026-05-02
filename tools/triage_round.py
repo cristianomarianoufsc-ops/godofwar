@@ -267,19 +267,23 @@ def report(d: dict, short: bool = False) -> None:
             print("  Nenhum CreateThread registrado.")
 
         print()
-        print("── POLLSEMA (busy-poll IOP) ──────────────────────────────────────────")
+        print("── POLLSEMA (busy-poll / poll-por-VBlank) ────────────────────────────")
         if d["poll_zero"]:
             for pz in d["poll_zero"]:
                 sid = pz["sid"]
                 p3b = next((p for p in d["passo3b"] if p["sid"] == sid), None)
                 pk  = next((p for p in d["poll_ok"]  if p["sid"] == sid), None)
                 if p3b:
-                    status = (f"✅ PASSO 3b desbloqueou "
-                              f"(calls={p3b['calls']} delta_ms={p3b['delta_ms']}ms)")
+                    calls = int(p3b["calls"])
+                    padrao = "poll-por-VBlank" if calls <= 1 else "busy-loop"
+                    status = (f"✅ PASSO 3b ({padrao}) desbloqueou "
+                              f"(calls={calls} delta_ms={p3b['delta_ms']}ms)")
                 elif pk:
                     status = f"✅ ok — sinalizado por outro caminho"
                 else:
-                    status = f"🔴 BUSY-LOOP ATIVO — nunca desbloqueado"
+                    calls_zero = int(pz.get("calls", 0))
+                    padrao = "poll-por-VBlank" if calls_zero <= 1 else "busy-loop"
+                    status = f"🔴 {padrao.upper()} ATIVO — nunca desbloqueado"
                 print(f"  sid={sid:>3}  pc={pz['pc']}  ra={pz['ra']}  →  {status}")
         else:
             print("  Nenhum PollSema:zero registrado.")
