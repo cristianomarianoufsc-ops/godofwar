@@ -423,8 +423,43 @@ void PollSema(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
     if (sema->count > 0)
     {
         sema->count--;
+
+        // Log primeira vez que PollSema tem sucesso para cada sid
+        static std::mutex s_pollOkMutex;
+        static std::unordered_set<int> s_pollOkLogged;
+        {
+            std::lock_guard<std::mutex> lk(s_pollOkMutex);
+            if (s_pollOkLogged.insert(sid).second)
+            {
+                std::cout << "[PollSema:ok] sid=" << sid
+                          << " pc=0x" << std::hex << ctx->pc
+                          << " ra=0x" << getRegU32(ctx, 31)
+                          << std::dec << std::endl;
+            }
+        }
+
         setReturnS32(ctx, KE_OK);
         return;
+    }
+
+    // count == 0 — KE_SEMA_ZERO
+    // Log primeira vez + a cada 1M chamadas por sid para detectar busy-loop
+    static std::mutex s_pollZeroMutex;
+    static std::unordered_map<int, uint64_t> s_pollZeroCount;
+    bool doLog = false;
+    uint64_t callCount = 0;
+    {
+        std::lock_guard<std::mutex> lk(s_pollZeroMutex);
+        callCount = ++s_pollZeroCount[sid];
+        doLog = (callCount == 1) || (callCount % 1000000u == 0);
+    }
+    if (doLog)
+    {
+        std::cout << "[PollSema:zero] sid=" << sid
+                  << " calls=" << callCount
+                  << " pc=0x" << std::hex << ctx->pc
+                  << " ra=0x" << getRegU32(ctx, 31)
+                  << std::dec << std::endl;
     }
 
     setReturnS32(ctx, KE_SEMA_ZERO);

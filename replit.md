@@ -209,6 +209,7 @@ O usuário não é engenheiro de baixo nível. O progresso técnico é traduzido
 | Segundo motorista recebe o roteiro de entrega completo (estava com a pasta vazia) | Bug P: regen `FUN_002947c8` 334 linhas escrita — aguarda `bash recompilar.sh` | 🟡 ESCRITO, AGUARDA COMPILAR |
 | Checklist de chegada do segundo motorista (formulário de assinatura do portão) | Bug Q: regen `FUN_00294990` 182 linhas escrita, g++ -fsyntax-only ok — aguarda `bash recompilar.sh` | 🟡 ESCRITO, AGUARDA COMPILAR |
 | Portão SIF tem lombadas crescentes: 1ª livre, da 8ª em diante cada lombada leva 1,7s a mais | Bug Y: `sub_00297290` retorna 0 após WaitSema + `*(s1+0x24)` não preenchido → spin 1M iters + retry. Fix: `WRITE32(*(s1+0x24),1)` + `$v0=1` nos dois paths de sucesso. Aguarda `bash recompilar.sh` | 🟡 FIXADO, AGUARDA COMPILAR |
+| Câmera de segurança instalada no corredor após CreateSema 9 | Bug Z: `PollSema` sem nenhum log → busy-loop em sid=9 invisível. Fix: log primeira chamada + a cada 1M por sid em `ps2_syscalls_flags.inl`. Aguarda `bash rebuild_runtime.sh` | 🟡 INSTRUMENTADO, AGUARDA ROUND |
 | Carburador, transmissão, suspensão | Subsistemas: GS (gráficos), DMA, áudio, controle | 🔜 depois |
 | Test drive | Jogo rodando até a primeira fase jogável | 🔜 longe |
 
@@ -228,6 +229,7 @@ O usuário não é engenheiro de baixo nível. O progresso técnico é traduzido
 | Agente 2 finalmente recebe o dossiê completo — não mais uma pasta com só a capa | Bug P: regen `FUN_002947c8` 334 linhas escrita — aguarda `bash recompilar.sh` para entrar em campo | 🟡 DOSSIÊ PRONTO, AGUARDA ENTREGA |
 | Porteiro do cofre assina a ficha de entrada do Agente 2 (sem assinatura ele não passa) | Bug Q: regen `FUN_00294990` 182 linhas escrita, sintaxe ok — aguarda `bash recompilar.sh` | 🟡 FICHA PRONTA, AGUARDA ENTREGA |
 | Corredor com 32 câmeras: porteiro nunca assinava a ficha de liberação — câmera travada no ciclo de conferência | Bug Y: porteiro (`sub_00297290`) retornava 0 + ficha (`*(s1+0x24)`) em branco → supervisor (`entry_298910`) mandava o guarda aguardar 1M ciclos e tentar de novo. Fix: assinar a ficha e retornar 1. Aguarda `bash recompilar.sh` | 🟡 FICHA ASSINADA, AGUARDA ENTREGA |
+| Câmera oculta instalada no corredor pós-CreateSema 9: vigia invisível pego em flagrante | Bug Z: `PollSema` não tinha nenhum log — busy-loop em sid=9 era câmera cega. Adicionado log primeira chamada + a cada 1M por sid (pc + ra). Aguarda `rebuild_runtime.sh` + round. | 🟡 CÂMERA INSTALADA, AGUARDA ENTREGA |
 | Próximos guardas internos previstos | VIF1/DMA com payloads válidos, GS, áudio, controle | 🔜 ato 3 |
 | Fuga com o alvo | Jogo rodando até a primeira fase jogável | 🔜 final |
 
@@ -274,7 +276,8 @@ PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_teste.txt
 | **N** — PASSO 4 era regressão (escrevia em 0x30AACC em vez de 0x32AF24) | ✅ REVERTIDO | `ps2_syscalls_flags.inl` | Bloco PASSO 4 removido; sem ele, `sub_00297290` preenche 0x32AF24 naturalmente — sid=35+ confirmado sem PASSO 4 | 2026-05-01 |
 | **O** — stub `0x296a54` retornava 0 → deltas crescentes, sid=12+: ~1600ms/módulo | ✅ CONFIRMADO | `game_overrides.cpp` | `$v0=0` → `$v0=1` — sid=4..11 agora delta=0ms; sid=12+ melhora ~15% (causa secundária persiste) | 2026-05-01 |
 | **P–W** — 8 funções truncadas na região 0x29xxxx/0x23xxxx/0x24xxxx (corpo da thread 2 e vizinhança do bind loop) | ✅ REGEN FEITA | `truncation_overrides.csv` | `bash tools/regen_truncated.sh` executado pelo Agente Cris — sem efeito visível enquanto Bug X persiste | 2026-05-01 |
-| **X** — `StartThread` NUNCA chamado para tid=2 (entry=0x2947c8) — VBlank loop infinito pós-sid=19 | 🔴 BLOQUEADOR ATUAL | a identificar | Thread criada mas não iniciada; `triage_round.py` detecta automaticamente na seção `── THREADS EE` | 2026-05-01 |
+| **X** — `StartThread` NUNCA chamado para tid=2 (entry=0x2947c8) — VBlank loop infinito pós-sid=19 | ✅ RESOLVIDO | `PS2Recomp/ps2xRuntime/include/ps2_runtime.h` | `cop0_status = 0x00010001` — IE=1 faz `func_294618` retornar 0, branch cai em StartThread | 2026-05-01 |
+| **Z** — `PollSema` sem logging — busy-loop em sid=9 invisível pós-CreateSema 9 | 🟡 INSTRUMENTADO | `ps2_syscalls_flags.inl` | Log primeira chamada + a cada 1M por sid (pc + ra); aguarda rebuild_runtime + round para confirmar hipótese | 2026-05-02 |
 
 ---
 

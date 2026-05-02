@@ -94,40 +94,42 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-01 — Round: 32 módulos SIF bindados, jogo rodou 300s)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-02 — Bug Z diagnosticado: PollSema cega)
 
-### ✅ Bugs K, L, M, N, O — RESOLVIDOS
-### ✅ Bug X — RESOLVIDO (2026-05-01)
+### ✅ Bugs K, L, M, N, O, X, P — RESOLVIDOS (sessões anteriores)
 
-**Fix:** `PS2Recomp/ps2xRuntime/include/ps2_runtime.h` linha 151:
-```cpp
-cop0_status = 0x00010001;  // IE=1 (bit0) + EIE=1 (bit16)
-```
-`func_294618` retornava sempre 1 (IE=0), pulando `StartThread` no branch de `sub_00294AF8`. Com IE=1 o branch cai no lado certo e `StartThread` é chamado.
+### 🔴 Bug Z — BLOQUEADOR ATUAL (2026-05-02)
 
-### ✅ Bug P — RESOLVIDO (2026-05-01)
+**Situação do último log** (VBlank até #53880, ~15 min de execução):
+- Apenas **2 módulos SIF bindados** (sid=4, sid=5) — regressão de 32 para 2
+- Após wake do sid=5: jogo cria CreateSema 6 (init=1), 7 (init=1), 8 (init=1), 9 (init=0)
+- Depois de CreateSema 9: **silêncio absoluto** — só VBlank ticks até o timeout
+- `[WaitSema:block]` tem 256 slots; apenas 2 usados (sid=4, sid=5) → se WaitSema(9) fosse chamado, apareceria
+- `[StartThread]` tem logging extenso e **NÃO apareceu** → StartThread não foi chamado neste round
+- **Conclusão: jogo em busy-loop `PollSema(9)` — câmera completamente cega**
 
-**Fix:** `GOD_PC_PORT_FINAL/src/recompiled/FUN_002947c8_0x2947c8.cpp` — 334 linhas reescritas manualmente (loop de dispatch de eventos IOP da thread 2). Sintaxe verificada com `g++ -fsyntax-only` — zero erros.
+**Fix aplicado:** `PS2Recomp/ps2xRuntime/src/lib/syscalls/ps2_syscalls_flags.inl` — PollSema instrumentado:
+- Log primeira chamada por sid (`[PollSema:zero] sid=N calls=1 pc=0x... ra=0x...`)
+- Log a cada 1M chamadas por sid para confirmar busy-loop
+- Log primeira vez que PollSema tem sucesso por sid (`[PollSema:ok]`)
 
-### 🔴 Bug Q — PRÓXIMO BLOQUEADOR ESPERADO
+**Próximo passo:** após push → `bash rebuild_runtime.sh --run` no PC → ler log com `[PollSema:zero]`
 
-`FUN_00294990_0x294990.cpp` está truncada (25 linhas, 1 instrução). Está **registrada** em `register_functions.cpp` linha 5494. Chamada por `sub_00297290` via `j func_294990` (endereço 0x29745c, linha 643 do arquivo). Quando o runtime executa essa chamada, usa o stub truncado — executa `addiu $sp, $sp, -0x20` e retorna imediatamente. Contém GetThreadId (syscall -0x2F) + lógica de registro pós-bind. **Precisa de reescrita manual** (mesmo padrão que Bug P — regen não funciona por overlap de ranges). Range real: `0x294990–0x294a30`.
+**O que esperar no próximo round:**
+- `[PollSema:zero] sid=9 calls=1 pc=0x... ra=0x...` confirma a hipótese
+- `ra` identifica QUEM está chamando PollSema(9) → diz qual função está no loop
+- Se `[PollSema:zero]` NÃO aparecer → o jogo está num spin loop sem syscall (incomum)
 
-### ⚠️ Bugs R–W — TODOS ainda truncados (25–28 linhas cada)
+### ⚠️ Bug Q — TRUNCADA, AGUARDA recompilar.sh
 
-Regen P–W **não corrigiu nenhum deles**. Todos estão no `truncation_overrides.csv` com ranges corretos mas o ps2_recomp tem o mesmo problema de overlap. **Bug R** (FUN_00294c70): provavelmente OK — seu código está inline em `sub_00294AF8` (cobre 0x294af8–0x294c98) e nenhum chamador direto externo foi encontrado. **Bugs S–W**: fora do caminho crítico imediato confirmado, aguardam log para confirmar relevância.
+`FUN_00294990_0x294990.cpp` — 182 linhas reescritas manualmente (2026-05-01). Sintaxe verificada. Aguarda `bash recompilar.sh` (não `rebuild_runtime.sh`).
 
-### 📊 Funções pós-bind-loop verificadas — COMPLETAS
+### 🟡 Bugs Y, P — ESCRITOS, AGUARDAM recompilar.sh
 
-- `sub_00296898` (402 linhas) ✅
-- `entry_2969d0_0x296a10` (93 linhas) ✅
-- `entry_296eb8_0x296ed8` (53 linhas) ✅
-- `sub_00294AF8_0x294af8` (529 linhas) ✅ — contém código de Bug R inline
-- `StartThread`: syscall 0x22 implementado em `ps2_syscalls.cpp:128` ✅
+- **Bug P**: `FUN_002947c8_0x2947c8.cpp` — 334 linhas. Aguarda `recompilar.sh`.
+- **Bug Y**: `sub_00297290_0x297290.cpp` — WRITE32 + $v0=1 nos dois caminhos. Aguarda `recompilar.sh`.
 
-### ⚠️ Build em andamento no PC do Agente Cris
-
-O agente anterior mandou `bash build.sh` (errado — deveria ser `bash recompilar.sh`). O build foi interrompido em 44% e continuado com `recompilar.sh`, que retomou de 44% e está terminando o restante. Quando terminar, rodar `bash auto_round.sh once` e ler o log.
+### ⚠️ Bugs R–W — Aguardando log para confirmar relevância
 
 ---
 
@@ -160,6 +162,7 @@ O agente anterior mandou `bash build.sh` (errado — deveria ser `bash recompila
 | **W** — FUN_00244600 truncada | ⚠️ AGUARDANDO LOG | `truncation_overrides.csv` | 25 linhas; 36 referências estáticas |
 | **X** — `cop0_status=0` → IE=0 → StartThread sempre pulado | ✅ RESOLVIDO | `PS2Recomp/ps2xRuntime/include/ps2_runtime.h` linha 151 | `cop0_status = 0x00000000` → `0x00010001`; fix aguardando rebuild no PC |
 | **Y** — `sub_00297290` retorna 0 após WaitSema; `*(s1+0x24)` fica 0 (sem DMA do IOP) | 🟡 FIXADO, AGUARDA COMPILAR | `src/recompiled/sub_00297290_0x297290.cpp` linhas 387-395 e 456-460 | Dois problemas: (1) delay slot `daddu $v0,$zero,$zero` → $v0=0, `entry_298910@0x29895c` trata 0 como "não pronto" → spin 1M iters; (2) `*(s1+0x24)` nunca preenchido (IOP faria DMA de confirmação). Fix: `WRITE32(*(s1+0x24), 1)` + `$v0=1` nos dois caminhos de sucesso. Aguarda `bash recompilar.sh`. |
+| **Z** — `PollSema` sem logging → busy-loop em sid=9 invisível pós-CreateSema 9 | 🟡 INSTRUMENTADO | `PS2Recomp/ps2xRuntime/src/lib/syscalls/ps2_syscalls_flags.inl` | Log primeira chamada/sucesso por sid + a cada 1M por sid (pc + ra). Aguarda `rebuild_runtime.sh` + round. Próxima sessão: ver `[PollSema:zero] sid=9` no log e usar `ra` para identificar o caller. |
 
 > **Detalhe completo de cada bug** (diagnóstico, dumps, hipóteses descartadas, código aplicado) → `HANDOFF_HISTORICO.md`.
 
