@@ -208,7 +208,7 @@ O usuário não é engenheiro de baixo nível. O progresso técnico é traduzido
 | Checklist de peças: cobrador do armazém responde "chegou" em vez de "ainda não" | Bug O: stub `0x296a54` retorna 1 — sid=4..11 delta=0ms | ✅ Bug O |
 | Segundo motorista recebe o roteiro de entrega completo (estava com a pasta vazia) | Bug P: regen `FUN_002947c8` 334 linhas escrita — aguarda `bash recompilar.sh` | 🟡 ESCRITO, AGUARDA COMPILAR |
 | Checklist de chegada do segundo motorista (formulário de assinatura do portão) | Bug Q: regen `FUN_00294990` 182 linhas escrita, g++ -fsyntax-only ok — aguarda `bash recompilar.sh` | 🟡 ESCRITO, AGUARDA COMPILAR |
-| Portão SIF tem lombadas crescentes: 1ª livre, da 8ª em diante cada lombada leva 1,7s a mais | Bug Y: módulos 0–7 delta=0ms; módulos 8–35 delay crescente ~1,7s/módulo até 47s; timeout ampliado 300→900s | ⚠️ GARGALO ATIVO |
+| Portão SIF tem lombadas crescentes: 1ª livre, da 8ª em diante cada lombada leva 1,7s a mais | Bug Y: `sub_00297290` retorna 0 após WaitSema + `*(s1+0x24)` não preenchido → spin 1M iters + retry. Fix: `WRITE32(*(s1+0x24),1)` + `$v0=1` nos dois paths de sucesso. Aguarda `bash recompilar.sh` | 🟡 FIXADO, AGUARDA COMPILAR |
 | Carburador, transmissão, suspensão | Subsistemas: GS (gráficos), DMA, áudio, controle | 🔜 depois |
 | Test drive | Jogo rodando até a primeira fase jogável | 🔜 longe |
 
@@ -227,7 +227,7 @@ O usuário não é engenheiro de baixo nível. O progresso técnico é traduzido
 | Informante diz "já recebi as encomendas" em vez de "ainda não chegou" | Bug O: stub `0x296a54` retorna 1 — eliminando poll infinito dos primeiros 8 módulos | ✅ Bug O |
 | Agente 2 finalmente recebe o dossiê completo — não mais uma pasta com só a capa | Bug P: regen `FUN_002947c8` 334 linhas escrita — aguarda `bash recompilar.sh` para entrar em campo | 🟡 DOSSIÊ PRONTO, AGUARDA ENTREGA |
 | Porteiro do cofre assina a ficha de entrada do Agente 2 (sem assinatura ele não passa) | Bug Q: regen `FUN_00294990` 182 linhas escrita, sintaxe ok — aguarda `bash recompilar.sh` | 🟡 FICHA PRONTA, AGUARDA ENTREGA |
-| Corredor com 32 câmeras: as 8 primeiras têm sensor instantâneo; da 9ª em diante cada câmera demora 1,7s a mais pra resetar | Bug Y: módulos 0–7 delta=0ms; módulos 8–35 delay crescente; janela ampliada de 300→900s | ⚠️ CÂMERAS LENTAS |
+| Corredor com 32 câmeras: porteiro nunca assinava a ficha de liberação — câmera travada no ciclo de conferência | Bug Y: porteiro (`sub_00297290`) retornava 0 + ficha (`*(s1+0x24)`) em branco → supervisor (`entry_298910`) mandava o guarda aguardar 1M ciclos e tentar de novo. Fix: assinar a ficha e retornar 1. Aguarda `bash recompilar.sh` | 🟡 FICHA ASSINADA, AGUARDA ENTREGA |
 | Próximos guardas internos previstos | VIF1/DMA com payloads válidos, GS, áudio, controle | 🔜 ato 3 |
 | Fuga com o alvo | Jogo rodando até a primeira fase jogável | 🔜 final |
 

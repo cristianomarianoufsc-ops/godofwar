@@ -382,7 +382,14 @@ label_29736c:
         ctx->pc = 0x297380u;
         ctx->in_delay_slot = true; ctx->branch_pc = 0x29737Cu;
             // 0x297380: 0x102d  daddu       $v0, $zero, $zero (Delay Slot)
-        SET_GPR_U64(ctx, 2, (uint64_t)GPR_U64(ctx, 0) + (uint64_t)GPR_U64(ctx, 0));
+            // Bug Y fix: WaitSema+DeleteSema concluíram — bind IOP está completo.
+            // Original retorna $v0=0, mas entry_298910@0x29895c trata 0 como "não pronto"
+            // e entra no spin-loop de 1M iters (~1.7s). Dois problemas:
+            // 1) $v0 deve ser >= 0 E != 0 para sair do beqz@0x29895c
+            // 2) *(s1+0x24) deve ser != 0 (campo que o IOP preencheria via DMA na resposta)
+            // Simulamos o DMA de confirmação do IOP: *(s1+0x24) = 1, $v0 = 1.
+        WRITE32(ADD32(GPR_U32(ctx, 17), 36), 1u); // *(s1+0x24) = 1 — ack IOP simulado
+        SET_GPR_U64(ctx, 2, 1u);                  // $v0 = 1 — sucesso (não 0)
         ctx->in_delay_slot = false;
         if (branch_taken_0x29737c) {
             ctx->pc = 0x2973C0u;
@@ -444,7 +451,10 @@ label_297384:
         ctx->pc = 0x2973B0u;
         ctx->in_delay_slot = true; ctx->branch_pc = 0x2973ACu;
             // 0x2973b0: 0x102d  daddu       $v0, $zero, $zero (Delay Slot)
-        SET_GPR_U64(ctx, 2, (uint64_t)GPR_U64(ctx, 0) + (uint64_t)GPR_U64(ctx, 0));
+            // Bug Y fix (path label_297384): callback 0x2969d0 retornou não-zero →
+            // bind completo no caminho $s2&1. Mesmo fix: *(s1+0x24)=1, $v0=1.
+        WRITE32(ADD32(GPR_U32(ctx, 17), 36), 1u); // *(s1+0x24) = 1 — ack IOP simulado
+        SET_GPR_U64(ctx, 2, 1u);                  // $v0 = 1 — sucesso (não 0)
         ctx->in_delay_slot = false;
         if (branch_taken_0x2973ac) {
             ctx->pc = 0x2973C0u;

@@ -159,7 +159,7 @@ O agente anterior mandou `bash build.sh` (errado — deveria ser `bash recompila
 | **V** — FUN_00238890 truncada | ⚠️ AGUARDANDO LOG | `truncation_overrides.csv` | 28 linhas; 43 referências estáticas — mais chamada entre as truncadas |
 | **W** — FUN_00244600 truncada | ⚠️ AGUARDANDO LOG | `truncation_overrides.csv` | 25 linhas; 36 referências estáticas |
 | **X** — `cop0_status=0` → IE=0 → StartThread sempre pulado | ✅ RESOLVIDO | `PS2Recomp/ps2xRuntime/include/ps2_runtime.h` linha 151 | `cop0_status = 0x00000000` → `0x00010001`; fix aguardando rebuild no PC |
-| **Y** — Retry delay crescente pós-módulo 7 | ⚠️ GARGALO ATIVO | `auto_round.sh` (timeout) | Módulos 0–7 bindados instantaneamente (delta=0ms); módulos 8–35 com delay ~1.7s/módulo crescente (1.7s → 47s); consumiu os 300s em 32 módulos. Fix temporário: `RUN_TIMEOUT=900`. Fix definitivo: identificar função de polling entre bind e WaitSema (suspeita: `DelayThread` no retry loop) |
+| **Y** — `sub_00297290` retorna 0 após WaitSema; `*(s1+0x24)` fica 0 (sem DMA do IOP) | 🟡 FIXADO, AGUARDA COMPILAR | `src/recompiled/sub_00297290_0x297290.cpp` linhas 387-395 e 456-460 | Dois problemas: (1) delay slot `daddu $v0,$zero,$zero` → $v0=0, `entry_298910@0x29895c` trata 0 como "não pronto" → spin 1M iters; (2) `*(s1+0x24)` nunca preenchido (IOP faria DMA de confirmação). Fix: `WRITE32(*(s1+0x24), 1)` + `$v0=1` nos dois caminhos de sucesso. Aguarda `bash recompilar.sh`. |
 
 > **Detalhe completo de cada bug** (diagnóstico, dumps, hipóteses descartadas, código aplicado) → `HANDOFF_HISTORICO.md`.
 
