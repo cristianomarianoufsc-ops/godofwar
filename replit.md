@@ -398,19 +398,26 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 Funções pós-bind-loop verificadas e COMPLETAS: `sub_00296898` (402 linhas), `entry_2969d0` (93 linhas), `entry_296eb8` (53 linhas), `sub_00294AF8` (529 linhas). `StartThread` implementado no runtime (syscall 0x22, `ps2_syscalls.cpp:128`).
 
-**Próximo passo (2026-05-02):**
+**Próximo passo (2026-05-02 — PASSO 4 aplicado):**
 1. Cris clica em **Push** no Replit
-2. `bash rebuild_runtime.sh` → Bug AB + PASSO 3c:auto + VBlank log
-3. `bash recompilar.sh` → Bug AA + Bug P + log poll_327a40 + log BugP_entry
-4. `bash auto_round.sh once`
-5. `python3 tools/triage_round.py --short`
+2. `bash rebuild_runtime.sh` → inclui PASSO 4 (game_overrides.cpp)
+3. `bash auto_round.sh once`
+4. Verificar log: buscar `[PASSO 4]` e `[PASSO 4 FIRE]`
+
+**Bug S — diagnóstico completo (2026-05-02):**
+Thread principal (tid=1) presa em `entry_26c658_0x26c728.cpp`, loop `label_26c6d0`:
+- busy-poll de `*(0x30A1C0)` = `mode` field do SIF RPC client
+- setado ≠ 0 por `sceSifCallRpc`, zerado quando IOP responde
+- sem IOP real → nunca zera → loop eterno com `cooperativeGuestYield`
+- `*(0x2A1710)=1` persiste → VBlank chama `FUN_2963C0 → sub_00295568` a cada tick inuutilmente
+
+**PASSO 4** (`game_overrides.cpp`): no handler VBlank, após tick 60, se `*(0x30A1C0) != 0` por 5 ticks consecutivos → `WRITE32(0x30A1C0, 0)` + `WRITE32(0x2A1710, 0)` → thread desbloqueia.
 
 **Logs novos a monitorar no próximo round:**
-- `[poll_327a40] INICIO/spinning/SAIU` — `entry_2964f0_0x296518.cpp`
-- `[BugP_entry] FUN_002947c8 START` — `FUN_002947c8_0x2947c8.cpp`
-
-Se aparecer `[BugP_entry]` mas não `[poll_327a40] SAIU` → Bug P trava antes de setar `*(0x327a40)` → próximo bug dentro de `FUN_002947c8`.
-Se não aparecer `[BugP_entry]` → Bug AB não resolveu tudo → outro WaitEventFlag bloqueante.
+- `[PASSO 4]: detectou *(0x30A1C0)=0xNN @tick #~65`
+- `[PASSO 4 FIRE]: forcou *(0x30A1C0)=0 e *(0x2A1710)=0 apos 5 VBlanks @tick #~70`
+- PASSO 4 pode disparar múltiplas vezes (um por módulo IOP)
+- Próximo bloqueio provável: outro polling de SIF RPC client em endereço diferente de 0x30A1C0
 
 ---
 

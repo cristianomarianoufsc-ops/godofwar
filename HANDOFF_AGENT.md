@@ -94,62 +94,62 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-02 — Bug R diagnosticado + PASSO 3d aplicado)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-02 — Bug S diagnosticado + PASSO 4 aplicado)
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 
-### 🔴 BLOQUEADOR ATUAL — Bug R (loop `*(0x2a1734)` + FUN_297670) — fix PASSO 3d aplicado, aguarda push + round
+### 🔴 BLOQUEADOR ATUAL — Bug S (loop `*(0x30A1C0)` em entry_26c658) — fix PASSO 4 aplicado, aguarda push + round
 
 ---
 
-**🏆 Situação do último round** (log `7117cbd`, 2026-05-02):
-- PASSO 3b forja PollSema(sid=7) KE_OK ✅  
-- PASSO 3c escreve `*(0x2a1710)=1` ✅  
-- `FUN_0x2963c0` (sub_002963C0) chamada UMA vez ✅  
-- Depois: VBlank tick #60 → #17940 sem nenhum outro evento — loop infinito
+**🏆 Situação do último round** (log `7117cbd`, 2026-05-02 — dados do round anterior):
+- PASSO 3b forja PollSema(sid=7) KE_OK ✅
+- PASSO 3c escreve `*(0x2a1710)=1` ✅
+- PASSO 3d zera `*(0x2a1734)` e `*(0x2a28d0)` ✅ (loops de entry_27a5a8 saem imediatamente)
+- VBlank #60 → #17940 sem nenhum outro evento — **Bug S**: thread principal presa em entry_26c658
 
-**Causa raiz do Bug R — analisada em 2026-05-02 a partir de `entry_27a5a8_0x27a648.cpp`:**
+**Causa raiz do Bug S — analisada em 2026-05-02:**
 
-Após `FUN_0x2963c0` retornar (endereço 0x27a5d4), o jogo entra em **dois loops aninhados**:
+O thread principal (tid=1) fica preso na função `entry_26c658_0x26c728.cpp` no loop `label_26c6d0`:
 
 ```
-// Loop 1 — "RPC busy flag" — 0x2a1734
-label_27a5e8:
-  $v0 = *(0x2a1734)
-  if ($v0 != 0) → jal DelayThread(4ms) → goto label_27a5e8   ← TRAVA AQUI
-
-// Loop 2 — "SIF client status" — 0x2a28d0
-// (só chega aqui quando *(0x2a1734)==0)
-  jal FUN_0x297670(a0=0x2a28d0)
-  if ($v0 != 0) → jal DelayThread(4ms) → goto label_27a5e8
-  // $v0==0 → return (saiu com sucesso)
+// entry_26c658 — label_26c6d0 (busy-poll do SIF RPC client)
+label_26c6d0:
+  jal func_26B918(a0=0x30A1C0)       ← pump/yield SIF
+  jal func_294590(a0=0x30A1C0, a1=0x30A1FF)  ← sceSifCheckStatRpc
+  v0 = (*(0x30A1C0) < 1) ? 1 : 0    ← mode == 0 = done?
+  *(0x2A1350) = v0                   ← escreve status
+  if v0 == 0 → cooperativeGuestYield → goto label_26c6d0  ← LOOP ETERNO
+  // v0 == 1 → exit (mode zerado pelo IOP)
 ```
 
-`FUN_0x297670` (entry_297670_0x2976c8.cpp) retorna:
-- **1 ("ainda ocupado")** se `*(0x2a28d0) != 0` E `*(*(0x2a28d0)+0x18) == *(0x2a28d0+0x4)` E `*(*(0x2a28d0)+0x10) & 1 != 0`
-- **0 ("pronto")** se `*(0x2a28d0) == 0` (null pointer → retorno imediato)
+`*(0x30A1C0)` = campo `mode` do SIF RPC client buffer em 0x30A1C0. É setado para ≠ 0 por `sceSifCallRpc` e zerado quando o IOP envia a resposta. Sem IOP real → nunca zera → loop eterno.
 
-Sem IOP: `*(0x2a1734)` fica no valor inicial (≠ 0 = "RPC em curso") para sempre → DelayThread(4ms) em loop.
+**Por que `*(0x2A1710)=1` persiste:**
+- `*(0x2A1710)=1` faz o VBlank chamar `FUN_2963C0 → sub_00295568` (SIF receive handler)
+- `sub_00295568` lê primeiro byte do buffer IOP→EE; sem IOP, é sempre 0 → early-exit
+- `FUN_2963C0` nunca reseta `*(0x2A1710)` → VBlank continua chamando a cada tick (17940x)
 
-**Fix aplicado — PASSO 3d** (`ps2_syscalls_flags.inl`, 2026-05-02):
-1. Condição PASSO 3b ampliada: `callCount==1 || callCount%10000==0 || isVBlankPollCallsite`  
-   → PollSema do callsite `ra=0x27a6e4` **sempre** retorna KE_OK (IOP sempre "pronto")
-2. Dentro do bloco de forge, adicionado PASSO 3d:  
-   - `WRITE32(0x2a1734, 0)` → zera flag "RPC busy" → Loop 1 não entra  
-   - `WRITE32(0x2a28d0, 0)` → nulifica ponteiro SIF client → Loop 2: `*(0x2a28d0)==0` → retorna 0 → saída imediata  
-3. Logs adicionados: `[PASSO 3d] RPC busy=0x2a1734:N->0  SIFclient=0x2a28d0[0]:N->0 ...`
-4. Rate-limit PASSO 3b atualizado: 8 primeiros + a cada 1000 para callsite VBlank
+**Fix aplicado — PASSO 4** (`game_overrides.cpp`, 2026-05-02):
 
-**Fix adicional — VBlank log de `0x2a1734` + `0x2a28d0`** (`game_overrides.cpp`, 2026-05-02):
-- Adicionado `rpcBusy2a1734=N` e `sifClient2a28d0=N` ao log periódico (todo tick % 60)
-- Permite rastrear se/quando esses endereços mudam após o fix
+Adicionado no handler VBlank `gow_intc_handler_0x182f28`:
+- Após tick 60 (1 segundo de setup legítimo), monitora `*(0x30A1C0)`
+- Se `*(0x30A1C0) != 0` por 5 VBlanks consecutivos:
+  - `WRITE32(0x30A1C0, 0)` → força "IOP respondeu" → thread sai do loop
+  - `WRITE32(0x2A1710, 0)` → para loop VBlank→FUN_2963C0 inútil
+- Log: `[PASSO 4 FIRE] forcou *(0x30A1C0)=0 e *(0x2A1710)=0 apos N VBlanks @tick #T`
+- s_passo4StallTicks reseta a 0 depois do fire → reativa automaticamente para próximas chamadas RPC
+
+**Arquivos alterados:**
+- `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp` — PASSO 4 dentro de gow_intc_handler_0x182f28
 
 **O que esperar no próximo round:**
-- `[PASSO 3b] ... [VBlank callsite]` em cada iteração do PollSema(7)
-- `[PASSO 3d] RPC busy=0x2a1734:N->0  SIFclient=0x2a28d0[0]:N->0` em cada forge
-- VBlank ticks com `rpcBusy2a1734=0 sifClient2a28d0=0` confirmando writes
-- `entry_27a5a8` retorna (sai do loop) → jogo avança para o próximo estágio de init
-- Próximo bloqueio provável: novo `WaitSema` ou `WaitEventFlag` dentro da init pós-SIF
+- `[PASSO 4]: detectou *(0x30A1C0)=0xNN (SIF RPC pendente) @tick #65` (aprox.)
+- `[PASSO 4 FIRE]: forcou *(0x30A1C0)=0 e *(0x2A1710)=0 apos 5 VBlanks @tick #70`
+- Thread sai do loop em entry_26c658 → retorna v0=0 para o chamador
+- Possível: mais chamadas a `func_294590` (sceSifCheckStatRpc) com outros clientes RPC
+- Possível: PASSO 4 dispara múltiplas vezes (uma por módulo IOP inicializado)
+- Próximo bloqueio provável: novo `WaitSema` ou outro polling de SIF RPC client diferente de 0x30A1C0
 
 ---
 

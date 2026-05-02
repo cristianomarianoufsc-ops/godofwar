@@ -414,8 +414,17 @@ namespace
     constexpr uint32_t kGowVblankAltCountAddr    = 0x00334F58u;
     constexpr uint32_t kGowGameModeAddr          = 0x0029C838u;
 
+    // PASSO 4 — SIF RPC client mode at 0x30A1C0 force-done
+    // entry_26c658 (label_26c6d0) busy-polls *(0x30A1C0): set by sceSifCallRpc,
+    // cleared to 0 by the IOP response. Without a real IOP it never clears.
+    // After 5 VBlanks (> tick 60) with mode != 0, we force-clear it.
+    // Also zeroes *(0x2A1710) to stop the useless VBlank→FUN_2963C0 loop.
+    constexpr uint32_t kGowSifRpcClientModeAddr = 0x0030A1C0u;
+    constexpr uint32_t kGowSifNotifyAddr        = 0x002A1710u;
+
     std::atomic<uint64_t> g_gowVblankTickCount{0u};
-    static uint32_t s_gowLastGameMode = 0xFFFFFFFFu;
+    static uint32_t s_gowLastGameMode   = 0xFFFFFFFFu;
+    static uint32_t s_passo4StallTicks  = 0u;
 
     void gow_intc_handler_0x182f28(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime)
     {
@@ -459,6 +468,44 @@ namespace
                       << " rpcBusy2a1734=" << rpcBusy2a1734
                       << " sifClient2a28d0=" << sifClient2a28d0
                       << std::endl;
+        }
+
+        // ----------------------------------------------------------------
+        // PASSO 4 — force SIF RPC client mode 0x30A1C0 = 0 after stall
+        // entry_26c658 (label_26c6d0) busy-polls *(0x30A1C0). Without a
+        // real IOP the field never clears → thread stalls forever.
+        // After tick 60 (1 s of legitimate SIF setup), if *(0x30A1C0)!=0
+        // for 5 consecutive VBlanks, we force it to 0 (IOP done fiction)
+        // and also clear *(0x2A1710) to stop the VBlank→FUN_2963C0 loop.
+        if (tick > 60u)
+        {
+            const uint32_t rpcMode = READ32(kGowSifRpcClientModeAddr);
+            if (rpcMode != 0u)
+            {
+                s_passo4StallTicks++;
+                if (s_passo4StallTicks == 1u)
+                {
+                    std::cerr << "[stub:0x182f28] PASSO 4: detectou *(0x30A1C0)=0x"
+                              << std::hex << rpcMode
+                              << " (SIF RPC pendente) @tick #"
+                              << std::dec << tick << std::endl;
+                }
+                if (s_passo4StallTicks >= 5u)
+                {
+                    WRITE32(kGowSifRpcClientModeAddr, 0u);
+                    WRITE32(kGowSifNotifyAddr, 0u);
+                    std::cerr << "[stub:0x182f28] PASSO 4 FIRE: forcou *(0x30A1C0)=0"
+                              << " e *(0x2A1710)=0"
+                              << " apos " << s_passo4StallTicks
+                              << " VBlanks de stall @tick #"
+                              << std::dec << tick << std::endl;
+                    s_passo4StallTicks = 0u;
+                }
+            }
+            else
+            {
+                s_passo4StallTicks = 0u;
+            }
         }
 
         // PARTE 10 PLANO B2 PASSO 2.5 — dump do client_buf SIF nos ticks
