@@ -10,6 +10,8 @@
 #include "ps2_log.h"
 #endif
 
+#include <cstdio>
+
 // Function: entry_2964f0
 // Address: 0x2964f0 - 0x296518
 void entry_2964f0_0x296518(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtime) {
@@ -41,6 +43,23 @@ void entry_2964f0_0x296518(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         SET_GPR_S32(ctx, 2, (int32_t)READ32(ADD32(GPR_U32(ctx, 4), 0)));
         ctx->in_delay_slot = false;
         ctx->pc = jumpTarget;
+        {
+            static uint32_t poll_count = 0;
+            uint32_t poll_val = GPR_U32(ctx, 2);
+            uint32_t poll_addr = GPR_U32(ctx, 4);
+            poll_count++;
+            if (poll_count == 1) {
+                fprintf(stderr, "[poll_327a40] INICIO poll loop addr=0x%x\n", poll_addr);
+            } else if (poll_count % 500 == 0) {
+                fprintf(stderr, "[poll_327a40] spinning count=%u addr=0x%x val=0x%x\n",
+                        poll_count, poll_addr, poll_val);
+            }
+            if (poll_val != 0) {
+                fprintf(stderr, "[poll_327a40] SAIU poll_ok count=%u addr=0x%x val=0x%x\n",
+                        poll_count, poll_addr, poll_val);
+                poll_count = 0;
+            }
+        }
         return;
     }
     ctx->pc = 0x296508u;
