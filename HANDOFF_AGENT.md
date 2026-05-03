@@ -83,11 +83,54 @@ Versão expandida com exemplos vive em `replit.md §🦆 LIÇÕES METODOLÓGICAS
 
 ---
 
-## 📖 ANALOGIAS — estado atual (2026-04-30 tarde)
+## 🗺️ MAPA DA MISSÃO — OPERAÇÃO ESPARTA (atualizado 2026-05-02)
 
-**Carro:** motor deu 1ª partida (Fix 4+5); guarda neutralizado (Fixes 1+6); bomba aftermarket (PARTE 7 ✅); sensor de injeção rebobinado (PARTE 8 ✅); 4 botões pneumáticos (PARTE 9 ✅); sensor diagnóstico + stub permissivo no acoplamento SIF (PARTE 10 Bugs I/J ✅). **PASSO 2.8 confirmou delta=0ms. PASSO 3 APLICADO: porteiro do semáforo agora dá o sinal sozinho quando o caminhão SIF passa (WaitSema forja iSignalSema). Aguardando round com novo fix.**
+```
+MISSÃO: Fazer o God of War (PS2) rodar nativamente em PC sem emulador.
+O "cofre" tem vários andares. Cada andar = uma fase de inicialização do jogo.
+Cada guarda = um bloqueio que precisa de um "passe" (fix) para ser superado.
 
-**Espionagem:** cofre aberto (Fix 4+5); guardas 1/2 neutralizados; almoxarifado (PARTE 7 ✅); cruzamento (PARTE 8 ✅); switchboard (PARTE 9 ✅); portão SIF (PARTE 10 ✅). **PASSO 3 APLICADO: agente infiltrado forja o sinal do IOP — acorda o guarda adormecido em WaitSema(sid=4). Aguardando round para ver o próximo bloqueio.**
+[ TÉRREO ] — Setup básico do processo
+    ✅ CONCLUÍDO — Bugs A-J resolvidos (entry points, threads, semas, alocadores)
+
+[ 1º ANDAR ] — Inicialização de threads, semáforos, sistema SIF básico
+    ✅ CONCLUÍDO — Bugs K-N, O, X, Z, AB resolvidos
+
+[ 2º ANDAR ] — Protocolo SIF EE↔IOP (comunicação com "IOP fantasma")
+    ✅ Parcialmente. PASSOS 1-4 OK.
+    🔴 Portão atual: poll *(0x327a40) em entry_296c48/label_296c88
+       (Thread 2 nunca chamada → *(0x327a40) fica 0 → timeout 300s)
+       → PASSO 5 implementado: força *(0x327a40)=1 após 60 VBlanks
+
+[ 3º ANDAR ] — SIF CMD init + sceSifBindRpc (mapa preditivo, análise 2026-05-02)
+    ⬜ Entramos aqui após PASSO 5 desbloquear o portão do 2º andar.
+    Sequência conhecida (entry_296518 + entry_296c48 após saída do poll):
+      A. entry_296518 inicializa SIF CMD tables (loops rápidos, ~64 iters)     ← OK ✅
+      B. label_296710: syscall 0x7A poll bit 2 → PARTE 9 retorna -1 → sai     ← OK ✅
+      C. 2x syscall 0x79 (func_294020) → PARTE 9 retorna -1                   ← OK ✅
+      D. TAIL CALL para sub_00296898 (sceSifBindRpc, 402 linhas)              ← OK ✅
+         → SEM cooperativeGuestYield → NÃO BLOQUEIA
+         → Chama sceSifSetDma (syscall 0x77, já stubado) → retorna imediato
+      E. entry_296c48: 4x entry_2967d0 (registra handlers SIF)                ← OK ✅
+      F. syscall 0x7A a0=0x80000002 → PARTE 9 retorna -1 → v0!=0             ← OK ✅
+         → goto label_296dd0 → entry_2969d0 → sub_00296898 → NÃO BLOQUEIA   ← OK ✅
+      G. label_296da0: entry_2964f0(a0=0) → *(0x327A40)=1 → sai imediato    ← OK ✅ (PASSO 5)
+      H. func_294020(a0=0x80000002) → syscall 0x79 → retorna -1               ← OK ✅
+    ★ CONCLUSÃO: toda a cadeia do 3º andar está coberta pelos fixes existentes!
+    ★ Próximo bloqueio: DESCONHECIDO — fora de entry_296c48 (caller acima).
+       Só saberemos após o próximo round com PASSO 5 compilado.
+
+[ COFRE PRINCIPAL ] — Engine: renderer, áudio, input, gameplay
+    ⬜ Objetivo final. Round 258538d chegou perto (texture load + WaitEventFlag)
+```
+
+---
+
+## 📖 ANALOGIAS — estado atual (2026-05-02)
+
+**Carro:** motor deu 1ª partida; bomba aftermarket ✅; sensor rebobinado ✅; 4 botões pneumáticos ✅; acoplamento SIF ✅; porteiro forja sinal IOP ✅. **PASSO 5: mecânico força manualmente o sensor de prontidão da transmissão (*(0x327a40)=1) porque o "cabo do IOP" (0x2C4BC0) ainda não chegou. Transmissão deve destrancar. Aguardando round.**
+
+**Espionagem:** cofre parcialmente aberto; guardas 1-9 neutralizados. **PASSO 5: analista forja o sinal de autorização da Thread 2 diretamente — a Thread 2 estava dormindo porque o mensageiro do IOP (buf@0x2C4BC0) chegou vazio. Com o sinal forjado, a porta do 2º andar abre e o agente avança para o 3º andar. Aguardando round.**
 
 ---
 
