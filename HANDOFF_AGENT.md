@@ -102,26 +102,68 @@ Cada guarda = um bloqueio que precisa de um "passe" (fix) para ser superado.
        (Thread 2 nunca chamada → *(0x327a40) fica 0 → timeout 300s)
        → PASSO 5 implementado: força *(0x327a40)=1 após 60 VBlanks
 
-[ 3º ANDAR ] — SIF CMD init + sceSifBindRpc (mapa preditivo, análise 2026-05-02)
+[ 3º ANDAR ] — entry_296518 (sceSifInitCmd) + entry_296c48 (sceSifInitRpc)
     ⬜ Entramos aqui após PASSO 5 desbloquear o portão do 2º andar.
-    Sequência conhecida (entry_296518 + entry_296c48 após saída do poll):
-      A. entry_296518 inicializa SIF CMD tables (loops rápidos, ~64 iters)     ← OK ✅
-      B. label_296710: syscall 0x7A poll bit 2 → PARTE 9 retorna -1 → sai     ← OK ✅
+    Sequência conhecida (análise estática 2026-05-03):
+      A. entry_296518 — inicializa SIF CMD tables (loops rápidos, ~64 iters)  ← OK ✅
+      B. label_296710 — syscall 0x7A poll bit 2 → PARTE 9 retorna -1 → sai   ← OK ✅
       C. 2x syscall 0x79 (func_294020) → PARTE 9 retorna -1                   ← OK ✅
-      D. TAIL CALL para sub_00296898 (sceSifBindRpc, 402 linhas)              ← OK ✅
-         → SEM cooperativeGuestYield → NÃO BLOQUEIA
-         → Chama sceSifSetDma (syscall 0x77, já stubado) → retorna imediato
-      E. entry_296c48: 4x entry_2967d0 (registra handlers SIF)                ← OK ✅
+      D. TAIL CALL sub_00296898 (sceSifBindRpc, 402 linhas, sem coop.Yield)   ← OK ✅
+      E. entry_296c48: 4x entry_2967d0 (registra handlers SIF, sem loop)      ← OK ✅
       F. syscall 0x7A a0=0x80000002 → PARTE 9 retorna -1 → v0!=0             ← OK ✅
-         → goto label_296dd0 → entry_2969d0 → sub_00296898 → NÃO BLOQUEIA   ← OK ✅
+         → label_296dd0 → entry_2969d0 → sub_00296898 → sem coop.Yield       ← OK ✅
       G. label_296da0: entry_2964f0(a0=0) → *(0x327A40)=1 → sai imediato    ← OK ✅ (PASSO 5)
       H. func_294020(a0=0x80000002) → syscall 0x79 → retorna -1               ← OK ✅
-    ★ CONCLUSÃO: toda a cadeia do 3º andar está coberta pelos fixes existentes!
-    ★ Próximo bloqueio: DESCONHECIDO — fora de entry_296c48 (caller acima).
-       Só saberemos após o próximo round com PASSO 5 compilado.
+    ★ TODA a cadeia 3º andar coberta. Retorno para caller: sub_0027A6B8.
+
+[ 4º ANDAR ] — sub_0027A6B8 (sceSifInitRpc wrapper) + sub_00297290 (Bug Y)
+    ⬜ Caller de entry_296c48 é sub_0027A6B8, chamado de entry_27ab00(a0=0x27).
+    Sequência (análise estática 2026-05-03):
+      A. entry_296c48 retorna → *(0x2A1754) provavelmente -1 (IOP não respondeu)
+      B. sub_0027A6B8: *(0x2A1754) < 0 → entra no caminho de retry
+      C. spin-delay label_27a760 (~1M iters com coop.Yield, ~1.7s) → finito ✅
+      D. sub_00297290(a0=*(0x2A3280), a1=0x80000593, a2=0) ← Bug Y fix ✅
+         → Bug Y simula IOP ack: *(s1+0x24)=1, $v0=1 → retorna imediato
+      E. label_27a7ec: v0!=0 → WRITE32(0x2A1754, 0) → label_27a7f8 → RETURN
+      F. sub_0027A6B8 retorna v0=1 para entry_27ab00
+    ★ COBERTO — spin-delay finito + Bug Y fix garante saída ✅
+
+[ 5º ANDAR ] — entry_27ab00 após sub_0027A6B8 (+ sub_00297470)
+    ⬜ entry_27ab00: se v0!=0 → goto label_27ab34 → sub_00297470(a0=0x2A3280, a1=0x27)
+    Sequência (análise estática 2026-05-03):
+      A. sub_00297470 → 3x entry_296b98 (cache flush, loops finitos)           ← OK ✅
+      B. func_293C40 (iReleaseWaitThread provavelmente) → pequena função       ← provável OK
+      C. entry_27ab00 retorna v0!=0 para sub_0017BC80 (caller)
+    ★ COBERTO — retorna para 6º andar ✅
+
+[ 6º ANDAR ] — sub_0017BC80 (mapa preditivo 2026-05-03)
+    ⬜ Caller principal: sub_0017BC80_0x17bc80 (0x17BC80→0x17BDE0)
+    Sequência completa:
+      A. func_17AA78 → $s1 = (v0<1)?1:0 → pequena, sem loop               ← OK ✅
+      B. entry_296c48(a0=0) ← 1ª CHAMADA — mesmo PASSO 5 bloqueio         ← OK ✅ (PASSO 5)
+         → fast-path se *(0x2A4ABC) já=1 — depende de chamada anterior
+      C. (linhas 80-299, não lido) — inicializações intermediárias
+      D. func_28A0C8 (entry_28a0c8_0x28a128)
+      E. LOOP A — label_17bd14: entry_27ab00(a0=0x3053E4, a1=0x3053E8)
+         → se v0==0: coop.Yield → volta label_17bd08 → D → E (loop)
+         → Bug Y garante v0=1 → sai imediatamente ✅
+      F. entry_296c48(a0=0) ← 2ª CHAMADA → fast-path *(0x2A4ABC)=1 ✅
+      G. sub_00298058 + sub_00298AA0 → desconhecidos ← ⚠️ INCÓGNITA
+      H. LOOP B — label_17bd50: entry_27ab00 novamente
+         → se v0==0: coop.Yield → retry → Bug Y garante saída ✅
+      I. entry_298770 (entry_2984a0_0x298770) → chama entry_296b98 (cache flush) ← OK ✅
+      J. loop label_17bd78 — 8 iterações × sub_0017BBC8 → finito ✅
+      K. sub_0027AD00 → chama entry_296c48 (fast-path ✅)
+      L. sub_0027C100(a0=0) → desconhecido ← ⚠️ INCÓGNITA
+      M. sub_00283570(a0=0x2AC4E0) → desconhecido ← ⚠️ INCÓGNITA
+      N. entry_1389d8 (GRANDE — range 0x138→0x13..., provavelmente ENGINE PRINCIPAL!)
+         → este é o objetivo final — pode ser o game loop ← ⚠️ ALVO PROVÁVEL
+    ★ Próximos bloqueios potenciais: sub_00298058, sub_0027C100, sub_00283570
+       → só saberemos com o log do próximo round após PASSO 5.
 
 [ COFRE PRINCIPAL ] — Engine: renderer, áudio, input, gameplay
-    ⬜ Objetivo final. Round 258538d chegou perto (texture load + WaitEventFlag)
+    ⬜ Objetivo final. entry_1389d8 (0x138xxx) é candidato ao engine principal.
+       Round 258538d chegou perto (texture load + WaitEventFlag)
 ```
 
 ---
@@ -151,11 +193,13 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-02 — PASSO 5 implementado)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-03 — PASSO 5 aguarda round; mapa 3-6 andares concluído)
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
-### ✅ PASSO 4 (Bug S) — Compilado (rebuild_runtime.sh) — NUNCA DISPAROU (*(0x30A1C0) ficou 0 o tempo todo)
-### 🔴 BLOQUEADOR ATUAL — Poll `*(0x327a40)` em entry_296c48/label_296c88 — fix PASSO 5 aplicado, aguarda push + round
+### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
+### ✅ PASSO 4 (Bug S) — Compilado, NUNCA DISPAROU (*(0x30A1C0)==0 — sceSifCallRpc não chamado)
+### ✅ PASSO 5 — FIX APLICADO em game_overrides.cpp — aguarda Push do Cris + round
+### 🔴 AGUARDANDO ROUND — PASSO 5 não testado ainda; cadeia 3º→6º andares mapeada
 
 ---
 
@@ -217,8 +261,11 @@ Adicionado no handler VBlank `gow_intc_handler_0x182f28` após o bloco PASSO 4:
 **O que esperar no próximo round:**
 - `[PASSO 5]: detectou notify2a1710=1 e *(0x327a40)=0 @tick #~8 — buf@0x2C4BC0[0..3]=XX XX XX XX`
 - `[PASSO 5 FIRE]: escreveu *(0x327a40)=1 apos ~60 ticks @tick #~68`
-- Main thread sai do poll loop em entry_296c48
-- Próximo bloqueio desconhecido — novo log vai revelar
+- Main thread sai do poll loop em entry_296c48 (3º andar OK ✅)
+- 4º andar (sub_0027A6B8): spin-delay ~1M iters (~1.7s) + Bug Y já fix → retorna v0=1 ✅
+- 5º andar (entry_27ab00 → sub_00297470): cache flushes, sem bloqueio ✅
+- 6º andar (sub_0017BC80): 2x entry_27ab00 loops (cobertos Bug Y) + 2ª chamada entry_296c48 (fast-path) ✅
+- **Próximos desconhecidos:** sub_00298058, sub_0027C100, sub_00283570, entry_1389d8 (engine principal?)
 
 **Fix orgânico futuro para *(0x327a40) (requer recompilar.sh):**
 - Escrever pacote SIF válido em `0x2C4BC0` (byte[0] != 0) para que sub_00295568 processe

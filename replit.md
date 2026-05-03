@@ -345,16 +345,15 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 ---
 
-## 🟢 ESTADO ATUAL — 2026-05-02: cadeia Bug AB→Bug P verificada limpa, logs diagnóstico adicionados
+## 🟢 ESTADO ATUAL — 2026-05-03: PASSO 5 aplicado; mapa 3º→6º andares concluído (análise estática)
 
-### ✅ Bugs K, L, M, N, O, X, P, Z — RESOLVIDOS
-### ✅ PASSO 3c:auto — IMPLEMENTADO 2026-05-02 (`ps2_syscalls_flags.inl`)
-### ✅ VBlank log notify2a1710 — IMPLEMENTADO 2026-05-02 (`game_overrides.cpp`)
-### ✅ Log poll loop (0x327a40) — IMPLEMENTADO 2026-05-02 (`entry_2964f0_0x296518.cpp`)
-### ✅ Log entrada Bug P — IMPLEMENTADO 2026-05-02 (`FUN_002947c8_0x2947c8.cpp`)
-### ⚠️ Bug AB — FIX PRONTO, AGUARDA PUSH DO CRIS
+### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
+### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
+### ✅ PASSO 3c:auto — IMPLEMENTADO (`ps2_syscalls_flags.inl`)
+### ✅ PASSO 4 (Bug S) — Compilado, NUNCA DISPAROU (*(0x30A1C0)==0 — sceSifCallRpc não chamado)
+### ✅ PASSO 5 — FIX APLICADO (`game_overrides.cpp`) — aguarda Push do Cris + round
 ### ⚠️ Bug Q — CORRIGIDO ANTECIPADAMENTE (2026-05-01, aguarda recompilar.sh)
-### ⚠️ Bugs R–W — todos truncados, aguardando log para priorizar
+### 🔴 AGUARDANDO ROUND — PASSO 5 não testado ainda
 
 ---
 
@@ -398,32 +397,34 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 Funções pós-bind-loop verificadas e COMPLETAS: `sub_00296898` (402 linhas), `entry_2969d0` (93 linhas), `entry_296eb8` (53 linhas), `sub_00294AF8` (529 linhas). `StartThread` implementado no runtime (syscall 0x22, `ps2_syscalls.cpp:128`).
 
-**Próximo passo (2026-05-02 — PASSO 5 aplicado):**
+**Próximo passo (2026-05-03 — PASSO 5 aguarda round):**
 1. Cris clica em **Push** no Replit
 2. `bash rebuild_runtime.sh` → inclui PASSO 5 em game_overrides.cpp
 3. `bash auto_round.sh once`
 4. Verificar log: buscar `[PASSO 5]` e `[PASSO 5 FIRE]`
 
-**BLOQUEADOR ATUAL — poll *(0x327a40) em entry_296c48/label_296c88 (diagnosticado 2026-05-02):**
-
-Cadeia confirmada via leitura de código-fonte:
+**MAPA PREDITIVO (análise estática 2026-05-03) — andares após PASSO 5 desbloquear:**
 ```
-entry_27a5a8 (VBlank) → se notify2a1710 > 0 → sub_002963C0(a0=0x2C4BC0)
-  → sub_00295568: lbu byte[0]@0x2C4BC0; se == 0 → EARLY-EXIT
-  → func_294618 nunca chamada → StartThread(tid=2) nunca chamado
-  → *(0x327a40) fica 0 para sempre
-entry_296c48 → label_296c88 → func_296518
-  → while(*(0x327a40)==0) cooperativeGuestYield() → timeout 300s
+3º ANDAR — entry_296c48 (PASSO 5 fix) ← BLOQUEIO ATUAL
+  ↓ retorna → sub_0027A6B8
+4º ANDAR — sub_0027A6B8
+  → *(0x2A1754) < 0 → spin-delay ~1M iters (finito, ~1.7s)
+  → sub_00297290 [Bug Y fix ✅] → v0=1, *(s1+0x24)=1
+  → WRITE32(0x2A1754, 0) → RETORNA v0=1 ✅
+  ↓ retorna → entry_27ab00
+5º ANDAR — entry_27ab00 → sub_00297470 (3x cache flush, finito) ✅
+  ↓ retorna → sub_0017BC80
+6º ANDAR — sub_0017BC80 (0x17BC80–0x17BDE0)
+  → entry_296c48(a0=0) ← fast-path *(0x2A4ABC)=1 ✅
+  → LOOP A: entry_27ab00 retry (Bug Y → v0=1 → sai imediato) ✅
+  → entry_296c48 segunda vez (fast-path) ✅ + sub_00298058 + sub_00298AA0 ⚠️
+  → LOOP B: entry_27ab00 retry (Bug Y → sai) ✅
+  → entry_298770 (cache flush) ✅
+  → loop 8 iters × sub_0017BBC8 ✅
+  → sub_0027AD00 + sub_0027C100 ⚠️ + sub_00283570 ⚠️
+  → entry_1389d8 ← CANDIDATO A ENGINE PRINCIPAL 🎯
 ```
-
-**PASSO 4** (`game_overrides.cpp`): compilado no round anterior, NÃO disparou (*(0x30A1C0)==0 o tempo todo porque sceSifCallRpc nunca foi chamado). Permanece ativo.
-
-**PASSO 5** (`game_overrides.cpp`, 2026-05-02): no handler VBlank, após 60 ticks com `notify2a1710=1` E `*(0x327a40)==0` → `WRITE32(0x327a40, 1)` → desbloqueia poll loop do main thread.
-
-**Logs novos a monitorar no próximo round:**
-- `[PASSO 5]: detectou notify2a1710=1 e *(0x327a40)=0 @tick #~8`
-- `[PASSO 5 FIRE]: escreveu *(0x327a40)=1 apos ~60 ticks @tick #~68`
-- Próximo bloqueio: desconhecido — depende do que entry_296c48 faz após poll sair
+⚠️ Incógnitas: sub_00298058, sub_0027C100, sub_00283570 — só saberemos com log do round.
 
 **Fix orgânico futuro (recompilar.sh):**
 - Escrever pacote SIF válido em `0x2C4BC0` (byte[0] != 0) → sub_00295568 processa → StartThread orgânico
