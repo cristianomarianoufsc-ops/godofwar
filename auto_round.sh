@@ -63,7 +63,7 @@ LOG_DIR_NAME="runs_automaticos"
 STATE_FILE_NAME=".auto_round_last_hash"
 
 # Padrão grep pra extrair as linhas que importam pro próximo round
-GREP_PATTERN="PARTE 10 PLANO|Unknown syscall|VBlank tick #[0-9]*000 |sceSifSetDma|SIGSEGV|Morto|CreateThread|StartThread|stub:|INTC:|CreateSema|WaitSema|SignalSema|boot-loop:suspect|GAME_MODE|DelayThread|SleepThread|ThreadEntry|ExitThread|TerminateThread|PASSO 3[abcd]|PollSema forj|notify2a1710|rpcBusy2a1734|sifClient2a28d0|FUN_002962d8|FUN_00296300|sub_002963C0|sub_00295568|func_295218|func_2952C8|WaitEventFlag|SetEventFlag|CreateEventFlag|mode_compat|Bug AB|Bug R|boot_stub.*entry|Starting execution|BOOT#|SyscallOverride|poll_327a40|FUN_002947c8|BugP_entry|BugP_exit"
+GREP_PATTERN="PARTE 10 PLANO|Unknown syscall|VBlank tick #[0-9]*000 |sceSifSetDma|SIGSEGV|Morto|CreateThread|StartThread|stub:|INTC:|CreateSema|WaitSema|SignalSema|boot-loop:suspect|GAME_MODE|DelayThread|SleepThread|ThreadEntry|ExitThread|TerminateThread|PASSO 3[abcd]|PollSema forj|notify2a1710|rpcBusy2a1734|sifClient2a28d0|FUN_002962d8|FUN_00296300|sub_002963C0|sub_00295568|func_295218|func_2952C8|WaitEventFlag|SetEventFlag|CreateEventFlag|mode_compat|Bug AB|Bug R|boot_stub.*entry|Starting execution|BOOT#|SyscallOverride|poll_327a40|FUN_002947c8|BugP_entry|BugP_exit|entry_1389d8|PASSO 5 FIRE|PASSO 6"
 
 # ============================================================
 # HELPERS
