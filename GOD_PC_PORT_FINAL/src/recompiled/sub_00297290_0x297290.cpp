@@ -212,7 +212,10 @@ void sub_00297290_0x297290(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         ctx->pc = 0x297328u;
         ctx->in_delay_slot = true; ctx->branch_pc = 0x297324u;
             // 0x297328: 0x2402fffd  addiu       $v0, $zero, -0x3 (Delay Slot)
-        SET_GPR_S32(ctx, 2, (int32_t)ADD32(GPR_U32(ctx, 0), 4294967293));
+            // PASSO 6 — Path A: func_293C20 (CreateSema) falhou sem IOP.
+            // Simulamos bind IOP: *(s1+0x24)=1 (ack), $v0=1 (>=0 para bgezl).
+        WRITE32(ADD32(GPR_U32(ctx, 17), 36), 1u);
+        SET_GPR_U64(ctx, 2, 1u);
         ctx->in_delay_slot = false;
         if (branch_taken_0x297324) {
             ctx->pc = 0x2973C0u;
@@ -322,7 +325,10 @@ label_29732c:
         ctx->pc = 0x297368u;
         ctx->in_delay_slot = true; ctx->branch_pc = 0x297364u;
             // 0x297368: 0x2402fffe  addiu       $v0, $zero, -0x2 (Delay Slot)
-        SET_GPR_S32(ctx, 2, (int32_t)ADD32(GPR_U32(ctx, 0), 4294967294));
+            // PASSO 6 — Path B: sceSifCallRpc (func_2969D0) retornou 0 sem IOP.
+            // Simulamos bind IOP: *(s1+0x24)=1 (ack), $v0=1 (>=0 para bgezl).
+        WRITE32(ADD32(GPR_U32(ctx, 17), 36), 1u);
+        SET_GPR_U64(ctx, 2, 1u);
         ctx->in_delay_slot = false;
         if (branch_taken_0x297364) {
             ctx->pc = 0x2973C0u;

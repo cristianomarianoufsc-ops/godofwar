@@ -397,31 +397,25 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 Funções pós-bind-loop verificadas e COMPLETAS: `sub_00296898` (402 linhas), `entry_2969d0` (93 linhas), `entry_296eb8` (53 linhas), `sub_00294AF8` (529 linhas). `StartThread` implementado no runtime (syscall 0x22, `ps2_syscalls.cpp:128`).
 
-**Próximo passo (2026-05-03 — PASSO 5 aguarda round):**
+**Próximo passo (2026-05-03 — PASSO 6 aplicado):**
 1. Cris clica em **Push** no Replit
-2. `bash rebuild_runtime.sh` → inclui PASSO 5 em game_overrides.cpp
+2. `bash recompilar.sh` → recompila sub_00297290 com PASSO 6
 3. `bash auto_round.sh once`
-4. Verificar log: buscar `[PASSO 5]` e `[PASSO 5 FIRE]`
+4. Verificar log: buscar qualquer novo bloqueio após tick #73
 
-**MAPA PREDITIVO (análise estática 2026-05-03) — andares após PASSO 5 desbloquear:**
+**CONFIRMADO (round anterior com PASSO 5):**
+- PASSO 5 disparou tick #73 ✅ → poll entry_296c48 saiu
+- sub_0027A810 retry loop 17000 ticks ← **PASSO 6 corrige**
+
+**MAPA PREDITIVO atualizado (análise estática 2026-05-03):**
 ```
-3º ANDAR — entry_296c48 (PASSO 5 fix) ← BLOQUEIO ATUAL
-  ↓ retorna → sub_0027A6B8
-4º ANDAR — sub_0027A6B8
-  → *(0x2A1754) < 0 → spin-delay ~1M iters (finito, ~1.7s)
-  → sub_00297290 [Bug Y fix ✅] → v0=1, *(s1+0x24)=1
-  → WRITE32(0x2A1754, 0) → RETORNA v0=1 ✅
-  ↓ retorna → entry_27ab00
-5º ANDAR — entry_27ab00 → sub_00297470 (3x cache flush, finito) ✅
-  ↓ retorna → sub_0017BC80
-6º ANDAR — sub_0017BC80 (0x17BC80–0x17BDE0)
-  → entry_296c48(a0=0) ← fast-path *(0x2A4ABC)=1 ✅
-  → LOOP A: entry_27ab00 retry (Bug Y → v0=1 → sai imediato) ✅
-  → entry_296c48 segunda vez (fast-path) ✅ + sub_00298058 + sub_00298AA0 ⚠️
-  → LOOP B: entry_27ab00 retry (Bug Y → sai) ✅
-  → entry_298770 (cache flush) ✅
-  → loop 8 iters × sub_0017BBC8 ✅
-  → sub_0027AD00 + sub_0027C100 ⚠️ + sub_00283570 ⚠️
+sub_0017BC80 → sub_0027A810
+  → entry_296c48 (PASSO 5 fix ✅)
+  → sub_00297290 retry loop [PASSO 6 fix ✅] → sai em 1-2 iters
+  ↓ continua sub_0017BC80
+  → sub_00298058 ⚠️
+  → sub_0027C100 ⚠️
+  → sub_00283570 ⚠️
   → entry_1389d8 ← CANDIDATO A ENGINE PRINCIPAL 🎯
 ```
 ⚠️ Incógnitas: sub_00298058, sub_0027C100, sub_00283570 — só saberemos com log do round.

@@ -193,85 +193,73 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-03 — PASSO 5 aguarda round; mapa 3-6 andares concluído)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-03 — PASSO 6 aplicado; aguarda Push + recompilar.sh)
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 ### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
 ### ✅ PASSO 4 (Bug S) — Compilado, NUNCA DISPAROU (*(0x30A1C0)==0 — sceSifCallRpc não chamado)
-### ✅ PASSO 5 — FIX APLICADO em game_overrides.cpp — aguarda Push do Cris + round
-### 🔴 AGUARDANDO ROUND — PASSO 5 não testado ainda; cadeia 3º→6º andares mapeada
+### ✅ PASSO 5 — CONFIRMADO FUNCIONANDO (tick #73: escreveu *(0x327a40)=1; poll saiu)
+### ✅ PASSO 6 — FIX APLICADO em sub_00297290_0x297290.cpp — aguarda Push + recompilar.sh
+### 🔴 AGUARDANDO ROUND — PASSO 6 não testado ainda
 
 ---
 
 **🏆 Situação do último round analisado** (log completo do round com PASSO 4):
 
-- CreateSema id=1..9 ✅ (semas 4 e 5 com WaitSema:block, forjados por PASSO 3)
-- PollSema:ok sid=7 → PollSema:zero sid=7 → PASSO 3b/3c/3d disparam ✅
-- VBlank tick #60 → #17940 sem nenhum outro evento ← **BLOQUEADOR ATUAL**
-- PASSO 4 NUNCA disparou porque `*(0x30A1C0) = 0` o tempo todo (sceSifCallRpc nunca chamado)
-- `[poll_327a40] INICIO` NUNCA apareceu ← recompilar.sh não foi rodado (logs de diagnóstico não compilados)
-- Timeout de 300s mata o processo em tick #17940
+- PASSO 5 disparou tick #73: `[PASSO 5 FIRE]: escreveu *(0x327a40)=1 apos 60 ticks @tick #73` ✅
+- entry_2964f0 leu *(0x327A40)=1 → retornou v0=1 → poll label_296da0 saiu ✅
+- flag=0 a partir do tick #120 (normal — *(0x327a40) consumido, sem limpeza explícita)
+- **NOVO BLOQUEIO:** main thread preso ~17000 ticks (~283s) em `sub_0027A810` retry loop
+- Timeout de 300s mata o processo em tick #~17073
 
-**Causa raiz confirmada (2026-05-02 — análise desta sessão):**
-
-Cadeia de chamadas confirmada via código fonte:
+**Causa raiz PASSO 6 confirmada (2026-05-03 — análise desta sessão):**
 
 ```
-entry_27a5a8 (VBlank-triggered)
-  → lê *(0x2A1710) (notify2a1710)
-  → se notify > 0: chama sub_002963C0(a0=0x2C4BC0)
-    → chama sub_00295568(a3=0x2C4BC0)
-      → lbu $a1, 0x0($s6)  onde $s6=0x2C4BC0
-      → se byte[0]@0x2C4BC0 == 0x00: EARLY-EXIT (goto label_29622c)
-      → func_294618 NUNCA chamada
-      → StartThread(tid=2) NUNCA chamado
-  → Thread 2 (FUN_002947c8) nunca roda
-  → *(0x327a40) fica 0 para sempre
-
-entry_296c48 → label_296c88 → func_296518
-  → busy-poll: while (*(0x327a40) == 0) cooperativeGuestYield()
-  → loop por 17940 VBlanks (~299s) → timeout mata o processo
+sub_0017BC80 → sub_0027A810 → entry_296c48 ← PASSO 5 desbloqueou ✅
+  → após entry_296c48 retornar:
+    → seta v1=-1 → WRITE32(*(0x2A1754), -1) (init das slots SIF)
+    → loop label_27a8d0:
+        → sub_00297290(a0=0x30AAA8, a1=0x80000592, a2=0)
+          → func_296E10(0x3292C0) → retorna slot livre ✅
+          → func_293C20 (CreateSema) → OK ou falha
+          → func_2969D0 (sceSifCallRpc) → retorna 0 (sem IOP) ← RAIZ
+          → Path B: func_296EB8 (libera slot) + func_293C30 (DeleteSema)
+          → delay slot: v0=-2 → bgezl NOT taken → spin 0x100000 → retry
+        → loop infinito (17000 ticks = 283s)
 ```
 
-**Confirmação do endereço do buffer SIF:** `0x2C4BC0` — entry_27a5a8 computa:
-- `lui $a0, 0x2C` = 0x2C0000
-- `addiu $a0, $a0, 0x4BC0` → a0 = **0x2C4BC0** (delay slot do jal sub_002963C0)
+**Fix PASSO 6** (`sub_00297290_0x297290.cpp`, 2026-05-03):
 
-**Fix PASSO 4 (já compilado, NÃO disparou — OK):**
-- PASSO 4 foi compilado em round anterior via rebuild_runtime.sh
-- NÃO disparou porque `*(0x30A1C0) == 0` (sceSifCallRpc nunca chamado neste fluxo)
-- PASSO 4 permanece ativo para eventual chamada futura
+Dois delay slots de erro em `sub_00297290` modificados para simular bind IOP:
 
-**Fix aplicado — PASSO 5** (`game_overrides.cpp`, 2026-05-02):
+- **Path A** (func_293C20 falhou, instrução 0x297328): `v0=-3` → `*(s1+0x24)=1, v0=1`
+- **Path B** (func_2969D0 retornou 0, instrução 0x297368): `v0=-2` → `*(s1+0x24)=1, v0=1`
 
-Adicionado no handler VBlank `gow_intc_handler_0x182f28` após o bloco PASSO 4:
-- Monitora: `notify2a1710 != 0` E `*(0x327a40) == 0`
-- Após 60 VBlanks nessa condição:
-  - `WRITE32(0x327a40, 1u)` → força flag que thread 2 colocaria → poll loop sai
-  - Loga dump de `buf@0x2C4BC0[0..7]` para diagnóstico do próximo fix orgânico
-- Log chave: `[PASSO 5 FIRE]: escreveu *(0x327a40)=1 apos N ticks @tick #T`
+Resultado: `sub_00297290` retorna v0=1 (≥0) → bgezl TAKEN → lê `*(s1+0x24)=1` → beqz não tomado → **sai do retry loop**.
 
-**Arquivos alterados nesta sessão:**
-- `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp` — PASSO 5 (constantes + statics + bloco no handler)
+Funciona tanto para `sub_0027A810` (s1=0x30AAA8, flag=*(0x30AACC)) quanto para `sub_0027A6B8` se for chamada (s1=0x2A3280, flag=*(0x2A32A4)).
 
-**Build necessário:**
-- `bash rebuild_runtime.sh` SOMENTE (game_overrides.cpp é runtime, não recompilado)
-- `bash recompilar.sh` NÃO é necessário para PASSO 5 (opcional para ativar logs de entry_2964f0, Bug Y, Bug P)
+**Arquivos alterados PASSO 6:**
+- `GOD_PC_PORT_FINAL/src/recompiled/sub_00297290_0x297290.cpp` — linhas 217-221 (Path A) e 330-334 (Path B)
 
-**O que esperar no próximo round:**
-- `[PASSO 5]: detectou notify2a1710=1 e *(0x327a40)=0 @tick #~8 — buf@0x2C4BC0[0..3]=XX XX XX XX`
-- `[PASSO 5 FIRE]: escreveu *(0x327a40)=1 apos ~60 ticks @tick #~68`
-- Main thread sai do poll loop em entry_296c48 (3º andar OK ✅)
-- 4º andar (sub_0027A6B8): spin-delay ~1M iters (~1.7s) + Bug Y já fix → retorna v0=1 ✅
-- 5º andar (entry_27ab00 → sub_00297470): cache flushes, sem bloqueio ✅
-- 6º andar (sub_0017BC80): 2x entry_27ab00 loops (cobertos Bug Y) + 2ª chamada entry_296c48 (fast-path) ✅
-- **Próximos desconhecidos:** sub_00298058, sub_0027C100, sub_00283570, entry_1389d8 (engine principal?)
+**Build necessário PASSO 6:**
+- `bash recompilar.sh` (sub_00297290 é arquivo recompilado, não runtime)
+- `bash rebuild_runtime.sh` NÃO necessário para este fix específico
+
+**O que esperar no próximo round com PASSO 5+6:**
+- `[PASSO 5 FIRE]: escreveu *(0x327a40)=1 apos ~60 ticks @tick #~73` ✅ (já confirmado)
+- sub_0027A810 retry loop: sub_00297290 retorna v0=1 → sai em 1-2 iters (sem spin)
+- sub_0017BC80 continua para: sub_00298058, sub_0027C100, sub_00283570, entry_1389d8
+- **Próximos desconhecidos:** sub_00298058, sub_0027C100, sub_00283570, entry_1389d8
+
+**Fix PASSO 5 — histórico** (`game_overrides.cpp`, 2026-05-02):
+- Monitora `notify2a1710 != 0` E `*(0x327a40) == 0`; após 60 VBlanks: `WRITE32(0x327a40, 1u)`
+- Log: `[PASSO 5 FIRE]: escreveu *(0x327a40)=1 apos N ticks @tick #T`
+- Build: `bash rebuild_runtime.sh` SOMENTE
 
 **Fix orgânico futuro para *(0x327a40) (requer recompilar.sh):**
-- Escrever pacote SIF válido em `0x2C4BC0` (byte[0] != 0) para que sub_00295568 processe
-- sub_00295568 → func_294618 (IE=1 → retorna 0) → StartThread(tid=2) chamado organicamente
-- Bug P fix (FUN_002947c8 reescrita) seta `*(0x327a40)=1` por conta própria
-- Isso elimina a necessidade do PASSO 5 e do PASSO 4
+- Escrever pacote SIF válido em `0x2C4BC0` (byte[0] != 0) → sub_00295568 → StartThread(tid=2)
+- Bug P fix (FUN_002947c8) seta `*(0x327a40)=1` organicamente → elimina PASSO 5
 
 ---
 
@@ -299,10 +287,11 @@ Adicionado no handler VBlank `gow_intc_handler_0x182f28` após o bloco PASSO 4:
 
 `FUN_00294990_0x294990.cpp` — 182 linhas reescritas manualmente (2026-05-01). Sintaxe verificada. Aguarda `bash recompilar.sh` (não `rebuild_runtime.sh`).
 
-### 🟡 Bugs Y, P — ESCRITOS, AGUARDAM recompilar.sh
+### ✅ Bug Y — REESCRITO + PASSO 6 AMPLIADO (aguarda recompilar.sh)
 
+- **Bug Y** (paths de sucesso): `sub_00297290_0x297290.cpp` — já fixado nos dois caminhos de sucesso (label_29737c e label_2973ac).
+- **PASSO 6** (paths de erro): `sub_00297290_0x297290.cpp` — fixado nos dois delay slots de erro: instrução 0x297328 (Path A, func_293C20 falhou) e 0x297368 (Path B, func_2969D0=0). Ambos agora retornam `*(s1+0x24)=1, v0=1` em vez de v0=-3/-2.
 - **Bug P**: `FUN_002947c8_0x2947c8.cpp` — 334 linhas. Aguarda `recompilar.sh`.
-- **Bug Y**: `sub_00297290_0x297290.cpp` — WRITE32 + $v0=1 nos dois caminhos. Aguarda `recompilar.sh`.
 
 ### ⚠️ Bugs R–W — Aguardando log para confirmar relevância
 
