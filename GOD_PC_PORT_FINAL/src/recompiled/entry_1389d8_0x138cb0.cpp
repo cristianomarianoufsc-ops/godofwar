@@ -19,6 +19,9 @@ void entry_1389d8_0x138cb0(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
 
     ctx->pc = 0x1389d8u;
 
+    // PASSO 6 HOOK — detectável via triage_round.py (seção engine_start)
+    std::cerr << "[entry_1389d8] START\n";
+
     // 0x1389d8: 0x27bdffd0  addiu       $sp, $sp, -0x30
     ctx->pc = 0x1389d8u;
     SET_GPR_S32(ctx, 29, (int32_t)ADD32(GPR_U32(ctx, 29), 4294967248));
@@ -212,6 +215,9 @@ label_138a2c:
         if (ctx->pc != 0x138A4Cu) { return; }
     }
     ctx->pc = 0x138A4Cu;
+    // PASSO 6 HOOK — renderer_type: v0 = func_17AA78() retorna tipo de renderer
+    // (usado em jump table: -2=GS_NONE, outros=HW/SW renderer path)
+    std::cerr << "[entry_1389d8] renderer_type=0x" << std::hex << GPR_U32(ctx, 2) << std::dec << "\n";
     // 0x138a4c: 0x24430002  addiu       $v1, $v0, 0x2
     ctx->pc = 0x138a4cu;
     SET_GPR_S32(ctx, 3, (int32_t)ADD32(GPR_U32(ctx, 2), 2));
@@ -385,6 +391,8 @@ label_138a8c:
     ctx->pc = 0x138af0u;
     SET_GPR_VEC(ctx, 17, READ128(ADD32(GPR_U32(ctx, 29), 16)));
     // 0x138af4: 0x3e00008  jr          $ra
+    // PASSO 6 HOOK — engine init completou (detectável via triage_round.py engine_done)
+    std::cerr << "[entry_1389d8] DONE\n";
     ctx->pc = 0x138AF4u;
     {
         uint32_t jumpTarget = GPR_U32(ctx, 31);

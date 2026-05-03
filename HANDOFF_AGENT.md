@@ -193,13 +193,16 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-03 — PASSO 6 aplicado; aguarda Push + recompilar.sh)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-03 — PASSO 6 + hooks entry_1389d8 + tools atualizados; aguarda Push + recompilar.sh)
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 ### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
 ### ✅ PASSO 4 (Bug S) — Compilado, NUNCA DISPAROU (*(0x30A1C0)==0 — sceSifCallRpc não chamado)
 ### ✅ PASSO 5 — CONFIRMADO FUNCIONANDO (tick #73: escreveu *(0x327a40)=1; poll saiu)
 ### ✅ PASSO 6 — FIX APLICADO em sub_00297290_0x297290.cpp — aguarda Push + recompilar.sh
+### ✅ entry_1389d8 — HOOKS ADICIONADOS (START/renderer_type/DONE) + 7º andar analisado
+### ✅ scan_7th_floor.py — NOVA ferramenta (análise estática pré-round)
+### ✅ triage_round.py — ATUALIZADO (seção PASSO 6 / motor do jogo)
 ### 🔴 AGUARDANDO ROUND — PASSO 6 não testado ainda
 
 ---
@@ -249,8 +252,19 @@ Funciona tanto para `sub_0027A810` (s1=0x30AAA8, flag=*(0x30AACC)) quanto para `
 **O que esperar no próximo round com PASSO 5+6:**
 - `[PASSO 5 FIRE]: escreveu *(0x327a40)=1 apos ~60 ticks @tick #~73` ✅ (já confirmado)
 - sub_0027A810 retry loop: sub_00297290 retorna v0=1 → sai em 1-2 iters (sem spin)
-- sub_0017BC80 continua para: sub_00298058, sub_0027C100, sub_00283570, entry_1389d8
-- **Próximos desconhecidos:** sub_00298058, sub_0027C100, sub_00283570, entry_1389d8
+- sub_0017BC80 continua: sub_00298058 (✅ SEGURO — memset 4B) → sub_0027C100 (⚠️ safe) → sub_00283570 (⚠️ baixo) → entry_1389d8 (🎯 engine init)
+- **Detectores de progresso:** `[entry_1389d8] START` → renderer_type → `DONE`
+- **Se travar em entry_1389d8:** `python3 tools/scan_7th_floor.py 0x26b6d0 0x26ca18 0x17aa78 --depth 1`
+
+**7º ANDAR — análise estática completa (2026-05-03):**
+| Função | Risco | Status |
+|---|---|---|
+| sub_00298058 | ✅ SEGURO | memset 4B via entry_289340 (4 yields, sem tight-loops úteis) |
+| sub_0027C100 | ⚠️ MÉDIO* | CreateSema×3 + CreateThread + loops 2 iters (ALL SAFE segundo análise) |
+| sub_00283570 | ⚠️ BAIXO | sceSifSetDma loop + sceSifDmaStat → retorna -1 → sai imediato |
+| entry_1389d8 | 🎯 ENGINE | 7 callees (alloc + renderer detection + pool setup); 2 yields; hooks START/DONE adicionados |
+
+*sub_0027C100: `scan_7th_floor.py` mostra 17 tight-loops, mas análise manual confirmou que são loops de 2 iters (init controlado) — SAFE.
 
 **Fix PASSO 5 — histórico** (`game_overrides.cpp`, 2026-05-02):
 - Monitora `notify2a1710 != 0` E `*(0x327a40) == 0`; após 60 VBlanks: `WRITE32(0x327a40, 1u)`

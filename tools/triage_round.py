@@ -101,6 +101,16 @@ _RE_PASSO3D        = re.compile(
 _RE_VBLANK_RPCBUSY = re.compile(
     r"\[stub:0x182f28\].*rpcBusy2a1734=(-?\d+).*sifClient2a28d0=(-?\d+)")
 
+# ── PASSO 6 / entry_1389d8 (motor do jogo) ─────────────────────────────────
+_RE_ENGINE_START  = re.compile(r"\[entry_1389d8\]\s+START")
+_RE_ENGINE_RTYPE  = re.compile(r"\[entry_1389d8\]\s+renderer_type=(0x[0-9a-fA-F]+)")
+_RE_ENGINE_DONE   = re.compile(r"\[entry_1389d8\]\s+DONE")
+# Callees de entry_1389d8 que podem aparecer como "not found" se stub ausente
+_ENGINE_CALLEE_ADDRS = frozenset({
+    "0x26b6d0", "0x13e090", "0x13dc78", "0x13d910",
+    "0x17aa78", "0x26ca18", "0x178d38",
+})
+
 
 def fetch_url(url: str) -> str:
     try:
@@ -152,8 +162,13 @@ def parse_log(text: str) -> dict:
         "bugp_entry_count": 0,
         "bugp_entry_a0":   None,
         "bugp_exit":       False,
-        "passo3d":         [],   # [{busy_was, client_was, sid, calls}]
-        "vblank_rpcbusy":  [],   # [(rpcBusy, sifClient)] amostras do VBlank
+        "passo3d":           [],     # [{busy_was, client_was, sid, calls}]
+        "vblank_rpcbusy":    [],     # [(rpcBusy, sifClient)] amostras do VBlank
+        # PASSO 6 — entry_1389d8 (motor do jogo)
+        "engine_start":      False,  # entry_1389d8 foi atingida
+        "engine_rtype":      None,   # renderer_type retornado por func_17aa78
+        "engine_done":       False,  # entry_1389d8 completou sem crash
+        "engine_callee_missing": [], # callees de entry_1389d8 reportados como not-found
     }
 
     lines = text.splitlines()
@@ -239,6 +254,12 @@ def parse_log(text: str) -> dict:
         if m := _RE_VBLANK_RPCBUSY.search(line):
             if len(d["vblank_rpcbusy"]) < 8:
                 d["vblank_rpcbusy"].append((int(m.group(1)), int(m.group(2))))
+        if _RE_ENGINE_START.search(line):
+            d["engine_start"] = True
+        if m := _RE_ENGINE_RTYPE.search(line):
+            d["engine_rtype"] = m.group(1)
+        if _RE_ENGINE_DONE.search(line):
+            d["engine_done"] = True
         if _RE_SIGSEGV.search(line):
             d["sigsegv"] = True
         if _RE_CRASH.search(line):
@@ -404,6 +425,29 @@ def report(d: dict, short: bool = False) -> None:
             print("  Nenhuma alocação registrada.")
 
         print()
+        print("── PASSO 6 / MOTOR DO JOGO (entry_1389d8) ───────────────────────────")
+        if d["engine_start"]:
+            rtype = d["engine_rtype"] or "?"
+            rtype_names = {
+                "0x0": "GS_NONE (sem renderer)", "0x1": "SW_RENDERER",
+                "0x2": "GS_HW_1", "0x3": "GS_HW_2", "0x4": "GS_HW_3",
+            }
+            rtype_desc = rtype_names.get(rtype.lower(), "desconhecido")
+            print(f"  entry_1389d8 atingida         : ✅ START detectado")
+            print(f"  renderer_type (func_17aa78)   : {rtype}  ({rtype_desc})")
+            if d["engine_done"]:
+                print(f"  entry_1389d8 completou        : ✅ DONE detectado — engine init OK")
+            else:
+                print(f"  entry_1389d8 completou        : 🔴 DONE NÃO detectado — travou dentro do engine init")
+        else:
+            print(f"  entry_1389d8 atingida         : — não detectado neste round")
+            if d["engine_callee_missing"]:
+                missing_str = ", ".join(d["engine_callee_missing"])
+                print(f"  Callees ausentes do engine    : ⚠️  {missing_str}")
+            else:
+                print(f"  (Adicionar hook: [entry_1389d8] START/DONE em game_overrides.cpp)")
+
+        print()
         print("── ERROS / ALERTAS ───────────────────────────────────────────────────")
         if d["sigsegv"]:
             print("  🔴 SIGSEGV detectado!")
@@ -439,6 +483,12 @@ def report(d: dict, short: bool = False) -> None:
     threads_pendentes = [t for t in d["threads_created"]
                          if t["id"] not in d["threads_started"]]
 
+    # Classifica callees não encontrados que pertencem a entry_1389d8
+    d["engine_callee_missing"] = [
+        a for a in d["not_found"]
+        if a.lower() in _ENGINE_CALLEE_ADDRS
+    ]
+
     # Determinar estado do round
     if d["sigsegv"]:
         estado = "🔴 CRASH — SIGSEGV. Novo bug para investigar."
@@ -450,6 +500,14 @@ def report(d: dict, short: bool = False) -> None:
         spin = d["poll327_spin_max"]
         estado = (f"🔴 Bug P: FUN_002947c8 iniciou mas *(0x327a40) nunca foi setado "
                   f"(poll spinning até {spin} — próximo bug dentro de FUN_002947c8).")
+    elif d["engine_done"]:
+        estado = (f"🟢 PASSO 6 PASSOU: entry_1389d8 completou (engine init OK). "
+                  f"renderer_type={d['engine_rtype'] or '?'}. Verificar próximo bloqueador.")
+    elif d["engine_start"] and not d["engine_done"]:
+        rtype = d["engine_rtype"] or "não detectado"
+        estado = (f"🔴 PASSO 6: entry_1389d8 iniciou (renderer_type={rtype}) "
+                  f"mas DONE não detectado — travou dentro do engine init. "
+                  f"Analisar callees: func_26B6D0/13E090/13DC78/17AA78/26CA18.")
     elif d["bugp_entry_count"] > 0 and d["poll327_saiu"]:
         estado = (f"🟢 Bug P PASSOU: thread tid=2 completou init (poll_327a40 saiu em "
                   f"{d['poll327_saiu_count']} iters). Verificar próximo bloqueador.")
@@ -513,6 +571,20 @@ def report(d: dict, short: bool = False) -> None:
     print("  Próximo passo sugerido:")
     if d["sigsegv"] or d["crash"]:
         print("  → Analisar backtrace. Bug novo (SIGSEGV) — identificar PC do crash.")
+    elif d["engine_done"]:
+        print("  → PASSO 6 passou. Identificar próximo bloqueador nas últimas 10 linhas.")
+        print("  → Rodar: python3 tools/scan_7th_floor.py --depth 2 para ver callees seguintes.")
+    elif d["engine_start"] and not d["engine_done"]:
+        rtype = d["engine_rtype"] or "?"
+        print(f"  → entry_1389d8 travou internamente (renderer_type={rtype}).")
+        print("  → Verificar qual dos callees falhou:")
+        print("      func_26B6D0 (0x26B6D0)  func_13E090 (0x13E090)  func_13DC78 (0x13DC78)")
+        print("      func_17AA78 (0x17AA78)  func_26CA18 (0x26CA18)  func_178D38 (0x178D38)")
+        print("  → Analisar com: python3 tools/scan_7th_floor.py 0x26b6d0 0x26ca18 --depth 1")
+        if d["engine_callee_missing"]:
+            missing_str = ", ".join(d["engine_callee_missing"])
+            print(f"  → Callees ausentes detectados: {missing_str}")
+            print("    Adicionar stubs em game_overrides.cpp ou seeds em missing_to_seeds.py.")
     elif d["bugp_entry_count"] > 0 and d["poll327_inicio"] and not d["poll327_saiu"]:
         print("  → Bug P trava antes de setar *(0x327a40). Analisar FUN_002947c8:")
         print("    Verificar quais sub-funções ela chama antes de setar o flag.")

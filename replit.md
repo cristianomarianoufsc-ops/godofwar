@@ -300,7 +300,8 @@ PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_teste.txt
 | `score_truncated.py` | **NOVA** — prioriza funções truncadas por score: refs×40 + bytes_faltando + proximity_bonus. Gera `truncated_scores.csv`. | `uv run python tools/score_truncated.py [--top N] [--min-bytes B]` |
 | `reachable_seeds.txt` | Lista de seeds de BFS. 1 seed ativo: `0x100008`. | Lido por `reachable_after_boot.py`. |
 | `missing_to_seeds.py` | Lê `ps2_missing.log`, extrai entradas `FUNCTION` (ausentes em runtime) e adiciona como seeds em `reachable_seeds.txt`. Modo seco por padrão; `--apply` pra escrever. | `python3 tools/missing_to_seeds.py` / `python3 tools/missing_to_seeds.py --apply --min-calls 3` |
-| `triage_round.py` | Baixa o log filtrado do GitHub e gera relatório estruturado: módulos IOP carregados, último sid/delta, frames VBlank, **threads criadas vs StartThread chamado**, erros, boot-loop suspects, diagnóstico e próximo passo. | `python3 tools/triage_round.py` (completo) / `python3 tools/triage_round.py --short` (só resumo) / `python3 tools/triage_round.py --local arquivo.txt` |
+| `triage_round.py` | Baixa o log filtrado do GitHub e gera relatório estruturado: módulos IOP carregados, último sid/delta, frames VBlank, **threads criadas vs StartThread chamado**, erros, boot-loop suspects, diagnóstico e próximo passo. **PASSO 6:** detecta `[entry_1389d8] START/renderer_type/DONE` (adicionado 2026-05-03). | `python3 tools/triage_round.py` (completo) / `python3 tools/triage_round.py --short` (só resumo) / `python3 tools/triage_round.py --local arquivo.txt` |
+| `scan_7th_floor.py` | Análise estática pré-round de funções recompiladas: acha arquivo .cpp pelo endereço, conta loops/yields/tight-loops/handleBreak/callees, estima risco, suporta varredura recursiva de callees. Endereços padrão: 7º andar + entry_1389d8. | `python3 tools/scan_7th_floor.py` (padrão) / `python3 tools/scan_7th_floor.py 0x1389d8 --depth 2` (recursivo) / `python3 tools/scan_7th_floor.py --file PATH` (arquivo direto) |
 
 **Lacunas conhecidas (oportunidades pra novas ferramentas):**
 - ❌ Scanner de IRX (`*.IRX`) buscando escritores de globals da EE.
@@ -345,15 +346,17 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 ---
 
-## 🟢 ESTADO ATUAL — 2026-05-03: PASSO 5 aplicado; mapa 3º→6º andares concluído (análise estática)
+## 🟢 ESTADO ATUAL — 2026-05-03: PASSO 6 aplicado; hooks entry_1389d8 adicionados; scan_7th_floor.py + triage_round.py atualizados
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 ### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
 ### ✅ PASSO 3c:auto — IMPLEMENTADO (`ps2_syscalls_flags.inl`)
 ### ✅ PASSO 4 (Bug S) — Compilado, NUNCA DISPAROU (*(0x30A1C0)==0 — sceSifCallRpc não chamado)
-### ✅ PASSO 5 — FIX APLICADO (`game_overrides.cpp`) — aguarda Push do Cris + round
+### ✅ PASSO 5 — CONFIRMADO FUNCIONANDO (tick #73)
+### ✅ PASSO 6 — FIX APLICADO (`sub_00297290_0x297290.cpp`) — aguarda Push + recompilar.sh
+### ✅ entry_1389d8 — HOOKS ADICIONADOS (START/renderer_type/DONE) — detectável via triage_round.py
 ### ⚠️ Bug Q — CORRIGIDO ANTECIPADAMENTE (2026-05-01, aguarda recompilar.sh)
-### 🔴 AGUARDANDO ROUND — PASSO 5 não testado ainda
+### 🔴 AGUARDANDO ROUND — PASSO 6 não testado ainda
 
 ---
 
@@ -397,11 +400,11 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 Funções pós-bind-loop verificadas e COMPLETAS: `sub_00296898` (402 linhas), `entry_2969d0` (93 linhas), `entry_296eb8` (53 linhas), `sub_00294AF8` (529 linhas). `StartThread` implementado no runtime (syscall 0x22, `ps2_syscalls.cpp:128`).
 
-**Próximo passo (2026-05-03 — PASSO 6 aplicado):**
+**Próximo passo (2026-05-03 — PASSO 6 + hooks entry_1389d8 aplicados):**
 1. Cris clica em **Push** no Replit
-2. `bash recompilar.sh` → recompila sub_00297290 com PASSO 6
+2. `bash recompilar.sh` → recompila sub_00297290 (PASSO 6) + entry_1389d8 (hooks)
 3. `bash auto_round.sh once`
-4. Verificar log: buscar qualquer novo bloqueio após tick #73
+4. `python3 tools/triage_round.py` → verificar seção "PASSO 6 / MOTOR DO JOGO"
 
 **CONFIRMADO (round anterior com PASSO 5):**
 - PASSO 5 disparou tick #73 ✅ → poll entry_296c48 saiu
@@ -413,12 +416,14 @@ sub_0017BC80 → sub_0027A810
   → entry_296c48 (PASSO 5 fix ✅)
   → sub_00297290 retry loop [PASSO 6 fix ✅] → sai em 1-2 iters
   ↓ continua sub_0017BC80
-  → sub_00298058 ⚠️
-  → sub_0027C100 ⚠️
-  → sub_00283570 ⚠️
-  → entry_1389d8 ← CANDIDATO A ENGINE PRINCIPAL 🎯
+  → sub_00298058 ✅ SEGURO (memset 4 bytes)
+  → sub_0027C100 ⚠️ MÉDIO (CreateSema×3 + init loops — 2 iters, safe)
+  → sub_00283570 ⚠️ BAIXO (sceSifSetDma + sceSifDmaStat loop — sai imediato)
+  → entry_1389d8 ← ENGINE INIT 🎯 (7 callees: alloc+renderer+setup)
+     └ func_26B6D0 / func_13E090 / func_13DC78 / func_13D910
+       func_17AA78 (renderer detection) / func_26CA18 / func_178D38
 ```
-⚠️ Incógnitas: sub_00298058, sub_0027C100, sub_00283570 — só saberemos com log do round.
+🔍 Análise estática 7º andar concluída: `python3 tools/scan_7th_floor.py`
 
 **Fix orgânico futuro (recompilar.sh):**
 - Escrever pacote SIF válido em `0x2C4BC0` (byte[0] != 0) → sub_00295568 processa → StartThread orgânico
