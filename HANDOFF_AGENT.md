@@ -71,6 +71,10 @@ Se você terminar a sessão sem atualizar os dois, o próximo agente vai perder 
 **Regra 1 — O loop fica ligado o tempo todo durante o dia.**
 Cris liga `bash auto_round.sh loop` ao abrir o PC. Só desliga com Ctrl+C ao fechar. Sem motivo para desligar entre rounds.
 
+**Quando o analista editar `.cpp` do jogo (src/recompiled/):** Cris roda `bash auto_round.sh full` no Terminal 2. O `full` faz `recompilar.sh` + round automaticamente — sem precisar de dois comandos separados.
+
+**Quando o analista editar apenas runtime (ps2xRuntime/):** o loop já cuida, ou Cris roda `bash auto_round.sh once`.
+
 **Regra 2 — Após um Push, o loop cuida de TUDO sozinho.**
 `git pull` → `bash rebuild_runtime.sh` → jogo 300s → filtra log → push logs. Cris não roda mais nada.
 

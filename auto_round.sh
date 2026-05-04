@@ -10,7 +10,13 @@
 #   bash auto_round.sh once
 #       → Roda UM round (rebuild + jogo + log + commit) e SAI SOZINHO.
 #       → ❌ NÃO precisa Ctrl+C — termina em ~3 min.
-#       → Use pra testar se está tudo funcionando.
+#       → Use quando o analista só editou arquivos do runtime (ps2xRuntime/).
+#
+#   bash auto_round.sh full                     ⭐ USE QUANDO ANALISTA EDITAR .cpp DO JOGO
+#       → Igual ao 'once' MAS roda recompilar.sh ANTES do round.
+#       → Use sempre que o analista editar arquivos em src/recompiled/*.cpp.
+#       → Substitui a sequência manual: bash recompilar.sh && bash auto_round.sh once
+#       → ❌ NÃO precisa Ctrl+C — termina em ~5-10 min (recompile + round).
 #
 #   bash auto_round.sh loop                     ⭐ MODO PRINCIPAL
 #       → Fica VIVO PRA SEMPRE checando novo commit no main a cada 30s.
@@ -116,6 +122,16 @@ run_one_round() {
         err "  diagnostico: rode 'git log --oneline origin/main..HEAD' pra ver commits locais sobrando"
         err "  fix rapido (perde commits locais): git fetch origin main && git reset --hard origin/main"
         return 1
+    fi
+
+    # 2. recompilar (opcional — ativo só no modo 'full')
+    if [ "${RECOMPILAR_ANTES:-0}" = "1" ]; then
+        log "2a/5: recompilar.sh (compilando .cpp do jogo — pode demorar 2-8 min)..."
+        if ! bash recompilar.sh; then
+            err "recompilar.sh falhou — abortando round"
+            return 1
+        fi
+        log "   recompilar.sh OK."
     fi
 
     # 2. rebuild
@@ -267,6 +283,11 @@ case "${1:-loop}" in
         ensure_log_branch
         run_one_round
         ;;
+    full)
+        cd_project
+        ensure_log_branch
+        RECOMPILAR_ANTES=1 run_one_round
+        ;;
     loop)
         main_loop
         ;;
@@ -274,10 +295,11 @@ case "${1:-loop}" in
         cmd_status
         ;;
     *)
-        echo "Uso: bash auto_round.sh [loop|once|status]"
+        echo "Uso: bash auto_round.sh [loop|once|full|status]"
         echo ""
         echo "  loop   (padrão) roda em loop checando novo commit a cada ${POLL_INTERVAL}s"
-        echo "  once   roda uma vez (independente de ter commit novo) e sai"
+        echo "  once   roda uma vez sem recompilar — usa o binário atual"
+        echo "  full   recompila src/recompiled/*.cpp e depois roda um round"
         echo "  status mostra estado atual sem rodar nada"
         exit 1
         ;;

@@ -91,7 +91,8 @@ curl -s "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/log
 ### Modos do `auto_round.sh` (rode em `~/Documentos/GitHub/godofwar`):
 | Comando | Comportamento | Ctrl+C? |
 |---|---|---|
-| `bash auto_round.sh once` | 1 round e SAI sozinho | ❌ NÃO |
+| `bash auto_round.sh once` | 1 round e SAI sozinho (sem recompilar) | ❌ NÃO |
+| `bash auto_round.sh full` ⭐ | recompilar.sh + 1 round e SAI sozinho | ❌ NÃO |
 | `bash auto_round.sh loop` ⭐ | Vivo pra sempre, polling 30s | ✅ Pra parar (fim do dia) |
 | `bash auto_round.sh status` | Mostra estado e SAI | ❌ NÃO |
 | `nohup bash auto_round.sh loop > auto_round.log 2>&1 &` | Background | `pkill -f auto_round.sh` |
@@ -109,7 +110,9 @@ Ao clicar em Push no Replit, o loop detecta o commit em ≤30s e faz automaticam
 O Agente Cris NÃO precisa rodar nenhum comando adicional.
 
 **Regra 3 — `once` só quando o loop não estava ligado.**
-Use `bash auto_round.sh once` apenas se o loop não estava rodando e você quer forçar um round imediato. Com o loop ligado, nunca é necessário.
+Use `bash auto_round.sh full` (no Terminal 2) sempre que o analista editar arquivos em `src/recompiled/*.cpp`. O `full` roda `recompilar.sh` + round, eliminando a necessidade de dois comandos separados.
+
+Use `bash auto_round.sh once` apenas quando o analista editar arquivos do runtime (`ps2xRuntime/`) — sem mudanças em `.cpp` do jogo.
 
 **Regra 4 — NUNCA peça ao Agente Cris para fechar o loop antes de outro comando.**
 Isso era um erro de analistas anteriores. O loop não interfere em nada. Se precisar rodar `recompilar.sh` ou `rebuild_runtime.sh` manualmente, rode em outro terminal — o loop continuará esperando no terminal dele.
