@@ -227,20 +227,18 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-04 — PASSO 7A+7B aplicados)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-04 — PASSO 8A aplicado)
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 ### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
-### ✅ PASSO 5 — CONFIRMADO FUNCIONANDO (CreateSema=9 confirma que PASSO 5+6 passaram)
-### ✅ PASSO 6 — CONFIRMADO FUNCIONANDO (sub_0027A810 saiu rápido; sub_0027C100 atingida)
+### ✅ PASSO 5 — CONFIRMADO FUNCIONANDO (PASSO 5 FIRE @tick #88)
+### ✅ PASSO 6 / PASSO 6B — CONFIRMADOS COMPILADOS (sub_00297290 tem fixes em todos os paths de saída)
+### ✅ PASSO 7A — APLICADO em sub_00294AF8 (força StartThread da Thread 0x27CBD0)
+### ✅ PASSO 7B — APLICADO em sub_00283570 (força sceSifSetDma retorno=1 se =0)
 ### ✅ entry_1389d8 — HOOKS ADICIONADOS (START/renderer_type/DONE)
-### ✅ scan_7th_floor.py — NOVA ferramenta (análise estática pré-round)
-### ✅ triage_round.py — ATUALIZADO (seção 7TH FLOOR CHAIN + detectores novos)
-### 🟡 PASSO 7A — APLICADO em sub_00294AF8 (força StartThread da Thread 0x27CBD0)
-### 🟡 PASSO 7B — APLICADO em sub_00283570 (força sceSifSetDma retorno=1 se =0)
-### 🔴 PASSO 6B — APLICADO em sub_00297290 (força v0=1 quando func_296E10 retorna s0=0)
-### 🔴 CAUSA RAIZ ROUND ATUAL — func_296E10 exaure slots RPC → s0=0 → v0=-1 → spin 17000 ticks
-### 🔴 AGUARDANDO ROUND — Push + bash recompilar.sh + round + python3 tools/triage_round.py
+### 🟡 PASSO 8A — APLICADO em sub_0027A6B8 (redireciona "notify path" para sub_00297290)
+### 🔴 CAUSA RAIZ RESOLVIDA — sub_0027A6B8(a0=0x27) tomava "notify path" (*(0x2A172C)!=0 + notify=1 → func_2963C0 → v0=0) sem nunca chamar sub_00297290
+### 🔴 AGUARDANDO ROUND — Push + bash recompilar.sh + round + ver [PASSO 8A] + [sub_0027C100]
 
 ---
 
@@ -292,13 +290,47 @@ sub_00283570 → label_2835e8:
 **Build necessário PASSO 7:**
 - `bash recompilar.sh` (arquivos recompilados — NÃO rebuild_runtime.sh)
 
-**O que esperar no próximo round:**
-- `[sub_0027C100] CreateThread(entry=0x27CBD0) ret=X` → mostra se CreateThread OK ou falha
-- `[PASSO 7A] sub_00294AF8: ReferThreadStatus sp+0=0x... != 0x10 -- forcando v3=0x10` → confirma fix
-- `[sub_00294AF8] StartThread(tid=X) chamando agora` → confirma thread iniciada
-- `[sub_00283570] START` → confirma que sub_00283570 é chamado
-- `[PASSO 7B] sub_00283570: sceSifSetDma retornou 0 -- forcando s0=1` → confirma fix se necessário
-- **Objetivo:** ver `[sub_0027C100] DONE` + `[sub_00283570]` completo + `[entry_1389d8] START`
+---
+
+### 🧬 ANÁLISE PASSO 8A (2026-05-04 — round com PASSO 7A+7B)
+
+**Causa raiz identificada:** sub_0027A6B8(a0=0x27) nunca chegava em sub_00297290.
+
+```
+Fluxo sub_0027A6B8 (a0=0x27):
+  1. func_27A340 retorna v0
+  2. lw v1, *(0x2A172C) → se v1 == v0 (PollSema KE_OK=0): goto label_27a718 ← path certo
+     PROBLEMA: *(0x2A172C) != 0 → branch NOT taken
+  3. lw v1, *(0x2A1710) → notify=1 (PASSO 3c setou) → > 0 → entra no if:
+  4. jal func_2963C0(a0=0x2C4BE0) → processa pacote SIF recebido
+  5. b label_27a7f8 (INCONDICIONALMENTE) com v0=0 → RETORNA 0
+     → sub_0017BC80 retry loop → volta para passo 1 → loop infinito (17940 ticks = 300s)
+```
+
+**Por que *(0x2A172C) != 0:** campo de estado SIF que em PS2 real seria atualizado pelo pacote recebido do IOP. Sem IOP real, permanece com valor residual da primeira inicialização.
+
+**Fix PASSO 8A:** Após func_2963C0 retornar (pc=0x27A710), em vez do branch incondicional para label_27a7f8 com v0=0, força:
+- `s1 = 0x2A0000` (base SIF, para label_27a784 calcular s0=s1+0x3280=0x2A3280)
+- `s2 = 0x2A0000` (para label_27a7ec calcular s2+0x1754=0x2A1754)
+- Redireciona para `label_27a784` → chama sub_00297290(a0=0x2A3280, a1=0x80000593)
+- Bug Y + PASSO 6 garantem sub_00297290 retorna v0=1 + *(0x2A32A4)=1
+- label_27a79c: bgezl tomado, READ32(0x2A32A4)=1 → label_27a7ec
+- label_27a7ec: v0=1 ≠ 0 → WRITE32(0x2A1754,0) → label_27a7f8 → **retorna v0=1** ✓
+
+**Arquivo alterado PASSO 8A:**
+- `GOD_PC_PORT_FINAL/src/recompiled/sub_0027A6B8_0x27a6b8.cpp` — inserção entre pc=0x27A710 e label_27a718
+
+**Build necessário PASSO 8A:**
+- `bash recompilar.sh` (recompilados — NÃO rebuild_runtime.sh)
+
+**O que esperar no próximo round (com PASSO 8A + 7A + 7B):**
+- `[PASSO 8A] sub_0027A6B8: notify path apos func_2963C0 -- redirecionando para sub_00297290` → PASSO 8A disparou ✅
+- `[sub_0027A6B8] CHAMANDO sub_00297290 s1=0x2A0000 a1=0x80000593` → chegou em sub_00297290 ✅
+- `[sub_0027C100] START` → sub_0017BC80 saiu do loop ✅
+- `[PASSO 7A]` → confirma fix da thread
+- `[sub_00283570] START` → DMA SIF
+- `[PASSO 7B]` → confirma fix sceSifSetDma se necessário
+- `[entry_1389d8] START` → **OBJETIVO PRINCIPAL** 🎯
 
 ---
 

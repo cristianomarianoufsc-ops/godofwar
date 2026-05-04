@@ -380,17 +380,18 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 ---
 
-## 🟢 ESTADO ATUAL — 2026-05-03: PASSO 6 aplicado; hooks entry_1389d8 adicionados; scan_7th_floor.py + triage_round.py atualizados
+## 🟢 ESTADO ATUAL — 2026-05-04: PASSO 8A aplicado em sub_0027A6B8
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 ### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
 ### ✅ PASSO 3c:auto — IMPLEMENTADO (`ps2_syscalls_flags.inl`)
-### ✅ PASSO 4 (Bug S) — Compilado, NUNCA DISPAROU (*(0x30A1C0)==0 — sceSifCallRpc não chamado)
-### ✅ PASSO 5 — CONFIRMADO FUNCIONANDO (tick #73)
-### ✅ PASSO 6 — FIX APLICADO (`sub_00297290_0x297290.cpp`) — aguarda Push + recompilar.sh
-### ✅ entry_1389d8 — HOOKS ADICIONADOS (START/renderer_type/DONE) — detectável via triage_round.py
-### ⚠️ Bug Q — CORRIGIDO ANTECIPADAMENTE (2026-05-01, aguarda recompilar.sh)
-### 🔴 AGUARDANDO ROUND — PASSO 6 não testado ainda
+### ✅ PASSO 5 — CONFIRMADO FUNCIONANDO (PASSO 5 FIRE @tick #88)
+### ✅ PASSO 6 / PASSO 6B — CONFIRMADOS COMPILADOS (todos os 4 paths de saída de sub_00297290 cobertos)
+### ✅ PASSO 7A — APLICADO em sub_00294AF8 (força v3=0x10 → StartThread)
+### ✅ PASSO 7B — APLICADO em sub_00283570 (força s0=1 → sceSifSetDma não trava)
+### ✅ entry_1389d8 — HOOKS ADICIONADOS (START/renderer_type/DONE)
+### 🟡 PASSO 8A — APLICADO em sub_0027A6B8 (redireciona notify path para sub_00297290)
+### 🔴 AGUARDANDO ROUND — Push + bash recompilar.sh + round
 
 ---
 

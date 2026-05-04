@@ -146,21 +146,18 @@ void sub_0027A6B8_0x27a6b8(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         if (ctx->pc == __entryPc) { ctx->pc = 0x27A710u; }
         if (ctx->pc != 0x27A710u) { return; }
     }
-    ctx->pc = 0x27A710u;
-    // 0x27a710: 0x10000039  b           . + 4 + (0x39 << 2)
-    ctx->pc = 0x27A710u;
-    {
-        const bool branch_taken_0x27a710 = (GPR_U64(ctx, 0) == GPR_U64(ctx, 0));
-        ctx->pc = 0x27A714u;
-        ctx->in_delay_slot = true; ctx->branch_pc = 0x27A710u;
-            // 0x27a714: 0x102d  daddu       $v0, $zero, $zero (Delay Slot)
-        SET_GPR_U64(ctx, 2, (uint64_t)GPR_U64(ctx, 0) + (uint64_t)GPR_U64(ctx, 0));
-        ctx->in_delay_slot = false;
-        if (branch_taken_0x27a710) {
-            ctx->pc = 0x27A7F8u;
-            goto label_27a7f8;
-        }
-    }
+    // PASSO 8A: o path "notify" (*(0x2A172C) != PollSema_v0, *(0x2A1710)>0) chamou
+    // func_2963C0 e ia retornar v0=0 incondicionalmente. Sem IOP real, o pacote SIF
+    // nunca vai confirmar o bind. Redirecionamos para label_27a784 (sub_00297290) que
+    // Bug Y / PASSO 6 garantem retornar v0=1 e *(s1+0x24)=1.
+    // s1 e s2 sao setados para 0x2A0000 (base SIF) para que label_27a784/label_27a7ec
+    // calculem s0=s1+0x3280=0x2A3280 e s2+0x1754=0x2A1754 corretamente.
+    std::cerr << "[PASSO 8A] sub_0027A6B8: notify path apos func_2963C0"
+              << " -- redirecionando para sub_00297290 em vez de retornar v0=0\n";
+    SET_GPR_S32(ctx, 17, (int32_t)((uint32_t)42 << 16)); // s1 = 0x2A0000
+    SET_GPR_S32(ctx, 18, (int32_t)((uint32_t)42 << 16)); // s2 = 0x2A0000
+    ctx->pc = 0x27A784u;
+    goto label_27a784;
     ctx->pc = 0x27A718u;
 label_27a718:
     // 0x27a718: 0x3c02002a  lui         $v0, 0x2A
