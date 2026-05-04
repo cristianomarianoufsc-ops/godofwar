@@ -361,11 +361,13 @@ label_27c140:
             // 0x27c220: 0xae8208a0  sw          $v0, 0x8A0($s4) (Delay Slot)
         WRITE32(ADD32(GPR_U32(ctx, 20), 2208), GPR_U32(ctx, 2));
         ctx->in_delay_slot = false;
+        std::cerr << "[sub_0027C100] CreateThread(entry=0x27CBD0) ret=" << std::dec << (int32_t)GPR_U32(ctx, 2) << "\n";
         if (branch_taken_0x27c21c) {
             ctx->pc = 0x27C238u;
             goto label_27c238;
         }
     }
+    std::cerr << "[sub_0027C100] PATH=thread_fail (CreateThread retornou negativo -- limpando 3 semas)\n";
     ctx->pc = 0x27C224u;
     // 0x27c224: 0xc09f0a8  jal         func_27C2A0
     ctx->pc = 0x27C224u;

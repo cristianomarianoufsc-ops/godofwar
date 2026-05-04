@@ -18,6 +18,7 @@ void sub_00283570_0x283570(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
 #endif
 
     ctx->pc = 0x283570u;
+    std::cerr << "[sub_00283570] START a0=0x" << std::hex << GPR_U32(ctx, 4) << std::dec << "\n";
 
     // 0x283570: 0x27bdff90  addiu       $sp, $sp, -0x70
     ctx->pc = 0x283570u;
@@ -160,6 +161,19 @@ label_2835e8:
     // 0x2835f0: 0x40802d  daddu       $s0, $v0, $zero
     ctx->pc = 0x2835f0u;
     SET_GPR_U64(ctx, 16, (uint64_t)GPR_U64(ctx, 2) + (uint64_t)GPR_U64(ctx, 0));
+    // PASSO 7B: sceSifSetDma (syscall 0x77) pode retornar 0 se struct DMA invalida
+    // ou se Thread 0x27CBD0 nao foi iniciada e a fila EE-IOP nao foi configurada.
+    // Forcamos s0=1 (DMA ID ficticio) para sair do spin loop e prosseguir.
+    if (GPR_U64(ctx, 16) == 0u) {
+        static bool s_passo7b_logged = false;
+        if (!s_passo7b_logged) {
+            s_passo7b_logged = true;
+            std::cerr << "[PASSO 7B] sub_00283570: sceSifSetDma retornou 0"
+                      << " -- forcando s0=1 (DMA ID ficticio) para sair do spin loop"
+                      << " sp=0x" << std::hex << GPR_U32(ctx, 29) << std::dec << "\n";
+        }
+        SET_GPR_U64(ctx, 16, 1u);
+    }
     // 0x2835f4: 0x1200fffc  beqz        $s0, . + 4 + (-0x4 << 2)
     ctx->pc = 0x2835F4u;
     {

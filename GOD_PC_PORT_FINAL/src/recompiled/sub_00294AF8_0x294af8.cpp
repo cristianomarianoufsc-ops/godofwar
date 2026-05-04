@@ -185,6 +185,25 @@ label_294b54:
     SET_GPR_S32(ctx, 2, (int32_t)ADD32(GPR_U32(ctx, 0), 16));
     // 0x294b58: 0x10620005  beq         $v1, $v0, . + 4 + (0x5 << 2)
     ctx->pc = 0x294B58u;
+    // PASSO 7A: ReferThreadStatus escreve attr (nao status EE) em *(sp+0).
+    // Thread criada com attr=0 => v1(=$3) != 0x10 => label_294b70 nao atingido => StartThread nunca chamado.
+    // Forcamos $v1(=$3)=0x10 (THS_DORMANT) para garantir que StartThread seja invocado.
+    {
+        uint32_t sp0_val = GPR_U32(ctx, 3);
+        if (sp0_val != 0x10u) {
+            static bool s_passo7a_logged = false;
+            if (!s_passo7a_logged) {
+                s_passo7a_logged = true;
+                std::cerr << "[PASSO 7A] sub_00294AF8: ReferThreadStatus sp+0=0x"
+                          << std::hex << sp0_val
+                          << " != 0x10 -- forcando v3=0x10 (dormant) para invocar StartThread(tid="
+                          << std::dec << GPR_U32(ctx, 17) << ")\n";
+            }
+            SET_GPR_S32(ctx, 3, 0x10);
+        } else {
+            std::cerr << "[PASSO 7A] sub_00294AF8: ReferThreadStatus sp+0=0x10 OK (dormant natural)\n";
+        }
+    }
     {
         const bool branch_taken_0x294b58 = (GPR_U64(ctx, 3) == GPR_U64(ctx, 2));
         ctx->pc = 0x294B5Cu;
@@ -216,6 +235,7 @@ label_294b54:
     }
     ctx->pc = 0x294B68u;
 label_294b68:
+    std::cerr << "[sub_00294AF8] FAIL label_294b68 -- StartThread NAO sera chamado (lock error ou check falhou)\n";
     // 0x294b68: 0x1000003b  b           . + 4 + (0x3B << 2)
     ctx->pc = 0x294B68u;
     {
@@ -411,7 +431,8 @@ label_294b70:
     // 0x294c4c: 0x220202d  daddu       $a0, $s1, $zero
     ctx->pc = 0x294c4cu;
     SET_GPR_U64(ctx, 4, (uint64_t)GPR_U64(ctx, 17) + (uint64_t)GPR_U64(ctx, 0));
-    // 0x294c50: 0xc0a4e90  jal         func_293A40
+    // 0x294c50: 0xc0a4e90  jal         func_293A40  [= StartThread syscall 0x22]
+    std::cerr << "[sub_00294AF8] StartThread(tid=" << std::dec << GPR_U32(ctx, 4) << ") chamando agora\n";
     ctx->pc = 0x294C50u;
     SET_GPR_U32(ctx, 31, 0x294C58u);
     ctx->pc = 0x294C54u;

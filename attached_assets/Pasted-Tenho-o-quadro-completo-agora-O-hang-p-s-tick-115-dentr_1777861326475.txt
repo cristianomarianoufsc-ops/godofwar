@@ -1,0 +1,44 @@
+Tenho o quadro completo agora. O hang pós-tick #115 é dentro de sub_0027C100 — sub_0017BC80 chama sub_0027AD00 → retorna erro v0=0 rápido → chama sub_0027C100 incondicionalmente (sem checar o retorno). Lendo sub_0027C100 e sub_00297470:
+
+
+3 actions
+sub_0027C100 não foi encontrado pelo glob. Procurando o arquivo e lendo mais de sub_00297470:
+
+
+3 actions
+sub_0027C100 está confirmado — lendo ele completo agora:
+
+
+3 actions
+Análise completa. O hang pós-tick #115 está dentro de sub_0027C100, especificamente em func_293A20 (entry_293a20). Lendo esse arquivo para confirmar e já preparar o PASSO 7:
+
+
+3 actions
+sub_0027C100 não tem loops próprios — o hang está em uma das funções chamadas. Lendo entry_293a20 e verificando func_282148 em paralelo:
+
+
+5 actions
+Achei! func_293A20 = syscall simples, sem loop. Os loops coop.Yield estão em:
+
+sub_00282148 (linha 155) ← hang primário
+entry_281510 (linha 57)
+entry_27d5b8 (linha 95)
+Lendo as 3 em paralelo para mapear o PASSO 7 completo:
+
+
+4 actions
+ANÁLISE CRÍTICA: As 3 funções callee têm loops RÁPIDOS (2-3 iterações cada). O hang de 17825 ticks não pode ser delas. O verdadeiro culpado é a cadeia entre PASSO 5 e sub_0027C100 que ainda não mapeei. Lendo sub_0027A810 (LOOP A), entry_27ab00 (LOOP B) e o syscall CreateThread agora:
+
+
+4 actions
+Achei loops em sub_0027A810 e sub_0017BBC8. Lendo as seções críticas em paralelo:
+
+
+4 actions
+ENCONTRADO! sub_0027A810 tem delay loops de 65537 iterações (0x10000 → -1) com um loop externo incondicional — ESSE é o hang de 17825 ticks. Lendo o início de sub_0027A810 para mapear a condição de saída do loop externo (label_27a8d0):
+
+
+2 actions
+EUREKA — O VERDADEIRO HANG! sub_0027A810's outer loop at label_27a8d0 chama sub_00297290(a0=0x30AAA8, a1=0x80000592) — se retorna < 0: delay loop 65537 iterações → repete infinitamente. Esta é a raiz do hang de 17825 ticks.
+
+Preciso verificar exatamente como PASSO 6 atua em sub_00297290 para saber se já cobre esta chamada, e também como sub_00296E10 funciona para 0x30AAA8:

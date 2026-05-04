@@ -193,7 +193,7 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-03 — Bug sub_0027C100 em investigação)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-04 — PASSO 7A+7B aplicados)
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 ### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
@@ -202,8 +202,67 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 ### ✅ entry_1389d8 — HOOKS ADICIONADOS (START/renderer_type/DONE)
 ### ✅ scan_7th_floor.py — NOVA ferramenta (análise estática pré-round)
 ### ✅ triage_round.py — ATUALIZADO (seção 7TH FLOOR CHAIN + detectores novos)
-### 🔴 NOVO BLOQUEIO — sub_0027C100 inicia mas TRAVA internamente (entry_1389d8 nunca atingida)
-### 🔴 AGUARDANDO ROUND — hooks sub_0027C100/callees adicionados; Push + recompilar.sh + round
+### 🟡 PASSO 7A — APLICADO em sub_00294AF8 (força StartThread da Thread 0x27CBD0)
+### 🟡 PASSO 7B — APLICADO em sub_00283570 (força sceSifSetDma retorno=1 se =0)
+### 🔴 AGUARDANDO ROUND — Push + bash recompilar.sh + round + python3 tools/triage_round.py
+
+---
+
+### 🧬 ANÁLISE PASSO 7 (2026-05-04 — conclusões desta sessão)
+
+**Mapeamento de syscalls confirmado:**
+| Endereço | Syscall # | Função EE |
+|---|---|---|
+| entry_293a20 (func_293A20) | 0x20 | CreateThread ✓ |
+| entry_293a40 (func_293A40) | **0x22** | **StartThread** ← foi o que procurávamos |
+| entry_293b20 (func_293B20) | **0x30** | **ReferThreadStatus** |
+| entry_293fc0 (func_293FC0) | **0x76** | **sceSifDmaStat** (já retorna -1 ✓) |
+| entry_293fe0 (func_293FE0) | **0x77** | **sceSifSetDma** (pode retornar 0 → HANG) |
+
+**CreateThread em sub_0027C100:**
+- Nossa implementação lê: `stack=*(sp+8)=0x3108C0`, `stackSize=*(sp+0xC)=0xC000`, depois detecta heuristicamente `gp=param[4]=0x2CF070, prio=param[5]=1`
+- looksLikeGuestPtr(0x2CF070)=true + looksLikePriority(1)=true → **CreateThread PROVAVELMENTE SUCCEED** ✓
+- Log filtrado não mostra `[CreateThread] id=3` (pode ser filtrado pelo triage_round.py)
+
+**Causa raiz PASSO 7A (sub_00294AF8):**
+```
+sub_0027C100 → func_294AF8(a0=tid, a1=0):
+  1. func_299230 (spinlock acquire)
+  2. ReferThreadStatus(tid, sp) → preenche struct em sp
+     *(sp+0) = attr (campo 0 do SceKernelThreadInfo) = 0 para thread criada com attr=0
+  3. Check: if *(sp+0) == 0x10 → goto label_294b70 → func_293A40 = StartThread(tid)
+     FALHA: attr=0 != 0x10 → label_294b68 → return -1 → Thread 0x27CBD0 NUNCA STARTADA
+  4. sub_0027C100 ignora retorno de func_294AF8 → retorna v0=0 fingindo sucesso
+```
+**Fix PASSO 7A:** força `$v1(=$3)=0x10` antes do beq em label_294b54 de sub_00294AF8.
+
+**Causa raiz PASSO 7B (sub_00283570):**
+```
+sub_00283570 → label_2835e8:
+  jal func_293FE0(a0=struct_at_sp, a1=1) [= sceSifSetDma syscall 0x77]
+  if v0 == 0: goto label_2835e8  ← SPIN LOOP INFINITO
+  
+  sceSifSetDma retorna 0 porque Thread 0x27CBD0 não foi iniciada
+  e/ou struct DMA na stack tem campos inválidos.
+  sceSifDmaStat (func_293FC0 syscall 0x76) JÁ retorna -1 ✓ (não precisa fix)
+```
+**Fix PASSO 7B:** força `$s0=1` (DMA ID fictício) se sceSifSetDma retornar 0.
+
+**Arquivos alterados PASSO 7:**
+- `GOD_PC_PORT_FINAL/src/recompiled/sub_00294AF8_0x294af8.cpp` — PASSO 7A em label_294b54 + log label_294b68 + log StartThread call
+- `GOD_PC_PORT_FINAL/src/recompiled/sub_00283570_0x283570.cpp` — START hook + PASSO 7B no label_2835e8 loop
+- `GOD_PC_PORT_FINAL/src/recompiled/sub_0027C100_0x27c100.cpp` — CreateThread ret= hook + PATH=thread_fail hook
+
+**Build necessário PASSO 7:**
+- `bash recompilar.sh` (arquivos recompilados — NÃO rebuild_runtime.sh)
+
+**O que esperar no próximo round:**
+- `[sub_0027C100] CreateThread(entry=0x27CBD0) ret=X` → mostra se CreateThread OK ou falha
+- `[PASSO 7A] sub_00294AF8: ReferThreadStatus sp+0=0x... != 0x10 -- forcando v3=0x10` → confirma fix
+- `[sub_00294AF8] StartThread(tid=X) chamando agora` → confirma thread iniciada
+- `[sub_00283570] START` → confirma que sub_00283570 é chamado
+- `[PASSO 7B] sub_00283570: sceSifSetDma retornou 0 -- forcando s0=1` → confirma fix se necessário
+- **Objetivo:** ver `[sub_0027C100] DONE` + `[sub_00283570]` completo + `[entry_1389d8] START`
 
 ---
 
