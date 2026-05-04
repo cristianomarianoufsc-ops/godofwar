@@ -204,6 +204,8 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 ### ✅ triage_round.py — ATUALIZADO (seção 7TH FLOOR CHAIN + detectores novos)
 ### 🟡 PASSO 7A — APLICADO em sub_00294AF8 (força StartThread da Thread 0x27CBD0)
 ### 🟡 PASSO 7B — APLICADO em sub_00283570 (força sceSifSetDma retorno=1 se =0)
+### 🔴 PASSO 6B — APLICADO em sub_00297290 (força v0=1 quando func_296E10 retorna s0=0)
+### 🔴 CAUSA RAIZ ROUND ATUAL — func_296E10 exaure slots RPC → s0=0 → v0=-1 → spin 17000 ticks
 ### 🔴 AGUARDANDO ROUND — Push + bash recompilar.sh + round + python3 tools/triage_round.py
 
 ---

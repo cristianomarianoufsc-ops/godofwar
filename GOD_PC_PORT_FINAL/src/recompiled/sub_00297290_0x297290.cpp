@@ -18,6 +18,8 @@ void sub_00297290_0x297290(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
 #endif
 
     ctx->pc = 0x297290u;
+    std::cerr << "[sub_00297290] START a0(s1)=0x" << std::hex << GPR_U32(ctx, 4)
+              << " a1(s3)=0x" << GPR_U32(ctx, 5) << std::dec << "\n";
 
     // 0x297290: 0x27bdff90  addiu       $sp, $sp, -0x70
     ctx->pc = 0x297290u;
@@ -87,9 +89,16 @@ void sub_00297290_0x297290(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         ctx->pc = 0x2972D0u;
         ctx->in_delay_slot = true; ctx->branch_pc = 0x2972CCu;
             // 0x2972d0: 0x2402ffff  addiu       $v0, $zero, -0x1 (Delay Slot)
-        SET_GPR_S32(ctx, 2, (int32_t)ADD32(GPR_U32(ctx, 0), 4294967295));
+            // PASSO 6B: func_296E10 retornou s0=0 (tabela RPC sem slots livres — sem IOP real).
+            // Chamadas anteriores adquiriram slots mas nao os liberaram via func_296EB8.
+            // Forcamos v0=1 e *(s1+0x24)=1 para simular bind bem-sucedido e sair do retry.
+        WRITE32(ADD32(GPR_U32(ctx, 17), 36), 1u);
+        SET_GPR_S32(ctx, 2, 1);
         ctx->in_delay_slot = false;
         if (branch_taken_0x2972cc) {
+            std::cerr << "[PASSO 6B] sub_00297290: func_296E10 s0=0 (sem slot RPC livre)"
+                      << " -- forcando v0=1 *(s1+0x24)=1 s1=0x"
+                      << std::hex << GPR_U32(ctx, 17) << std::dec << "\n";
             ctx->pc = 0x2973C0u;
             goto label_2973c0;
         }
