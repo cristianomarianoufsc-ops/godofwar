@@ -32,8 +32,8 @@ echo ""
 # a reavaliar dependencias. Tambem tocamos qualquer .cpp/.h/.inl mais antigo
 # que o seu .o correspondente em build/ se foi alterado pelo git nos ultimos
 # 5 commits (cobre o caso de pull recente).
-RECENT_GIT_FILES=$(git -C "$SCRIPT_DIR" diff --name-only HEAD~5 HEAD 2>/dev/null | \
-    grep -E '\.(cpp|h|hpp|inl|c)$' || true)
+RECENT_GIT_FILES=$(git -C "$SCRIPT_DIR" log --name-only --pretty=format: -5 2>/dev/null | \
+    grep -E '\.(cpp|h|hpp|inl|c)$' | sort -u || true)
 if [ -n "$RECENT_GIT_FILES" ]; then
     echo "[recompilar] Forcando touch em arquivos alterados nos ultimos 5 commits:"
     while IFS= read -r f; do
