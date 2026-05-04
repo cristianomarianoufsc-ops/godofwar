@@ -18,6 +18,7 @@ void sub_0027A810_0x27a810(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
 #endif
 
     ctx->pc = 0x27a810u;
+    std::cerr << "[sub_0027A810] START a0=0x" << std::hex << GPR_U32(ctx, 4) << std::dec << "\n";
 
     // 0x27a810: 0x27bdff50  addiu       $sp, $sp, -0xB0
     ctx->pc = 0x27a810u;
@@ -87,10 +88,12 @@ void sub_0027A810_0x27a810(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         SET_GPR_U64(ctx, 2, (uint64_t)GPR_U64(ctx, 0) + (uint64_t)GPR_U64(ctx, 0));
         ctx->in_delay_slot = false;
         if (branch_taken_0x27a848) {
+            std::cerr << "[sub_0027A810] sub_0027A648 retornou nao-zero -> skip para label_27aac8 (retorno rapido)\n";
             ctx->pc = 0x27AAC8u;
             goto label_27aac8;
         }
     }
+    std::cerr << "[sub_0027A810] sub_0027A648 retornou 0 -> continua setup (atingira label_27a8d0)\n";
     ctx->pc = 0x27A850u;
     // 0x27a850: 0x202d  daddu       $a0, $zero, $zero
     ctx->pc = 0x27a850u;

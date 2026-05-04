@@ -435,9 +435,9 @@ Testado contra log atual (2026-05-01) → detectou corretamente Bug X: `🔴 id=
 
 ---
 
-## 📋 Próxima ação do analista (atualizado 2026-05-02 — análise cadeia intermediária completa)
+## 📋 Próxima ação do analista (atualizado 2026-05-04 — diagnóstico profundo sub_0017BC80 → sub_00297290)
 
-### O que foi feito nesta sessão (2026-05-02 — sem round novo)
+### O que foi feito nesta sessão (2026-05-04 — sem round novo)
 
 **Análise estática da cadeia Bug AB → Bug P — TODAS as funções intermediárias verificadas:**
 
@@ -458,7 +458,50 @@ Testado contra log atual (2026-05-01) → detectou corretamente Bug X: `🔴 id=
 - `entry_2964f0_0x296518.cpp`: `[poll_327a40] INICIO` / `spinning count=N` (a cada 500) / `SAIU poll_ok`
 - `FUN_002947c8_0x2947c8.cpp`: `[BugP_entry] FUN_002947c8 START a0=0x... sp=0x...`
 
-**GREP_PATTERN atualizado:** `+poll_327a40 +FUN_002947c8`
+---
+
+### Descobertas da sessão 2026-05-04 — Por que sub_00297290 nunca era visto
+
+**Causa raiz do silêncio:** GREP_PATTERN não continha `sub_00297290` nem `sub_0027A810` nem `sub_0017BC80` nem `sub_0027A6B8`. `[sub_00297290] START` era emitido mas filtrado. Além disso, `[PASSO 6B]` (que SIM estava no padrão via `PASSO 6`) nunca aparecia, confirmando que sub_00297290 **não estava sendo chamado** ou tomava path diferente do PASSO 6B.
+
+**Cadeia real confirmada por leitura de código completa:**
+
+```
+sub_00138D48 [JAL 8/11]
+  └─► sub_0017BC80
+        ├─► sub_0027A810 (a0 vindo do caller)
+        │     └─► sub_0027A648 (a0=1 hardcoded)
+        │           └─► label_27a698 → entry_297670 → retorna v0
+        │     ├─ se v0≠0: jump label_27aac8 → retorno rápido (SEM sub_00297290)
+        │     └─ se v0=0: setup → label_27a8d0 → sub_00297290 (LOOP DE RETRY)
+        │
+        └─► sub_0027ABD0 (SEMPRE chamado, sem condição)
+              └─► sub_0027A6B8 (a0=0x27)
+                    └─► ... → sub_00297290 (via label_27a794)
+```
+
+**Descoberta crítica em sub_0027A648:**
+- `bnez $a0, label_27a698` na linha 28 — com a0=1 → vai DIRETO para label_27a698
+- label_27a698: chama `entry_297670(a0=0x2A3280)` → retorna v0 (status conexão SIF)
+- Retorna v0 de entry_297670 **sem modificar**
+- Se entry_297670 retorna 0 → sub_0027A810 faz setup e loop com sub_00297290
+- Se entry_297670 retorna ≠0 → sub_0027A810 pula sub_00297290, retorna rápido → sub_0017BC80 vai para sub_0027ABD0 → sub_0027A6B8 → sub_00297290
+
+**entry_27ab00_0x27abd0 (chamado por sub_0017BC80 via loop de retry em label_17bd50):**
+- Chama sub_0027A6B8 com a0=0x27 → sub_0027A6B8 → sub_00297290
+- Se sub_0027A6B8 retorna 0 → loop retenta
+
+**Por que PASSO 6B nunca aparece:** sub_00297290 é chamado, mas func_296E10 retorna s0≠0 (há slot RPC disponível), então o branch `beqz $s0, PASSO 6B` (linha 86–98) não é tomado → segue path normal. PASSO 6B era fix desnecessário para esse path.
+
+**Logs adicionados (compilam com `recompilar.sh`):**
+
+| Arquivo | Log adicionado |
+|---|---|
+| `sub_0027A810_0x27a810.cpp` | `[sub_0027A810] START a0=0x...` + decisão após sub_0027A648 |
+| `sub_0017BC80_0x17bc80.cpp` | `[sub_0017BC80] START` + após sub_0027A810 + após sub_0027ABD0 (v0, s1) |
+| `sub_0027A6B8_0x27a6b8.cpp` | `[sub_0027A6B8] START a0=0x...` + `CHAMANDO sub_00297290` |
+
+**GREP_PATTERN atualizado:** `+sub_00297290 +sub_0027A810 +sub_0017BC80 +sub_0027A6B8 +sub_0027A648 +entry_27ab00 +138D48.*retornou`
 
 ---
 
@@ -474,43 +517,42 @@ Testado contra log atual (2026-05-01) → detectou corretamente Bug X: `🔴 id=
 | `GOD_PC_PORT_FINAL/src/recompiled/FUN_002947c8_0x2947c8.cpp` | Bug P + log entrada | `recompilar.sh` |
 | `GOD_PC_PORT_FINAL/src/recompiled/entry_2964f0_0x296518.cpp` | log poll_327a40 | `recompilar.sh` |
 | `game_overrides.cpp` | VBlank log notify2a1710 | `rebuild_runtime.sh` |
-| `auto_round.sh` | GREP_PATTERN expandido | (script, sem build) |
+| `GOD_PC_PORT_FINAL/src/recompiled/sub_0027A810_0x27a810.cpp` | logs diagnóstico cadeia | `recompilar.sh` |
+| `GOD_PC_PORT_FINAL/src/recompiled/sub_0017BC80_0x17bc80.cpp` | logs diagnóstico cadeia | `recompilar.sh` |
+| `GOD_PC_PORT_FINAL/src/recompiled/sub_0027A6B8_0x27a6b8.cpp` | logs diagnóstico cadeia | `recompilar.sh` |
+| `auto_round.sh` | GREP_PATTERN expandido (+9 padrões) | (script, sem build) |
 
 **Após o Push do Cris:**
 1. `bash rebuild_runtime.sh` → compila Bug AB + PASSO 3c:auto + VBlank log
-2. `bash recompilar.sh` → compila Bug AA + Bug P + logs entry_2964f0
+2. `bash recompilar.sh` → compila todos os diagnósticos + Bug P
 3. `bash auto_round.sh once`
 
 ---
 
 ### O que o próximo log deve mostrar
 
-**Cenário A — Bug P funcionando (esperado):**
+**Cenário A — Cadeia completa visível (esperado):**
 ```
-[WaitEventFlag:mode_compat] Bug AB — unknown_bits=0x... × 30+
-[CreateThread] ...
-[StartThread] tid=2 entry=0x2947c8
-[BugP_entry] FUN_002947c8 START a0=0x... sp=0x...
-[poll_327a40] INICIO poll loop addr=0x327a40
-... (thread roda) ...
-[poll_327a40] SAIU poll_ok count=N addr=0x327a40 val=0x1
-```
-
-**Cenário B — Bug P trava antes de setar 0x327a40 (poll loop sem saída):**
-```
-[BugP_entry] FUN_002947c8 START ...
-[poll_327a40] INICIO poll loop addr=0x327a40
-[poll_327a40] spinning count=500 addr=0x327a40 val=0x0
-[poll_327a40] spinning count=1000 ...
-(sem SAIU — próximo bug dentro de FUN_002947c8)
+[sub_0017BC80] START
+[sub_0027A810] START a0=0x...
+[sub_0027A810] sub_0027A648 retornou nao-zero -> skip para label_27aac8 (retorno rapido)
+  OU
+[sub_0027A810] sub_0027A648 retornou 0 -> continua setup (atingira label_27a8d0)
+[sub_0017BC80] apos sub_0027A810: v0=0x...
+[sub_0017BC80] apos sub_0027ABD0 (1a chamada): v0=0x... s1=0x...
+[sub_0027A6B8] START a0=0x...
+[sub_0027A6B8] CHAMANDO sub_00297290 s1=0x... a1=0x...
+[sub_00297290] START a0(s1)=0x... a1(s3)=0x...
+[PASSO 6B] ... (se s0=0)  OU  continua path normal (se s0≠0)
 ```
 
-**Cenário C — StartThread não chamado (Bug AB não resolveu tudo):**
-```
-[WaitEventFlag:mode_compat] × 30+
-(sem [BugP_entry], sem [poll_327a40])
-→ Investigar se há outro WaitEventFlag bloqueante adiante de sub_0029AA88
-```
+**Cenário B — sub_0017BC80 não aparece:**
+- sub_00138D48 não chama sub_0017BC80 neste round (round ainda no PASSO 5 loop)
+- Verificar se PASSO 5 FIRE aparece no log → confirma que sub_0017BC80 veio depois
+
+**Cenário C — sub_0027A810 aparece mas sub_0027A6B8 não:**
+- sub_0027A810 retorna mas sub_0027ABD0 trava dentro
+- Investigar entry_27ab00_0x27abd0 (loop de retry, sub_0027A6B8 retorna 0 repetidamente)
 
 ### ⚠️ Lembrete ao analista
 Sempre pedir ao Agente Cris para clicar em **Push** no Replit após qualquer edição de código.

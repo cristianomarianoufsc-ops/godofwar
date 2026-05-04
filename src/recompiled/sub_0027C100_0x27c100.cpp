@@ -18,6 +18,7 @@ void sub_0027C100_0x27c100(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
 #endif
 
     ctx->pc = 0x27c100u;
+    std::cerr << "[sub_0027C100] START\n";
 
     // 0x27c100: 0x27bdff20  addiu       $sp, $sp, -0xE0
     ctx->pc = 0x27c100u;
@@ -360,11 +361,13 @@ label_27c140:
             // 0x27c220: 0xae8208a0  sw          $v0, 0x8A0($s4) (Delay Slot)
         WRITE32(ADD32(GPR_U32(ctx, 20), 2208), GPR_U32(ctx, 2));
         ctx->in_delay_slot = false;
+        std::cerr << "[sub_0027C100] CreateThread(entry=0x27CBD0) ret=" << std::dec << (int32_t)GPR_U32(ctx, 2) << "\n";
         if (branch_taken_0x27c21c) {
             ctx->pc = 0x27C238u;
             goto label_27c238;
         }
     }
+    std::cerr << "[sub_0027C100] PATH=thread_fail (CreateThread retornou negativo -- limpando 3 semas)\n";
     ctx->pc = 0x27C224u;
     // 0x27c224: 0xc09f0a8  jal         func_27C2A0
     ctx->pc = 0x27C224u;
@@ -419,6 +422,7 @@ label_27c238:
         if (ctx->pc != 0x27C240u) { return; }
     }
     ctx->pc = 0x27C240u;
+    std::cerr << "[sub_0027C100] 282148_ret=" << std::dec << (int32_t)GPR_U32(ctx, 2) << "\n";
     // 0x27c240: 0x14400006  bnez        $v0, . + 4 + (0x6 << 2)
     ctx->pc = 0x27C240u;
     {
@@ -430,6 +434,7 @@ label_27c238:
     }
     ctx->pc = 0x27C248u;
 label_27c248:
+    std::cerr << "[sub_0027C100] PATH=cleanup\n";
     // 0x27c248: 0xc09f0a8  jal         func_27C2A0
     ctx->pc = 0x27C248u;
     SET_GPR_U32(ctx, 31, 0x27C250u);
@@ -467,6 +472,7 @@ label_27c250:
     }
     ctx->pc = 0x27C25Cu;
 label_27c25c:
+    std::cerr << "[sub_0027C100] PATH=full\n";
     // 0x27c25c: 0xc0a0544  jal         func_281510
     ctx->pc = 0x27C25Cu;
     SET_GPR_U32(ctx, 31, 0x27C264u);
@@ -527,6 +533,7 @@ label_27c25c:
     }
     ctx->pc = 0x27C278u;
 label_27c278:
+    std::cerr << "[sub_0027C100] DONE\n";
     // 0x27c278: 0x102d  daddu       $v0, $zero, $zero
     ctx->pc = 0x27c278u;
     SET_GPR_U64(ctx, 2, (uint64_t)GPR_U64(ctx, 0) + (uint64_t)GPR_U64(ctx, 0));
@@ -575,4 +582,5 @@ label_27c27c:
     // 0x27c29c: 0x0  nop
     ctx->pc = 0x27c29cu;
     // NOP
+    std::cerr << "[sub_0027C100] DONE\n";
 }

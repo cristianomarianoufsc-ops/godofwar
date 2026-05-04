@@ -400,30 +400,35 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 Funções pós-bind-loop verificadas e COMPLETAS: `sub_00296898` (402 linhas), `entry_2969d0` (93 linhas), `entry_296eb8` (53 linhas), `sub_00294AF8` (529 linhas). `StartThread` implementado no runtime (syscall 0x22, `ps2_syscalls.cpp:128`).
 
-**Próximo passo (2026-05-03 — Bug sub_0027C100 em investigação):**
+**Próximo passo (2026-05-04 — diagnóstico cadeia sub_0017BC80):**
 1. Cris clica em **Push** no Replit
-2. `bash recompilar.sh` → recompila sub_0027C100 + callees (hooks novos)
-3. `bash auto_round.sh once`
-4. `python3 tools/triage_round.py --full` → verificar seção "7TH FLOOR CHAIN"
+2. `bash rebuild_runtime.sh` → compila Bug AB + PASSO 3c:auto + VBlank log
+3. `bash recompilar.sh` → compila todos os diagnósticos + Bug P (9 arquivos modificados)
+4. `bash auto_round.sh once`
+5. Verificar log: `[sub_0017BC80] START`, `[sub_0027A810]`, `[sub_0027A6B8]`, `[sub_00297290] START`
 
-**CONFIRMADO (round com PASSO 5+6):**
-- PASSO 5 ✅ + PASSO 6 ✅ → sub_0027C100 atingida (CreateSema total=9 confirma)
-- sub_0027C100 TRAVA internamente — nem entry_1389d8 nem DONE detectados
-- Candidatos: sub_00282148 (PATH=cleanup?), entry_281510, entry_27d5b8, sub_00294AF8
+**DESCOBERTA SESSÃO 2026-05-04 — Por que sub_00297290 não aparecia no log:**
+- GREP_PATTERN não incluía `sub_00297290|sub_0027A810|sub_0017BC80|sub_0027A6B8` → logs filtrados
+- `[PASSO 6B]` nunca aparecia (estava no padrão via `PASSO 6`) → confirmou sub_00297290 NÃO era chamado ou tomava path diferente
+- sub_0027A648 com a0=1 (hardcoded em sub_0027A810): `bnez $a0, label_27a698` → vai direto para entry_297670, sem spin loop
+- Se entry_297670 retorna ≠0 → sub_0027A810 pula sub_00297290 e retorna → sub_0017BC80 vai para sub_0027ABD0 → sub_0027A6B8 → sub_00297290
 
-**MAPA ATUALIZADO (2026-05-03 — round confirmado):**
+**MAPA CORRIGIDO (2026-05-04):**
 ```
-sub_0017BC80 → sub_0027A810
-  → entry_296c48 (PASSO 5 ✅) → sub_00297290 (PASSO 6 ✅) → sai
-  ↓
-  → sub_00298058 ✅ (completou — trivial)
-  → sub_0027C100 🔴 TRAVA AQUI (CreateSema×3 + tid=2 criado, mas DONE não detectado)
-     └ sub_00282148 → PATH=? → {entry_281510 → entry_27d5b8 → sub_00294AF8}
-                             ou {sub_0027C2A0 cleanup}
-  → sub_00283570 ⬜ (ainda não atingido)
-  → entry_1389d8 ⬜ ENGINE INIT 🎯 (ainda não atingido)
+sub_0017BC80 [START log ✅]
+  ├─► sub_0027A810 [START log ✅]
+  │     └─► sub_0027A648 (a0=1 → label_27a698 → entry_297670 → v0)
+  │           ├─ v0≠0: skip → retorna rápido [log ✅]
+  │           └─ v0=0: label_27a8d0 → sub_00297290 (loop retry) [log ✅]
+  │     [log após A810 ✅]
+  ├─► sub_0027ABD0 (SEMPRE, sem condição)
+  │     └─► sub_0027A6B8 [START log ✅] → sub_00297290 [CHAMANDO log ✅]
+  │     [log após ABD0 ✅]
+  └─► label_17bd50 (loop retry entry_27ab00 → sub_0027A6B8 → sub_00297290)
+        → label_17bd68 → entry_298770 → sub_00297290 (2ª chamada)
 ```
-🔍 Hooks adicionados em: sub_0027C100, sub_00282148, sub_0027C2A0, entry_281510, entry_27d5b8, sub_00294AF8
+🔍 Logs adicionados em: sub_0027A810, sub_0017BC80, sub_0027A6B8
+🔍 GREP_PATTERN expandido: +sub_00297290 +sub_0027A810 +sub_0017BC80 +sub_0027A6B8 +sub_0027A648 +entry_27ab00
 
 **Fix orgânico futuro (recompilar.sh):**
 - Escrever pacote SIF válido em `0x2C4BC0` (byte[0] != 0) → sub_00295568 processa → StartThread orgânico

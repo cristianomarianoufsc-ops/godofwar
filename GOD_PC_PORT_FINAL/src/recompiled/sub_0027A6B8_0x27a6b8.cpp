@@ -18,6 +18,7 @@ void sub_0027A6B8_0x27a6b8(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
 #endif
 
     ctx->pc = 0x27a6b8u;
+    std::cerr << "[sub_0027A6B8] START a0=0x" << std::hex << GPR_U32(ctx, 4) << std::dec << "\n";
 
     // 0x27a6b8: 0x27bdffc0  addiu       $sp, $sp, -0x40
     ctx->pc = 0x27a6b8u;
@@ -345,6 +346,7 @@ label_27a788:
     // 0x27a790: 0x34a50593  ori         $a1, $a1, 0x593
     ctx->pc = 0x27a790u;
     SET_GPR_U64(ctx, 5, GPR_U64(ctx, 5) | (uint64_t)(uint16_t)1427);
+    std::cerr << "[sub_0027A6B8] CHAMANDO sub_00297290 s1=0x" << std::hex << GPR_U32(ctx, 17) << " a1=0x" << GPR_U32(ctx, 5) << std::dec << "\n";
     // 0x27a794: 0xc0a5ca4  jal         func_297290
     ctx->pc = 0x27A794u;
     SET_GPR_U32(ctx, 31, 0x27A79Cu);

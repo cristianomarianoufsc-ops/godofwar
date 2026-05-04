@@ -18,6 +18,7 @@ void sub_0017BC80_0x17bc80(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
 #endif
 
     ctx->pc = 0x17bc80u;
+    std::cerr << "[sub_0017BC80] START\n";
 
     // 0x17bc80: 0x27bdffd0  addiu       $sp, $sp, -0x30
     ctx->pc = 0x17bc80u;
@@ -100,6 +101,7 @@ void sub_0017BC80_0x17bc80(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         if (ctx->pc != 0x17BCACu) { return; }
     }
     ctx->pc = 0x17BCACu;
+    std::cerr << "[sub_0017BC80] apos sub_0027A810: v0=0x" << std::hex << GPR_U32(ctx, 2) << std::dec << "\n";
     // 0x17bcac: 0x2102b  sltu        $v0, $zero, $v0
     ctx->pc = 0x17bcacu;
     SET_GPR_U64(ctx, 2, ((uint64_t)GPR_U64(ctx, 0) < (uint64_t)GPR_U64(ctx, 2)) ? 1 : 0);
@@ -128,6 +130,7 @@ void sub_0017BC80_0x17bc80(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         if (ctx->pc != 0x17BCBCu) { return; }
     }
     ctx->pc = 0x17BCBCu;
+    std::cerr << "[sub_0017BC80] apos sub_0027ABD0 (1a chamada): v0=0x" << std::hex << GPR_U32(ctx, 2) << " s1=0x" << GPR_U32(ctx, 17) << std::dec << "\n";
     // 0x17bcbc: 0x12200024  beqz        $s1, . + 4 + (0x24 << 2)
     ctx->pc = 0x17BCBCu;
     {
