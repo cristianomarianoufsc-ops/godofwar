@@ -18,6 +18,7 @@ void entry_281510_0x281548(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
 #endif
 
     ctx->pc = 0x281510u;
+    std::cerr << "[entry_281510] START\n";
 
     // 0x281510: 0x3c020032  lui         $v0, 0x32
     ctx->pc = 0x281510u;

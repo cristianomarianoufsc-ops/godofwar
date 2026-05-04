@@ -49,6 +49,17 @@ _BASE = ("https://raw.githubusercontent.com/"
 URL_FILTERED = _BASE + "log_latest_filtered.txt"
 URL_FULL     = _BASE + "log_latest_full.txt"
 
+# ── sub_0027C100 / 7th-floor chain ─────────────────────────────────────────
+_RE_C100_START    = re.compile(r"\[sub_0027C100\] START")
+_RE_C100_282_RET  = re.compile(r"\[sub_0027C100\] 282148_ret=(-?\d+)")
+_RE_C100_PATH     = re.compile(r"\[sub_0027C100\] PATH=(full|cleanup)")
+_RE_C100_DONE     = re.compile(r"\[sub_0027C100\] DONE")
+_RE_C2A0_START    = re.compile(r"\[sub_0027C2A0\] START")
+_RE_282148_START  = re.compile(r"\[sub_00282148\] START")
+_RE_281510_START  = re.compile(r"\[entry_281510\] START")
+_RE_27D5B8_START  = re.compile(r"\[entry_27d5b8\] START")
+_RE_294AF8_START  = re.compile(r"\[sub_00294AF8\] START")
+
 # ── Padrões de linha (GoW + ps2xRuntime) ───────────────────────────────────
 _RE_SEMA_CREATE  = re.compile(r"\[CreateSema\] id=(\d+)")
 _RE_SEMA_BLOCK   = re.compile(
@@ -169,6 +180,16 @@ def parse_log(text: str) -> dict:
         "engine_rtype":      None,   # renderer_type retornado por func_17aa78
         "engine_done":       False,  # entry_1389d8 completou sem crash
         "engine_callee_missing": [], # callees de entry_1389d8 reportados como not-found
+        # sub_0027C100 / 7th-floor chain
+        "c100_start":       False,
+        "c100_282ret":      None,   # int: retorno de sub_00282148
+        "c100_path":        None,   # "full" ou "cleanup"
+        "c100_done":        False,
+        "c2a0_start":       False,
+        "fn282148_start":   False,
+        "fn281510_start":   False,
+        "fn27d5b8_start":   False,
+        "fn294af8_start":   False,
     }
 
     lines = text.splitlines()
@@ -260,6 +281,24 @@ def parse_log(text: str) -> dict:
             d["engine_rtype"] = m.group(1)
         if _RE_ENGINE_DONE.search(line):
             d["engine_done"] = True
+        if _RE_C100_START.search(line):
+            d["c100_start"] = True
+        if m := _RE_C100_282_RET.search(line):
+            d["c100_282ret"] = int(m.group(1))
+        if m := _RE_C100_PATH.search(line):
+            d["c100_path"] = m.group(1)
+        if _RE_C100_DONE.search(line):
+            d["c100_done"] = True
+        if _RE_C2A0_START.search(line):
+            d["c2a0_start"] = True
+        if _RE_282148_START.search(line):
+            d["fn282148_start"] = True
+        if _RE_281510_START.search(line):
+            d["fn281510_start"] = True
+        if _RE_27D5B8_START.search(line):
+            d["fn27d5b8_start"] = True
+        if _RE_294AF8_START.search(line):
+            d["fn294af8_start"] = True
         if _RE_SIGSEGV.search(line):
             d["sigsegv"] = True
         if _RE_CRASH.search(line):
@@ -425,6 +464,32 @@ def report(d: dict, short: bool = False) -> None:
             print("  Nenhuma alocação registrada.")
 
         print()
+        print("── 7TH FLOOR CHAIN (sub_0027C100 → entry_1389d8) ────────────────────")
+        if d["c100_start"]:
+            print(f"  sub_0027C100 atingida         : ✅")
+            if d["fn282148_start"]:
+                ret_str = str(d["c100_282ret"]) if d["c100_282ret"] is not None else "?"
+                print(f"  sub_00282148 executou         : ✅  ret={ret_str}")
+            if d["c100_path"] == "full":
+                print(f"  Caminho tomado                : ✅ PATH=full (282148 retornou !=0)")
+                for name, key in [("entry_281510", "fn281510_start"),
+                                   ("entry_27d5b8", "fn27d5b8_start"),
+                                   ("sub_00294AF8", "fn294af8_start")]:
+                    status = "✅" if d[key] else "🔴 NÃO atingida — TRAVO AQUI"
+                    print(f"    {name:<20}: {status}")
+            elif d["c100_path"] == "cleanup":
+                print(f"  Caminho tomado                : 🔴 PATH=cleanup (282148 retornou 0)")
+                print(f"    sub_0027C2A0 (undo)         : {'✅' if d['c2a0_start'] else '🔴 NÃO atingida'}")
+            else:
+                print(f"  Caminho tomado                : — PATH não detectado (travou antes ou em sub_00282148)")
+            if d["c100_done"]:
+                print(f"  sub_0027C100 completou        : ✅ DONE")
+            else:
+                print(f"  sub_0027C100 completou        : 🔴 DONE não detectado — travou dentro")
+        else:
+            print(f"  sub_0027C100                  : — não atingida neste round")
+
+        print()
         print("── PASSO 6 / MOTOR DO JOGO (entry_1389d8) ───────────────────────────")
         if d["engine_start"]:
             rtype = d["engine_rtype"] or "?"
@@ -503,6 +568,23 @@ def report(d: dict, short: bool = False) -> None:
     elif d["engine_done"]:
         estado = (f"🟢 PASSO 6 PASSOU: entry_1389d8 completou (engine init OK). "
                   f"renderer_type={d['engine_rtype'] or '?'}. Verificar próximo bloqueador.")
+    elif d["c100_start"] and not d["c100_done"]:
+        path = d["c100_path"] or "desconhecido"
+        ret  = d["c100_282ret"]
+        if path == "cleanup":
+            estado = (f"🔴 sub_0027C100 tomou PATH=cleanup (sub_00282148 ret={ret}) "
+                      f"→ sub_0027C2A0 (undo CreateSemas). Travo dentro da limpeza.")
+        elif path == "full":
+            stuck = next(
+                (n for n, k in [("entry_281510","fn281510_start"),
+                                 ("entry_27d5b8","fn27d5b8_start"),
+                                 ("sub_00294AF8","fn294af8_start")]
+                 if not d[k]), "desconhecido")
+            estado = (f"🔴 sub_0027C100 tomou PATH=full (sub_00282148 ret={ret}) "
+                      f"→ travo em {stuck}.")
+        else:
+            estado = (f"🔴 sub_0027C100 iniciou mas travou antes de sub_00282148 "
+                      f"(PATH não detectado). Verificar entry_281510/sub_00282148.")
     elif d["engine_start"] and not d["engine_done"]:
         rtype = d["engine_rtype"] or "não detectado"
         estado = (f"🔴 PASSO 6: entry_1389d8 iniciou (renderer_type={rtype}) "
@@ -574,6 +656,24 @@ def report(d: dict, short: bool = False) -> None:
     elif d["engine_done"]:
         print("  → PASSO 6 passou. Identificar próximo bloqueador nas últimas 10 linhas.")
         print("  → Rodar: python3 tools/scan_7th_floor.py --depth 2 para ver callees seguintes.")
+    elif d["c100_start"] and not d["c100_done"]:
+        path = d["c100_path"] or "desconhecido"
+        if path == "cleanup":
+            print("  → sub_0027C100 tomou PATH=cleanup: sub_00282148 retornou 0.")
+            print("    sub_0027C2A0 desfaz as CreateSemas — verificar se tem WaitSema/loop infinito.")
+            print("    Próximo fix: sub_00282148 precisa retornar != 0.")
+            print("    Analisar: python3 tools/scan_7th_floor.py 0x282148 --depth 1")
+        elif path == "full":
+            stuck = next(
+                (n for n, k in [("entry_281510","fn281510_start"),
+                                 ("entry_27d5b8","fn27d5b8_start"),
+                                 ("sub_00294AF8","fn294af8_start")]
+                 if not d[k]), "desconhecido")
+            print(f"  → sub_0027C100 PATH=full: travo em {stuck}.")
+            print(f"    Analisar: python3 tools/scan_7th_floor.py 0x{stuck[-6:].lower()} --depth 1")
+        else:
+            print("  → sub_0027C100 iniciou mas PATH não detectado (travou antes de sub_00282148).")
+            print("    Analisar: python3 tools/scan_7th_floor.py 0x282148 --depth 1")
     elif d["engine_start"] and not d["engine_done"]:
         rtype = d["engine_rtype"] or "?"
         print(f"  → entry_1389d8 travou internamente (renderer_type={rtype}).")

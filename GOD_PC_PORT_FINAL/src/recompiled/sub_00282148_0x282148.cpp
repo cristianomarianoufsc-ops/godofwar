@@ -18,6 +18,7 @@ void sub_00282148_0x282148(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
 #endif
 
     ctx->pc = 0x282148u;
+    std::cerr << "[sub_00282148] START\n";
 
     // 0x282148: 0x3c02002c  lui         $v0, 0x2C
     ctx->pc = 0x282148u;

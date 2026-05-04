@@ -18,6 +18,7 @@ void entry_27d5b8_0x27d618(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
 #endif
 
     ctx->pc = 0x27d5b8u;
+    std::cerr << "[entry_27d5b8] START\n";
 
     // 0x27d5b8: 0x3c020032  lui         $v0, 0x32
     ctx->pc = 0x27d5b8u;

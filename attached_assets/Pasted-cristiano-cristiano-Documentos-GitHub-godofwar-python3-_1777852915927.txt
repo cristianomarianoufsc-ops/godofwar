@@ -1,0 +1,77 @@
+cristiano@cristiano:~/Documentos/GitHub/godofwar$ python3 tools/triage_round.py --full 2>&1 | head -120
+[triage_round] Baixando log completo...
+======================================================================
+  TRIAGEM DO ROUND — God of War PC Port
+======================================================================
+  Linhas no log         : 720
+
+── MÓDULOS IOP (SIF RPC_BIND) ────────────────────────────────────────
+  CreateSema total      : 9  (ids: 1–9)
+  WaitSema:block total  : 2
+  Forjados (Passo 3)    : 2
+  Callbacks IOP (#0–#N) : 0  (último: #—)
+  Último WaitSema:block : sid=5  pc=0x293c64  delta=0.0s
+  Último WaitSema:wake  : sid=5
+
+  Sequência de módulos (sid → delta_ms forjado):
+    sid=  4  delta_forge=0.0s  ✅ acordou
+    sid=  5  delta_forge=0.0s  ✅ acordou
+
+── VBLANK / FRAMES ───────────────────────────────────────────────────
+  Último VBlank tick    : #17880  frameCount=17880  (~298.0s de jogo)
+
+── THREADS EE (CreateThread / StartThread) ───────────────────────────
+  id=  2  entry=0x2947c8  prio=1  →  🔴 StartThread NUNCA chamado
+
+── BUG AB / WaitEventFlag:mode_compat ────────────────────────────────
+  WaitEventFlag mascarado       : — Bug AB não disparou neste round
+
+── THREAD TID=2 / BUG P / POLL 0x327A40 ─────────────────────────────
+  [BugP_entry] FUN_002947c8 executou  : 🔴 NÃO — thread tid=2 não iniciou
+  [poll_327a40] flag 0x327a40         : — poll não atingido
+
+── BUG R / PASSO 3d (loop RPC busy 0x2a1734 + FUN_297670) ───────────
+  PASSO 3d disparou            : ✅ 1x (1º: sid=7 calls=1)
+  0x2a1734 busy_was=0         : — já era 0
+  0x2a28d0 client_was=0       : — já era 0
+  VBlank confirma (última amostra): rpcBusy=0  sifClient=0
+  → 0x2a1734=0 + 0x2a28d0=0 confirmados no VBlank ✅
+
+── POLLSEMA (busy-poll / poll-por-VBlank) ────────────────────────────
+  sid=  7  pc=0x293c74  ra=0x27a6e4  →  ✅ PASSO 3b (poll-por-VBlank) desbloqueou (calls=1 delta_ms=0ms)
+
+── ALOCAÇÕES (almoxarifado stub_0013DA10) ────────────────────────────
+  Total de allocs       : 4
+  Último ptr alocado    : 0x10000c0
+
+── PASSO 6 / MOTOR DO JOGO (entry_1389d8) ───────────────────────────
+  entry_1389d8 atingida         : — não detectado neste round
+  (Adicionar hook: [entry_1389d8] START/DONE em game_overrides.cpp)
+
+── ERROS / ALERTAS ───────────────────────────────────────────────────
+  (sem erros registrados)
+
+── ÚLTIMAS 10 LINHAS DO LOG ──────────────────────────────────────────
+  [stub:0x182f28] PARTE 8 PLANO A: VBlank tick #17520 — frameCount=17520 flag=0 altCount=17520 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+  [stub:0x182f28] PARTE 8 PLANO A: VBlank tick #17580 — frameCount=17580 flag=0 altCount=17580 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+  [stub:0x182f28] PARTE 8 PLANO A: VBlank tick #17640 — frameCount=17640 flag=0 altCount=17640 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+  [stub:0x182f28] PARTE 8 PLANO A: VBlank tick #17700 — frameCount=17700 flag=0 altCount=17700 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+  [stub:0x182f28] PARTE 8 PLANO A: VBlank tick #17760 — frameCount=17760 flag=0 altCount=17760 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+  [stub:0x182f28] PARTE 8 PLANO A: VBlank tick #17820 — frameCount=17820 flag=0 altCount=17820 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+  [stub:0x182f28] PARTE 8 PLANO A: VBlank tick #17880 — frameCount=17880 flag=0 altCount=17880 gameMode=0 notify2a1710=1 rpcBusy2a1734=0 sifClient2a28d0=0
+  
+  [ps2_missing_report] sinal 2 recebido — gerando relatorio...
+  [ps2_missing_report] relatorio salvo em ./ps2_missing.log
+
+======================================================================
+  DIAGNÓSTICO RESUMIDO
+======================================================================
+  🔴 Thread(s) criada(s) mas StartThread NUNCA chamado: id(s)=2  entry(s)=0x2947c8. Bug atual — investigar quem deveria chamar StartThread.
+  Progresso IOP: 2 módulos acordados (último sid=9)
+  Frames renderizados: 17880 (~298s de jogo)
+
+  Próximo passo sugerido:
+  → PASSO 3b desbloqueou sid=7 (ra=0x27a6e4). Verificar último bloqueador no log após este ponto.
+  → Analisar últimas 10 linhas e próximo CreateSema/WaitSema/PollSema.
+======================================================================
+cristiano@cristiano:~/Documentos/GitHub/godofwar$

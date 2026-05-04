@@ -18,6 +18,7 @@ void sub_00294AF8_0x294af8(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
 #endif
 
     ctx->pc = 0x294af8u;
+    std::cerr << "[sub_00294AF8] START\n";
 
     // 0x294af8: 0x27bdff90  addiu       $sp, $sp, -0x70
     ctx->pc = 0x294af8u;

@@ -400,30 +400,30 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 Funções pós-bind-loop verificadas e COMPLETAS: `sub_00296898` (402 linhas), `entry_2969d0` (93 linhas), `entry_296eb8` (53 linhas), `sub_00294AF8` (529 linhas). `StartThread` implementado no runtime (syscall 0x22, `ps2_syscalls.cpp:128`).
 
-**Próximo passo (2026-05-03 — PASSO 6 + hooks entry_1389d8 aplicados):**
+**Próximo passo (2026-05-03 — Bug sub_0027C100 em investigação):**
 1. Cris clica em **Push** no Replit
-2. `bash recompilar.sh` → recompila sub_00297290 (PASSO 6) + entry_1389d8 (hooks)
+2. `bash recompilar.sh` → recompila sub_0027C100 + callees (hooks novos)
 3. `bash auto_round.sh once`
-4. `python3 tools/triage_round.py` → verificar seção "PASSO 6 / MOTOR DO JOGO"
+4. `python3 tools/triage_round.py --full` → verificar seção "7TH FLOOR CHAIN"
 
-**CONFIRMADO (round anterior com PASSO 5):**
-- PASSO 5 disparou tick #73 ✅ → poll entry_296c48 saiu
-- sub_0027A810 retry loop 17000 ticks ← **PASSO 6 corrige**
+**CONFIRMADO (round com PASSO 5+6):**
+- PASSO 5 ✅ + PASSO 6 ✅ → sub_0027C100 atingida (CreateSema total=9 confirma)
+- sub_0027C100 TRAVA internamente — nem entry_1389d8 nem DONE detectados
+- Candidatos: sub_00282148 (PATH=cleanup?), entry_281510, entry_27d5b8, sub_00294AF8
 
-**MAPA PREDITIVO atualizado (análise estática 2026-05-03):**
+**MAPA ATUALIZADO (2026-05-03 — round confirmado):**
 ```
 sub_0017BC80 → sub_0027A810
-  → entry_296c48 (PASSO 5 fix ✅)
-  → sub_00297290 retry loop [PASSO 6 fix ✅] → sai em 1-2 iters
-  ↓ continua sub_0017BC80
-  → sub_00298058 ✅ SEGURO (memset 4 bytes)
-  → sub_0027C100 ⚠️ MÉDIO (CreateSema×3 + init loops — 2 iters, safe)
-  → sub_00283570 ⚠️ BAIXO (sceSifSetDma + sceSifDmaStat loop — sai imediato)
-  → entry_1389d8 ← ENGINE INIT 🎯 (7 callees: alloc+renderer+setup)
-     └ func_26B6D0 / func_13E090 / func_13DC78 / func_13D910
-       func_17AA78 (renderer detection) / func_26CA18 / func_178D38
+  → entry_296c48 (PASSO 5 ✅) → sub_00297290 (PASSO 6 ✅) → sai
+  ↓
+  → sub_00298058 ✅ (completou — trivial)
+  → sub_0027C100 🔴 TRAVA AQUI (CreateSema×3 + tid=2 criado, mas DONE não detectado)
+     └ sub_00282148 → PATH=? → {entry_281510 → entry_27d5b8 → sub_00294AF8}
+                             ou {sub_0027C2A0 cleanup}
+  → sub_00283570 ⬜ (ainda não atingido)
+  → entry_1389d8 ⬜ ENGINE INIT 🎯 (ainda não atingido)
 ```
-🔍 Análise estática 7º andar concluída: `python3 tools/scan_7th_floor.py`
+🔍 Hooks adicionados em: sub_0027C100, sub_00282148, sub_0027C2A0, entry_281510, entry_27d5b8, sub_00294AF8
 
 **Fix orgânico futuro (recompilar.sh):**
 - Escrever pacote SIF válido em `0x2C4BC0` (byte[0] != 0) → sub_00295568 processa → StartThread orgânico

@@ -193,17 +193,17 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-03 — PASSO 6 + hooks entry_1389d8 + tools atualizados; aguarda Push + recompilar.sh)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-03 — Bug sub_0027C100 em investigação)
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 ### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
-### ✅ PASSO 4 (Bug S) — Compilado, NUNCA DISPAROU (*(0x30A1C0)==0 — sceSifCallRpc não chamado)
-### ✅ PASSO 5 — CONFIRMADO FUNCIONANDO (tick #73: escreveu *(0x327a40)=1; poll saiu)
-### ✅ PASSO 6 — FIX APLICADO em sub_00297290_0x297290.cpp — aguarda Push + recompilar.sh
-### ✅ entry_1389d8 — HOOKS ADICIONADOS (START/renderer_type/DONE) + 7º andar analisado
+### ✅ PASSO 5 — CONFIRMADO FUNCIONANDO (CreateSema=9 confirma que PASSO 5+6 passaram)
+### ✅ PASSO 6 — CONFIRMADO FUNCIONANDO (sub_0027A810 saiu rápido; sub_0027C100 atingida)
+### ✅ entry_1389d8 — HOOKS ADICIONADOS (START/renderer_type/DONE)
 ### ✅ scan_7th_floor.py — NOVA ferramenta (análise estática pré-round)
-### ✅ triage_round.py — ATUALIZADO (seção PASSO 6 / motor do jogo)
-### 🔴 AGUARDANDO ROUND — PASSO 6 não testado ainda
+### ✅ triage_round.py — ATUALIZADO (seção 7TH FLOOR CHAIN + detectores novos)
+### 🔴 NOVO BLOQUEIO — sub_0027C100 inicia mas TRAVA internamente (entry_1389d8 nunca atingida)
+### 🔴 AGUARDANDO ROUND — hooks sub_0027C100/callees adicionados; Push + recompilar.sh + round
 
 ---
 
