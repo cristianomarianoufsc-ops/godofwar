@@ -582,4 +582,5 @@ label_27c27c:
     // 0x27c29c: 0x0  nop
     ctx->pc = 0x27c29cu;
     // NOP
+    std::cerr << "[sub_0027C100] DONE\n";
 }
