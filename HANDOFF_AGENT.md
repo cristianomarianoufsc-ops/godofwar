@@ -64,6 +64,40 @@ Se você terminar a sessão sem atualizar os dois, o próximo agente vai perder 
 
 ---
 
+## 🔁 REGRAS DO LOOP — LEIA ANTES DE PEDIR QUALQUER COISA AO AGENTE CRIS 🔁
+
+> Detalhes completos em `replit.md §🔁 REGRAS DO LOOP`. Resumo obrigatório:
+
+**Regra 1 — O loop fica ligado o tempo todo durante o dia.**
+Cris liga `bash auto_round.sh loop` ao abrir o PC. Só desliga com Ctrl+C ao fechar. Sem motivo para desligar entre rounds.
+
+**Regra 2 — Após um Push, o loop cuida de TUDO sozinho.**
+`git pull` → `bash rebuild_runtime.sh` → jogo 300s → filtra log → push logs. Cris não roda mais nada.
+
+**Regra 3 — `once` só se o loop não estava ligado.**
+Com loop ligado, `once` nunca é necessário.
+
+**Regra 4 — NUNCA peça ao Cris para fechar o loop.**
+Isso era erro de analistas anteriores. O loop não interfere em outros comandos. Se precisar rodar algo manualmente, Cris abre outro terminal.
+
+**Regra 5 — Ferramentas de análise de log são do ANALISTA, não do Cris.**
+`python3 tools/triage_round.py`, `curl`, `python3 tools/mips_inspect.py` etc. rodam aqui no Replit. **Nunca colocar essas ferramentas num bloco de comandos para o Cris.**
+
+## 📋 PADRÃO OBRIGATÓRIO PARA BLOCOS DE COMANDO
+
+Todo analista DEVE separar claramente:
+
+```
+✅ Bloco "seu PC" — Cris copia e roda:
+bash rebuild_runtime.sh
+bash recompilar.sh
+
+🔍 Analista faz aqui no Replit — Cris não precisa fazer nada:
+(lerei o log e analisarei quando o round terminar)
+```
+
+---
+
 ## 🌍 VISÃO DE LONGO PRAZO — GRANDE UNIFICAÇÃO PS2→PC 🌍
 
 Detalhes completos em `replit.md §🌍 VISÃO DE LONGO PRAZO`. Resumo:

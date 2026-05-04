@@ -96,7 +96,41 @@ curl -s "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/log
 | `bash auto_round.sh status` | Mostra estado e SAI | ❌ NÃO |
 | `nohup bash auto_round.sh loop > auto_round.log 2>&1 &` | Background | `pkill -f auto_round.sh` |
 
-Dentro de cada round, `timeout --signal=INT 90s` mata o jogo automaticamente. **Agente Cris NUNCA precisa apertar Ctrl+C no jogo.**
+Dentro de cada round, `timeout --signal=INT 300s` mata o jogo automaticamente. **Agente Cris NUNCA precisa apertar Ctrl+C no jogo.**
+
+### 🔁 REGRAS DO LOOP — LEIA ANTES DE PEDIR QUALQUER COISA AO AGENTE CRIS 🔁
+
+**Regra 1 — O loop deve ficar ligado o tempo todo durante o dia.**
+O Agente Cris liga `bash auto_round.sh loop` ao abrir o PC e só desliga com Ctrl+C ao fechar. Não há motivo para desligar entre rounds.
+
+**Regra 2 — O loop cuida de TUDO sozinho após um Push.**
+Ao clicar em Push no Replit, o loop detecta o commit em ≤30s e faz automaticamente:
+`git pull` → `bash rebuild_runtime.sh` → jogo por 300s → filtra log → `git push` dos logs.
+O Agente Cris NÃO precisa rodar nenhum comando adicional.
+
+**Regra 3 — `once` só quando o loop não estava ligado.**
+Use `bash auto_round.sh once` apenas se o loop não estava rodando e você quer forçar um round imediato. Com o loop ligado, nunca é necessário.
+
+**Regra 4 — NUNCA peça ao Agente Cris para fechar o loop antes de outro comando.**
+Isso era um erro de analistas anteriores. O loop não interfere em nada. Se precisar rodar `recompilar.sh` ou `rebuild_runtime.sh` manualmente, rode em outro terminal — o loop continuará esperando no terminal dele.
+
+**Regra 5 — `python3 tools/triage_round.py` e ferramentas de análise de log NÃO são do Agente Cris.**
+Essas ferramentas rodam aqui no Replit (o analista as executa). O Agente Cris nunca precisa rodá-las. Se um analista colocar essa linha num bloco de comandos para o Cris, é erro — remover.
+
+### 📋 PADRÃO OBRIGATÓRIO PARA BLOCOS DE COMANDO AO AGENTE CRIS
+
+Todo analista que precisar pedir comandos ao Agente Cris DEVE separar claramente o que é de quem:
+
+```
+✅ Bloco "seu PC" — Cris copia e roda:
+bash rebuild_runtime.sh
+bash recompilar.sh
+
+🔍 Analista faz aqui no Replit — Cris não precisa fazer nada:
+(lerei o log e analisarei quando o round terminar)
+```
+
+**Nunca colocar `python3 tools/triage_round.py`, `curl`, ou qualquer ferramenta de análise no bloco do Agente Cris.**
 
 ### 🚨 PUSH NÃO É AUTOMÁTICO — DESCOBERTA 2026-04-29 21:59 🚨
 
