@@ -257,7 +257,7 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-05 — PASSO 9A/9B aplicado)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-05 — análise pós-PASSO 9A completa)
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 ### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
@@ -268,8 +268,40 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 ### ✅ entry_1389d8 — HOOKS ADICIONADOS (START/renderer_type/DONE)
 ### ✅ PASSO 8A — CONFIRMADO NO LOG — sub_0027A6B8 PASSO 8A disparou + sub_00297290 chamada com s1=0x2a3280 sid=0x80000593
 ### ✅ PASSO 9A/9B — APLICADO (2026-05-05) em sub_00297470 — força v0=1 se func_2969D0 retornar 0
-### 🔴 CAUSA RAIZ RESOLVIDA (PASSO 9A) — sub_00297470 chamava func_2969D0 (sceSifCallRpc) que retornava 0 → sub_00297470 retornava -2 → entry_27ab00 retornava 0 → label_17bd50 em sub_0017BC80 ficava em loop eterno (cooperativeGuestYield tick #120→#17940)
-### 🔴 AGUARDANDO ROUND — Push + bash recompilar.sh + round + ver [PASSO 9A] + label_17bd68 avançar
+### ✅ ANÁLISE PÓS-PASSO 9A — COMPLETA (2026-05-05) — caminho até entry_1389d8 totalmente mapeado
+### 🔴 AGUARDANDO ROUND — Push + `bash auto_round.sh full` + verificar se [PASSO 9A] dispara + [entry_1389d8] START
+
+---
+
+### 🗺️ MAPA COMPLETO PÓS-PASSO 9A (verificado via leitura estática 2026-05-05)
+
+```
+label_17bd50 SAI DO LOOP (PASSO 9A fix)
+  → label_17bd68 → entry_298770     ✅ SEGURO (Bug Y cobre func_297290; beqz passa)
+  → label_17bd78 (loop FINITO ×8)   ✅ SEGURO (sltiu $s0, 8 → exatamente 8 iters)
+      └─ sub_0017BBC8 × 8            ✅ PROVAVELMENTE SEGURO
+           └─ func_298F30 → func_298D08 → func_298910/298A10 (risco baixo se retornar <0)
+  → func_27AD00 (sub_0027AD00)       ✅ RETORNA RÁPIDO com v0=0
+      [*(0x2A32C8)=0≠1 → label_27adcc path curto → v0=0]
+      [NÃO trava — entry_27aca8 retorna *(0x30AC40)=0 → s0>>4=0≠0x31 → exit]
+  → func_27C100 (PASSO 7A)           ✅ COBERTO
+  → func_283570 (PASSO 7B)           ✅ COBERTO
+  → entry_1389d8                     🎯 ALVO FINAL
+```
+
+**Se o round travar após PASSO 9A:** verificar se BBC8 interno trava em `label_17bc48`
+- Condição: func_298F30 retorna <0 E s3=1 (func_17AA78 retornou 0)
+- PASSO 10 seria: fix em `func_298D08` (sub_00298D08_0x298d08.cpp, 647 linhas) ou `func_298910` (entry_298910_0x298a10.cpp, 364 linhas)
+
+**Detalhes de cada função analisada:**
+| Função | Arquivo | Linhas | Risco | Por quê |
+|--------|---------|--------|-------|---------|
+| entry_298770 | entry_298770_0x2987f8.cpp | 203 | ✅ | Bug Y → beqz passa; delay loop finito |
+| sub_0017BBC8 | sub_0017BBC8_0x17bbc8.cpp | 324 | ✅ baixo | Loop externo FINITO (8×); interno depende de func_298F30 |
+| sub_00298F30 | sub_00298F30_0x298f30.cpp | 99 | ✅ | Wrapper puro de func_298D08; sem loops próprios |
+| sub_00298D08 | sub_00298D08_0x298d08.cpp | 647 | ⚠️ | Não lido completo; chama func_298910 que pode retornar <0 |
+| entry_27aca8 | entry_27aca8_0x27ad00.cpp | 111 | ✅ | Chama sub_00297470 (PASSO 9A); retorna *(0x30AC40)=0 |
+| sub_0027AD00 | sub_0027AD00_0x27ad00.cpp | 917 | ✅ | Curto-circuita: *(0x30AC40)=0 → label_27adcc → v0=0 |
 
 ---
 

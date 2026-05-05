@@ -464,10 +464,32 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 Funções pós-bind-loop verificadas e COMPLETAS: `sub_00296898` (402 linhas), `entry_2969d0` (93 linhas), `entry_296eb8` (53 linhas), `sub_00294AF8` (529 linhas). `StartThread` implementado no runtime (syscall 0x22, `ps2_syscalls.cpp:128`).
 
-**Próximo passo (2026-05-05 — PASSO 9A/9B aplicado):**
+**Análise pós-PASSO 9A COMPLETA (2026-05-05):**
+
+Caminho completo de `label_17bd50` até `entry_1389d8` lido estaticamente:
+
+```
+label_17bd50 saída (PASSO 9A)
+  → label_17bd68 → entry_298770      ✅ SEGURO
+  → label_17bd78 loop ×8             ✅ FINITO (sltiu $s0, 8)
+      └─ sub_0017BBC8 × 8            ✅ PROVAVELMENTE SEGURO
+  → sub_0027AD00                     ✅ RETORNA v0=0 RAPIDAMENTE
+  → sub_0027C100 (PASSO 7A)          ✅
+  → sub_00283570 (PASSO 7B)          ✅
+  → entry_1389d8                     🎯 ALVO
+```
+
+Chaves:
+- `label_17bd78`: `bnez sltiu($s0, 8)` → exatamente 8 iterações, não depende do retorno de BBC8
+- `sub_0027AD00`: `*(0x2A32C8)=0≠1` → `label_27adcc` → `func_2963C0`×2 → retorna v0=0 sem travar
+- `entry_27aca8` (dentro de sub_0027AD00): chama sub_00297470 (PASSO 9A covers), lê `*(0x30AC40)=0`
+- único risco residual: BBC8 interno em `label_17bc48` se `func_298F30/298D08/298910` retornar <0 e s3=1
+
+**Próximo passo (2026-05-05 — PASSO 9A/9B aplicado, análise completa):**
 1. Cris clica em **Push** no Replit
 2. **Terminal 2:** `bash auto_round.sh full` (mudou `.cpp` do jogo → full obrigatório)
 3. Verificar log: `[PASSO 9A]` disparou + label_17bd50 saiu do loop + `[entry_1389d8] START`
+4. Se travar no BBC8 interno: PASSO 10 = fix em `func_298D08` ou `func_298910`
 
 **PASSO 9A/9B — fix aplicado 2026-05-05:**
 - Arquivo: `GOD_PC_PORT_FINAL/src/recompiled/sub_00297470_0x297470.cpp`
