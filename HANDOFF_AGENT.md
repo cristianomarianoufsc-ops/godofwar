@@ -257,7 +257,7 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-05 — PASSO 12 adicionado)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-05 — PASSO 13 adicionado)
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 ### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
@@ -272,8 +272,9 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 ### ✅ PASSO 11 (A+B+C+D) — CONFIRMADO FUNCIONANDO (11A/11C dispararam, 11B/11D não precisaram — Bug Y já setou flags)
 ### ✅ func_28DD70 — ANALISADA (segura: parser de format string)
 ### ✅ PASSO 12 — APLICADO em sub_0013DC78 (inicializa sentinela da fila de prioridade circular)
-### 🔴 AGUARDANDO PUSH — 1 arquivo alterado: sub_0013DC78_0x13dc78.cpp (PASSO 12)
-### 🔴 APÓS PUSH — loop detecta .cpp → recompilar.sh automático → verificar [PASSO 12] + [entry_1389d8] renderer_type + DONE
+### ✅ PASSO 13 — APLICADO em sub_0017AA18 (força flag renderer/GS em 0x29C4D8 para bypassar spin-loop)
+### 🔴 AGUARDANDO PUSH — 2 arquivos alterados: sub_0013DC78_0x13dc78.cpp (P12) + sub_0017AA18_0x17aa18.cpp (P13)
+### 🔴 APÓS PUSH — loop detecta .cpp → recompilar.sh automático → verificar [PASSO 12] + [PASSO 13] + [entry_1389d8] renderer_type + DONE
 
 ---
 
@@ -408,6 +409,56 @@ entry_1389d8 escreve v0 em `*(s1-0x41B4)` (1ª chamada) e prossegue para a 2ª c
 
 **Arquivo alterado:** `GOD_PC_PORT_FINAL/src/recompiled/sub_0013DC78_0x13dc78.cpp`
 **Build:** `bash recompilar.sh` (loop auto_round.sh detecta .cpp alterado automaticamente após Push)
+
+---
+
+### 🧬 ANÁLISE PASSO 13 (2026-05-05 — sessão pós-PASSO 12 aplicado)
+
+**Contexto — próximos travamentos previstos após PASSO 12:**
+
+Após sub_0013DC78 passar (PASSO 12), entry_1389d8 alcança `renderer_type` + `DONE`. Depois, fluxo entra em sub_00138D48 que chama [9/11]=sub_0017A940, [10/11]=sub_0017AA18, [11/11]=sub_0017A9B0.
+
+**Análise dos 3 JALs:**
+- sub_0017A940 — ✅ SEGURO: 9 JALs sequenciais, sem loop
+- sub_0017AA18 — 🔴 TRAVAMENTO: spin-loop aguarda `READ32(0x29C4D8) != 0`
+- sub_0017A9B0 — ✅ SEGURO: 4 JALs sequenciais, sem loop
+
+**Diagnóstico sub_0017AA18 (0x17aa18–0x17aa78):**
+```
+s0 = lui 0x2A → 0x2A0000
+v0 = READ32(0x2A0000 - 0x3B28) = READ32(0x29C4D8)   ← flag renderer/GS pronto
+
+bnel $v0, $zero, label_17aa50   ← SE flag != 0: pula loop, retorna
+↓ (flag == 0):
+label_17aa38:  ← SPIN-LOOP
+  call sub_0017A9E8  (tick: func_17A830 + func_21FD20 + entry_17d778)
+  v0 = READ32(0x29C4D8)
+  beqz $v0, label_17aa38        ← volta se ainda 0 → INFINITO sem IOP
+label_17aa50: return
+```
+
+**0x29C4D8** = `0x2A0000 - 0x3B28`: flag de init do renderer/GS. Na PS2 real o IOP seta; sem IOP permanece 0. sub_0017A9E8 (função do loop) = tick de frame: func_17A830 + func_21FD20 + entry_17d778 — nenhuma seta esse flag.
+
+**Fix — PASSO 13 (início de sub_0017AA18_0x17aa18.cpp):**
+```cpp
+const uint32_t _p13_flag_addr = 0x29C4D8u;
+if (READ32(_p13_flag_addr) == 0) {
+    std::cerr << "[PASSO 13] sub_0017AA18: READ32(0x29C4D8)=0 — forcando flag=1\n";
+    WRITE32(_p13_flag_addr, 1u);
+}
+```
+Com flag=1, `bnel $v0, $zero, label_17aa50` é tomado imediatamente → retorna sem loop.
+
+**O que esperar com PASSO 12 + PASSO 13:**
+- `[PASSO 12] sub_0013DC78: s2=0x... (lixo) — inicializando lista vazia` (2×)
+- `[entry_1389d8] renderer_type=0x...` 🎯
+- `[entry_1389d8] DONE` 🎯
+- `[PASSO 13] sub_0017AA18: READ32(0x29C4D8)=0 — forcando flag=1`
+- Próximo travamento provável: sub-função dentro de sub_0017A940 ou sub_0017A9B0
+
+**Arquivos alterados:**
+- `GOD_PC_PORT_FINAL/src/recompiled/sub_0013DC78_0x13dc78.cpp` (PASSO 12)
+- `GOD_PC_PORT_FINAL/src/recompiled/sub_0017AA18_0x17aa18.cpp` (PASSO 13)
 
 ---
 

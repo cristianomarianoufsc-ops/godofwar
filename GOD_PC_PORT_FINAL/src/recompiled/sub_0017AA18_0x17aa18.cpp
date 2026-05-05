@@ -19,6 +19,23 @@ void sub_0017AA18_0x17aa18(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
 
     ctx->pc = 0x17aa18u;
 
+    // PASSO 13 — Força flag de renderer/GS inicializado (0x29C4D8)
+    // sub_0017AA18 spin-loop em label_17aa38 aguarda READ32(0x29C4D8) != 0
+    // s0 = lui 0x2A → 0x2A0000; lw $v0, -0x3B28($s0) → 0x29C4D8
+    // Sem IOP esse flag nunca é setado → loop infinito. Forçamos aqui.
+    {
+        const uint32_t _p13_flag_addr = 0x29C4D8u;
+        uint32_t _p13_flag = READ32(_p13_flag_addr);
+        if (_p13_flag == 0) {
+            std::cerr << "[PASSO 13] sub_0017AA18: READ32(0x29C4D8)=0 (renderer/GS nao inicializado pelo IOP)"
+                      << " — forcando flag=1 para bypassar spin-loop\n";
+            WRITE32(_p13_flag_addr, 1u);
+        } else {
+            std::cerr << "[PASSO 13] sub_0017AA18: READ32(0x29C4D8)=0x" << std::hex << _p13_flag
+                      << std::dec << " (flag ja setado, spin-loop sera pulado normalmente)\n";
+        }
+    }
+
     // 0x17aa18: 0x27bdffe0  addiu       $sp, $sp, -0x20
     ctx->pc = 0x17aa18u;
     SET_GPR_S32(ctx, 29, (int32_t)ADD32(GPR_U32(ctx, 29), 4294967264));

@@ -400,7 +400,7 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 ---
 
-## 🟢 ESTADO ATUAL — 2026-05-05: PASSO 12 aplicado em sub_0013DC78
+## 🟢 ESTADO ATUAL — 2026-05-05: PASSO 13 aplicado em sub_0017AA18
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 ### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
@@ -415,8 +415,9 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 ### ✅ PASSO 9C — APLICADO em entry_27ab00 (força v0=1 se label_27ab80 retornar s0=0)
 ### ✅ PASSO 11 (A+B+C+D) — CONFIRMADO: 11A/11C dispararam, 11B/11D não precisaram (Bug Y já setou *(s1+0x24)=1)
 ### ✅ PASSO 12 — APLICADO em sub_0013DC78 (inicializa sentinela de fila de prioridade circular)
-### 🔴 AGUARDANDO PUSH — 1 arquivo: sub_0013DC78_0x13dc78.cpp
-### 🔴 APÓS PUSH — loop detecta .cpp → recompilar.sh automático → verificar [PASSO 12] + [entry_1389d8] renderer_type + DONE
+### ✅ PASSO 13 — APLICADO em sub_0017AA18 (força READ32(0x29C4D8)=1 para bypassar spin-loop de renderer/GS)
+### 🔴 AGUARDANDO PUSH — 2 arquivos: sub_0013DC78_0x13dc78.cpp (P12) + sub_0017AA18_0x17aa18.cpp (P13)
+### 🔴 APÓS PUSH — loop detecta .cpp → recompilar.sh automático → verificar [PASSO 12]+[PASSO 13]+[entry_1389d8] renderer_type + DONE
 
 **PASSO 11 — RESULTADO (round 2026-05-05):**
 - PASSO 11A disparou: `sub_00297290 sid=0x123456 retornou v0=1 OK` (Bug Y fix já fazia v0=1, 11A só confirmou)
