@@ -400,7 +400,7 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 ---
 
-## 🟢 ESTADO ATUAL — 2026-05-05: PASSOs 15/15B/15C/16 aplicados (diagnóstico + fix sub_0026C4B8)
+## 🟢 ESTADO ATUAL — 2026-05-05: PASSO 17 aplicado (stub sub_0026BB98 — novo bloqueio identificado)
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 ### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
@@ -414,26 +414,25 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 ### ✅ PASSO 9A/9B — APLICADO em sub_00297470 (força v0=1 se func_2969D0 retornar 0)
 ### ✅ PASSO 9C — APLICADO em entry_27ab00 (força v0=1 se label_27ab80 retornar s0=0)
 ### ✅ PASSO 11 (A+B+C+D) — CONFIRMADO DISPARANDO: 11A/11B/11C/11D todos ativos
-### ✅ PASSO 12 — APLICADO em sub_0013DC78 (inicializa sentinela de fila de prioridade circular)
+### ✅ PASSO 12 — CONFIRMADO NO LOG: "s2=0x35c1b0 s2->next=0x35c2f0 (lixo) — inicializando lista vazia"
 ### ✅ PASSO 13 — APLICADO em sub_0017AA18 (força READ32(0x29C4D8)=1 para bypassar spin-loop)
-### ✅ PASSO 14 — CONFIRMADO LOG: "0x2A1338=0 ja OK" (já estava 0, path OK sem forçar)
-### ✅ PASSO 14B — CONFIRMADO LOG: "IOP DMA simulado — queue=0x305600 — escrevendo 0xFFFFFFFF"
-### ✅ PASSO 15 — DIAGNÓSTICO em sub_0026BF28 após label_26c0e0 (mostra 0x2A1378, 0x2A137C)
-### ✅ PASSO 15B — DIAGNÓSTICO em entry_1389d8 após retorno de sub_0026B6D0 (confirma ctx->pc)
-### ✅ PASSO 15C — DIAGNÓSTICO na chamada de sub_0026C4B8 dentro de sub_0026BF28
+### ✅ PASSO 14 — CONFIRMADO NO LOG: "0x2A1338=0 ja OK"
+### ✅ PASSO 14B — CONFIRMADO NO LOG: "IOP DMA simulado — queue=0x305600 — escrevendo 0xFFFFFFFF"
+### ✅ PASSO 15/15B/15C — DIAGNÓSTICOS escritos (em sub_0026BF28 e entry_1389d8)
 ### ✅ PASSO 16 — FIX em sub_0026C4B8 label_26c530: força v0=0 após entry_297670 retornar !=0
-### 🔴 AGUARDANDO PUSH — 6 arquivos alterados:
-###   sub_0013DC78 (P12), sub_0017AA18 (P13), sub_0026BF28 (P14+P15+P15C),
-###   sub_0026BC40 (P14B), entry_1389d8 (P15B), sub_0026C4B8 (P16)
-### 🔴 APÓS PUSH → recompilar.sh → verificar [PASSO 15]+[PASSO 16]+[PASSO 15B]+[renderer_type]+[DONE]
+### ✅ PASSO 17 — FIX em sub_0026BB98: stub retorna v0=1 (IOP modulo pronto simulado)
+### 🔴 AGUARDANDO PUSH — 2 arquivos alterados:
+###   sub_0026BB98_0x26bb98.cpp (P17 — fix principal), auto_round.sh (GREP_PATTERN +PASSO14-17+sub_0026BB98)
+### 🔴 APÓS PUSH → recompilar.sh → verificar [PASSO 17]+[PASSO 15]+[PASSO 16]+[renderer_type]+[DONE]
 
-**ROUND COMPLETO — 2026-05-05 — Resultado do log:**
-- PASSO 14 disparou: `0x2A1338=0 ja OK` (já era 0 — não precisou forçar, path correto) ✅
-- PASSO 14B disparou: `IOP DMA simulado — queue=0x305600` ✅
-- PASSO 11A/11B/11C/11D — TODOS dispararam ✅
+**ROUND MAIS RECENTE — 2026-05-05T17:55Z — main@2099b48 — Análise:**
+- PASSOs 12, 14, 14B, 11A/11B/11C/11D — TODOS CONFIRMADOS NO LOG ✅
 - entry_1389d8 START ✅
-- Novo travamento: `sub_0026C4B8` → `label_26c530` → `entry_297670(0x3055C8)` retorna `!=0`
-  → `cooperativeGuestYield` loop eterno (VBlank ticks #60 a #17940)
+- PASSOs 15, 15B, 15C, 16 NÃO dispararam — game travado ANTES deles
+- **CAUSA RAIZ:** loop `label_26c0e0` em sub_0026BF28 chama sub_0026BB98 em loop
+  - sub_0026BB98: func_293EA0 re-seta 0x2A1338 != 0 → entry_297670(0x3055C8) retorna !=0 (busy) → retorna 0 → loop eterno
+  - PASSOs 15/15B/15C/16 nunca alcançados porque sub_0026BB98 nunca retorna 1
+- **Fix PASSO 17:** stub sub_0026BB98 para retornar v0=1 imediatamente (verificador IOP = sempre pronto)
 
 **PASSO 16 — bloqueio em sub_0026C4B8 (label_26c530):**
 - `sub_0026C4B8` é chamada de `sub_0026BF28` (label_26c128) quando `READ32(0x2A137C)==0`

@@ -257,7 +257,7 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-05 — PASSO 14 + 14B adicionados)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-05 — PASSO 17 aplicado)
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 ### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
@@ -271,16 +271,49 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 ### ✅ PASSO 9C — APLICADO em entry_27ab00 — força v0=1 se label_27ab80 retornar s0=0
 ### ✅ PASSO 11 (A+B+C+D) — CONFIRMADO FUNCIONANDO (11A/11C dispararam, 11B/11D não precisaram — Bug Y já setou flags)
 ### ✅ func_28DD70 — ANALISADA (segura: parser de format string)
-### ✅ PASSO 12 — APLICADO em sub_0013DC78 (inicializa sentinela da fila de prioridade circular)
+### ✅ PASSO 12 — CONFIRMADO NO LOG: "s2=0x35c1b0 s2->next=0x35c2f0 (lixo) — inicializando lista vazia"
 ### ✅ PASSO 13 — APLICADO em sub_0017AA18 (força flag renderer/GS em 0x29C4D8 para bypassar spin-loop)
-### ✅ PASSO 14 — APLICADO em sub_0026BF28 (força 0x2A1338=0 em label_26c008 — libera loop infinito IOP fila módulo)
-### ✅ PASSO 14B — APLICADO em sub_0026BC40 (simula IOP DMA completo — escreve 0xFFFFFFFF em queue+0/+8, zera 0x2A1338)
-### 🔴 AGUARDANDO PUSH — 4 arquivos alterados:
-###   - sub_0013DC78_0x13dc78.cpp (P12)
-###   - sub_0017AA18_0x17aa18.cpp (P13)
-###   - sub_0026BF28_0x26bf28.cpp (P14)
-###   - sub_0026BC40_0x26bc40.cpp (P14B)
-### 🔴 APÓS PUSH — loop detecta .cpp → recompilar.sh automático → verificar P12+P13+P14+P14B + [entry_1389d8] renderer_type + DONE
+### ✅ PASSO 14 — CONFIRMADO NO LOG: "0x2A1338=0 ja OK"
+### ✅ PASSO 14B — CONFIRMADO NO LOG: "IOP DMA simulado — queue=0x305600 — escrevendo 0xFFFFFFFF"
+### ✅ PASSO 15/15B/15C — DIAGNÓSTICOS escritos (sub_0026BF28 e entry_1389d8 — aguardam disparo pós P17)
+### ✅ PASSO 16 — FIX em sub_0026C4B8 label_26c530: força v0=0 após entry_297670 retornar !=0
+### ✅ PASSO 17 — FIX em sub_0026BB98: stub retorna v0=1 imediatamente (IOP módulo pronto simulado)
+### 🔴 AGUARDANDO PUSH — 2 arquivos alterados:
+###   - sub_0026BB98_0x26bb98.cpp (P17)
+###   - auto_round.sh (GREP_PATTERN expandido: PASSO 14-17, sub_0026BB98)
+### 🔴 APÓS PUSH → auto_round.sh detecta commit → recompilar.sh → verificar:
+###   [PASSO 17] + [PASSO 15] + [PASSO 15B] + [PASSO 15C] + [PASSO 16] + [renderer_type] + [DONE]
+
+---
+
+### 🧬 ANÁLISE PASSO 17 (2026-05-05 — novo bloqueador identificado após round@2099b48)
+
+**Por que PASSOs 15/15B/15C/16 nunca dispararam no round 2099b48:**
+- Os arquivos com PASSOs 15–16 estavam compilados corretamente ✅
+- O jogo travou ANTES de chegar neles: loop `label_26c0e0` em `sub_0026BF28`
+- `label_26c0e0` → `jal sub_0026BB98` → `beqz v0, label_26c0e0` → se v0=0, loop eterno
+
+**Causa raiz de sub_0026BB98 retornar 0:**
+1. Chama `func_293EA0(a0=0)` — essa função re-enfileira módulos IOP, escrevendo endereço de fila em `0x2A1338`
+2. Lê `READ32(0x2A1338)` — agora != 0 (mesmo que PASSO 14B tenha zerado, func_293EA0 resetou)
+3. Vai para `label_26bbc4` → chama `entry_297670(a0=0x3055C8)` (busy-flag checker)
+4. `entry_297670` lê `READ32(READ32(0x3055C8)+0x10)` → sem IOP real, sempre != 0 (busy)
+5. Branch tomado com v0=0 no delay slot → retorna 0 → outer loop repete
+
+**Fix PASSO 17:**
+- Arquivo: `GOD_PC_PORT_FINAL/src/recompiled/sub_0026BB98_0x26bb98.cpp`
+- Início da função: `SET_GPR_S32(ctx, 2, 1); return;` (antes de qualquer lógica)
+- `sub_0026BB98` é semanticamente `sceSifCheckStatRpc` / verificador "módulo IOP pronto?"
+- Sem IOP real, a resposta é sempre "sim" → v0=1 imediato é correto e seguro
+- Log esperado: `[PASSO 17] sub_0026BB98: stub retornou v0=1 (IOP modulo pronto simulado)`
+
+**O que esperar no próximo round:**
+1. `[PASSO 17]` dispara (sub_0026BB98 retorna 1)
+2. Loop `label_26c0e0` **sai** — v0=1
+3. `[PASSO 15]` dispara — mostra 0x2A1378 (idx) e 0x2A137C
+4. `[PASSO 15C]` dispara — sub_0026C4B8 é chamada
+5. `[PASSO 16]` dispara — entry_297670 em sub_0026C4B8 retornou !=0, v0 forçado a 0
+6. Após P16: verificar se entry_1389d8 chega em `renderer_type=` e `DONE`
 
 ---
 

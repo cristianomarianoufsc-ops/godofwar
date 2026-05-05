@@ -19,6 +19,14 @@ void sub_0026BB98_0x26bb98(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
 
     ctx->pc = 0x26bb98u;
 
+    // [PASSO 17] sub_0026BB98 = verificador "IOP modulo carregado?".
+    // func_293EA0 re-enfileira modulos setando 0x2A1338 != 0 a cada chamada.
+    // entry_297670(0x3055C8) retorna !=0 (busy) sem IOP real → loop eterno.
+    // Sem IOP real, a resposta e sempre "sim, pronto" → v0=1, retorna imediato.
+    SET_GPR_S32(ctx, 2, 1);
+    std::cerr << "[PASSO 17] sub_0026BB98: stub retornou v0=1 (IOP modulo pronto simulado)\n";
+    return;
+
     // 0x26bb98: 0x27bdffe0  addiu       $sp, $sp, -0x20
     ctx->pc = 0x26bb98u;
     SET_GPR_S32(ctx, 29, (int32_t)ADD32(GPR_U32(ctx, 29), 4294967264));
