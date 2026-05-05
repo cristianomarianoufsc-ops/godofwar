@@ -758,37 +758,62 @@ sub_00138D48 [JAL 8/11]
 | `GOD_PC_PORT_FINAL/src/recompiled/sub_0027A6B8_0x27a6b8.cpp` | logs diagnóstico cadeia | `recompilar.sh` |
 | `auto_round.sh` | GREP_PATTERN expandido (+9 padrões) | (script, sem build) |
 
-**Após o Push do Cris:**
-1. `bash rebuild_runtime.sh` → compila Bug AB + PASSO 3c:auto + VBlank log
-2. `bash recompilar.sh` → compila todos os diagnósticos + Bug P
-3. `bash auto_round.sh once`
+**Arquivo alterado aguardando Push:**
+- `GOD_PC_PORT_FINAL/src/recompiled/sub_00283570_0x283570.cpp` — PASSO 10A
 
 ---
 
+### ESTADO ATUAL — 2026-05-05 (round pós-PASSO 9C)
+
+**PASSO 9C disparou com sucesso** (linha 436 do log):
+```
+[PASSO 9C] entry_27ab00: label_27ab80 retornou s0=0 (READ32(0x202A2900)=0) -- forcando v0=1 para sair de label_17bd50
+```
+
+**Progresso enorme:** o jogo avançou muito além do ponto anterior:
+- 8 novos RPC_BINDs (sids 12-16, 21-23) todos forjados pelo PASSO 3
+- `sub_0027C100` apareceu e completou (`PATH=full`)
+- `entry_1389d8` apareceu e completou dois RPC_BINDs (sids 0x123456 e 0x123457)
+- `sub_00283570` apareceu → novo loop identificado
+
+**Novo travamento (PASSO 10A):**
+```
+sub_00283570 → label_283600: func_293FC0 (sceSifDmaStat, a0=DMA_ID=1 fictício)
+  → bgez v0 → loop com cooperativeGuestYield
+  → sem IOP real: sempre retorna >= 0 (DMA "pendente")
+  → loop eterno @VBlank tick #60 até #17940
+```
+
+**PASSO 10A aplicado** em `sub_00283570_0x283570.cpp` linha 222:
+- Após `func_293FC0` retornar, se v0>=0 → força v0=-1 (DMA completo)
+- Seguro: DMA ID=1 é fictício do PASSO 7B, não existe IOP real para completar
+- Label `label_283600` apenas confirma envio — sem IOP real, a confirmação é imediata
+
+**Sequência de módulos vistos até agora (boot chain completa):**
+```
+[boot_stub] init → [138D48] JAL chain
+→ sub_0017BC80 START
+→ sub_0027A810 → sub_00297290 (sid=0x80000592)
+→ sub_0027A6B8 (a0=0x22) → [PASSO 8A] → sub_00297290 (sid=0x80000593)
+→ [PASSO 9C] → sai loop label_17bd50
+→ sub_00297290 (sid=0x80000003) → sub_00297290 (sid=0x80000006)
+→ sub_0027C100 [PATH=full] → entry_281510 → entry_27d5b8 → sub_00294AF8
+→ sub_00283570 (a0=0x29c4e0) → [PASSO 7B+PASSO 10A]
+→ entry_1389d8 → sub_00297290 (sid=0x123456) → sub_00297290 (sid=0x123457)
+→ ??? (próximo obstáculo pós-PASSO 10A)
+```
+
 ### O que o próximo log deve mostrar
 
-**Cenário A — Cadeia completa visível (esperado):**
 ```
-[sub_0017BC80] START
-[sub_0027A810] START a0=0x...
-[sub_0027A810] sub_0027A648 retornou nao-zero -> skip para label_27aac8 (retorno rapido)
-  OU
-[sub_0027A810] sub_0027A648 retornou 0 -> continua setup (atingira label_27a8d0)
-[sub_0017BC80] apos sub_0027A810: v0=0x...
-[sub_0017BC80] apos sub_0027ABD0 (1a chamada): v0=0x... s1=0x...
-[sub_0027A6B8] START a0=0x...
-[sub_0027A6B8] CHAMANDO sub_00297290 s1=0x... a1=0x...
-[sub_00297290] START a0(s1)=0x... a1(s3)=0x...
-[PASSO 6B] ... (se s0=0)  OU  continua path normal (se s0≠0)
+[PASSO 10A] sub_00283570: sceSifDmaStat retornou X (>= 0, pending) -- forcando v0=-1 ...
+→ sub_00283570 continua: func_298CE8 → func_2988E0 → retorna
+→ entry_1389d8 DONE (ou equivalente)
+→ alguma nova função/loop a identificar
 ```
-
-**Cenário B — sub_0017BC80 não aparece:**
-- sub_00138D48 não chama sub_0017BC80 neste round (round ainda no PASSO 5 loop)
-- Verificar se PASSO 5 FIRE aparece no log → confirma que sub_0017BC80 veio depois
-
-**Cenário C — sub_0027A810 aparece mas sub_0027A6B8 não:**
-- sub_0027A810 retorna mas sub_0027ABD0 trava dentro
-- Investigar entry_27ab00_0x27abd0 (loop de retry, sub_0027A6B8 retorna 0 repetidamente)
 
 ### ⚠️ Lembrete ao analista
-Sempre pedir ao Agente Cris para clicar em **Push** no Replit após qualquer edição de código.
+- Sempre pedir ao Agente Cris para clicar em **Push** no Replit após qualquer edição de código.
+- O log FULL (`log_latest_full.txt`) tem 852 linhas neste round — SEMPRE ler o full, nunca só o filtered.
+- PASSO 7B já existe em sub_00283570 (label_2835e8, força s0=1 se sceSifSetDma retorna 0).
+- PASSO 10A: sub_00283570 label_283600 (sceSifDmaStat, força v0=-1 se >= 0).

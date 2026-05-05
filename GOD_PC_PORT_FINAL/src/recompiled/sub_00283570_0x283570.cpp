@@ -216,6 +216,21 @@ label_283600:
         if (ctx->pc != 0x283608u) { return; }
     }
     ctx->pc = 0x283608u;
+    // PASSO 10A: sceSifDmaStat sem IOP real sempre retorna >= 0 (DMA "pendente").
+    // Forcamos v0=-1 (DMA completo/invalido) para sair do spin loop label_283600.
+    // Seguro: este loop so existe para confirmar que o DMA foi enviado ao IOP.
+    // Com IOP simulado (DMA ID=1 ficticio do PASSO 7B), a conclusao e imediata.
+    if (GPR_S32(ctx, 2) >= 0) {
+        static bool s_passo10a_logged = false;
+        if (!s_passo10a_logged) {
+            s_passo10a_logged = true;
+            std::cerr << "[PASSO 10A] sub_00283570: sceSifDmaStat retornou "
+                      << (int32_t)GPR_S32(ctx, 2)
+                      << " (>= 0, pending) -- forcando v0=-1 (DMA completo) para sair de label_283600"
+                      << " s0(DMA_ID)=0x" << std::hex << GPR_U32(ctx, 16) << std::dec << "\n";
+        }
+        SET_GPR_S32(ctx, 2, -1);
+    }
     // 0x283608: 0x441fffd  bgez        $v0, . + 4 + (-0x3 << 2)
     ctx->pc = 0x283608u;
     {

@@ -528,6 +528,24 @@ sub_0017BC80 [START log ✅]
 - Bug P fix (FUN_002947c8 reescrita) seta `*(0x327a40)=1` por conta própria
 - Elimina necessidade de PASSO 5
 
+**PASSO 10A — fix aplicado 2026-05-05:**
+- Arquivo: `GOD_PC_PORT_FINAL/src/recompiled/sub_00283570_0x283570.cpp`
+- Função: `func_293FC0` = `sceSifDmaStat` — verifica status do DMA ID=1 (fictício do PASSO 7B)
+- Loop: `label_283600` → bgez v0 → loop com cooperativeGuestYield enquanto v0 ≥ 0 (DMA pendente)
+- Sem IOP real: sempre retorna ≥ 0 → loop eterno (@VBlank tick #60 em diante)
+- Fix: após func_293FC0 retornar, se v0≥0 → força v0=-1 (DMA completo/inválido)
+- Seguro: DMA ID=1 é fictício (PASSO 7B). A confirmação de envio é desnecessária sem IOP real.
+
+**Boot chain mapeada até 2026-05-05:**
+```
+boot_stub init → 138D48 JAL chain
+→ sub_0017BC80 → sub_0027A810 → sub_0027A6B8 [PASSO 8A]
+→ label_17bd50 loop [PASSO 9C: sai] → sub_00297470 (3ª chamada)
+→ sub_0027C100 [PATH=full] → entry_281510 → entry_27d5b8 → sub_00294AF8
+→ sub_00283570 [PASSO 7B + PASSO 10A] → entry_1389d8 [dois RPC_BINDs 0x123456/0x123457]
+→ ??? próximo round
+```
+
 ---
 
 ## Regras pro agente Replit
