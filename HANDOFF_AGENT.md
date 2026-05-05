@@ -82,15 +82,15 @@ bash auto_round.sh loop
 
 ---
 
-#### 🖥️ TERMINAL 2 — full (quando analista editar `.cpp` do jogo)
+#### 🖥️ TERMINAL 2 — full (comando manual, raramente necessário)
 
 ```bash
 bash auto_round.sh full
 ```
 
-- Roda quando o analista editar qualquer arquivo em `GOD_PC_PORT_FINAL/src/recompiled/*.cpp`.
+- **Normalmente não precisa mais** — o `loop` detecta mudanças em `.cpp` do jogo automaticamente.
+- Use só se precisar forçar um round imediato sem esperar Push detectado (ex: testar algo local).
 - Faz automaticamente: `recompilar.sh` → `rebuild_runtime.sh` → jogo → log → commit.
-- **NÃO interrompe o loop no Terminal 1** — os dois rodam em paralelo sem conflito.
 
 ---
 
@@ -99,13 +99,13 @@ bash auto_round.sh full
 | Situação | Terminal 1 | Terminal 2 |
 |---|---|---|
 | Abrir o PC pela manhã | `bash auto_round.sh loop` | — |
-| Analista fez Push (só mudou runtime `ps2xRuntime/`) | loop cuida sozinho | — |
-| **Analista fez Push (mudou `.cpp` do jogo `src/recompiled/`)** | loop fica como está | **`bash auto_round.sh full`** |
+| Analista fez Push (só mudou runtime `ps2xRuntime/`) | loop detecta e roda rebuild sozinho | — |
+| **Analista fez Push (mudou `.cpp` do jogo `src/recompiled/`)** | **loop detecta e roda recompilar.sh sozinho** | — |
 | Fim do dia / desligar PC | Ctrl+C | — |
 
 ---
 
-**Regra de ouro:** se o analista editar `.cpp` → Terminal 2 com `full`. Para todo o resto → loop cuida sozinho.
+**Regra de ouro (atualizada 2026-05-05):** `bash auto_round.sh loop` é o único terminal necessário para TUDO. Ele detecta automaticamente se o commit mudou `src/recompiled/*.cpp` e ativa o recompilar.sh por conta própria. Terminal 2 com `full` ainda existe mas não é mais necessário no dia a dia.
 
 **Regra 4 — NUNCA feche o loop para rodar outro comando.**
 O loop não interfere em outros terminais. Sempre abra Terminal 2 separado.

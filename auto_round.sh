@@ -18,11 +18,15 @@
 #       → Substitui a sequência manual: bash recompilar.sh && bash auto_round.sh once
 #       → ❌ NÃO precisa Ctrl+C — termina em ~5-10 min (recompile + round).
 #
-#   bash auto_round.sh loop                     ⭐ MODO PRINCIPAL
+#   bash auto_round.sh loop                     ⭐ MODO PRINCIPAL (único terminal necessário)
 #       → Fica VIVO PRA SEMPRE checando novo commit no main a cada 30s.
 #       → Quando o agente IA commitar algo, dispara um round automático.
+#       → DETECTA AUTOMATICAMENTE se o commit mudou src/recompiled/*.cpp:
+#           - sim → roda recompilar.sh antes do round (igual ao 'full')
+#           - não → só rebuild_runtime.sh (mais rápido)
 #       → ✅ Aperte Ctrl+C SÓ quando quiser parar (fim do dia, desligar PC).
 #       → Pode minimizar o terminal — segue rodando enquanto está aberto.
+#       → ❌ NÃO precisa mais de Terminal 2 com 'full' — loop cuida de tudo.
 #
 #   bash auto_round.sh status
 #       → Mostra estado atual (último hash, logs gerados) e SAI SOZINHO.
@@ -211,6 +215,7 @@ main_loop() {
     log "Modo loop ativo. Verificando novos commits a cada ${POLL_INTERVAL}s."
     log "Branch monitorada: main → resultados em logs/auto"
     log "Diretório dos logs: $LOG_DIR"
+    log "Recompile automático: detecta mudanças em src/recompiled/*.cpp"
     log "Pressione Ctrl+C pra parar."
     log ""
 
@@ -226,7 +231,28 @@ main_loop() {
             err "Não consegui resolver origin/main. Sem internet?"
         elif [ "$current_hash" != "$last_hash" ]; then
             log "Commit novo detectado: ${current_hash:0:8} (anterior: ${last_hash:0:8})"
-            if run_one_round; then
+
+            # Detecta se algum .cpp do jogo foi alterado nesse commit
+            local changed_game_cpp=""
+            if [ -n "$last_hash" ]; then
+                changed_game_cpp=$(git diff --name-only "$last_hash" "$current_hash" 2>/dev/null \
+                    | grep -E "GOD_PC_PORT_FINAL/src/recompiled/.*\.cpp$" | head -3 || true)
+            else
+                # Primeiro round: verifica commit atual contra pai
+                changed_game_cpp=$(git diff --name-only "${current_hash}^" "$current_hash" 2>/dev/null \
+                    | grep -E "GOD_PC_PORT_FINAL/src/recompiled/.*\.cpp$" | head -3 || true)
+            fi
+
+            if [ -n "$changed_game_cpp" ]; then
+                log "   .cpp do jogo alterado — ativando recompilar.sh:"
+                echo "$changed_game_cpp" | while read -r f; do log "     ✏  $f"; done
+                RECOMPILAR_ANTES=1
+            else
+                log "   Só runtime/outros — sem recompilar.sh"
+                RECOMPILAR_ANTES=0
+            fi
+
+            if RECOMPILAR_ANTES="$RECOMPILAR_ANTES" run_one_round; then
                 echo "$current_hash" > "$STATE_FILE"
                 last_hash="$current_hash"
             else
