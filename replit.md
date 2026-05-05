@@ -92,8 +92,8 @@ curl -s "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/log
 | Comando | Comportamento | Ctrl+C? |
 |---|---|---|
 | `bash auto_round.sh once` | 1 round e SAI sozinho (sem recompilar) | ❌ NÃO |
-| `bash auto_round.sh full` ⭐ | recompilar.sh + 1 round e SAI sozinho | ❌ NÃO |
-| `bash auto_round.sh loop` ⭐ | Vivo pra sempre, polling 30s | ✅ Pra parar (fim do dia) |
+| `bash auto_round.sh full` | recompilar.sh + 1 round e SAI sozinho (manual, raro) | ❌ NÃO |
+| `bash auto_round.sh loop` ⭐ | Vivo pra sempre, polling 30s, **detecta .cpp auto** | ✅ Pra parar (fim do dia) |
 | `bash auto_round.sh status` | Mostra estado e SAI | ❌ NÃO |
 | `nohup bash auto_round.sh loop > auto_round.log 2>&1 &` | Background | `pkill -f auto_round.sh` |
 
@@ -103,7 +103,7 @@ Dentro de cada round, `timeout --signal=INT 300s` mata o jogo automaticamente. *
 
 ---
 
-#### 🖥️ TERMINAL 1 — loop (sempre ligado, nunca fechar)
+#### 🖥️ ÚNICO TERMINAL NECESSÁRIO — loop (sempre ligado, nunca fechar)
 
 ```bash
 bash auto_round.sh loop
@@ -111,37 +111,28 @@ bash auto_round.sh loop
 
 - Liga ao abrir o PC. Só desliga com Ctrl+C ao fechar o dia.
 - Detecta Push automático em ≤30s → roda round sozinho.
-- **Não precisa de nenhum outro comando após um Push**, SE a mudança for só em `ps2xRuntime/` (runtime).
-
----
-
-#### 🖥️ TERMINAL 2 — full (quando analista editar `.cpp` do jogo)
-
-```bash
-bash auto_round.sh full
-```
-
-- Roda quando o analista editar qualquer arquivo em `GOD_PC_PORT_FINAL/src/recompiled/*.cpp`.
-- Faz automaticamente: `recompilar.sh` → `rebuild_runtime.sh` → jogo → log → commit.
-- **NÃO interrompe o loop no Terminal 1** — os dois rodam em paralelo sem conflito.
+- **Detecta automaticamente se o commit mudou `src/recompiled/*.cpp`:**
+  - sim → roda `recompilar.sh` antes do round (comportamento antigo do `full`)
+  - não → só `rebuild_runtime.sh` (mais rápido)
+- **Não precisa de Terminal 2 nem do comando `full` no dia a dia** (atualizado 2026-05-05).
 
 ---
 
 #### 📋 TABELA DE DECISÃO — O QUE RODAR EM CADA SITUAÇÃO
 
-| Situação | Terminal 1 | Terminal 2 |
-|---|---|---|
-| Abrir o PC pela manhã | `bash auto_round.sh loop` | — |
-| Analista fez Push (só mudou runtime `ps2xRuntime/`) | loop cuida sozinho | — |
-| **Analista fez Push (mudou `.cpp` do jogo `src/recompiled/`)** | loop fica como está | **`bash auto_round.sh full`** |
-| Fim do dia / desligar PC | Ctrl+C | — |
+| Situação | O que fazer |
+|---|---|
+| Abrir o PC pela manhã | `bash auto_round.sh loop` — só isso |
+| Analista fez Push (runtime `ps2xRuntime/`) | loop detecta e roda rebuild sozinho |
+| **Analista fez Push (`.cpp` do jogo `src/recompiled/`)** | **loop detecta e roda recompilar.sh sozinho** |
+| Fim do dia / desligar PC | Ctrl+C |
 
 ---
 
-**Regra de ouro:** se o analista editar `.cpp` → Terminal 2 com `full`. Para todo o resto → loop cuida sozinho.
+**Regra de ouro (atualizada 2026-05-05):** `bash auto_round.sh loop` é o único comando necessário para TUDO. Terminal 2 com `full` não é mais necessário no dia a dia.
 
 **Regra 4 — NUNCA feche o loop para rodar outro comando.**
-O loop não interfere em outros terminais. Sempre abra um Terminal 2 separado.
+O loop não interfere em outros terminais. Se precisar rodar algo manual, abra Terminal 2 separado.
 
 **Regra 5 — Ferramentas de análise de log NÃO são do Agente Cris.**
 `python3 tools/triage_round.py`, `curl`, `python3 tools/mips_inspect.py` rodam no Replit. Nunca colocar essas ferramentas num bloco de comandos para o Cris.
