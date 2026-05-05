@@ -421,9 +421,12 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 ### ✅ PASSO 15/15B/15C — DIAGNÓSTICOS escritos (em sub_0026BF28 e entry_1389d8)
 ### ✅ PASSO 16 — FIX em sub_0026C4B8 label_26c530: força v0=0 após entry_297670 retornar !=0
 ### ✅ PASSO 17 — FIX em sub_0026BB98: stub retorna v0=1 (IOP modulo pronto simulado)
-### 🔴 AGUARDANDO PUSH — 2 arquivos alterados:
-###   sub_0026BB98_0x26bb98.cpp (P17 — fix principal), auto_round.sh (GREP_PATTERN +PASSO14-17+sub_0026BB98)
-### 🔴 APÓS PUSH → recompilar.sh → verificar [PASSO 17]+[PASSO 15]+[PASSO 16]+[renderer_type]+[DONE]
+### 🔴 AGUARDANDO ROUND — 3 arquivos alterados neste ciclo:
+###   sub_0026BB98_0x26bb98.cpp (P17), auto_round.sh (GREP_PATTERN), recompilar.sh (janela 5→10 commits)
+### 🔴 PRÓXIMO PASSO: bash auto_round.sh full (recompila sub_0026BB98 com PASSO 17)
+### ⚠️  CAUSA DO ROUND ANTERIOR SEM PASSO 17: loop rodou sobre commit de docs (analisa_round.py),
+###   diff vs PASSO-17-commit não tinha .cpp → recompilar.sh não foi ativado → binário antigo usado.
+###   Fix: recompilar.sh agora olha 10 commits (antes 5) + auto_round.sh full força recompilação.
 
 **ROUND MAIS RECENTE — 2026-05-05T17:55Z — main@2099b48 — Análise:**
 - PASSOs 12, 14, 14B, 11A/11B/11C/11D — TODOS CONFIRMADOS NO LOG ✅

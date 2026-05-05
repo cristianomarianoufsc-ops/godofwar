@@ -28,20 +28,25 @@ echo ""
 
 # Fix critico: 'git pull' preserva o mtime do commit, entao se o .o local
 # for mais novo que o .cpp baixado, make pula a recompilacao silenciosamente.
-# Tocamos todos os arquivos modificados nas ultimas 2 horas pra forcar make
-# a reavaliar dependencias. Tambem tocamos qualquer .cpp/.h/.inl mais antigo
-# que o seu .o correspondente em build/ se foi alterado pelo git nos ultimos
-# 5 commits (cobre o caso de pull recente).
-RECENT_GIT_FILES=$(git -C "$SCRIPT_DIR" log --name-only --pretty=format: -5 2>/dev/null | \
+# Tocamos todos os arquivos modificados nos ultimos 10 commits pra forcar make
+# a reavaliar dependencias. 10 commits cobre o caso de varios commits chegarem
+# juntos rapidamente (ex: PASSO N + docs no mesmo ciclo de Push).
+RECENT_GIT_FILES=$(git -C "$SCRIPT_DIR" log --name-only --pretty=format: -10 2>/dev/null | \
     grep -E '\.(cpp|h|hpp|inl|c)$' | sort -u || true)
 if [ -n "$RECENT_GIT_FILES" ]; then
-    echo "[recompilar] Forcando touch em arquivos alterados nos ultimos 5 commits:"
+    echo "[recompilar] Forcando touch em arquivos alterados nos ultimos 10 commits:"
+    TOUCHED=0
     while IFS= read -r f; do
         if [ -f "$SCRIPT_DIR/$f" ]; then
             touch "$SCRIPT_DIR/$f"
-            echo "  - $f"
+            echo "  ✏  $f"
+            TOUCHED=$((TOUCHED + 1))
         fi
     done <<< "$RECENT_GIT_FILES"
+    echo "[recompilar] $TOUCHED arquivo(s) tocado(s) — make vai recompilar esses."
+    echo ""
+else
+    echo "[recompilar] Nenhum .cpp/.h nos ultimos 10 commits — touch nao necessario."
     echo ""
 fi
 

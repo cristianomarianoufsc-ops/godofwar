@@ -278,10 +278,17 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 ### ✅ PASSO 15/15B/15C — DIAGNÓSTICOS escritos (sub_0026BF28 e entry_1389d8 — aguardam disparo pós P17)
 ### ✅ PASSO 16 — FIX em sub_0026C4B8 label_26c530: força v0=0 após entry_297670 retornar !=0
 ### ✅ PASSO 17 — FIX em sub_0026BB98: stub retorna v0=1 imediatamente (IOP módulo pronto simulado)
-### 🔴 AGUARDANDO PUSH — 2 arquivos alterados:
+### 🔴 AGUARDANDO ROUND — 3 arquivos alterados neste ciclo:
 ###   - sub_0026BB98_0x26bb98.cpp (P17)
 ###   - auto_round.sh (GREP_PATTERN expandido: PASSO 14-17, sub_0026BB98)
-### 🔴 APÓS PUSH → auto_round.sh detecta commit → recompilar.sh → verificar:
+###   - recompilar.sh (janela git log -5 → -10, log de touch explícito)
+### 🔴 PRÓXIMO PASSO: bash auto_round.sh full no PC do Cris
+### ⚠️  POR QUE PASSO 17 NÃO COMPILOU NO ROUND ANTERIOR:
+###   O loop rodou detectando commit de docs (analisa_round.py) — diff vs PASSO-17-commit
+###   não mostrava nenhum .cpp em GOD_PC_PORT_FINAL/src/recompiled/ → RECOMPILAR_ANTES=0
+###   → recompilar.sh não rodou → binário velho (sem PASSO 17) foi usado.
+###   Fix aplicado: recompilar.sh agora olha últimos 10 commits (antes 5).
+### 🔴 APÓS ROUND → verificar:
 ###   [PASSO 17] + [PASSO 15] + [PASSO 15B] + [PASSO 15C] + [PASSO 16] + [renderer_type] + [DONE]
 
 ---
