@@ -59,9 +59,14 @@ void entry_1389d8_0x138cb0(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         const uint32_t __entryPc = ctx->pc;
         sub_0026B6D0_0x26b6d0(rdram, ctx, runtime);
         if (ctx->pc == __entryPc) { ctx->pc = 0x1389F8u; }
-        if (ctx->pc != 0x1389F8u) { return; }
+        if (ctx->pc != 0x1389F8u) {
+            std::cerr << "[PASSO 15B] entry_1389d8: sub_0026B6D0 retornou com ctx->pc=0x"
+                      << std::hex << ctx->pc << " != 0x1389F8 — retorno PREMATURO\n" << std::dec;
+            return;
+        }
     }
     ctx->pc = 0x1389F8u;
+    std::cerr << "[PASSO 15B] entry_1389d8: sub_0026B6D0 retornou OK ctx->pc=0x1389F8 — chegando em label_138a04\n";
     // 0x1389f8: 0x24020040  addiu       $v0, $zero, 0x40
     ctx->pc = 0x1389f8u;
     SET_GPR_S32(ctx, 2, (int32_t)ADD32(GPR_U32(ctx, 0), 64));

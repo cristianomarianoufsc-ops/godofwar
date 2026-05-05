@@ -400,7 +400,7 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 ---
 
-## 🟢 ESTADO ATUAL — 2026-05-05: PASSO 14 + 14B aplicados (sub_0026BF28 + sub_0026BC40)
+## 🟢 ESTADO ATUAL — 2026-05-05: PASSOs 15/15B/15C/16 aplicados (diagnóstico + fix sub_0026C4B8)
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 ### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
@@ -413,23 +413,39 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 ### ✅ PASSO 8A — CONFIRMADO NO LOG — sub_0027A6B8 PASSO 8A disparou
 ### ✅ PASSO 9A/9B — APLICADO em sub_00297470 (força v0=1 se func_2969D0 retornar 0)
 ### ✅ PASSO 9C — APLICADO em entry_27ab00 (força v0=1 se label_27ab80 retornar s0=0)
-### ✅ PASSO 11 (A+B+C+D) — CONFIRMADO: 11A/11C dispararam, 11B/11D não precisaram (Bug Y já setou *(s1+0x24)=1)
+### ✅ PASSO 11 (A+B+C+D) — CONFIRMADO DISPARANDO: 11A/11B/11C/11D todos ativos
 ### ✅ PASSO 12 — APLICADO em sub_0013DC78 (inicializa sentinela de fila de prioridade circular)
-### ✅ PASSO 13 — APLICADO em sub_0017AA18 (força READ32(0x29C4D8)=1 para bypassar spin-loop de renderer/GS)
-### ✅ PASSO 14 — APLICADO em sub_0026BF28 label_26c008 (força 0x2A1338=0 — libera loop IOP fila módulo)
-### ✅ PASSO 14B — APLICADO em sub_0026BC40 (simula IOP DMA: 0xFFFFFFFF em queue+0/+8, zera 0x2A1338)
-### 🔴 AGUARDANDO PUSH — 4 arquivos alterados:
-###   sub_0013DC78_0x13dc78.cpp (P12), sub_0017AA18_0x17aa18.cpp (P13),
-###   sub_0026BF28_0x26bf28.cpp (P14), sub_0026BC40_0x26bc40.cpp (P14B)
-### 🔴 APÓS PUSH → recompilar.sh automático → verificar P12+P13+P14+P14B + [entry_1389d8] renderer_type + DONE
+### ✅ PASSO 13 — APLICADO em sub_0017AA18 (força READ32(0x29C4D8)=1 para bypassar spin-loop)
+### ✅ PASSO 14 — CONFIRMADO LOG: "0x2A1338=0 ja OK" (já estava 0, path OK sem forçar)
+### ✅ PASSO 14B — CONFIRMADO LOG: "IOP DMA simulado — queue=0x305600 — escrevendo 0xFFFFFFFF"
+### ✅ PASSO 15 — DIAGNÓSTICO em sub_0026BF28 após label_26c0e0 (mostra 0x2A1378, 0x2A137C)
+### ✅ PASSO 15B — DIAGNÓSTICO em entry_1389d8 após retorno de sub_0026B6D0 (confirma ctx->pc)
+### ✅ PASSO 15C — DIAGNÓSTICO na chamada de sub_0026C4B8 dentro de sub_0026BF28
+### ✅ PASSO 16 — FIX em sub_0026C4B8 label_26c530: força v0=0 após entry_297670 retornar !=0
+### 🔴 AGUARDANDO PUSH — 6 arquivos alterados:
+###   sub_0013DC78 (P12), sub_0017AA18 (P13), sub_0026BF28 (P14+P15+P15C),
+###   sub_0026BC40 (P14B), entry_1389d8 (P15B), sub_0026C4B8 (P16)
+### 🔴 APÓS PUSH → recompilar.sh → verificar [PASSO 15]+[PASSO 16]+[PASSO 15B]+[renderer_type]+[DONE]
 
-**PASSO 14 — bloqueio identificado 2026-05-05:**
-- `sub_0026BF28` → `label_26c008`: `READ32(0x2A1338) != 0` → entra em `label_26c018` (cooperativeGuestYield loop eterno)
-- `0x2A1338` = fila SIF/IOP de módulos. No PS2 real o IOP zera após processar; sem IOP nunca zera.
-- Fix PASSO 14: força `v0=0` e `WRITE32(0x2A1338,0)` → `beqz` tomado → `label_26c034` (path de sucesso)
-- Fix PASSO 14B em `sub_0026BC40`: após sub_0026BC40 re-setar `0x2A1338=0x305600`, simula DMA IOP:
-  `WRITE32(queue+0, 0xFFFFFFFF)` + `WRITE32(queue+8, 0xFFFFFFFF)` + `WRITE32(0x2A1338, 0)` →
-  `sub_0026BB98` vê `0x2A1338=0` → retorna `v0=1` → `label_26c0e0` loop sai.
+**ROUND COMPLETO — 2026-05-05 — Resultado do log:**
+- PASSO 14 disparou: `0x2A1338=0 ja OK` (já era 0 — não precisou forçar, path correto) ✅
+- PASSO 14B disparou: `IOP DMA simulado — queue=0x305600` ✅
+- PASSO 11A/11B/11C/11D — TODOS dispararam ✅
+- entry_1389d8 START ✅
+- Novo travamento: `sub_0026C4B8` → `label_26c530` → `entry_297670(0x3055C8)` retorna `!=0`
+  → `cooperativeGuestYield` loop eterno (VBlank ticks #60 a #17940)
+
+**PASSO 16 — bloqueio em sub_0026C4B8 (label_26c530):**
+- `sub_0026C4B8` é chamada de `sub_0026BF28` (label_26c128) quando `READ32(0x2A137C)==0`
+- Fluxo: `sub_0026BC40` (enfileira módulo) → `entry_297670(0x3055C8)` (verifica busy flag)
+- `entry_297670`: lê `READ32(READ32(0x3055C8) + 0x10)` → se `!=0` → retorna `!=0` (busy)
+- Sem IOP: busy flag nunca zera → loop eterno
+- Fix: força `v0=0` após entry_297670 se retornar `!=0`
+- Análise completa: `HANDOFF_AGENT.md §🧬 ANÁLISE PASSO 16`
+
+**PASSO 14 — bloqueio identificado e resolvido 2026-05-05:**
+- `sub_0026BF28` → `label_26c008`: `READ32(0x2A1338) != 0` → loop eterno (confirmado: já era 0 no run)
+- `sub_0026BC40` PASSO 14B: simula DMA IOP com sentinelas `0xFFFFFFFF`
 - Análise completa: `HANDOFF_AGENT.md §🧬 ANÁLISE PASSO 14 + 14B`
 
 **PASSO 11 — RESULTADO (round 2026-05-05):**

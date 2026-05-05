@@ -418,6 +418,74 @@ entry_1389d8 escreve v0 em `*(s1-0x41B4)` (1ª chamada) e prossegue para a 2ª c
 
 ---
 
+### 🧬 ANÁLISE PASSO 15/15B/15C/16 (2026-05-05 — sessão pós-PASSO 14+14B confirmados)
+
+**Resultado do round PASSO 14+14B:**
+- `[PASSO 14]`: `0x2A1338=0 ja OK` — já estava 0, path correto (beqz tomado → label_26c034) ✅
+- `[PASSO 14B]`: `IOP DMA simulado — queue=0x305600 — escrevendo 0xFFFFFFFF em +0 e +8, zerando 0x2A1338` ✅
+- `entry_1389d8 START` ✅, `PASSO 11A/11B/11C/11D` ✅
+- **Novo travamento:** `sub_0026C4B8` → `label_26c530` → `entry_297670(0x3055C8)` retorna `!=0`
+  → `cooperativeGuestYield` → loop eterno (VBlank #60 → #17940)
+
+**PASSO 15 (diagnóstico) — adicionado em `sub_0026BF28` após label_26c0e0:**
+- Log: `0x2A1378(idx)` e `0x2A137C` — confirma qual índice de módulo está sendo processado
+
+**PASSO 15B (diagnóstico) — adicionado em `entry_1389d8` após retorno de sub_0026B6D0:**
+- Confirma que `sub_0026B6D0` retorna para `ctx->pc=0x1389F8` (path correto) ou outro destino
+
+**PASSO 15C (diagnóstico) — adicionado em `sub_0026BF28` na chamada de sub_0026C4B8:**
+- Log antes e depois da chamada de `sub_0026C4B8` (confirma se retorna ou fica travado)
+
+**PASSO 16 — FIX em `sub_0026C4B8_0x26c4b8.cpp` (label_26c530):**
+
+**Análise do loop:**
+```
+label_26c530:
+  entry_297670(0x3055C8) → v0
+  ; entry_297670: a1 = READ32(0x3055C8)
+  ;               if a1==0 → v0=0 (livre)
+  ;               v1 = READ32(0x3055C8+4), v0 = READ32(a1+0x18)
+  ;               if v1!=v0 → v0=0 (libre)
+  ;               v0 = READ32(a1+0x10) ; busy flag
+  ;               if v0!=0 → retorna v0!=0 (ocupado)
+  bnez v0, loop    ; se busy → cooperativeGuestYield → label_26c510
+```
+
+**Causa:** `READ32(0x3055C8)` != 0 (ptr RPC ativo) E `READ32(ptr+0x10)` != 0 (busy flag)
+→ entry_297670 retorna != 0 → loop eterno sem IOP real para processar o comando
+
+**Fix (PASSO 16):** Em `label_26c530`, após `entry_297670` retornar, se `v0 != 0`:
+```cpp
+// [PASSO 16] Simula SIF client livre (sem IOP real, busy flag nunca zera)
+if (GPR_U32(ctx, 2) != 0) {
+    std::cerr << "[PASSO 16] forcando v0=0 (SIF client livre)\n";
+    SET_GPR_S32(ctx, 2, 0);
+}
+```
+→ `bnez v0` NÃO tomado → continua para `0x26C540` (epilogue de sub_0026C4B8)
+
+**Epilogue de sub_0026C4B8 (após loop sair):**
+- Lê `0x2A1378` (índice atual) → XOR 1 (alterna 0↔1, ping-pong de módulos)
+- `sltu v0, zero, v0` → booleano
+- `WRITE32(0x2A1378, v0)` → atualiza índice
+- Calcula próximas tabelas (`0x2A1358`, `0x2A1360`, `0x2A1370`)
+- Chama `entry_297470` com `a0=0x3055C8, a1=..., a2=0x4D, a3=1` → outro DMA
+- Retorna → sub_0026BF28 continua em `label_26c130`
+
+**Próximo candidato de travamento:** `entry_297470` dentro do epilogue de `sub_0026C4B8` pode ser outro DMA IOP. Se travar, precisará de PASSO 17 em `sub_00297470` (já tem PASSO 9A/9B).
+
+**Arquivos alterados nesta sessão (aguardando push):**
+| Arquivo | PASSOs |
+|---------|--------|
+| `sub_0026BF28_0x26bf28.cpp` | P14 (existente) + P15 + P15C (novo) |
+| `sub_0026BC40_0x26bc40.cpp` | P14B (existente) |
+| `entry_1389d8_0x138cb0.cpp` | P15B (novo) |
+| `sub_0026C4B8_0x26c4b8.cpp` | **P16 (novo FIX)** |
+| `sub_0013DC78_0x13dc78.cpp` | P12 (existente) |
+| `sub_0017AA18_0x17aa18.cpp` | P13 (existente) |
+
+---
+
 ### 🧬 ANÁLISE PASSO 14 + 14B (2026-05-05 — sessão pós-PASSO 12+13 aplicados)
 
 **Contexto:** Após PASSO 13 (bloqueio de sub_0017AA18), a análise revelou que sub_0026BF28 (chamada por sub_0026B6D0 após PASSO 11D) tem um loop infinito em `label_26c018` aguardando `READ32(0x2A1338)==0`.

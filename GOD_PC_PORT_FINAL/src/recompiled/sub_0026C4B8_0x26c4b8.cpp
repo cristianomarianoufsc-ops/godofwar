@@ -200,6 +200,17 @@ label_26c530:
         if (ctx->pc != 0x26C538u) { return; }
     }
     ctx->pc = 0x26C538u;
+    // [PASSO 16] sub_0026C4B8: loop label_26c530 esperando entry_297670(0x3055C8)==0.
+    // entry_297670 verifica busy-flag em READ32(READ32(0x3055C8)+0x10).
+    // Sem IOP real, esse flag nunca zera -> loop eterno. Forcamos v0=0 para liberar.
+    {
+        uint32_t _p16_v0 = GPR_U32(ctx, 2);
+        if (_p16_v0 != 0) {
+            std::cerr << "[PASSO 16] sub_0026C4B8: entry_297670 retornou v0=0x" << std::hex << _p16_v0
+                      << " (SIF client ocupado) — forcando v0=0 (simula SIF client livre)\n" << std::dec;
+            SET_GPR_S32(ctx, 2, 0);
+        }
+    }
     // 0x26c538: 0x1440fff5  bnez        $v0, . + 4 + (-0xB << 2)
     ctx->pc = 0x26C538u;
     {

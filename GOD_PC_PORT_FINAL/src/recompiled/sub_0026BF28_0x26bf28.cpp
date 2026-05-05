@@ -702,6 +702,13 @@ label_26c0e0:
         }
     }
     ctx->pc = 0x26C0F0u;
+    // [PASSO 15] Diagnóstico após label_26c0e0 sair (sub_0026BB98 retornou v0!=0)
+    {
+        uint32_t _p15_idx = (uint32_t)READ32(0x2A0000u + 0x1378u);
+        std::cerr << "[PASSO 15] sub_0026BF28: 0x2A1378(idx)=0x" << std::hex << _p15_idx
+                  << " 0x2A137C=0x" << (uint32_t)READ32(0x2A0000u + 0x137Cu)
+                  << " — verificando tabela modulo em 0x2A1358\n" << std::dec;
+    }
     // 0x26c0f0: 0x3c03002a  lui         $v1, 0x2A
     ctx->pc = 0x26c0f0u;
     SET_GPR_S32(ctx, 3, (int32_t)((uint32_t)42 << 16));
@@ -763,6 +770,8 @@ label_26c0e0:
     }
     ctx->pc = 0x26C128u;
     // 0x26c128: 0xc09b12e  jal         func_26C4B8
+    std::cerr << "[PASSO 15C] sub_0026BF28: chamando sub_0026C4B8 — s0=0x" << std::hex
+              << GPR_U32(ctx, 16) << " 0x2A137C=0x" << (uint32_t)READ32(0x2A0000u + 0x137Cu) << "\n" << std::dec;
     ctx->pc = 0x26C128u;
     SET_GPR_U32(ctx, 31, 0x26C130u);
     ctx->pc = 0x26C4B8u;
@@ -776,8 +785,13 @@ label_26c0e0:
         const uint32_t __entryPc = ctx->pc;
         sub_0026C4B8_0x26c4b8(rdram, ctx, runtime);
         if (ctx->pc == __entryPc) { ctx->pc = 0x26C130u; }
-        if (ctx->pc != 0x26C130u) { return; }
+        if (ctx->pc != 0x26C130u) {
+            std::cerr << "[PASSO 15C] sub_0026C4B8 retornou ctx->pc=0x" << std::hex << ctx->pc
+                      << " != 0x26C130 — retorno DESVIO\n" << std::dec;
+            return;
+        }
     }
+    std::cerr << "[PASSO 15C] sub_0026C4B8 retornou OK\n";
     ctx->pc = 0x26C130u;
 label_26c130:
     // 0x26c130: 0x200102d  daddu       $v0, $s0, $zero
