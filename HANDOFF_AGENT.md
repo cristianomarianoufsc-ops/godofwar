@@ -257,7 +257,7 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-05 — PASSO 11 adicionado)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-05 — PASSO 12 adicionado)
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 ### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
@@ -269,10 +269,11 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 ### ✅ PASSO 8A — CONFIRMADO NO LOG — sub_0027A6B8 PASSO 8A disparou + sub_00297290 chamada com s1=0x2a3280 sid=0x80000593
 ### ✅ PASSO 9A/9B — APLICADO em sub_00297470 — força v0=1 se func_2969D0 retornar 0
 ### ✅ PASSO 9C — APLICADO em entry_27ab00 — força v0=1 se label_27ab80 retornar s0=0
-### ✅ PASSO 11 (A+B+C+D) — APLICADO em sub_0026B6D0 — ver análise abaixo
+### ✅ PASSO 11 (A+B+C+D) — CONFIRMADO FUNCIONANDO (11A/11C dispararam, 11B/11D não precisaram — Bug Y já setou flags)
 ### ✅ func_28DD70 — ANALISADA (segura: parser de format string)
-### 🔴 AGUARDANDO PUSH — 1 arquivo alterado: sub_0026B6D0_0x26b6d0.cpp (PASSO 11)
-### 🔴 APÓS PUSH — loop detecta .cpp → recompilar.sh automático → verificar [PASSO 11A/11B/11C/11D] + [entry_1389d8] renderer_type + DONE
+### ✅ PASSO 12 — APLICADO em sub_0013DC78 (inicializa sentinela da fila de prioridade circular)
+### 🔴 AGUARDANDO PUSH — 1 arquivo alterado: sub_0013DC78_0x13dc78.cpp (PASSO 12)
+### 🔴 APÓS PUSH — loop detecta .cpp → recompilar.sh automático → verificar [PASSO 12] + [entry_1389d8] renderer_type + DONE
 
 ---
 
@@ -341,6 +342,72 @@ BLOCO 2: SIF client sid=0x123457
 - `sub_0013DC78` — tem loop cooperativo em `label_13dcd8` (goto label_13dcd8 com cooperativeGuestYield), chamado múltiplas vezes dentro de entry_1389d8 APÓS func_17AA78 (renderer_type)
 - entry_1389d8 também tem 2 loops cooperativos próprios: `label_138ba0` e `label_138c28` — mas esses são loops de iteração finita (contador s2 < *(s4+0) iterações) — provavelmente seguros
 - JAL[9/11]=`0x17a940`, [10/11]=`0x17aa18`, [11/11]=`0x17a9b0` em sub_00138D48 — ainda não analisados
+
+---
+
+### 🧬 ANÁLISE PASSO 12 (2026-05-05 — sessão pós-PASSO 11 confirmado)
+
+**Contexto do round pós-PASSO 11:**
+- PASSO 11A e 11C: `retornou v0=1 OK` — sub_00297290 já devolvia v0=1 pelo Bug Y fix; 11A/11C confirmaram mas não precisaram forçar
+- PASSO 11B e 11D: NÃO dispararam — Bug Y fix já setou `*(s1+0x24)=1` dentro de sub_00297290, connected flag já estava certo
+- sub_0026B6D0 PASSOU → entry_1389d8 continuou → chamou sub_0013DC78 (2× antes de renderer_type) → TRAVOU aí
+- `[entry_1389d8] renderer_type=` NÃO apareceu → stuck em sub_0013DC78
+- **NOVIDADE:** `[vif1:cmd]` aparecem no log FULL (169 pacotes DMA para VIF1 — gráficos PS2!) — game chegou mais longe que nunca
+
+**Diagnóstico sub_0013DC78 (0x13DC78–0x13DE28, 492 linhas):**
+
+`func_13E090` (entry_13e090_0x13e0c0.cpp) é um **pool allocator por lookup de tabela**:
+```
+v2 = 0x2CB940 — estrutura de controle do pool
+a0 = READ32(0x2CB940+4) — índice atual
+v0 = READ32(0x2CB940+8) — limite
+if (a0 == v0) → return 0 (pool cheio)
+else: return READ32(READ32(0x2CB940) + 4*a0) — ponteiro do nó no pool
+```
+
+`sub_0013DC78(a0=nó, a1=tamanho, a2=align)` é um **insertor em fila de prioridade circular duplamente encadeada**:
+```
+s2 = a0 (ponteiro do nó = sentinela da lista)
+s1 = a1 (tamanho da alocação: 0x40 ou 0x280)
+s0 = a2 (alinhamento: 0x40)
+
+Invariante PS2: s2->next (s2+4) == s2 quando lista VAZIA (nó aponta para si mesmo)
+
+label_13dccc: se READ32(s2+4) == s2 → goto label_13de08 (saída: lista vazia, insere direto)
+              se READ32(s2+4) != s2 → label_13dcd8 (loop: anda a lista por insertion sort)
+
+label_13dcd8: ← LOOP COOPERATIVO
+  t3 = READ32(t0+0) & 0x1FFFFFFF  ← prioridade do nó atual
+  se t3 < a1_new → label_13de00 (achou ponto de inserção) + cooperativeGuestYield + volta
+  senão → manipulações de split + cooperativeGuestYield + goto label_13dcd8
+```
+
+**Causa raiz:** Na PS2 real, o IOP (ou o BIOS EE) inicializa os nós do pool com `nó->next = nó` (sentinela circular). No port sem IOP, `READ32(s2+4)` contém lixo de memória → condição `t0 == s2` NUNCA acontece → loop infinito com cooperativeGuestYield.
+
+**Fix — PASSO 12 (em sub_0013DC78_0x13dc78.cpp, antes da primeira instrução):**
+```cpp
+// Lê a0 (= s2 = ponteiro do nó sentinela)
+uint32_t _p12_s2 = GPR_U32(ctx, 4);
+uint32_t _p12_next = READ32(ADD32(_p12_s2, 4));
+if (_p12_next != _p12_s2) {
+    // Inicializa sentinela: next=self, prev=self (lista circular vazia)
+    WRITE32(ADD32(_p12_s2, 4), _p12_s2);
+    WRITE32(ADD32(_p12_s2, 8), _p12_s2);
+}
+```
+
+**Efeito:** Após WRITE32, quando a função chega em `label_13dccc`, encontra `READ32(s2+4) == s2` → branch taken → goto label_13de08 → retorna v0=0 imediatamente. A função retorna em ≤1 tick sem loop.
+
+entry_1389d8 escreve v0 em `*(s1-0x41B4)` (1ª chamada) e prossegue para a 2ª chamada (a1=0x280), que também passa pelo mesmo fix. Depois vai para `func_17AA78` → **renderer_type aparece** → entry_1389d8 DONE 🎯
+
+**O que esperar no próximo round (com PASSO 12):**
+- `[PASSO 12] sub_0013DC78: s2=0x... s2->next=0x... (lixo/nao-sentinela) — inicializando lista vazia` → fix disparou (2× em sequência)
+- `[entry_1389d8] renderer_type=0x...` → func_17AA78 retornou tipo de renderer 🎯
+- `[entry_1389d8] DONE` → entry_1389d8 concluiu 🎯
+- Próximos: JAL[9/11]=0x17A940, [10/11]=0x17AA18, [11/11]=0x17A9B0 em sub_00138D48
+
+**Arquivo alterado:** `GOD_PC_PORT_FINAL/src/recompiled/sub_0013DC78_0x13dc78.cpp`
+**Build:** `bash recompilar.sh` (loop auto_round.sh detecta .cpp alterado automaticamente após Push)
 
 ---
 

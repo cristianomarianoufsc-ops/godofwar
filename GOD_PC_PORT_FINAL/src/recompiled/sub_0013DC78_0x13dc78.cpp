@@ -19,6 +19,31 @@ void sub_0013DC78_0x13dc78(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
 
     ctx->pc = 0x13dc78u;
 
+    // PASSO 12 — Inicializa sentinela da fila de prioridade circular
+    // sub_0013DC78 gerencia uma lista encadeada circular com sentinela:
+    //   s2->next (s2+4) deve apontar para s2 mesmo quando a lista está vazia.
+    // Na PS2 real, o IOP inicializa esses structs antes do EE usar.
+    // No port sem IOP, s2+4 contém lixo de memória → loop infinito via cooperativeGuestYield.
+    // Fix: se READ32(s2+4) != s2, forçamos o sentinela circular (next=self, prev=self).
+    {
+        uint32_t _p12_s2 = GPR_U32(ctx, 4); // a0 = s2 (ponteiro do struct pool)
+        if (_p12_s2 != 0) {
+            uint32_t _p12_next = READ32(ADD32(_p12_s2, 4));
+            if (_p12_next != _p12_s2) {
+                std::cerr << "[PASSO 12] sub_0013DC78: s2=0x" << std::hex << _p12_s2
+                          << " s2->next=0x" << _p12_next
+                          << " (lixo/nao-sentinela) — inicializando lista vazia (next=prev=self)\n" << std::dec;
+                WRITE32(ADD32(_p12_s2, 4), _p12_s2); // next = self (lista vazia)
+                WRITE32(ADD32(_p12_s2, 8), _p12_s2); // prev = self (lista vazia)
+            } else {
+                std::cerr << "[PASSO 12] sub_0013DC78: s2=0x" << std::hex << _p12_s2
+                          << " sentinela ja OK (next=self)\n" << std::dec;
+            }
+        } else {
+            std::cerr << "[PASSO 12] sub_0013DC78: s2=null (func_13E090 retornou 0 — pool cheio?)\n";
+        }
+    }
+
     // 0x13dc78: 0x27bdffc0  addiu       $sp, $sp, -0x40
     ctx->pc = 0x13dc78u;
     SET_GPR_S32(ctx, 29, (int32_t)ADD32(GPR_U32(ctx, 29), 4294967232));

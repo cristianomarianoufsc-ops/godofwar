@@ -400,7 +400,7 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 ---
 
-## 🟢 ESTADO ATUAL — 2026-05-05: PASSO 11 aplicado em sub_0026B6D0
+## 🟢 ESTADO ATUAL — 2026-05-05: PASSO 12 aplicado em sub_0013DC78
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 ### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
@@ -413,16 +413,24 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 ### ✅ PASSO 8A — CONFIRMADO NO LOG — sub_0027A6B8 PASSO 8A disparou
 ### ✅ PASSO 9A/9B — APLICADO em sub_00297470 (força v0=1 se func_2969D0 retornar 0)
 ### ✅ PASSO 9C — APLICADO em entry_27ab00 (força v0=1 se label_27ab80 retornar s0=0)
-### ✅ PASSO 11 (A+B+C+D) — APLICADO em sub_0026B6D0 (4 travamentos nos dois SIF clients)
-### 🔴 AGUARDANDO PUSH — 1 arquivo: sub_0026B6D0_0x26b6d0.cpp
-### 🔴 APÓS PUSH — loop deteca .cpp → recompilar.sh automático → verificar [PASSO 11A/B/C/D] + [entry_1389d8] renderer_type + DONE
+### ✅ PASSO 11 (A+B+C+D) — CONFIRMADO: 11A/11C dispararam, 11B/11D não precisaram (Bug Y já setou *(s1+0x24)=1)
+### ✅ PASSO 12 — APLICADO em sub_0013DC78 (inicializa sentinela de fila de prioridade circular)
+### 🔴 AGUARDANDO PUSH — 1 arquivo: sub_0013DC78_0x13dc78.cpp
+### 🔴 APÓS PUSH — loop detecta .cpp → recompilar.sh automático → verificar [PASSO 12] + [entry_1389d8] renderer_type + DONE
 
-**PASSO 11 — fix aplicado 2026-05-05:**
-- Arquivo: `GOD_PC_PORT_FINAL/src/recompiled/sub_0026B6D0_0x26b6d0.cpp`
-- Causa: sub_0026B6D0 é chamada DENTRO de entry_1389d8 como PRIMEIRA função.
-  Tem 4 pontos de travamento sem IOP real (2 loops infinitos de NOPs + 2 retries infinitos de connected flag).
-- 4 fixes: 11A (v0≥0 sid=0x123456), 11B (connected flag 1), 11C (v0≥0 sid=0x123457), 11D (connected flag 2)
-- Ver análise completa em HANDOFF_AGENT.md §🧬 ANÁLISE PASSO 11
+**PASSO 11 — RESULTADO (round 2026-05-05):**
+- PASSO 11A disparou: `sub_00297290 sid=0x123456 retornou v0=1 OK` (Bug Y fix já fazia v0=1, 11A só confirmou)
+- PASSO 11C disparou: `sub_00297290 sid=0x123457 retornou v0=1 OK` (idem)
+- PASSO 11B/D NÃO dispararam: Bug Y fix seta *(s1+0x24)=1 dentro de sub_00297290, então connected flag já estava certo
+- sub_0026B6D0 PASSOU! entry_1389d8 ENTROU e procedeu até sub_0013DC78 → novo travamento ali
+
+**PASSO 12 — fix aplicado 2026-05-05:**
+- Arquivo: `GOD_PC_PORT_FINAL/src/recompiled/sub_0013DC78_0x13dc78.cpp`
+- Causa: sub_0013DC78 é um walker de fila de prioridade em lista circular duplamente encadeada.
+  Invariante: sentinela `s2->next = s2` (lista vazia). Sem IOP, s2+4 contém lixo → loop cooperativo infinito.
+  entry_1389d8 chama sub_0013DC78 DUAS vezes (a1=0x40 e a1=0x280) ANTES de chegar em renderer_type.
+- Fix: no início de sub_0013DC78, verifica se READ32(a0+4)==a0 (sentinela OK). Se não: escreve a0→(a0+4) e a0→(a0+8), forçando lista vazia. Função retorna imediatamente pela condição t0==s2 em label_13dccc.
+- Ver análise completa em HANDOFF_AGENT.md §🧬 ANÁLISE PASSO 12
 
 ---
 
