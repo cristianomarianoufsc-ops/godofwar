@@ -257,7 +257,7 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-05 — análise pós-PASSO 9A completa)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-05 — PASSO 9C adicionado)
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 ### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
@@ -267,9 +267,69 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 ### ✅ PASSO 7B — APLICADO em sub_00283570 (força sceSifSetDma retorno=1 se =0)
 ### ✅ entry_1389d8 — HOOKS ADICIONADOS (START/renderer_type/DONE)
 ### ✅ PASSO 8A — CONFIRMADO NO LOG — sub_0027A6B8 PASSO 8A disparou + sub_00297290 chamada com s1=0x2a3280 sid=0x80000593
-### ✅ PASSO 9A/9B — APLICADO (2026-05-05) em sub_00297470 — força v0=1 se func_2969D0 retornar 0
-### ✅ ANÁLISE PÓS-PASSO 9A — COMPLETA (2026-05-05) — caminho até entry_1389d8 totalmente mapeado
-### 🔴 AGUARDANDO ROUND — Push + `bash auto_round.sh full` + verificar se [PASSO 9A] dispara + [entry_1389d8] START
+### ✅ PASSO 9A/9B — APLICADO em sub_00297470 — força v0=1 se func_2969D0 retornar 0
+### ✅ PASSO 9C — APLICADO (2026-05-05) em entry_27ab00 — força v0=1 se label_27ab80 retornar s0=0
+### ✅ func_28DD70 — ANALISADA (segura: parser de format string, 2 loops de traversal com coop.Yield, termina no NULL byte)
+### ✅ ERRO DO HANDOFF ANTERIOR CORRIGIDO — "retorna s0 não-nulo" era ERRADO (s0=READ32(0x202A2900), não 0x2A2900)
+### 🔴 AGUARDANDO PUSH — 2 arquivos alterados: sub_00297470 (PASSO 9A/9B) + entry_27ab00 (PASSO 9C)
+### 🔴 APÓS PUSH — loop detecta .cpp → recompilar.sh automático → verificar [PASSO 9A] + [PASSO 9C] + [entry_1389d8] START
+
+---
+
+### 🧬 ANÁLISE PASSO 9C (2026-05-05 — sessão pós-PASSO 9A)
+
+**Erro identificado na análise anterior do HANDOFF:**
+O HANDOFF dizia "label_27ab80 → retorna s0 (ponteiro não-nulo)". Isso era ERRADO.
+Lendo o código real de `entry_27ab00_0x27abd0.cpp`:
+
+```
+label_27ab80:
+    v0 = s0 + 4           (s0 = 0x2A2900)
+    v0 = v0 | a1          (a1 = 0x20000000 do delay de bgez@27ab64)
+    v1 = s0 + 8
+    a0 = READ32(v0+0)     = READ32(0x202A2904)
+    v1 = v1 | a1
+    a1_new = s0 | a1      = 0x2A2900 | 0x20000000 = 0x202A2900
+    ...
+    jal func_293C40
+    delay: s0 = READ32(a1+0) = READ32(0x202A2900)   ← novo s0!
+
+label_27abb4:
+    v0 = s0               = READ32(0x202A2900)       ← retorno REAL
+```
+
+**READ32(0x202A2900)**: campo SIF em 0x2A2900 que NUNCA foi escrito sem IOP real → vale 0.
+Resultado: entry_27ab00 retorna v0=0 → beqz TAKEN → loop continua mesmo com PASSO 9A.
+
+**Fix PASSO 9C:** `entry_27ab00_0x27abd0.cpp`
+- Após label_27abb4 (`daddu $v0, $s0, $zero`), antes de label_27abb8
+- Se v0==0: força v0=1 + log `[PASSO 9C]`
+- **Seguro**: apenas o path de label_27ab80 chega em label_27abb4.
+  Os outros dois paths (label_27ab2c e label_27ab78) fazem `b label_27abb8`
+  incondicional, pulando completamente o label_27abb4 → PASSO 9C não afeta retornos v0=0 legítimos.
+
+**func_28DD70 analisada (chamada de entry_28a0c8):**
+- É um parser de format string (processa `%A-%Z` em strings C)
+- 2 loops de traversal char-a-char com cooperativeGuestYield
+- Termina ao encontrar NULL byte — SEGURA, não pode travar
+
+**Arquivos alterados PASSO 9A+9B+9C:**
+- `GOD_PC_PORT_FINAL/src/recompiled/sub_00297470_0x297470.cpp` — PASSO 9A/9B
+- `GOD_PC_PORT_FINAL/src/recompiled/entry_27ab00_0x27abd0.cpp` — PASSO 9C
+
+**Build necessário:**
+- `bash recompilar.sh` (recompilados — NÃO rebuild_runtime.sh)
+- O loop auto_round.sh detecta automaticamente os 2 .cpp alterados e roda recompilar.sh sozinho após Push.
+
+**O que esperar no próximo round (com PASSO 9A + 9C + todos anteriores):**
+- `[PASSO 9A] sub_00297470: func_2969D0@0x29759c retornou 0 -- forcando v0=1` → PASSO 9A disparou ✅
+- `[PASSO 9C] entry_27ab00: label_27ab80 retornou s0=0 -- forcando v0=1` → PASSO 9C disparou ✅
+- label_17bd50 SAI DO LOOP → label_17bd68 → entry_298770 → loop 8× sub_0017BBC8
+- `[sub_0027AD00] START` → func_27AD00 curto-circuita (*(0x2A32C8)=0)
+- `[PASSO 7A]` → thread forçada ✅
+- `[sub_00283570] START` → sceSifSetDma
+- `[PASSO 7B]` → fix DMA ✅
+- `[entry_1389d8] START` → **OBJETIVO PRINCIPAL** 🎯
 
 ---
 

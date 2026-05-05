@@ -476,17 +476,29 @@ Chaves:
 - `entry_27aca8` (dentro de sub_0027AD00): chama sub_00297470 (PASSO 9A covers), lê `*(0x30AC40)=0`
 - único risco residual: BBC8 interno em `label_17bc48` se `func_298F30/298D08/298910` retornar <0 e s3=1
 
-**Próximo passo (2026-05-05 — PASSO 9A/9B aplicado, análise completa):**
-1. Cris clica em **Push** no Replit
-2. **Terminal 2:** `bash auto_round.sh full` (mudou `.cpp` do jogo → full obrigatório)
-3. Verificar log: `[PASSO 9A]` disparou + label_17bd50 saiu do loop + `[entry_1389d8] START`
+**Próximo passo (2026-05-05 — PASSO 9A/9B/9C aplicados, Push pendente):**
+1. Cris clica em **Push** no Replit (2 arquivos: sub_00297470 + entry_27ab00)
+2. Loop auto_round.sh detecta .cpp alterados → roda recompilar.sh sozinho
+3. Verificar log: `[PASSO 9A]` + `[PASSO 9C]` dispararam + label_17bd50 saiu + `[entry_1389d8] START`
 4. Se travar no BBC8 interno: PASSO 10 = fix em `func_298D08` ou `func_298910`
 
 **PASSO 9A/9B — fix aplicado 2026-05-05:**
 - Arquivo: `GOD_PC_PORT_FINAL/src/recompiled/sub_00297470_0x297470.cpp`
 - Causa: func_2969D0 (sceSifCallRpc) retornava 0 → sub_00297470 retornava -2 → label_17bd50 loop eterno (ticks #120→#17940)
 - Fix: forçar v0=1 se func_2969D0 retornar 0 (PASSO 9A: @0x2975A4, PASSO 9B: @0x29760C)
-- Cadeia após fix: sub_00297470 retorna 0 → bgez em entry_27ab00 tomado → label_27ab80 → retorna s0≠0 → label_17bd50 SAI DO LOOP → label_17bd68 → func_298770 → label_17bd78 (8x sub_0017BBC8) → func_27AD00 → func_27C100 → func_283570 → entry_1389d8
+
+**PASSO 9C — fix aplicado 2026-05-05 (correção de erro do HANDOFF anterior):**
+- Arquivo: `GOD_PC_PORT_FINAL/src/recompiled/entry_27ab00_0x27abd0.cpp`
+- Erro anterior: HANDOFF dizia "label_27ab80 retorna s0 (ponteiro não-nulo)". ERRADO.
+- Causa real: em label_27abb4, `daddu $v0, $s0, $zero` onde s0=READ32(0x2A2900|0x20000000)=READ32(0x202A2900).
+  Campo nunca inicializado sem IOP → sempre 0 → entry_27ab00 retornaria v0=0 → loop continuaria.
+- Fix: após label_27abb4, se v0==0 → força v0=1. Seguro: apenas label_27ab80 chega em label_27abb4.
+- Cadeia completa com fix: sub_00297470 retorna 0 → bgez TAKEN → label_27ab80 → label_27abb4 → PASSO 9C: v0=1 → label_17bd50 SAI DO LOOP → label_17bd68 → func_298770 → label_17bd78 (8× sub_0017BBC8) → func_27AD00 → func_27C100 → func_283570 → entry_1389d8
+
+**func_28DD70 — analisada 2026-05-05:**
+- Chamada por entry_28a0c8 (no retry loop label_17bd48/label_17bd08)
+- É um parser de format string: percorre string buscando `%A-%Z`, 2 loops com cooperativeGuestYield
+- SEGURA — termina ao encontrar NULL byte, não pode travar
 
 **DESCOBERTA SESSÃO 2026-05-04 — Por que sub_00297290 não aparecia no log:**
 - GREP_PATTERN não incluía `sub_00297290|sub_0027A810|sub_0017BC80|sub_0027A6B8` → logs filtrados

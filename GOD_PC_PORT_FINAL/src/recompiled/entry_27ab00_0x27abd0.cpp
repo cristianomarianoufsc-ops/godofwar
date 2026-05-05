@@ -259,6 +259,14 @@ label_27ab80:
     // 0x27abb4: 0x200102d  daddu       $v0, $s0, $zero
     ctx->pc = 0x27abb4u;
     SET_GPR_U64(ctx, 2, (uint64_t)GPR_U64(ctx, 16) + (uint64_t)GPR_U64(ctx, 0));
+    // PASSO 9C: caminho label_27ab80 (sub_00297470 retornou v0>=0 via PASSO 9A).
+    // s0 aqui = READ32(s0_old | 0x20000000) = READ32(0x202A2900).
+    // Sem IOP real esse campo SIF nao e inicializado e vale 0 -- loop label_17bd50 nao sairia.
+    // Forca v0=1 para garantir saida do loop independente do estado de 0x202A2900.
+    if (GPR_U64(ctx, 2) == GPR_U64(ctx, 0)) {
+        std::cerr << "[PASSO 9C] entry_27ab00: label_27ab80 retornou s0=0 (READ32(0x202A2900)=0) -- forcando v0=1 para sair de label_17bd50\n";
+        SET_GPR_S32(ctx, 2, 1);
+    }
 label_27abb8:
     // 0x27abb8: 0xdfbf0040  ld          $ra, 0x40($sp)
     ctx->pc = 0x27abb8u;
