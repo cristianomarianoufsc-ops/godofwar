@@ -400,7 +400,7 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 ---
 
-## 🟢 ESTADO ATUAL — 2026-05-04: PASSO 8A aplicado em sub_0027A6B8
+## 🟢 ESTADO ATUAL — 2026-05-05: PASSO 11 aplicado em sub_0026B6D0
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 ### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
@@ -410,8 +410,19 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 ### ✅ PASSO 7A — APLICADO em sub_00294AF8 (força v3=0x10 → StartThread)
 ### ✅ PASSO 7B — APLICADO em sub_00283570 (força s0=1 → sceSifSetDma não trava)
 ### ✅ entry_1389d8 — HOOKS ADICIONADOS (START/renderer_type/DONE)
-### 🟡 PASSO 8A — APLICADO em sub_0027A6B8 (redireciona notify path para sub_00297290)
-### 🔴 AGUARDANDO ROUND — Push + bash recompilar.sh + round
+### ✅ PASSO 8A — CONFIRMADO NO LOG — sub_0027A6B8 PASSO 8A disparou
+### ✅ PASSO 9A/9B — APLICADO em sub_00297470 (força v0=1 se func_2969D0 retornar 0)
+### ✅ PASSO 9C — APLICADO em entry_27ab00 (força v0=1 se label_27ab80 retornar s0=0)
+### ✅ PASSO 11 (A+B+C+D) — APLICADO em sub_0026B6D0 (4 travamentos nos dois SIF clients)
+### 🔴 AGUARDANDO PUSH — 1 arquivo: sub_0026B6D0_0x26b6d0.cpp
+### 🔴 APÓS PUSH — loop deteca .cpp → recompilar.sh automático → verificar [PASSO 11A/B/C/D] + [entry_1389d8] renderer_type + DONE
+
+**PASSO 11 — fix aplicado 2026-05-05:**
+- Arquivo: `GOD_PC_PORT_FINAL/src/recompiled/sub_0026B6D0_0x26b6d0.cpp`
+- Causa: sub_0026B6D0 é chamada DENTRO de entry_1389d8 como PRIMEIRA função.
+  Tem 4 pontos de travamento sem IOP real (2 loops infinitos de NOPs + 2 retries infinitos de connected flag).
+- 4 fixes: 11A (v0≥0 sid=0x123456), 11B (connected flag 1), 11C (v0≥0 sid=0x123457), 11D (connected flag 2)
+- Ver análise completa em HANDOFF_AGENT.md §🧬 ANÁLISE PASSO 11
 
 ---
 

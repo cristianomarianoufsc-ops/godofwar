@@ -257,7 +257,7 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-05 — PASSO 9C adicionado)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-05 — PASSO 11 adicionado)
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 ### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
@@ -268,11 +268,79 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 ### ✅ entry_1389d8 — HOOKS ADICIONADOS (START/renderer_type/DONE)
 ### ✅ PASSO 8A — CONFIRMADO NO LOG — sub_0027A6B8 PASSO 8A disparou + sub_00297290 chamada com s1=0x2a3280 sid=0x80000593
 ### ✅ PASSO 9A/9B — APLICADO em sub_00297470 — força v0=1 se func_2969D0 retornar 0
-### ✅ PASSO 9C — APLICADO (2026-05-05) em entry_27ab00 — força v0=1 se label_27ab80 retornar s0=0
-### ✅ func_28DD70 — ANALISADA (segura: parser de format string, 2 loops de traversal com coop.Yield, termina no NULL byte)
-### ✅ ERRO DO HANDOFF ANTERIOR CORRIGIDO — "retorna s0 não-nulo" era ERRADO (s0=READ32(0x202A2900), não 0x2A2900)
-### 🔴 AGUARDANDO PUSH — 2 arquivos alterados: sub_00297470 (PASSO 9A/9B) + entry_27ab00 (PASSO 9C)
-### 🔴 APÓS PUSH — loop detecta .cpp → recompilar.sh automático → verificar [PASSO 9A] + [PASSO 9C] + [entry_1389d8] START
+### ✅ PASSO 9C — APLICADO em entry_27ab00 — força v0=1 se label_27ab80 retornar s0=0
+### ✅ PASSO 11 (A+B+C+D) — APLICADO em sub_0026B6D0 — ver análise abaixo
+### ✅ func_28DD70 — ANALISADA (segura: parser de format string)
+### 🔴 AGUARDANDO PUSH — 1 arquivo alterado: sub_0026B6D0_0x26b6d0.cpp (PASSO 11)
+### 🔴 APÓS PUSH — loop detecta .cpp → recompilar.sh automático → verificar [PASSO 11A/11B/11C/11D] + [entry_1389d8] renderer_type + DONE
+
+---
+
+### 🧬 ANÁLISE PASSO 11 (2026-05-05 — sessão pós-PASSO 9C confirmado)
+
+**Travamento identificado:** `sub_0026B6D0_0x26b6d0.cpp` — chamada DENTRO de `entry_1389d8` como PRIMEIRA função (linha 60 de entry_1389d8_0x138cb0.cpp). Isso explica por que `[entry_1389d8] START` aparece mas `[entry_1389d8] renderer_type=` NÃO aparece no log.
+
+**Cadeia completa identificada:**
+```
+sub_00138D48 JAL[8/11] → sub_0017BC80
+  → sub_00283570 (PASSO 7B) → retorna
+  → entry_1389d8 → sub_0026B6D0 ← TRAVA AQUI
+```
+
+**Estrutura de sub_0026B6D0 — 6 loops cooperativos:**
+```
+BLOCO 1: SIF client sid=0x123456
+  label_26b778: sub_00297290(a0=0x3055C8, a1=0x123456) → RPC_BIND sid=22
+    if v0 >= 0 → label_26b7cc (OK)
+    if v0 < 0  → entry_28a0c8 (error log) → label_26b7b0 ← LOOP INFINITO (NOPs)
+  label_26b7cc:
+    v1=9999, v0=-1
+    label_26b7d8: bne v1,v0 → v1-- + coop.Yield → (9998 iters, ~finito)
+    READ32(0x3055C8+0x24) → "connected flag"
+    if == 0 → goto label_26b778 (retry infinito)
+    if != 0 → label_26b828
+
+BLOCO 2: SIF client sid=0x123457
+  label_26b828: sub_00297290(a0=0x30A200, a1=0x123457) → RPC_BIND sid=23
+    if v0 >= 0 → label_26b87c (OK)
+    if v0 < 0  → entry_28a0c8 (error log) → label_26b860 ← LOOP INFINITO (NOPs)
+  label_26b87c:
+    v1=9999, v0=-1
+    label_26b888: bne v1,v0 → v1-- + coop.Yield → (9998 iters, ~finito)
+    READ32(0x30A200+0x24) → "connected flag"
+    if == 0 → goto label_26b828 (retry infinito)
+    if != 0 → sub_0026BF28 → RETURN
+```
+
+**4 pontos de travamento sem IOP real:**
+1. `bgez $v0 @label_26b78c` → v0<0 (sub_00297290 sid=0x123456 falha) → label_26b7b0 (loop ∞)
+2. `beqz $v0 @label_26b7fc` → *(0x3055C8+0x24)=0 (sem IOP, campo nunca escrito) → retry ∞
+3. `bgez $v0 @label_26b83c` → v0<0 (sub_00297290 sid=0x123457 falha) → label_26b860 (loop ∞)
+4. `beqz $v0 @label_26b8ac` → *(0x30A200+0x24)=0 (sem IOP, campo nunca escrito) → retry ∞
+
+**4 fixes aplicados em sub_0026B6D0_0x26b6d0.cpp:**
+- **PASSO 11A** (linha ~219): força v0=0 se sub_00297290(0x123456) retornar v0<0 → vai para label_26b7cc em vez de label_26b7b0
+- **PASSO 11B** (linha ~356): força v0=1 se READ32(0x3055C8+0x24)==0 → sai do retry → vai para label_26b828
+- **PASSO 11C** (linha ~439): força v0=0 se sub_00297290(0x123457) retornar v0<0 → vai para label_26b87c em vez de label_26b860
+- **PASSO 11D** (linha ~576): força v0=1 se READ32(0x30A200+0x24)==0 → sai do retry → vai para sub_0026BF28 → RETURN
+
+**Arquivo alterado:** `GOD_PC_PORT_FINAL/src/recompiled/sub_0026B6D0_0x26b6d0.cpp`
+**Build necessário:** `bash recompilar.sh` (o loop auto_round.sh detecta .cpp alterado e roda sozinho após Push)
+
+**O que esperar no próximo round (com PASSO 11 + todos anteriores):**
+- `[PASSO 11A] sub_00297290 sid=0x123456 retornou v0=<N> < 0, forcando 0` → 11A disparou ✅
+- `[PASSO 11B] connected flag 1 (0x3055C8+0x24) = 0` → valor confirmado ✅
+- `[PASSO 11B] forcando v0=1 (connected)` → 11B disparou ✅
+- `[PASSO 11C] sub_00297290 sid=0x123457 retornou v0=<N> < 0, forcando 0` → 11C disparou ✅
+- `[PASSO 11D] connected flag 2 (0x30A200+0x24) = 0` → valor confirmado ✅
+- `[PASSO 11D] forcando v0=1 (connected)` → 11D disparou ✅
+- sub_0026B6D0 retorna → entry_1389d8 continua → **`[entry_1389d8] renderer_type=0x...`** 🎯
+- **`[entry_1389d8] DONE`** → sub_0017BC80 retorna → JAL[9/11], [10/11], [11/11] em sub_00138D48
+
+**Próximo candidato a travar após PASSO 11:**
+- `sub_0013DC78` — tem loop cooperativo em `label_13dcd8` (goto label_13dcd8 com cooperativeGuestYield), chamado múltiplas vezes dentro de entry_1389d8 APÓS func_17AA78 (renderer_type)
+- entry_1389d8 também tem 2 loops cooperativos próprios: `label_138ba0` e `label_138c28` — mas esses são loops de iteração finita (contador s2 < *(s4+0) iterações) — provavelmente seguros
+- JAL[9/11]=`0x17a940`, [10/11]=`0x17aa18`, [11/11]=`0x17a9b0` em sub_00138D48 — ainda não analisados
 
 ---
 

@@ -213,6 +213,16 @@ label_26b778:
         if (ctx->pc != 0x26B78Cu) { return; }
     }
     ctx->pc = 0x26B78Cu;
+    // PASSO 11A: sub_00297290(sid=0x123456) — sem IOP real retorna v0<0, forcamos 0
+    {
+        int32_t _v0_11a = GPR_S32(ctx, 2);
+        if (_v0_11a < 0) {
+            std::cerr << "[PASSO 11A] sub_00297290 sid=0x123456 retornou v0=" << _v0_11a << " < 0, forcando 0\n";
+            SET_GPR_S32(ctx, 2, 0);
+        } else {
+            std::cerr << "[PASSO 11A] sub_00297290 sid=0x123456 retornou v0=" << _v0_11a << " OK\n";
+        }
+    }
     // 0x26b78c: 0x441000f  bgez        $v0, . + 4 + (0xF << 2)
     ctx->pc = 0x26B78Cu;
     {
@@ -340,6 +350,14 @@ label_26b7d8:
     // 0x26b7f8: 0x8c420024  lw          $v0, 0x24($v0)
     ctx->pc = 0x26b7f8u;
     SET_GPR_S32(ctx, 2, (int32_t)READ32(ADD32(GPR_U32(ctx, 2), 36)));
+    // PASSO 11B: connected flag 1 (0x3055C8+0x24) — sem IOP fica 0, forcamos 1
+    {
+        std::cerr << "[PASSO 11B] connected flag 1 (0x3055C8+0x24) = " << GPR_S32(ctx, 2) << "\n";
+        if (GPR_S32(ctx, 2) == 0) {
+            std::cerr << "[PASSO 11B] forcando v0=1 (connected)\n";
+            SET_GPR_S32(ctx, 2, 1);
+        }
+    }
     // 0x26b7fc: 0x1040ffde  beqz        $v0, . + 4 + (-0x22 << 2)
     ctx->pc = 0x26B7FCu;
     {
@@ -415,6 +433,16 @@ label_26b828:
         if (ctx->pc != 0x26B83Cu) { return; }
     }
     ctx->pc = 0x26B83Cu;
+    // PASSO 11C: sub_00297290(sid=0x123457) — sem IOP real retorna v0<0, forcamos 0
+    {
+        int32_t _v0_11c = GPR_S32(ctx, 2);
+        if (_v0_11c < 0) {
+            std::cerr << "[PASSO 11C] sub_00297290 sid=0x123457 retornou v0=" << _v0_11c << " < 0, forcando 0\n";
+            SET_GPR_S32(ctx, 2, 0);
+        } else {
+            std::cerr << "[PASSO 11C] sub_00297290 sid=0x123457 retornou v0=" << _v0_11c << " OK\n";
+        }
+    }
     // 0x26b83c: 0x441000f  bgez        $v0, . + 4 + (0xF << 2)
     ctx->pc = 0x26B83Cu;
     {
@@ -542,6 +570,14 @@ label_26b888:
     // 0x26b8a8: 0x8c420024  lw          $v0, 0x24($v0)
     ctx->pc = 0x26b8a8u;
     SET_GPR_S32(ctx, 2, (int32_t)READ32(ADD32(GPR_U32(ctx, 2), 36)));
+    // PASSO 11D: connected flag 2 (0x30A200+0x24) — sem IOP fica 0, forcamos 1
+    {
+        std::cerr << "[PASSO 11D] connected flag 2 (0x30A200+0x24) = " << GPR_S32(ctx, 2) << "\n";
+        if (GPR_S32(ctx, 2) == 0) {
+            std::cerr << "[PASSO 11D] forcando v0=1 (connected)\n";
+            SET_GPR_S32(ctx, 2, 1);
+        }
+    }
     // 0x26b8ac: 0x1040ffde  beqz        $v0, . + 4 + (-0x22 << 2)
     ctx->pc = 0x26B8ACu;
     {
