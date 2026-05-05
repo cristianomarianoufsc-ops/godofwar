@@ -417,6 +417,14 @@ label_29757c:
         if (ctx->pc != 0x2975A4u) { return; }
     }
     ctx->pc = 0x2975A4u;
+    // PASSO 9A: func_2969D0 (sceSifCallRpc) retornou 0 (sem IOP real).
+    // No PS2, retorno != 0 = RPC enfileirado com sucesso -> bnez tomado -> retorna 0 (OK).
+    // Retorno == 0 = falha -> label_29761c -> cleanup -> retorna -2 -> entry_27ab00 retorna 0 -> loop eterno.
+    // Fix: forcar v0=1 para simular RPC enfileirado.
+    if (GPR_U64(ctx, 2) == GPR_U64(ctx, 0)) {
+        std::cerr << "[PASSO 9A] sub_00297470: func_2969D0@0x29759c retornou 0 -- forcando v0=1 (bnez tomado -> retorna 0=OK -> entry_27ab00 sai do loop)\n";
+        SET_GPR_S32(ctx, 2, 1);
+    }
     // 0x2975a4: 0x14400026  bnez        $v0, . + 4 + (0x26 << 2)
     ctx->pc = 0x2975A4u;
     {
@@ -576,6 +584,12 @@ label_2975e8:
         if (ctx->pc != 0x29760Cu) { return; }
     }
     ctx->pc = 0x29760Cu;
+    // PASSO 9B: segunda chamada de func_2969D0 (path com sema, bit0 de fp=1).
+    // Mesmo padrao do PASSO 9A: retorno 0 = falha -> fix forcando v0=1.
+    if (GPR_U64(ctx, 2) == GPR_U64(ctx, 0)) {
+        std::cerr << "[PASSO 9B] sub_00297470: func_2969D0@0x297604 retornou 0 -- forcando v0=1 (bnez tomado -> label_29762c -> func_293C60 -> OK)\n";
+        SET_GPR_S32(ctx, 2, 1);
+    }
     // 0x29760c: 0x14400007  bnez        $v0, . + 4 + (0x7 << 2)
     ctx->pc = 0x29760Cu;
     {

@@ -257,7 +257,7 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-04 — PASSO 8A aplicado)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-05 — PASSO 9A/9B aplicado)
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 ### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
@@ -266,9 +266,57 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 ### ✅ PASSO 7A — APLICADO em sub_00294AF8 (força StartThread da Thread 0x27CBD0)
 ### ✅ PASSO 7B — APLICADO em sub_00283570 (força sceSifSetDma retorno=1 se =0)
 ### ✅ entry_1389d8 — HOOKS ADICIONADOS (START/renderer_type/DONE)
-### 🟡 PASSO 8A — APLICADO em sub_0027A6B8 (redireciona "notify path" para sub_00297290)
-### 🔴 CAUSA RAIZ RESOLVIDA — sub_0027A6B8(a0=0x27) tomava "notify path" (*(0x2A172C)!=0 + notify=1 → func_2963C0 → v0=0) sem nunca chamar sub_00297290
-### 🔴 AGUARDANDO ROUND — Push + bash recompilar.sh + round + ver [PASSO 8A] + [sub_0027C100]
+### ✅ PASSO 8A — CONFIRMADO NO LOG — sub_0027A6B8 PASSO 8A disparou + sub_00297290 chamada com s1=0x2a3280 sid=0x80000593
+### ✅ PASSO 9A/9B — APLICADO (2026-05-05) em sub_00297470 — força v0=1 se func_2969D0 retornar 0
+### 🔴 CAUSA RAIZ RESOLVIDA (PASSO 9A) — sub_00297470 chamava func_2969D0 (sceSifCallRpc) que retornava 0 → sub_00297470 retornava -2 → entry_27ab00 retornava 0 → label_17bd50 em sub_0017BC80 ficava em loop eterno (cooperativeGuestYield tick #120→#17940)
+### 🔴 AGUARDANDO ROUND — Push + bash recompilar.sh + round + ver [PASSO 9A] + label_17bd68 avançar
+
+---
+
+### 🧬 ANÁLISE PASSO 9A (2026-05-05 — round com PASSO 8A confirmado)
+
+**Log do round confirmado (PASSO 8A funcionou):**
+- `[PASSO 8A] sub_0027A6B8: notify path apos func_2963C0 -- redirecionando para sub_00297290` ✅
+- `[sub_00297290] START a0(s1)=0x2a3280 a1(s3)=0x80000593` ✅
+- Bug Y + PASSO 6 → sub_00297290 retorna v0=1 ✅
+- Após isso: só VBlank tick #120→#17940 → **loop silencioso em label_17bd50**
+
+**Causa raiz identificada via leitura estática do log + código:**
+```
+sub_0017BC80: s1=0 → label_17bd50 (loop)
+  → entry_27ab00(a0=0x3053E4, a1=0x3053E8) [func_27AB00]
+    → sub_0027A6B8(0x27) → PASSO 8A → sub_00297290 → v0=1
+    → label_27ab34: sub_00297470(a0=0x2A3280, a1=0x27, a2=0, ...)
+      → func_296E10(0x3302C0) → slot livre (s0≠0) ✅
+      → bit1(fp=0)=0 → path direto: func_2969D0(a0=0x8000000A) ← sceSifCallRpc
+      → func_2969D0 retorna 0 (sem IOP real) ← RAIZ
+      → bnez NÃO tomado → label_29761c → func_296EB8 (libera slot) → retorna v0=-2
+    → bgez NOT taken (v0=-2<0) → func_293C40 → retorna v0=0
+  → beqz v0=0 tomado → coop.Yield → LOOP ETERNO
+```
+
+**Fix PASSO 9A (+ 9B):** `sub_00297470_0x297470.cpp`
+- Após func_2969D0 retornar (pc=0x2975A4): se v0==0 → forçar v0=1
+  → bnez tomado → delay slot seta v0=0 → label_297640 → retorna v0=0 (OK)
+  → bgez em entry_27ab00 tomado → label_27ab80 → retorna s0 (ponteiro não-nulo)
+  → beqz em label_17bd50 NÃO tomado → SAI DO LOOP → label_17bd68 ✅
+- PASSO 9B (backup): mesma lógica para segunda chamada de func_2969D0@0x297604 (path com sema, bit0 de fp=1)
+
+**Arquivo alterado PASSO 9A/9B:**
+- `GOD_PC_PORT_FINAL/src/recompiled/sub_00297470_0x297470.cpp` — após linha ctx->pc=0x2975A4u e ctx->pc=0x29760Cu
+
+**Build necessário PASSO 9A:**
+- `bash recompilar.sh` (arquivo recompilado — NÃO rebuild_runtime.sh)
+
+**O que esperar no próximo round (com PASSO 9A + todos anteriores):**
+- `[PASSO 9A] sub_00297470: func_2969D0@0x29759c retornou 0 -- forcando v0=1` → PASSO 9A disparou ✅
+- label_17bd50 SAI DO LOOP → label_17bd68 → entry_298770 → loop 8x sub_0017BBC8
+- `[sub_0027AD00] START` (se houver hook) → func_27AD00
+- `[sub_0027C100] START` (se houver hook) → CreateThread
+- `[PASSO 7A]` → thread forçada ✅
+- `[sub_00283570] START` → sceSifSetDma
+- `[PASSO 7B]` → se sceSifSetDma retornar 0 ✅
+- `[entry_1389d8] START` → **OBJETIVO PRINCIPAL** 🎯
 
 ---
 
