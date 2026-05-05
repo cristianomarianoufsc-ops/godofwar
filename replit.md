@@ -400,7 +400,7 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 
 ---
 
-## 🟢 ESTADO ATUAL — 2026-05-05: PASSO 13 aplicado em sub_0017AA18
+## 🟢 ESTADO ATUAL — 2026-05-05: PASSO 14 + 14B aplicados (sub_0026BF28 + sub_0026BC40)
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 ### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
@@ -416,8 +416,21 @@ Quando o programa termina, grava relatório em `./ps2_missing.log` (ou `PS2_MISS
 ### ✅ PASSO 11 (A+B+C+D) — CONFIRMADO: 11A/11C dispararam, 11B/11D não precisaram (Bug Y já setou *(s1+0x24)=1)
 ### ✅ PASSO 12 — APLICADO em sub_0013DC78 (inicializa sentinela de fila de prioridade circular)
 ### ✅ PASSO 13 — APLICADO em sub_0017AA18 (força READ32(0x29C4D8)=1 para bypassar spin-loop de renderer/GS)
-### 🔴 AGUARDANDO PUSH — 2 arquivos: sub_0013DC78_0x13dc78.cpp (P12) + sub_0017AA18_0x17aa18.cpp (P13)
-### 🔴 APÓS PUSH — loop detecta .cpp → recompilar.sh automático → verificar [PASSO 12]+[PASSO 13]+[entry_1389d8] renderer_type + DONE
+### ✅ PASSO 14 — APLICADO em sub_0026BF28 label_26c008 (força 0x2A1338=0 — libera loop IOP fila módulo)
+### ✅ PASSO 14B — APLICADO em sub_0026BC40 (simula IOP DMA: 0xFFFFFFFF em queue+0/+8, zera 0x2A1338)
+### 🔴 AGUARDANDO PUSH — 4 arquivos alterados:
+###   sub_0013DC78_0x13dc78.cpp (P12), sub_0017AA18_0x17aa18.cpp (P13),
+###   sub_0026BF28_0x26bf28.cpp (P14), sub_0026BC40_0x26bc40.cpp (P14B)
+### 🔴 APÓS PUSH → recompilar.sh automático → verificar P12+P13+P14+P14B + [entry_1389d8] renderer_type + DONE
+
+**PASSO 14 — bloqueio identificado 2026-05-05:**
+- `sub_0026BF28` → `label_26c008`: `READ32(0x2A1338) != 0` → entra em `label_26c018` (cooperativeGuestYield loop eterno)
+- `0x2A1338` = fila SIF/IOP de módulos. No PS2 real o IOP zera após processar; sem IOP nunca zera.
+- Fix PASSO 14: força `v0=0` e `WRITE32(0x2A1338,0)` → `beqz` tomado → `label_26c034` (path de sucesso)
+- Fix PASSO 14B em `sub_0026BC40`: após sub_0026BC40 re-setar `0x2A1338=0x305600`, simula DMA IOP:
+  `WRITE32(queue+0, 0xFFFFFFFF)` + `WRITE32(queue+8, 0xFFFFFFFF)` + `WRITE32(0x2A1338, 0)` →
+  `sub_0026BB98` vê `0x2A1338=0` → retorna `v0=1` → `label_26c0e0` loop sai.
+- Análise completa: `HANDOFF_AGENT.md §🧬 ANÁLISE PASSO 14 + 14B`
 
 **PASSO 11 — RESULTADO (round 2026-05-05):**
 - PASSO 11A disparou: `sub_00297290 sid=0x123456 retornou v0=1 OK` (Bug Y fix já fazia v0=1, 11A só confirmou)

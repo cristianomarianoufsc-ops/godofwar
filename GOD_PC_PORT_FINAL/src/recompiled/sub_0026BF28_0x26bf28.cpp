@@ -290,6 +290,20 @@ label_26c008:
     // 0x26c008: 0x8e021338  lw          $v0, 0x1338($s0)
     ctx->pc = 0x26c008u;
     SET_GPR_S32(ctx, 2, (int32_t)READ32(ADD32(GPR_U32(ctx, 16), 4920)));
+    // [PASSO 14] 0x2A1338 e a fila IOP de modulos — sem IOP real nunca e zerada.
+    // O loop label_26c018 espera 0x2A1338==0; sem bypass => loop infinito.
+    // Forcamos 0x2A1338=0 aqui para liberar o caminho label_26c034 (sub_0026BC40).
+    {
+        uint32_t _v0_1338 = GPR_U32(ctx, 2);
+        if (_v0_1338 != 0) {
+            std::cerr << "[PASSO 14] sub_0026BF28: 0x2A1338=0x" << std::hex << _v0_1338
+                      << " != 0 — forcando 0 (IOP fila-modulo simulada, libera label_26c034)\n";
+            WRITE32(ADD32(GPR_U32(ctx, 16), 4920), 0u);
+            SET_GPR_S32(ctx, 2, 0);
+        } else {
+            std::cerr << "[PASSO 14] sub_0026BF28: 0x2A1338=0 ja OK\n";
+        }
+    }
     // 0x26c00c: 0x10400009  beqz        $v0, . + 4 + (0x9 << 2)
     ctx->pc = 0x26C00Cu;
     {

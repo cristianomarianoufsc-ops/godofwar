@@ -110,6 +110,23 @@ void sub_0026BC40_0x26bc40(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         if (ctx->pc == __entryPc) { ctx->pc = 0x26BC90u; }
         if (ctx->pc != 0x26BC90u) { return; }
     }
+    // [PASSO 14B] Simula IOP/DMA completando instantaneamente.
+    // No PS2 real: IOP escreveria 0xFFFFFFFF em queue_entry+0 e +8, depois zeraria 0x2A1338.
+    // Sem IOP real, sub_0026BB98 veria 0x305600+0=0 (!=0xFFFFFFFF) e ficaria em loop eterno.
+    // Aqui lemos 0x2A1338 para saber qual entrada está na fila, escrevemos as sentinelas
+    // e zeramos 0x2A1338 — sub_0026BB98 encontrará tudo pronto e retornará v0=1 (OK).
+    {
+        uint32_t _q14b = (uint32_t)READ32(0x2A0000u + 0x1338u);
+        if (_q14b != 0u) {
+            std::cerr << "[PASSO 14B] sub_0026BC40: IOP DMA simulado — queue=0x" << std::hex << _q14b
+                      << " — escrevendo 0xFFFFFFFF em +0 e +8, zerando 0x2A1338\n";
+            WRITE32(_q14b + 0u, 0xFFFFFFFFu);
+            WRITE32(_q14b + 8u, 0xFFFFFFFFu);
+            WRITE32(0x2A0000u + 0x1338u, 0u);
+        } else {
+            std::cerr << "[PASSO 14B] sub_0026BC40: 0x2A1338 ja zero — sem acao\n";
+        }
+    }
     ctx->pc = 0x26BC90u;
     // 0x26bc90: 0x7bb00020  lq          $s0, 0x20($sp)
     ctx->pc = 0x26bc90u;

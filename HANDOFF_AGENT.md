@@ -257,7 +257,7 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-05 — PASSO 13 adicionado)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-05 — PASSO 14 + 14B adicionados)
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 ### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
@@ -273,8 +273,14 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 ### ✅ func_28DD70 — ANALISADA (segura: parser de format string)
 ### ✅ PASSO 12 — APLICADO em sub_0013DC78 (inicializa sentinela da fila de prioridade circular)
 ### ✅ PASSO 13 — APLICADO em sub_0017AA18 (força flag renderer/GS em 0x29C4D8 para bypassar spin-loop)
-### 🔴 AGUARDANDO PUSH — 2 arquivos alterados: sub_0013DC78_0x13dc78.cpp (P12) + sub_0017AA18_0x17aa18.cpp (P13)
-### 🔴 APÓS PUSH — loop detecta .cpp → recompilar.sh automático → verificar [PASSO 12] + [PASSO 13] + [entry_1389d8] renderer_type + DONE
+### ✅ PASSO 14 — APLICADO em sub_0026BF28 (força 0x2A1338=0 em label_26c008 — libera loop infinito IOP fila módulo)
+### ✅ PASSO 14B — APLICADO em sub_0026BC40 (simula IOP DMA completo — escreve 0xFFFFFFFF em queue+0/+8, zera 0x2A1338)
+### 🔴 AGUARDANDO PUSH — 4 arquivos alterados:
+###   - sub_0013DC78_0x13dc78.cpp (P12)
+###   - sub_0017AA18_0x17aa18.cpp (P13)
+###   - sub_0026BF28_0x26bf28.cpp (P14)
+###   - sub_0026BC40_0x26bc40.cpp (P14B)
+### 🔴 APÓS PUSH — loop detecta .cpp → recompilar.sh automático → verificar P12+P13+P14+P14B + [entry_1389d8] renderer_type + DONE
 
 ---
 
@@ -409,6 +415,85 @@ entry_1389d8 escreve v0 em `*(s1-0x41B4)` (1ª chamada) e prossegue para a 2ª c
 
 **Arquivo alterado:** `GOD_PC_PORT_FINAL/src/recompiled/sub_0013DC78_0x13dc78.cpp`
 **Build:** `bash recompilar.sh` (loop auto_round.sh detecta .cpp alterado automaticamente após Push)
+
+---
+
+### 🧬 ANÁLISE PASSO 14 + 14B (2026-05-05 — sessão pós-PASSO 12+13 aplicados)
+
+**Contexto:** Após PASSO 13 (bloqueio de sub_0017AA18), a análise revelou que sub_0026BF28 (chamada por sub_0026B6D0 após PASSO 11D) tem um loop infinito em `label_26c018` aguardando `READ32(0x2A1338)==0`.
+
+**Bloqueio confirmado:** `sub_0026BF28` → `label_26c008` → `READ32(0x2A1338)` → se != 0 → `label_26c018` loop com `cooperativeGuestYield` → **LOOP INFINITO**.
+
+**0x2A1338 = fila SIF/IOP de módulos em carregamento:**
+- No PS2 real: IOP enfileira módulo → `0x2A1338 = ptr_do_módulo`, IOP termina → `0x2A1338 = 0`
+- Sem IOP real: `0x2A1338` permanece != 0 (setado por run anterior de sub_0026BC40 ou path anterior)
+
+**PASSO 14 — fix em `sub_0026BF28_0x26bf28.cpp` (label_26c008):**
+```cpp
+// Logo após READ32(0x2A1338) → v0, antes do beqz:
+uint32_t _v0_1338 = GPR_U32(ctx, 2);
+if (_v0_1338 != 0) {
+    std::cerr << "[PASSO 14] sub_0026BF28: 0x2A1338=0x" << std::hex << _v0_1338
+              << " != 0 — forcando 0 (IOP fila-modulo simulada, libera label_26c034)\n";
+    WRITE32(ADD32(GPR_U32(ctx, 16), 4920), 0u);  // 0x2A0000 + 0x1338
+    SET_GPR_S32(ctx, 2, 0);
+}
+```
+Com v0=0, o `beqz $v0` é tomado → `label_26c034` → chama `sub_0026BC40`. ✅
+
+**PASSO 14B — fix em `sub_0026BC40_0x26bc40.cpp` (após 2× sub_00294460):**
+```
+sub_0026BC40 enfileira o módulo:
+  WRITE32(0x2A133C, 1)            ← count
+  WRITE32(0x305600, 0)            ← zera buffer
+  WRITE32(0x2A1338, 0x305600)     ← ptr != 0 de NOVO!
+  calls sub_00294460 ×2           ← setup DMA
+```
+Sem IOP, `sub_0026BB98` (chamada no loop `label_26c0e0` de sub_0026BF28) vê `0x2A1338=0x305600` e verifica `READ32(0x305600)==0xFFFFFFFF` — que nunca ocorre → loop infinito.
+
+**Fix PASSO 14B** (logo após as 2× chamadas de sub_00294460):
+```cpp
+uint32_t _q14b = READ32(0x2A0000u + 0x1338u);
+if (_q14b != 0u) {
+    WRITE32(_q14b + 0u, 0xFFFFFFFFu);  // sentinel "DMA done"
+    WRITE32(_q14b + 8u, 0xFFFFFFFFu);  // sentinel secundário
+    WRITE32(0x2A0000u + 0x1338u, 0u);  // dequeue
+}
+```
+Com `0x2A1338=0`, `sub_0026BB98` vê `READ32(0x2A1338)=0` → retorna `v0=1` imediatamente → `label_26c0e0` loop sai. ✅
+
+**Fluxo completo pós-PASSO 14+14B:**
+```
+sub_0026BF28:
+  label_26c008 → PASSO 14 → 0x2A1338=0 → label_26c034
+  sub_0026BC40 → enfileira módulo + PASSO 14B → simula DMA → 0x2A1338=0
+  label_26c06c → entry_297670(0x3055C8) → v0=0 (OK, SIF conectado) → continua
+  label_26c07c → s1=8 != 0 → entry_297470(0x3055C8, ...) → (retorno ignorado)
+  label_26c0e0 → sub_0026BB98 → 0x2A1338=0 → v0=1 → loop SAI
+  label_26c0f0 → código pós-loop → return sub_0026BF28
+
+sub_0026B6D0 → retorna para entry_1389d8
+entry_1389d8 → sub_0013DC78 (×2, PASSO 12) → renderer_type → DONE
+```
+
+**Logs esperados no próximo round:**
+```
+[PASSO 14] sub_0026BF28: 0x2A1338=0x... != 0 — forcando 0 (IOP fila-modulo simulada, libera label_26c034)
+[PASSO 14B] sub_0026BC40: IOP DMA simulado — queue=0x305600 — escrevendo 0xFFFFFFFF em +0 e +8, zerando 0x2A1338
+[PASSO 12] sub_0013DC78: ...  (×2)
+[entry_1389d8] renderer_type=0x...  ← MARCO CRÍTICO
+[entry_1389d8] DONE
+[PASSO 13] sub_0017AA18: READ32(0x29C4D8)=0 — forcando flag=1
+```
+
+**Arquivos alterados:**
+- `GOD_PC_PORT_FINAL/src/recompiled/sub_0026BF28_0x26bf28.cpp` (PASSO 14)
+- `GOD_PC_PORT_FINAL/src/recompiled/sub_0026BC40_0x26bc40.cpp` (PASSO 14B)
+
+**Possíveis bloqueios APÓS PASSO 14+14B:**
+- `entry_297470`: chama `sub_00296E10`(0x3292C0) → se retornar 0 → entry_297470 retorna -1. Mas retorno de entry_297470 é IGNORADO por sub_0026BF28 (vai direto para label_26c0e0). Seguro. ✅
+- `label_138ba0` / `label_138c28` em entry_1389d8: loops de contador finito (sltu s2 < *(s4+0)) — NÃO são IOP-wait. Seguros. ✅
+- Próximo candidato após entry_1389d8 DONE: JAL[9/11]=sub_0017A940, [10/11]=sub_0017AA18 (PASSO 13), [11/11]=sub_0017A9B0 em sub_00138D48.
 
 ---
 
