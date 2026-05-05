@@ -531,6 +531,14 @@ label_26c06c:
         if (ctx->pc != 0x26C074u) { return; }
     }
     ctx->pc = 0x26C074u;
+    // [PASSO 18] entry_297670(0x3055C8) verifica bit "SIF RPC pending" em *(READ32(0x3055C8)+0x10).
+    // Sem IOP real o pedido RPC nunca completa: bit fica 1 para sempre → loop eterno label_26c06c.
+    // Mesmo mecanismo do PASSO 16 (sub_0026C4B8): forcamos v0=0 (not busy) para desbloquear.
+    if (GPR_U64(ctx, 2) != 0) {
+        std::cerr << "[PASSO 18] sub_0026BF28: label_26c06c entry_297670(0x3055C8) retornou v0="
+                  << GPR_U32(ctx, 2) << " (SIF RPC busy) — forcando v0=0 (IOP RPC done simulado)\n";
+        SET_GPR_U64(ctx, 2, 0);
+    }
     // 0x26c074: 0x1440fff4  bnez        $v0, . + 4 + (-0xC << 2)
     ctx->pc = 0x26C074u;
     {

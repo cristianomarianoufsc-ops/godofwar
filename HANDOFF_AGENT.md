@@ -257,7 +257,7 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-05 — PASSO 17 aplicado)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-05 — PASSO 18 aplicado)
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 ### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
@@ -275,21 +275,21 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 ### ✅ PASSO 13 — APLICADO em sub_0017AA18 (força flag renderer/GS em 0x29C4D8 para bypassar spin-loop)
 ### ✅ PASSO 14 — CONFIRMADO NO LOG: "0x2A1338=0 ja OK"
 ### ✅ PASSO 14B — CONFIRMADO NO LOG: "IOP DMA simulado — queue=0x305600 — escrevendo 0xFFFFFFFF"
-### ✅ PASSO 15/15B/15C — DIAGNÓSTICOS escritos (sub_0026BF28 e entry_1389d8 — aguardam disparo pós P17)
+### ✅ PASSO 15/15B/15C — DIAGNÓSTICOS escritos (sub_0026BF28 — aguardam disparo pós P18)
 ### ✅ PASSO 16 — FIX em sub_0026C4B8 label_26c530: força v0=0 após entry_297670 retornar !=0
 ### ✅ PASSO 17 — FIX em sub_0026BB98: stub retorna v0=1 imediatamente (IOP módulo pronto simulado)
-### 🔴 AGUARDANDO ROUND — 3 arquivos alterados neste ciclo:
-###   - sub_0026BB98_0x26bb98.cpp (P17)
-###   - auto_round.sh (GREP_PATTERN expandido: PASSO 14-17, sub_0026BB98)
-###   - recompilar.sh (janela git log -5 → -10, log de touch explícito)
+### ✅ PASSO 18 — FIX em sub_0026BF28 label_26c06c: força v0=0 após entry_297670(0x3055C8) retornar !=0
+### 🔴 AGUARDANDO ROUND — 2 arquivos alterados neste ciclo:
+###   - sub_0026BF28_0x26bf28.cpp (P18 — novo bloqueador em label_26c06c)
+###   - auto_round.sh (GREP_PATTERN: +PASSO 18)
 ### 🔴 PRÓXIMO PASSO: bash auto_round.sh full no PC do Cris
-### ⚠️  POR QUE PASSO 17 NÃO COMPILOU NO ROUND ANTERIOR:
-###   O loop rodou detectando commit de docs (analisa_round.py) — diff vs PASSO-17-commit
-###   não mostrava nenhum .cpp em GOD_PC_PORT_FINAL/src/recompiled/ → RECOMPILAR_ANTES=0
-###   → recompilar.sh não rodou → binário velho (sem PASSO 17) foi usado.
-###   Fix aplicado: recompilar.sh agora olha últimos 10 commits (antes 5).
 ### 🔴 APÓS ROUND → verificar:
-###   [PASSO 17] + [PASSO 15] + [PASSO 15B] + [PASSO 15C] + [PASSO 16] + [renderer_type] + [DONE]
+###   [PASSO 18] + [PASSO 17] + [PASSO 15] + [PASSO 15B] + [PASSO 15C] + [PASSO 16] + [renderer_type] + [DONE]
+### ⚠️  BLOQUEADOR ATUAL IDENTIFICADO NO ROUND ANTERIOR:
+###   entry_297670(0x3055C8) em label_26c06c retorna v0=1 (SIF RPC busy).
+###   Bit "pending" em *(READ32(0x3055C8)+0x10) fica 1 para sempre sem IOP real.
+###   sub_0026BF28 fazia loop cooperativo (cooperativeGuestYield + goto label_26c048) eternamente.
+###   VBlank chegava até tick #17940 (timeout), jogo não avançava.
 
 ---
 
