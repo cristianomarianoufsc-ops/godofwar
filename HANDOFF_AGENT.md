@@ -257,7 +257,7 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-06 — PASSO 23 aplicado)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-06 — PASSO 24 aplicado)
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 ### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
@@ -314,21 +314,45 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 ###   PASSO 23C rodou (guard flag setado) MAS causou abort do boot — Bug AH.
 ###   frame:upload: fbp=0 fbw=10 nonBlack=0 (fbw mudou de 0 para 10 — efeito colateral de entry_283790).
 ###   activeThreads=-1 (JALs 2-11 não rodaram → threads não criadas → contador negativo).
-### 🔴 Bug AH — IDENTIFICADO E FIXADO (2026-05-06):
+### ✅ Bug AH — IDENTIFICADO E FIXADO (2026-05-06):
 ###   Causa: stub PASSO 23C fazia tail-call para entry_283790(0x2836c0) após setar flag.
 ###   entry_283790 alterava ctx->pc para endereço inesperado → verificador de JAL[1/11]
 ###   em sub_00138D48 detectava pc ≠ return_addr → aborto imediato com v0=0xffffffff.
 ###   Fix: tail-call REMOVIDA. Stub agora apenas: READ32(0x326940), se 0→WRITE32=1, jr $ra.
-###   Comportamento equivalente ao skip original (que funcionava nos rounds anteriores).
+###   Confirmado no log: [PASSO 23C] 0x326940=0 → setando 1, retornando ao caller ✅
+###   Boot completa com v0=0 em sub_00138D48 após fix.
+
+### 🔴 Bug AI — IDENTIFICADO (2026-05-06):
+###   Sintoma: PASSO 23B steps 1/10 e 2/10 passam, mas step 3/10 (func_17E530) NUNCA aparece.
+###   alloc#5 (ra=0x17e5c4) no log confirma que sub_0017E530 executou pelo menos até func_13DA10.
+###   Causa raiz: sub_0017E530 tem 8 callees após func_13DA10; uma delas redireciona ctx->pc
+###     para endereço ≠ 0x17A960 (return addr de sub_0017A940). Padrão idêntico ao Bug AH.
+###   Consequência: sub_0017A940 aborta em steps 3-10; render thread tid=8 NUNCA criada;
+###     nonBlack=0 permanente.
+###   Callees suspeitas (em ordem): func_180A10, func_17ECE0, func_13DC78(2ª),
+###     func_13E180, func_180D08, func_180CD8, func_181068, func_17E690.
+###   PASSO 24 APLICADO: 9 logs std::fprintf inseridos em sub_0017E530_0x17e530.cpp
+###     (apos alloc5, apos 180A10(1/8), apos 17ECE0_ou_skip(2/8), apos 13DC78_2(3/8),
+###      apos 13E180(4/8), apos 180D08(5/8), apos 180CD8(6/8), apos 181068(7/8),
+###      apos 17E690(8/8) SUCESSO).
+###   BUILD: recompilar.sh (src/recompiled/ foi alterado)
+
 ### 🔴 AGUARDANDO ROUND — 1 arquivo alterado:
-###   - PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp (Bug AH fix em PASSO 23C)
+###   - GOD_PC_PORT_FINAL/src/recompiled/sub_0017E530_0x17e530.cpp (PASSO 24 logs)
 ### 🔴 BUILD NECESSÁRIO:
-###   game_overrides.cpp → rebuild_runtime.sh (loop detecta mudança em ps2xRuntime/)
-### 🔴 APÓS ROUND → verificar no filtered log:
-###   [PASSO 23A] 0x1838d0: GS init stub → confirma GS registers escritos (JAL[5/11])
-###   [PASSO 23B] sub_0017A940: START + apos func_XXX (N/10) → pinça onde JAL[9/11] trava
-###   [PASSO 23C] guard init → 0x326940=0 -> setando 1, retornando ao caller
-###   nonBlack>0 → OBJETIVO PRINCIPAL deste round!
+###   src/recompiled/ → recompilar.sh (build incremental, só recompila o arquivo alterado)
+### 🔴 APÓS ROUND → verificar no filtered log com triage_passo23.py:
+###   [PASSO 24] sub_0017E530: apos alloc5 → confirma que sub_0017E530 entrou
+###   [PASSO 24] sub_0017E530: apos 180A10 (1/8) → passa func_180A10
+###   [PASSO 24] sub_0017E530: apos 17ECE0_ou_skip (2/8) → passa func_17ECE0 ou branch
+###   [PASSO 24] sub_0017E530: apos 13DC78_2 (3/8) → passa 2ª chamada func_13DC78
+###   [PASSO 24] sub_0017E530: apos 13E180 (4/8) → passa func_13E180
+###   [PASSO 24] sub_0017E530: apos 180D08 (5/8) → passa func_180D08
+###   [PASSO 24] sub_0017E530: apos 180CD8 (6/8) → passa func_180CD8
+###   [PASSO 24] sub_0017E530: apos 181068 (7/8) → passa func_181068
+###   [PASSO 24] sub_0017E530: apos 17E690 (8/8) SUCESSO! → sub_0017E530 passou INTEIRA
+###   O ÚLTIMO log visível = callee seguinte é o sabotador do Bug AI.
+###   nonBlack>0 → OBJETIVO PRINCIPAL (mas depende de resolver Bug AI primeiro)!
 
 ---
 

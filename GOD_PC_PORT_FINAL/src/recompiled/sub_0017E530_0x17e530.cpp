@@ -264,6 +264,7 @@ void sub_0017E530_0x17e530(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         if (ctx->pc != 0x17E5C4u) { return; }
     }
     ctx->pc = 0x17E5C4u;
+    std::fprintf(stderr, "[PASSO 24] sub_0017E530: apos alloc5 s0=0x%x\n", GPR_U32(ctx, 2));
     // 0x17e5c4: 0x40802d  daddu       $s0, $v0, $zero
     ctx->pc = 0x17e5c4u;
     SET_GPR_U64(ctx, 16, (uint64_t)GPR_U64(ctx, 2) + (uint64_t)GPR_U64(ctx, 0));
@@ -295,6 +296,7 @@ void sub_0017E530_0x17e530(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         if (ctx->pc != 0x17E5D8u) { return; }
     }
     ctx->pc = 0x17E5D8u;
+    std::fprintf(stderr, "[PASSO 24] sub_0017E530: apos 180A10 (1/8)\n");
     // 0x17e5d8: 0x8e24c74c  lw          $a0, -0x38B4($s1)
     ctx->pc = 0x17e5d8u;
     SET_GPR_S32(ctx, 4, (int32_t)READ32(ADD32(GPR_U32(ctx, 17), 4294952780)));
@@ -369,6 +371,7 @@ void sub_0017E530_0x17e530(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
     }
     ctx->pc = 0x17E618u;
 label_17e618:
+    std::fprintf(stderr, "[PASSO 24] sub_0017E530: apos 17ECE0_ou_skip (2/8)\n");
     // 0x17e618: 0x8e44ec4c  lw          $a0, -0x13B4($s2)
     ctx->pc = 0x17e618u;
     SET_GPR_S32(ctx, 4, (int32_t)READ32(ADD32(GPR_U32(ctx, 18), 4294962252)));
@@ -400,6 +403,7 @@ label_17e618:
         if (ctx->pc != 0x17E62Cu) { return; }
     }
     ctx->pc = 0x17E62Cu;
+    std::fprintf(stderr, "[PASSO 24] sub_0017E530: apos 13DC78_2 (3/8)\n");
     // 0x17e62c: 0x3c10002a  lui         $s0, 0x2A
     ctx->pc = 0x17e62cu;
     SET_GPR_S32(ctx, 16, (int32_t)((uint32_t)42 << 16));
@@ -434,6 +438,7 @@ label_17e618:
         if (ctx->pc != 0x17E644u) { return; }
     }
     ctx->pc = 0x17E644u;
+    std::fprintf(stderr, "[PASSO 24] sub_0017E530: apos 13E180 (4/8)\n");
     // 0x17e644: 0x8e04c744  lw          $a0, -0x38BC($s0)
     ctx->pc = 0x17e644u;
     SET_GPR_S32(ctx, 4, (int32_t)READ32(ADD32(GPR_U32(ctx, 16), 4294952772)));
@@ -459,6 +464,7 @@ label_17e618:
         if (ctx->pc != 0x17E650u) { return; }
     }
     ctx->pc = 0x17E650u;
+    std::fprintf(stderr, "[PASSO 24] sub_0017E530: apos 180D08 (5/8)\n");
     // 0x17e650: 0x8e04c744  lw          $a0, -0x38BC($s0)
     ctx->pc = 0x17e650u;
     SET_GPR_S32(ctx, 4, (int32_t)READ32(ADD32(GPR_U32(ctx, 16), 4294952772)));
@@ -484,6 +490,7 @@ label_17e618:
         if (ctx->pc != 0x17E65Cu) { return; }
     }
     ctx->pc = 0x17E65Cu;
+    std::fprintf(stderr, "[PASSO 24] sub_0017E530: apos 180CD8 (6/8)\n");
     // 0x17e65c: 0xc06041a  jal         func_181068
     ctx->pc = 0x17E65Cu;
     SET_GPR_U32(ctx, 31, 0x17E664u);
@@ -501,6 +508,7 @@ label_17e618:
         if (ctx->pc != 0x17E664u) { return; }
     }
     ctx->pc = 0x17E664u;
+    std::fprintf(stderr, "[PASSO 24] sub_0017E530: apos 181068 (7/8)\n");
     // 0x17e664: 0x3c04002b  lui         $a0, 0x2B
     ctx->pc = 0x17e664u;
     SET_GPR_S32(ctx, 4, (int32_t)((uint32_t)43 << 16));
@@ -526,6 +534,7 @@ label_17e618:
         if (ctx->pc != 0x17E670u) { return; }
     }
     ctx->pc = 0x17E670u;
+    std::fprintf(stderr, "[PASSO 24] sub_0017E530: apos 17E690 (8/8) SUCESSO!\n");
     // 0x17e670: 0x7bb00040  lq          $s0, 0x40($sp)
     ctx->pc = 0x17e670u;
     SET_GPR_VEC(ctx, 16, READ128(ADD32(GPR_U32(ctx, 29), 64)));

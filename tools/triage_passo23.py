@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""triage_passo23.py — Triagem focada no round pós-Bug AH (PASSO 23).
+"""triage_passo23.py — Triagem focada no round pós-Bug AH/AI (PASSO 23/24).
 
 OBJETIVO: Ler o log filtrado do GitHub e reportar APENAS os marcadores
           críticos do round atual em ~10 linhas, sem precisar fazer grep manual.
@@ -8,6 +8,7 @@ MARCADORES MONITORADOS:
   [PASSO 23A]  GS init stub (0x1838d0) — confirma que JAL[5/11] rodou
   [PASSO 23B]  sub_0017A940 logs (N/10) — pinça onde JAL[9/11] trava
   [PASSO 23C]  guard init 0x283770 — confirma que Bug AH fix rodou certo
+  [PASSO 24]   sub_0017E530 logs (N/8) — pinça callee do Bug AI (redirect em 17E530)
   frame:upload — nonBlack>0 é a vitória principal
   activeThreads — mostra quantas threads estão vivas
   Bug AF/PASSO 22A — pool forge logs
@@ -36,6 +37,7 @@ URL_FULL     = _BASE + "log_latest_full.txt"
 _RE_23A      = re.compile(r"\[PASSO 23A\].*")
 _RE_23B      = re.compile(r"\[PASSO 23B\].*")
 _RE_23C      = re.compile(r"\[PASSO 23C\].*")
+_RE_P24      = re.compile(r"\[PASSO 24\].*")
 _RE_FRAME    = re.compile(r"frame:upload.*nonBlack=(\d+).*")
 _RE_THREADS  = re.compile(r"activeThreads=(-?\d+)")
 _RE_BUG_AF   = re.compile(r"\[Bug AF\].*")
@@ -84,7 +86,7 @@ def analyse(text: str, raw: bool) -> None:
 
     if raw:
         for line in lines:
-            for pat in (_RE_23A, _RE_23B, _RE_23C, _RE_FRAME,
+            for pat in (_RE_23A, _RE_23B, _RE_23C, _RE_P24, _RE_FRAME,
                         _RE_BUG_AF, _RE_P22A, _RE_P22B):
                 if pat.search(line):
                     print(line)
@@ -95,6 +97,7 @@ def analyse(text: str, raw: bool) -> None:
     p23a_lines: list[str] = []
     p23b_lines: list[str] = []
     p23c_lines: list[str] = []
+    p24_lines:  list[str] = []
     frame_lines: list[str] = []
     bugaf_lines: list[str] = []
     p22a_lines:  list[str] = []
@@ -108,6 +111,8 @@ def analyse(text: str, raw: bool) -> None:
             p23b_lines.append(line.strip())
         if _RE_23C.search(line):
             p23c_lines.append(line.strip())
+        if _RE_P24.search(line):
+            p24_lines.append(line.strip())
         if _RE_FRAME.search(line):
             frame_lines.append(line.strip())
         if _RE_BUG_AF.search(line):
@@ -183,6 +188,38 @@ def analyse(text: str, raw: bool) -> None:
     else:
         print("   ❌ NÃO apareceu — JAL[9/11] (sub_0017A940) ainda não foi chamado")
 
+    # PASSO 24 — Bug AI: sub_0017E530 redirect pinpoint
+    _RE_P24_STEP = re.compile(r"\[PASSO 24\].*apos\s+(\S+)\s+\((\d+)/8\)")
+    _RE_P24_ALLOC = re.compile(r"\[PASSO 24\].*apos alloc5")
+    _RE_P24_OK   = re.compile(r"\[PASSO 24\].*SUCESSO")
+    print("\n🔬 PASSO 24 — sub_0017E530 redirect (Bug AI):")
+    if p24_lines:
+        alloc_ok  = any(_RE_P24_ALLOC.search(l) for l in p24_lines)
+        success   = any(_RE_P24_OK.search(l) for l in p24_lines)
+        steps_seen: list[tuple[str, str]] = []
+        for l in p24_lines:
+            m = _RE_P24_STEP.search(l)
+            if m:
+                steps_seen.append((m.group(1), m.group(2)))
+        if alloc_ok:
+            print("   ✅ alloc5 confirmado — sub_0017E530 entrou na fase crítica")
+        if success:
+            print("   ✅ (8/8) SUCESSO — sub_0017E530 passou INTEIRA → Bug AI resolvido!")
+        elif steps_seen:
+            max_step = max(int(s[1]) for s in steps_seen)
+            last = steps_seen[-1]
+            print(f"   📊 Steps vistos: {sorted(set(int(s[1]) for s in steps_seen))} de 8")
+            print(f"   ⚠️  Último passo OK: {last[0]} ({last[1]}/8) — callee {max_step+1}/8 é o sabotador!")
+            callees = ["180A10","17ECE0_ou_skip","13DC78_2","13E180","180D08","180CD8","181068","17E690"]
+            if max_step < len(callees):
+                print(f"   🎯 Culpado provável: func_{callees[max_step]}")
+        elif alloc_ok:
+            print("   ⚠️  alloc5 passou mas nenhum step (1/8) → redirect em func_180A10 ou antes")
+        for l in p24_lines[-3:]:
+            print(f"   └ {l}")
+    else:
+        print("   ❌ NÃO apareceu — sub_0017E530 não foi executada (step 3/10 de sub_0017A940 nunca atingido)")
+
     # frame:upload — resultado principal
     print("\n🎮 frame:upload (objetivo principal — nonBlack > 0):")
     if frame_lines:
@@ -232,6 +269,9 @@ def analyse(text: str, raw: bool) -> None:
     print(SEP)
 
     # Diagnóstico rápido
+    _RE_P24_STEP2 = re.compile(r"\[PASSO 24\].*apos\s+(\S+)\s+\((\d+)/8\)")
+    _RE_P24_ALLOC2 = re.compile(r"\[PASSO 24\].*apos alloc5")
+    _RE_P24_OK2  = re.compile(r"\[PASSO 24\].*SUCESSO")
     print("\n📋 DIAGNÓSTICO RÁPIDO:")
     issues: list[str] = []
     if not p23c_lines:
@@ -242,6 +282,21 @@ def analyse(text: str, raw: bool) -> None:
         issues.append("23B START mas sem steps — trava antes do primeiro JAL interno de sub_0017A940")
     if last_threads is not None and int(last_threads) < 0:
         issues.append("activeThreads negativo — JALs abortaram antes de criar threads")
+    if p24_lines and not any(_RE_P24_OK2.search(l) for l in p24_lines):
+        p24_steps2: list[int] = []
+        for l in p24_lines:
+            m2 = _RE_P24_STEP2.search(l)
+            if m2:
+                p24_steps2.append(int(m2.group(2)))
+        callees_diag = ["180A10","17ECE0_ou_skip","13DC78_2","13E180","180D08","180CD8","181068","17E690"]
+        if p24_steps2:
+            ms = max(p24_steps2)
+            culprit = callees_diag[ms] if ms < len(callees_diag) else "?"
+            issues.append(f"Bug AI ativo: sub_0017E530 trava em func_{culprit} ({ms+1}/8) — PASSO 24 precisa de fix")
+        elif any(_RE_P24_ALLOC2.search(l) for l in p24_lines):
+            issues.append("Bug AI ativo: alloc5 passou mas (1/8) ausente — func_180A10 é o sabotador")
+        else:
+            issues.append("PASSO 24 apareceu mas sem steps — checar log completo")
     if not issues:
         if frame_lines:
             nb_last = int(_RE_FRAME.search(frame_lines[-1]).group(1))

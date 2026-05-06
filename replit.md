@@ -71,9 +71,11 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
 - **PASSO 22C ✅ confirmado:** 133 forges (não 13 — loop maior que esperado), todos com `ra=0x13d954`. Heap OK.
 - **entry_1389d8 ✅:** DONE + renderer_type=0x2 confirmados neste round.
 - **Bug AG ✅ fixado (PASSO 23A):** `0x1838d0` (JAL[5/11]) era label DENTRO de `entry_183878_0x183948` → GS registers nunca escritos → tela preta. Fix: stub escreve PMODE/SMODE1/DISPLAY1/2/IMR.
-- **PASSO 23B ✅ aplicado:** 11 logs em `sub_0017A940_0x17a940.cpp` para pinçar onde JAL[9/11] trava.
-- **Bug AH 🔴 identificado e fixado (2026-05-06):** PASSO 23C stub fazia tail-call para `entry_283790(0x2836c0)` → alterava `ctx->pc` → verificador JAL[1/11] em `sub_00138D48` abortava boot com v0=0xffffffff (JALs 2-11 nunca rodaram, activeThreads=-1). Fix: tail-call removida, stub apenas seta 0x326940=1 e `jr $ra`.
-- **Próximo:** aguardar round pós-Bug AH — esperar `[PASSO 23A]` (GS init) + `[PASSO 23B] apos func_XXX (N/10)` + `nonBlack>0`
+- **PASSO 23B ✅ aplicado e confirmado:** steps 1/10 e 2/10 passam, step 3/10 (`func_17E530`) nunca aparece.
+- **Bug AH ✅ fixado (PASSO 23C):** tail-call removida do stub 0x283770; boot completa (v0=0 em JAL[1/11]).
+- **Bug AI 🔴 identificado (2026-05-06):** `sub_0017E530` redireciona `ctx->pc` ao retornar para `sub_0017A940` → pc ≠ 0x17A960 → sub_0017A940 aborta nos steps 3-10 → render thread tid=8 NUNCA criada → nonBlack=0 permanente. alloc#5 (ra=0x17e5c4) confirma que sub_0017E530 executou pelo menos até func_13DA10.
+- **PASSO 24 🔴 aplicado:** 9 logs `std::fprintf` inseridos em `sub_0017E530_0x17e530.cpp` entre cada JAL após alloc#5 (`func_180A10` a `func_17E690`). O primeiro log ausente no próximo round revela o callee culpado.
+- **Próximo:** aguardar round pós-PASSO 24 → procurar `[PASSO 24] sub_0017E530: apos XXX (N/8)` no log filtrado — o último N visível = callee N+1 é o sabotador.
 
 ## Gotchas
 
