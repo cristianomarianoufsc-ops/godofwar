@@ -68,10 +68,11 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
 
 - **Jogo roda por 300s** (limite do auto_round.sh) — SIGINT final é timeout, não crash
 - **activeThreads=2** após ExitThread de tid=1: tid=2 (IOP loader) + tid=3 (sceSifRpcThread stub)
-- **Cadeia ExitThread tid=1 MAPEADA:** `entry_2996b0` → `FUN_0029aa48` → `sub_0029AA88` (47 WEF Bug-AB + 14 WEF não-Bug-AB) → `func_293840` (syscall 4) → ExitThread intencional
-- **PASSO 21 refinado:** `s_passo21Done` atômico — forge apenas 1 vez; tid=2 dorme definitivamente após (sem busy-loop 256x)
-- **frame:upload nonBlack=0** — tela preta: nenhum thread de renderização criado; depende de callbacks IOP não simulados
-- **Próximo:** identificar onde o game loop thread deve ser StartThread'd (pós-init IOP)
+- **PASSO 21 ✅ confirmado:** tid=2 acordou (WaitSema:wake sid=3), processou fila vazia (tipo=0→iSignalSema(0)), dormiu novamente — comportamento 100% esperado
+- **Causa raiz tela preta mapeada:** pool 0x2CB940 tem `pool_limit=3`; 13+ chamadas a `func_13E090` retornam 0 → `sub_0013DC78(s2=null)` silenciosamente falha → render threads (tid=4..8) nunca são criados → `StartThread(tid=8)` em `func_293930` falha → `WakeupThread(8)` via ring buffer tipo=1 = erro
+- **PASSO 22A aplicado:** override de `func_13E090` (0x13E090) em `game_overrides.cpp` — quando pool esgotado (idx≥limit), aloca nó do bump allocator (0x01000000+) e retorna guestPtr válido
+- **PASSO 22B aplicado:** override de `func_293930` (0x293930) — loga `StartThread(thid, arg, resultado)` para confirmar se tid=8 é criado e StartThread tem sucesso
+- **Próximo:** aguardar round pós-PASSO 22A — esperar `[CreateThread] id=4..8` e `[PASSO 22B] StartThread thid=8` com resultado=0 (sucesso)
 
 ## Gotchas
 

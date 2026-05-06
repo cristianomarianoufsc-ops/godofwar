@@ -637,6 +637,120 @@ namespace
     // Semantica: sceSifRpcThread — thread de polling IOP RPC.
     // Sem IOP real, e' um loop cooperativo infinito que mantém activeThreads>0
     // enquanto o game main (tid=1) roda e encerra via ExitThread.
+    // ========================================================================
+    // PASSO 22A — Expansao do pool 0x2CB940 (func_13E090 / entry_13e090)
+    // ========================================================================
+    // Problema raiz identificado (2026-05-06):
+    //   - func_13E090 (0x13E090) le um pool fixo de nos em 0x2CB940:
+    //       +0: pool_array_base  +4: current_index  +8: pool_limit
+    //   - O pool foi inicializado com pool_limit=3 (1 usado em JAL[6/11] via
+    //     sub_0013FCA8, 2 usados em JAL[9/11] via sub_0017A940). Depois: 13
+    //     chamadas retornam 0 (pool esgotado).
+    //   - sub_0013DC78 recebe s2=0 (null) → operacoes de lista ligada falham
+    //     silenciosamente → blocos de controle de thread de render NAO sao
+    //     criados → CreateThread para tid=4..8 nunca ocorre → StartThread(tid=8)
+    //     em func_293930 falha → render thread nunca inicia → tela preta.
+    //   - FUN_002947c8 (tid=2) usa ring buffer tipo=1 → WakeupThread(data_byte)
+    //     para acordar threads de render. Sem CreateThread, WakeupThread(8) = erro.
+    // Fix:
+    //   - Quando pool esgotado (current_index >= pool_limit), aloca no do bump
+    //     allocator (mesma regiao 0x01000000+ do sub_0013DA10).
+    //   - Quando pool valido: comportamento original (retorna pool_array[idx]).
+    // ========================================================================
+    void gow_stub_func_13E090_pool_expand(uint8_t* rdram, R5900Context* ctx, PS2Runtime* /*runtime*/)
+    {
+        constexpr uint32_t kPoolBase = 0x2CB940u;
+        const uint32_t poolArrayBase = READ32(kPoolBase + 0u);
+        const uint32_t currentIdx    = READ32(kPoolBase + 4u);
+        const uint32_t poolLimit     = READ32(kPoolBase + 8u);
+
+        static std::atomic<uint32_t> s_callCount{0u};
+        static std::atomic<uint32_t> s_forgeCount{0u};
+        const uint32_t callN = s_callCount.fetch_add(1u, std::memory_order_relaxed) + 1u;
+
+        if (callN <= 6u)
+        {
+            std::fprintf(stderr,
+                "[PASSO 22A] func_13E090 chamada #%u: pool_base=0x%x idx=%u limit=%u\n",
+                callN, poolArrayBase, currentIdx, poolLimit);
+        }
+
+        if (poolArrayBase != 0u && currentIdx < poolLimit)
+        {
+            const uint32_t entryAddr = poolArrayBase + currentIdx * 4u;
+            const uint32_t entryPtr  = READ32(entryAddr);
+            if (callN <= 6u)
+            {
+                std::fprintf(stderr,
+                    "[PASSO 22A] func_13E090 #%u: pool OK — entry=0x%x\n",
+                    callN, entryPtr);
+            }
+            SET_GPR_U32(ctx, 2, entryPtr);
+            ctx->pc = GPR_U32(ctx, 31);
+            return;
+        }
+
+        const uint32_t forgeN = s_forgeCount.fetch_add(1u, std::memory_order_relaxed) + 1u;
+        const uint32_t off    = g_gowStubHeapOffset.fetch_add(kGowStubNodeBytes, std::memory_order_relaxed);
+        g_gowStubAllocCount.fetch_add(1u, std::memory_order_relaxed);
+
+        if (off + kGowStubNodeBytes > kGowStubHeapSize)
+        {
+            std::fprintf(stderr,
+                "[PASSO 22A] func_13E090 forge #%u: bump heap ESGOTADO!\n", forgeN);
+            SET_GPR_U32(ctx, 2, 0u);
+            ctx->pc = GPR_U32(ctx, 31);
+            return;
+        }
+
+        const uint32_t guestPtr = kGowStubHeapBase + off;
+        for (uint32_t i = 0u; i < kGowStubNodeBytes; i += 4u)
+        {
+            WRITE32(guestPtr + i, 0u);
+        }
+
+        if (forgeN <= 16u)
+        {
+            std::fprintf(stderr,
+                "[PASSO 22A] func_13E090 forge #%u: pool esgotado (idx=%u>=limit=%u)"
+                " — novo no guestPtr=0x%x (ra=0x%x)\n",
+                forgeN, currentIdx, poolLimit, guestPtr, GPR_U32(ctx, 31));
+        }
+
+        SET_GPR_U32(ctx, 2, guestPtr);
+        ctx->pc = GPR_U32(ctx, 31);
+    }
+
+    // ========================================================================
+    // PASSO 22B — Log StartThread via func_293930 (syscall v1=0x12)
+    // ========================================================================
+    // sub_0017A940 chama func_293930(a0=8, a1=0x157358) = StartThread(tid=8,
+    // entry=0x157358). Sem CreateThread para tid=8, isso falha. Apos PASSO 22A
+    // expandir o pool, esperamos ver CreateThread id=4..8 e depois StartThread(8)
+    // bem-sucedido.
+    // ========================================================================
+    void gow_log_func_293930_StartThread(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime)
+    {
+        static std::atomic<uint32_t> s_logN{0u};
+        const uint32_t logN = s_logN.fetch_add(1u, std::memory_order_relaxed) + 1u;
+        const uint32_t thid = GPR_U32(ctx, 4);
+        const uint32_t arg  = GPR_U32(ctx, 5);
+        if (logN <= 8u)
+        {
+            std::fprintf(stderr,
+                "[PASSO 22B] func_293930 StartThread #%u: thid=%u arg=0x%x ra=0x%x\n",
+                logN, thid, arg, GPR_U32(ctx, 31));
+        }
+        SET_GPR_S32(ctx, 3, 18);
+        runtime->handleSyscall(rdram, ctx, 0x0u);
+        if (logN <= 8u)
+        {
+            std::fprintf(stderr,
+                "[PASSO 22B] func_293930 StartThread #%u resultado: v0=0x%x\n",
+                logN, GPR_U32(ctx, 2));
+        }
+    }
+
     void gow_stub_sceSifRpcThread_0x27CBD0(uint8_t* /*rdram*/, R5900Context* /*ctx*/, PS2Runtime* runtime)
     {
         static bool s_logged = false;
@@ -687,6 +801,17 @@ namespace
         runtime.registerFunction(0x0027CBD0u, gow_stub_sceSifRpcThread_0x27CBD0);
         std::cout << "[game_overrides] God of War: stub Bug AD registrado em 0x0027CBD0 "
                   << "(sceSifRpcThread — thread IOP RPC polling, loop cooperativo sem IOP real)"
+                  << std::endl;
+
+        runtime.registerFunction(0x00013E090u, gow_stub_func_13E090_pool_expand);
+        std::cout << "[game_overrides] God of War: PASSO 22A registrado em 0x0013E090 "
+                  << "(func_13E090 — pool 0x2CB940 expansivel via bump allocator;"
+                  << " corrige 13+ chamadas sub_0013DC78(s2=null) em JAL[9/11])"
+                  << std::endl;
+
+        runtime.registerFunction(0x000293930u, gow_log_func_293930_StartThread);
+        std::cout << "[game_overrides] God of War: PASSO 22B registrado em 0x00293930 "
+                  << "(func_293930 — log StartThread(tid=8, entry=0x157358) via syscall v1=0x12)"
                   << std::endl;
     }
 }

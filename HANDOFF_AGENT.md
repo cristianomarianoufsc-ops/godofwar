@@ -1153,6 +1153,65 @@ sub_00138D48 [JAL 8/11]
 
 ---
 
+### ESTADO ATUAL — 2026-05-06 (PASSO 22A+22B aplicados) — fix pool 0x2CB940 + log StartThread
+
+#### Causa raiz da tela preta — MAPEADA COMPLETAMENTE ✅
+
+**Ring buffer FUN_002947c8 (0x326f48):**
+```
++0        = read_index (& 0x1FF)
++8+idx*2  = TYPE byte   (0=iSignalSema, 1=WakeupThread, 2=syscall 0x37, ≥3=sub_00296440)
++9+idx*2  = DATA byte
+```
+- Tipo=0 → `iSignalSema(data)` — toca campainha de outro semáforo
+- **Tipo=1 → `WakeupThread(data)`** — acorda thread de render ← o que precisamos
+- Tipo=2 → `ReleaseWaitThread(data)`
+
+**Pool 0x2CB940 — estrutura decodificada:**
+```
+READ32(0x2CB940) = pool_array_base   ← array de ponteiros para nós
+READ32(0x2CB944) = current_index     ← próximo slot a servir
+READ32(0x2CB948) = pool_limit        ← máximo de entradas (= 3)
+```
+`func_13E090`: se `current_index >= pool_limit` → retorna 0 (pool esgotado).
+Pool tem apenas 3 slots: 1 usado no JAL[6/11] (sub_0013FCA8), 2 usados no JAL[9/11] (sub_0017A940). Resultado: **13+ chamadas a sub_0013DC78 recebem s2=null** → operações de lista ligada falham silenciosamente → CreateThread para tid=4..8 nunca é chamado → StartThread(8) via func_293930 falha → WakeupThread(8) no ring buffer = erro de TID inexistente → **tela preta**.
+
+**func_293930 (0x293930) = `syscall v1=0x12` = `StartThread(a0=tid, a1=arg)`**
+- Chamado de sub_0017A940 com `a0=8, a1=0x157358` — inicia thread de render
+- Sem CreateThread para tid=8 → StartThread(8) falha silenciosamente
+
+#### PASSO 22A + 22B — implementados (este commit)
+
+**PASSO 22A** — override de `func_13E090` (0x13E090) em `game_overrides.cpp`:
+- Quando `current_index < pool_limit` E `pool_array_base != 0`: comportamento original (retorna `pool_array[current_index]`)
+- Quando pool esgotado (`current_index >= pool_limit`): aloca nó do bump allocator (`kGowStubHeapBase + offset`, 0x01000000+) e retorna guestPtr válido zerado
+- Logs: `[PASSO 22A] func_13E090 chamada #N`, `[PASSO 22A] func_13E090 forge #N guestPtr=0x...`
+
+**PASSO 22B** — override de `func_293930` (0x293930) em `game_overrides.cpp`:
+- Loga `thid, arg, ra` antes do syscall e `resultado v0` depois
+- Executa `runtime->handleSyscall(rdram, ctx, 0x0u)` com `v1=18` (StartThread) — comportamento preservado
+- Logs: `[PASSO 22B] func_293930 StartThread #N: thid=N arg=0x... resultado: v0=0x...`
+
+**Arquivo alterado:** `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp` → `rebuild_runtime.sh`
+
+#### O que esperar no próximo round (pós-PASSO 22A+22B)
+
+```
+[PASSO 22A] func_13E090 chamada #1: pool_base=0x... idx=0 limit=3
+[PASSO 22A] func_13E090 #1: pool OK — entry=0x35c1b0
+...
+[PASSO 22A] func_13E090 forge #1: pool esgotado (idx=3>=limit=3) — novo no guestPtr=0x01000040
+→ [PASSO 12] sub_0013DC78: s2=0x01000040 sentinela OK (next=self)   ← 13 vezes agora!
+→ [CreateThread] id=4 entry=... (render thread criado!)
+→ [CreateThread] id=5 ...
+→ [PASSO 22B] func_293930 StartThread #1: thid=8 arg=0x157358
+→ [PASSO 22B] func_293930 StartThread #1 resultado: v0=0x0         ← sucesso!
+→ [WakeupThread] tid=8 ... (render thread acordado!)
+→ frame:upload nonBlack>0 ???
+```
+
+---
+
 ### ESTADO ATUAL — 2026-05-06 (round pós-PASSO 21 refinamento) — cadeia ExitThread confirmada
 
 #### Cadeia de ExitThread de tid=1 — TOTALMENTE MAPEADA ✅
