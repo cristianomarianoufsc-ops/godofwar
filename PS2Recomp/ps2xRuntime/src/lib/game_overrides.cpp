@@ -819,28 +819,28 @@ namespace
     // ---------------------------------------------------------------------------
     // PASSO 23C — stub para 0x283770 (JAL[1/11] de sub_00138D48)
     // Guard de inicializacao: se READ32(0x326940)!=0 retorna, caso contrario
-    // seta 0x326940=1 e faz tail-call para 0x2836c0 (entry_283790).
-    // Sem IOP real o guard simplesmente marca como inicializado e retorna.
+    // seta 0x326940=1 e retorna ao caller.
+    // NOTA Bug AH (2026-05-06): a tail-call para entry_283790(0x2836c0) foi
+    // REMOVIDA — ela alterava ctx->pc para um endereco inesperado, fazendo
+    // sub_00138D48 detectar o pc errado apos JAL[1/11] e abortar o boot
+    // inteiro com v0=0xffffffff (JALs 2-11 nunca rodavam). O guard agora
+    // apenas marca o flag e retorna, reproduzindo o comportamento do skip
+    // original que funcionava corretamente nos rounds anteriores.
     // ---------------------------------------------------------------------------
     void gow_stub_0x283770_init_guard(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime)
     {
         const uint32_t flag = READ32(0x326940u);
         if (flag != 0u) {
-            // ja inicializado — retorna imediatamente (path normal do jr $ra)
+            std::fprintf(stderr,
+                "[PASSO 23C] 0x283770: guard ja inicializado (0x326940=0x%x) — retornando\n",
+                flag);
             ctx->pc = GPR_U32(ctx, 31);
             return;
         }
         std::fprintf(stderr,
-            "[PASSO 23C] 0x283770: guard init — 0x326940=0 -> setando 1, chamando entry_283790\n");
+            "[PASSO 23C] 0x283770: guard init — 0x326940=0 -> setando 1, retornando ao caller\n");
         WRITE32(0x326940u, 1u);
-        // tail-call para 0x2836c0 (dentro de entry_283790_0x283e80)
-        // executamos via dispatch normal do runtime
-        ctx->pc = 0x2836c0u;
-        if (runtime->hasFunction(0x2836c0u)) {
-            auto fn = runtime->lookupFunction(0x2836c0u);
-            fn(rdram, ctx, runtime);
-        }
-        // pc ja foi setado pela funcao chamada (ou retornou normalmente)
+        ctx->pc = GPR_U32(ctx, 31);
     }
 
     void apply_god_of_war_overrides(PS2Runtime& runtime)

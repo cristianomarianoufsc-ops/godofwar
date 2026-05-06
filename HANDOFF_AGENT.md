@@ -308,20 +308,26 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 ###     Inicializa tabela de pool em 0x2c7920. Verificado: JAL[5/11] (GS init),
 ###     JAL[6/11] (sub_0017A910) e JAL[7/11] (sub_0021FF60) NÃO leem 0x2c7920.
 ###     A mesma inicialização roda dentro de entry_1389d8 em JAL[8/11]. SEM FIX NECESSÁRIO.
-### 🔴 AGUARDANDO ROUND — 4 arquivos alterados neste ciclo:
-###   - PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp (PASSO 23A + 23C)
-###   - GOD_PC_PORT_FINAL/src/recompiled/sub_0017A940_0x17a940.cpp (PASSO 23B)
-###   - auto_round.sh (GREP_PATTERN: +PASSO 23, +sub_0017A940)
-###   - replit.md + HANDOFF_AGENT.md (este arquivo)
-### 🔴 BUILDS NECESSÁRIOS:
+### ✅ ROUND PASSO 23 — ANALISADO (2026-05-06):
+###   PASSO 23A (GS init 0x1838d0) registrou OK mas JAL[5/11] nunca rodou (vide Bug AH).
+###   PASSO 23B (logs sub_0017A940) nunca apareceu por mesmo motivo.
+###   PASSO 23C rodou (guard flag setado) MAS causou abort do boot — Bug AH.
+###   frame:upload: fbp=0 fbw=10 nonBlack=0 (fbw mudou de 0 para 10 — efeito colateral de entry_283790).
+###   activeThreads=-1 (JALs 2-11 não rodaram → threads não criadas → contador negativo).
+### 🔴 Bug AH — IDENTIFICADO E FIXADO (2026-05-06):
+###   Causa: stub PASSO 23C fazia tail-call para entry_283790(0x2836c0) após setar flag.
+###   entry_283790 alterava ctx->pc para endereço inesperado → verificador de JAL[1/11]
+###   em sub_00138D48 detectava pc ≠ return_addr → aborto imediato com v0=0xffffffff.
+###   Fix: tail-call REMOVIDA. Stub agora apenas: READ32(0x326940), se 0→WRITE32=1, jr $ra.
+###   Comportamento equivalente ao skip original (que funcionava nos rounds anteriores).
+### 🔴 AGUARDANDO ROUND — 1 arquivo alterado:
+###   - PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp (Bug AH fix em PASSO 23C)
+### 🔴 BUILD NECESSÁRIO:
 ###   game_overrides.cpp → rebuild_runtime.sh (loop detecta mudança em ps2xRuntime/)
-###   sub_0017A940_0x17a940.cpp → recompilar.sh (loop detecta mudança em src/recompiled/)
-###   → loop auto_round.sh faz os dois automaticamente
 ### 🔴 APÓS ROUND → verificar no filtered log:
-###   [PASSO 23A] 0x1838d0: GS init stub → confirma GS registers escritos
-###   [PASSO 23B] sub_0017A940: apos func_XXX (N/10) → pinça onde trava
-###   Se (N/10) chegar a 10/10: sub_0017A940 completou → JALs 10/11 e 11/11 serão próximos
-###   Se travar em N/10: a função N é o próximo alvo de investigação
+###   [PASSO 23A] 0x1838d0: GS init stub → confirma GS registers escritos (JAL[5/11])
+###   [PASSO 23B] sub_0017A940: START + apos func_XXX (N/10) → pinça onde JAL[9/11] trava
+###   [PASSO 23C] guard init → 0x326940=0 -> setando 1, retornando ao caller
 ###   nonBlack>0 → OBJETIVO PRINCIPAL deste round!
 
 ---

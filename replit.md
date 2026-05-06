@@ -70,11 +70,10 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
 - **activeThreads=2** após ExitThread de tid=1: tid=2 (IOP loader) + tid=3 (sceSifRpcThread stub)
 - **PASSO 22C ✅ confirmado:** 133 forges (não 13 — loop maior que esperado), todos com `ra=0x13d954`. Heap OK.
 - **entry_1389d8 ✅:** DONE + renderer_type=0x2 confirmados neste round.
-- **Bug AG 🔴 identificado e fixado (PASSO 23A):** `0x1838d0` (JAL[5/11]) era label DENTRO de `entry_183878_0x183948`, não registrado como entry point → NAO REGISTRADA → GS registers nunca escritos → fbp=0, fbw=0 → tela preta. Fix: stub em `game_overrides.cpp` escreve PMODE/SMODE1/DISPLAY1/2/IMR.
-- **PASSO 23B 🔴 aplicado:** logs em `sub_0017A940_0x17a940.cpp` após cada uma das 10 chamadas (175978→175CD0→17E530→17BFF0→131A58→118798→293930→182810→21C788→17D778) — para identificar onde trava (JAL[9/11] nunca retornou em 300s).
-- **PASSO 23C 🔴 aplicado:** stub para `0x283770` (JAL[1/11] guard de init 0x326940).
-- **GREP_PATTERN:** adicionado `PASSO 23|sub_0017A940` ao auto_round.sh
-- **Próximo:** aguardar round pós-PASSO 23 — esperar `[PASSO 23A]` + `[PASSO 23B] sub_0017A940: apos func_XXX (N/10)` para pinçar onde trava + `nonBlack>0`
+- **Bug AG ✅ fixado (PASSO 23A):** `0x1838d0` (JAL[5/11]) era label DENTRO de `entry_183878_0x183948` → GS registers nunca escritos → tela preta. Fix: stub escreve PMODE/SMODE1/DISPLAY1/2/IMR.
+- **PASSO 23B ✅ aplicado:** 11 logs em `sub_0017A940_0x17a940.cpp` para pinçar onde JAL[9/11] trava.
+- **Bug AH 🔴 identificado e fixado (2026-05-06):** PASSO 23C stub fazia tail-call para `entry_283790(0x2836c0)` → alterava `ctx->pc` → verificador JAL[1/11] em `sub_00138D48` abortava boot com v0=0xffffffff (JALs 2-11 nunca rodaram, activeThreads=-1). Fix: tail-call removida, stub apenas seta 0x326940=1 e `jr $ra`.
+- **Próximo:** aguardar round pós-Bug AH — esperar `[PASSO 23A]` (GS init) + `[PASSO 23B] apos func_XXX (N/10)` + `nonBlack>0`
 
 ## Gotchas
 
