@@ -1124,6 +1124,21 @@ python3 tools/reachable_after_boot.py   # usa os novos seeds
 
 Ferramenta Universal (sem endereços GoW hard-coded). Sintaxe verificada (py_compile, exit 0).
 
+**`tools/triage_passo26.py`** — triagem focada no round PASSO 26 (adicionado 2026-05-06)
+
+Lê o log filtrado do GitHub e reporta especificamente: PASSO 26 (Bug AJ — func_180D08 vtable dispatch skip), PASSO 25 (Bug AI confirmação), PASSO 24 (callees 1/8 a 8/8 de sub_0017E530), PASSO 23B (steps 1/10 a 10/10 de sub_0017A940), PASSO 22B (StartThread thid=8), nonBlack, activeThreads — com diagnóstico automático do próximo passo.
+
+```bash
+python3 tools/triage_passo26.py              # log filtrado do GitHub
+python3 tools/triage_passo26.py --full       # log completo do GitHub
+python3 tools/triage_passo26.py --local arquivo.txt
+python3 tools/triage_passo26.py --raw        # linhas brutas sem formatação
+```
+
+Sintaxe verificada (py_compile, exit 0). Ferramenta do analista — roda no Replit, Cris não precisa fazer nada.
+
+---
+
 **`tools/triage_passo23.py`** — triagem focada no round PASSO 23 (adicionado 2026-05-06)
 
 Lê o log filtrado do GitHub e reporta especificamente: PASSO 23A (GS init), PASSO 23B (steps 1-10 de sub_0017A940), PASSO 23C (guard Bug AH), nonBlack, activeThreads e pool forges — em ~10 linhas.

@@ -98,3 +98,4 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
 - **GitHub repository:** `https://github.com/cristianomarianoufsc-ops/godofwar/`
 - **Ghidra:** For MIPS R5900 disassembly and analysis of the PS2 ELF.
 - **Triagem round atual (PASSO 23):** `python3 tools/triage_passo23.py` — relatório focado nos marcadores 23A/23B/23C + nonBlack + activeThreads.
+- **Triagem round atual (PASSO 26):** `python3 tools/triage_passo26.py` — relatório focado nos marcadores 26/25/24/23B/22B + nonBlack + activeThreads (Bug AJ fix).
