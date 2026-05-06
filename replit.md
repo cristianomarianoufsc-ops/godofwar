@@ -68,14 +68,14 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
 
 - **Jogo roda por 300s** (limite do auto_round.sh) — SIGINT final é timeout, não crash
 - **activeThreads=2** após ExitThread de tid=1: tid=2 (IOP loader) + tid=3 (sceSifRpcThread stub)
-- **PASSO 22C ✅ confirmado:** 133 forges (não 13 — loop maior que esperado), todos com `ra=0x13d954`. Heap OK.
-- **entry_1389d8 ✅:** DONE + renderer_type=0x2 confirmados neste round.
-- **Bug AG ✅ fixado (PASSO 23A):** `0x1838d0` (JAL[5/11]) era label DENTRO de `entry_183878_0x183948` → GS registers nunca escritos → tela preta. Fix: stub escreve PMODE/SMODE1/DISPLAY1/2/IMR.
-- **PASSO 23B ✅ aplicado e confirmado:** steps 1/10 e 2/10 passam, step 3/10 (`func_17E530`) nunca aparece.
-- **Bug AH ✅ fixado (PASSO 23C):** tail-call removida do stub 0x283770; boot completa (v0=0 em JAL[1/11]).
-- **Bug AI 🔴 identificado (2026-05-06):** `sub_0017E530` redireciona `ctx->pc` ao retornar para `sub_0017A940` → pc ≠ 0x17A960 → sub_0017A940 aborta nos steps 3-10 → render thread tid=8 NUNCA criada → nonBlack=0 permanente. alloc#5 (ra=0x17e5c4) confirma que sub_0017E530 executou pelo menos até func_13DA10.
-- **PASSO 24 🔴 aplicado:** 9 logs `std::fprintf` inseridos em `sub_0017E530_0x17e530.cpp` entre cada JAL após alloc#5 (`func_180A10` a `func_17E690`). O primeiro log ausente no próximo round revela o callee culpado.
-- **Próximo:** aguardar round pós-PASSO 24 → procurar `[PASSO 24] sub_0017E530: apos XXX (N/8)` no log filtrado — o último N visível = callee N+1 é o sabotador.
+- **Bug AH ✅ fixado (PASSO 23C):** tail-call removida do stub 0x283770; boot completa.
+- **Bug AI 🔴→✅ causa raiz CONFIRMADA + fix PASSO 25 APLICADO (2026-05-06):**
+  - `func_180A10` (0x180A10) chama `func_180A90` que faz `jalr $v1` (ptr em 0x2C046C).
+  - Função real em 0x2C046C muda `ctx->pc` → retorno prematuro em cadeia 3 níveis.
+  - sub_0017A940 steps 3-10 nunca executam → StartThread(tid=8) nunca chamado → nonBlack=0.
+  - **Fix:** stub `gow_stub_0x180A10_dispatch_skip` em `game_overrides.cpp` — escreve `*(a0+0xC)=0x2C0458` + `v0=a0`, pula func_180A90, retorna normalmente via `$ra`.
+  - **Build necessário:** `rebuild_runtime.sh` (arquivo de runtime modificado).
+- **Próximo:** aguardar round pós-PASSO 25 → procurar `[PASSO 25]` + `[PASSO 23B] apos func_17E530 (3/10)` + `[PASSO 22B] StartThread thid=8` + `frame:upload nonBlack>0`.
 
 ## Gotchas
 

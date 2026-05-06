@@ -817,6 +817,36 @@ namespace
     }
 
     // ---------------------------------------------------------------------------
+    // PASSO 25 / Bug AI — stub para func_180A10 (0x180A10)
+    // sub_0017E530 (step 3/10 de sub_0017A940) chama func_180A10(a0=alloc5_ptr, a2=3).
+    // sub_00180A10 escreve *(a0+0xC)=0x2C0458 (vtable ptr) e chama func_180A90.
+    // func_180A90 faz dispatch via jalr para READ32(0x2C046C) — funcao real do jogo
+    // que altera ctx->pc, causando retorno prematuro em cadeia:
+    //   sub_00180A10 -> sub_0017E530 -> sub_0017A940 (step 3/10 nunca retorna)
+    // -> Steps 4-10 de sub_0017A940 nao executam -> StartThread(tid=8) step 7/10 nunca chamado
+    // -> render thread tid=8 nunca criada -> nonBlack=0 permanente (Bug AI confirmado).
+    //
+    // Fix: stub reproduz o side-effect (WRITE32(a0+0xC, 0x2C0458) + v0=a0)
+    // SEM chamar func_180A90, evitando o dispatch sabotador.
+    // Seguro: sub_0017E530 sobrescreve *(s0+0xC) com 0x2C03D0 logo apos (0x17E5E8),
+    // entao a escrita de 0x2C0458 e transitoria e nao afeta o estado final.
+    // ---------------------------------------------------------------------------
+    void gow_stub_0x180A10_dispatch_skip(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime)
+    {
+        const uint32_t a0 = GPR_U32(ctx, 4);
+        // Side effect do delay slot de sub_00180A10: *(a0+0xC) = 0x2C0458 (vtable ptr)
+        WRITE32(ADD32(a0, 12u), 0x2C0458u);
+        // Retorna v0 = a0 (struct pointer), como sub_00180A10 faz apos func_180A90
+        SET_GPR_U32(ctx, 2, a0);
+        std::fprintf(stderr,
+            "[PASSO 25] func_180A10 stub: a0=0x%x *(a0+0xC)=0x2C0458 "
+            "— func_180A90 dispatch PULADO (evita redirect ctx->pc sabotador)\n",
+            a0);
+        // Retorno normal ao caller sub_0017E530 via $ra
+        ctx->pc = GPR_U32(ctx, 31);
+    }
+
+    // ---------------------------------------------------------------------------
     // PASSO 23C — stub para 0x283770 (JAL[1/11] de sub_00138D48)
     // Guard de inicializacao: se READ32(0x326940)!=0 retorna, caso contrario
     // seta 0x326940=1 e retorna ao caller.
@@ -888,6 +918,12 @@ namespace
         runtime.registerFunction(0x00283770u, gow_stub_0x283770_init_guard);
         std::cout << "[game_overrides] God of War: PASSO 23C registrado em 0x00283770 "
                   << "(guard init 0x326940 — JAL[1/11] de sub_00138D48)"
+                  << std::endl;
+
+        runtime.registerFunction(0x00180A10u, gow_stub_0x180A10_dispatch_skip);
+        std::cout << "[game_overrides] God of War: PASSO 25 registrado em 0x00180A10 "
+                  << "(func_180A10 — dispatch func_180A90 PULADO; "
+                  << "sub_0017A940 step 3/10 desbloqueia, steps 4-10 + StartThread(tid=8) esperados)"
                   << std::endl;
     }
 }

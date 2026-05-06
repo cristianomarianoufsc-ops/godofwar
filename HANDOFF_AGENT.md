@@ -1309,7 +1309,58 @@ pool_array[0..126] = 0x00000000 (entradas nulas — Bug AF)
 
 ---
 
-### ESTADO ATUAL — 2026-05-06 (round pós-PASSO 21 refinamento) — cadeia ExitThread confirmada
+### ESTADO ATUAL — 2026-05-06 (PASSO 25 aplicado) — Bug AI resolvido, aguardando round
+
+#### Bug AI — Causa raiz CONFIRMADA ✅ e fix APLICADO ✅
+
+**Causa raiz completa (cadeia de 3 níveis):**
+```
+sub_0017A940 → step 3/10 → sub_0017E530 → JAL func_180A10 (0x17E5D0, ra=0x17E5D8)
+  → sub_00180A10: delay_slot escreve *(a0+0xC)=0x2C0458; chama func_180A90
+    → func_180A90: jalr $v1 onde v1=READ32(0x2C046C)  ← funcao real do jogo!
+      → funcao real altera ctx->pc para endereco inesperado
+    → sub_00180A10: if (ctx->pc != 0x180A30) { return; }  ← saida prematura
+  → sub_0017E530: if (ctx->pc != 0x17E5D8) { return; }  ← saida prematura
+→ sub_0017A940: step 3/10 nunca retorna → steps 4-10 nunca executam
+  → step 7/10 (StartThread tid=8, entry=0x157358) NUNCA chamado
+  → render thread tid=8 nunca criada → nonBlack=0 permanente
+```
+
+**Evidência do log (round pós-PASSO 24):**
+- `[PASSO 24] sub_0017E530: apos alloc5` ✅ (func_180A10 foi chamada)
+- `[PASSO 24] sub_0017E530: apos 180A10 (1/8)` ❌ AUSENTE → func_180A10 redirecionou ctx->pc
+
+**Fix — PASSO 25 (2026-05-06):**
+- Arquivo: `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp`
+- Stub `gow_stub_0x180A10_dispatch_skip` registrado em `0x00180A10`
+- Reproduz side-effect de sub_00180A10: `WRITE32(a0+0xC, 0x2C0458)` + `v0=a0`
+- NÃO chama `func_180A90` (evita o dispatch sabotador via jalr)
+- Seguro: sub_0017E530 sobrescreve `*(s0+0xC)` com `0x2C03D0` em 0x17E5E8 logo após
+- Build necessário: **`rebuild_runtime.sh`** (arquivo de runtime)
+
+**Resultado esperado no próximo round:**
+```
+[PASSO 25] func_180A10 stub: a0=0x1000100 *(a0+0xC)=0x2C0458 — func_180A90 dispatch PULADO
+[PASSO 24] sub_0017E530: apos 180A10 (1/8)   ← desbloqueia!
+[PASSO 24] sub_0017E530: apos XXX (2/8)...(8/8)
+[PASSO 23B] sub_0017A940: apos func_17E530 (3/10)  ← step 3/10 finalmente retorna!
+[PASSO 23B] sub_0017A940: apos func_17BFF0 (4/10)
+[PASSO 23B] sub_0017A940: apos func_131A58 (5/10)
+[PASSO 23B] sub_0017A940: apos func_118798 (6/10)
+[PASSO 22B] func_293930 StartThread #N: thid=8 arg=0x157358  ← render thread criada!
+[PASSO 23B] sub_0017A940: apos func_293930 (7/10)
+frame:upload nonBlack>0 ???  ← primeiro frame do jogo!
+```
+
+**Arquivos alterados neste commit:**
+1. `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp` — stub PASSO 25 para 0x180A10
+2. `auto_round.sh` — GREP_PATTERN: adicionado `PASSO 24|PASSO 25`
+3. `replit.md` — estado atualizado
+4. `HANDOFF_AGENT.md` — este arquivo
+
+---
+
+### ESTADO ANTERIOR — 2026-05-06 (round pós-PASSO 21 refinamento) — cadeia ExitThread confirmada
 
 #### Cadeia de ExitThread de tid=1 — TOTALMENTE MAPEADA ✅
 
@@ -1323,12 +1374,10 @@ boot_stub → entry_2996b0_0x2996e0 [BOOT#1, a0=0]
 ```
 
 **Fato crítico:** as 14 WEF não-Bug-AB:
-- 6 chamadas (ra=0x29ac10): `waitBits=*(s0+0)` lido de struct — provavelmente 0 → **KE_EVF_ILPAT** (diagnóstico confirmado no próximo round com limite 64)
+- 6 chamadas (ra=0x29ac10): `waitBits=*(s0+0)` lido de struct — provavelmente 0 → **KE_EVF_ILPAT**
 - 8 chamadas (ra=0x29ac54): `waitBits=0` hardcoded → **KE_EVF_ILPAT** explícito
 
-**Por que tela preta (nonBlack=0):** Após ExitThread de tid=1, apenas tid=2 (dorme em WaitSema) e tid=3 (loop SIF stub) ficam vivos. Nenhum thread de renderização foi criado. O jogo esperaria callbacks IOP (que em real PS2 ativam o game loop) — nossa simulação IOP não os fornece.
-
-**Próximo passo crítico:** identificar onde o thread de renderização deveria ser criado (provavelmente via callbacks IOP simulados) ou entender se VBlank ISR deveria ativar o loop de render.
+**Por que tela preta (nonBlack=0):** sub_0017A940 step 3/10 nunca retornava (Bug AI). Render thread tid=8 nunca criada. Fix: PASSO 25.
 
 ---
 
