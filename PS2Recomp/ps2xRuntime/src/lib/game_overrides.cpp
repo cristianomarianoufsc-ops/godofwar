@@ -632,6 +632,23 @@ namespace
     //   Fix: retornar 1 ("modulo IOP carregado/pronto") para eliminar os retries.
     //
     // Solucao permanente: regen via truncation_overrides.csv entry 0x296a50-0x296c48.
+    // Bug AD — entry point da thread tid=3 (0x27CBD0) nao registrado no recompilado.
+    // sub_0027C100 cria essa thread via CreateThread(entry=0x27CBD0).
+    // Semantica: sceSifRpcThread — thread de polling IOP RPC.
+    // Sem IOP real, e' um loop cooperativo infinito que mantém activeThreads>0
+    // enquanto o game main (tid=1) roda e encerra via ExitThread.
+    void gow_stub_sceSifRpcThread_0x27CBD0(uint8_t* /*rdram*/, R5900Context* /*ctx*/, PS2Runtime* runtime)
+    {
+        static bool s_logged = false;
+        if (!s_logged) {
+            s_logged = true;
+            std::fprintf(stderr, "[stub:0x27CBD0] Bug AD: sceSifRpcThread — iniciando loop cooperativo IOP simulado\n");
+        }
+        while (true) {
+            runtime->cooperativeGuestYield();
+        }
+    }
+
     void gow_stub_FUN_00296a54(uint8_t* /*rdram*/, R5900Context* ctx, PS2Runtime* /*runtime*/)
     {
         static std::atomic<uint32_t> s_log{0};
@@ -665,6 +682,11 @@ namespace
         runtime.registerFunction(0x00296A54u, gow_stub_FUN_00296a54);
         std::cout << "[game_overrides] God of War: stub Bug L registrado em 0x00296A54 "
                   << "(FUN_00296a50 truncada — callback IOP modulo, early-exit sem IOP)"
+                  << std::endl;
+
+        runtime.registerFunction(0x0027CBD0u, gow_stub_sceSifRpcThread_0x27CBD0);
+        std::cout << "[game_overrides] God of War: stub Bug AD registrado em 0x0027CBD0 "
+                  << "(sceSifRpcThread — thread IOP RPC polling, loop cooperativo sem IOP real)"
                   << std::endl;
     }
 }

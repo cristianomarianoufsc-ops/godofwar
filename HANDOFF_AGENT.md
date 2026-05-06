@@ -257,43 +257,50 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-06 — PASSO 19 aplicado)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-06 — PASSO 20 + Bug AD aplicados)
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 ### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
 ### ✅ PASSO 5 — CONFIRMADO FUNCIONANDO (PASSO 5 FIRE @tick #88)
 ### ✅ PASSO 6 / PASSO 6B — CONFIRMADOS COMPILADOS (sub_00297290 tem fixes em todos os paths de saída)
-### ✅ PASSO 7A — APLICADO em sub_00294AF8 (força StartThread da Thread 0x27CBD0)
+### ✅ PASSO 7A — APLICADO em sub_00294AF8 (força THS_DORMANT=0x10 para invocar StartThread)
 ### ✅ PASSO 7B — APLICADO em sub_00283570 (força sceSifSetDma retorno=1 se =0)
 ### ✅ entry_1389d8 — HOOKS ADICIONADOS (START/renderer_type/DONE)
-### ✅ PASSO 8A — CONFIRMADO NO LOG — sub_0027A6B8 PASSO 8A disparou + sub_00297290 chamada com s1=0x2a3280 sid=0x80000593
+### ✅ PASSO 8A — CONFIRMADO NO LOG — sub_0027A6B8 PASSO 8A disparou + sub_00297290 sid=0x80000593
 ### ✅ PASSO 9A/9B — APLICADO em sub_00297470 — força v0=1 se func_2969D0 retornar 0
-### ✅ PASSO 9C — APLICADO em entry_27ab00 — força v0=1 se label_27ab80 retornar s0=0
-### ✅ PASSO 11 (A+B+C+D) — CONFIRMADO FUNCIONANDO (11A/11C dispararam, 11B/11D não precisaram — Bug Y já setou flags)
-### ✅ func_28DD70 — ANALISADA (segura: parser de format string)
-### ✅ PASSO 12 — CONFIRMADO NO LOG: "s2=0x35c1b0 s2->next=0x35c2f0 (lixo) — inicializando lista vazia"
-### ✅ PASSO 13 — APLICADO em sub_0017AA18 (força flag renderer/GS em 0x29C4D8 para bypassar spin-loop)
-### ✅ PASSO 14 — CONFIRMADO NO LOG: "0x2A1338=0 ja OK"
-### ✅ PASSO 14B — CONFIRMADO NO LOG: "IOP DMA simulado — queue=0x305600 — escrevendo 0xFFFFFFFF"
-### ✅ PASSO 15/15B/15C — DIAGNÓSTICOS escritos (sub_0026BF28 — aguardam disparo pós P18)
-### ✅ PASSO 16 — FIX em sub_0026C4B8 label_26c530: força v0=0 após entry_297670 retornar !=0
-### ✅ PASSO 17 — FIX em sub_0026BB98: stub retorna v0=1 imediatamente (IOP módulo pronto simulado)
-### ✅ PASSO 18 — FIX em sub_0026BF28 label_26c06c: força v0=0 após entry_297670(0x3055C8) retornar !=0 — CONFIRMADO NO LOG
-### ✅ MARCO: entry_1389d8 DONE + renderer_type=0x2 + Starting execution at 0x2996b0 — jogo principal INICIOU
-### ✅ BOOT#1 pc=0x2996b0 — entry_0x2996b0 rodou, processou 47 WaitEventFlag (Bug AB), depois ExitThread
-### ✅ PASSO 19 — FIX em sub_00294AF8: força v0=0 após func_294618 (lock IOP) para bypassar early exit
-### 🔴 AGUARDANDO ROUND — 2 arquivos alterados neste ciclo:
-###   - sub_00294AF8_0x294af8.cpp (P19 — lock IOP bypassado → StartThread agora pode ser chamado)
-###   - auto_round.sh (GREP_PATTERN: +PASSO 19, +activeThread)
-### 🔴 PRÓXIMO PASSO: bash auto_round.sh full no PC do Cris
+### ✅ PASSO 9C — CONFIRMADO NO LOG — entry_27ab00 label_27ab80 s0=0 → v0=1 forçado
+### ✅ PASSO 11 (A+B+C+D) — CONFIRMADO FUNCIONANDO
+### ✅ PASSO 12 — CONFIRMADO NO LOG (sentinela inicializada, pool cheio após JAL[8/11])
+### ✅ PASSO 13 — APLICADO em sub_0017AA18 (bypassar spin-loop renderer/GS)
+### ✅ PASSO 14/14B — CONFIRMADOS NO LOG
+### ✅ PASSO 15/15B/15C/16/17/18 — CONFIRMADOS NO LOG
+### ✅ MARCO: entry_1389d8 DONE + renderer_type=0x2 + Starting execution at 0x2996b0
+### ✅ BOOT#1 pc=0x2996b0 — entry_0x2996b0 rodou, 47 WaitEventFlag (Bug AB), depois ExitThread
+### ✅ PASSO 19 — CONFIRMADO NO LOG: "func_294618 retornou v0=0x1 -- forcando v0=0"
+###    MAS: func_299230 retornou v0=0 → beqz label_294b68 → FAIL (Bug AC-B)
+### ✅ PASSO 20 — APLICADO em sub_00294AF8: força v0=1 após func_299230 retornar 0
+###    → bypass label_294b68 → prossegue para func_293B20 → PASSO 7A → StartThread(tid=2)
+### ✅ Bug AD — APLICADO em game_overrides.cpp: stub 0x27CBD0 (sceSifRpcThread)
+###    → loop cooperativo infinito → StartThread(tid=3) agora terá entry registrado
+### 🔴 AGUARDANDO ROUND — 3 arquivos alterados neste ciclo:
+###   - sub_00294AF8_0x294af8.cpp (PASSO 20 — bypass label_294b68 → StartThread(tid=2))
+###   - game_overrides.cpp (Bug AD — stub 0x27CBD0 sceSifRpcThread registrado)
+###   - auto_round.sh (GREP_PATTERN: +PASSO 20, +Bug AD, +27CBD0, +frame:upload, +nonBlack)
+### 🔴 BUILDS NECESSÁRIOS:
+###   sub_00294AF8_0x294af8.cpp → recompilar.sh (detectado automaticamente pelo loop)
+###   game_overrides.cpp → rebuild_runtime.sh (loop detecta mudança em ps2xRuntime/)
 ### 🔴 APÓS ROUND → verificar:
-###   [PASSO 19] + StartThread id=2 + StartThread id=3 + threads ativas + [BugP_entry] (FUN_002947c8) + jogo rodando
-### ⚠️  BUG AC — CAUSA RAIZ IDENTIFICADA:
-###   sub_00294AF8 chamada 2x (para tid=2 @linha 100 e tid=3 @linha 356 do log).
-###   func_294618 (tenta adquirir lock IOP) retorna v0!=0 → branch label_294c58 (exit imediato).
-###   Nem PASSO 7A nem StartThread são jamais alcançados → tid=2 e tid=3 ficam dormentes.
-###   Após ExitThread do main (tid=1), activeThreads=0 → processo encerra.
-###   PASSO 19 força v0=0 → função prossegue → PASSO 7A força dormant → StartThread invocado.
+###   [PASSO 20] disparou + StartThread(tid=2) chamado + [stub:0x27CBD0] apareceu
+###   + tid=2 entra em FUN_002947c8 + activeThreads>0 após ExitThread de tid=1
+###   + jogo continua rodando (frame:upload nonBlack>0?)
+### ⚠️  Bug AC-B — CAUSA RAIZ (round pós-PASSO 19):
+###   sub_00294AF8 1ª chamada (tid=2): PASSO 19 OK mas func_299230 retorna 0
+###   → beqz $v0, label_294b68 → exit sem StartThread
+###   PASSO 20 força v0=1 → function prossegue → PASSO 7A → StartThread(tid=2)
+### ⚠️  Bug AD — CAUSA RAIZ (round pós-PASSO 19):
+###   StartThread(tid=3, entry=0x27CBD0) → "entry not registered" → thread nunca inicia
+###   → após ExitThread(tid=1), activeThreads=0 → processo encerra
+###   Stub 0x27CBD0 registrado em game_overrides.cpp → rebuild_runtime.sh requerido
 
 ---
 

@@ -109,6 +109,18 @@ void sub_00294AF8_0x294af8(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         if (ctx->pc != 0x294B28u) { return; }
     }
     ctx->pc = 0x294B28u;
+    // PASSO 20: func_299230 retorna v0=0 para tid=2, causando branch a label_294b68 (FAIL/exit).
+    // Sem IOP real, forcamos v0=1 para prosseguir ate func_293B20 -> PASSO 7A -> StartThread(tid=2).
+    if (GPR_U64(ctx, 2) == GPR_U64(ctx, 0)) {
+        static bool s_passo20_logged = false;
+        if (!s_passo20_logged) {
+            s_passo20_logged = true;
+            std::fprintf(stderr,
+                "[PASSO 20] sub_00294AF8: func_299230 retornou v0=0 -- forcando v0=1 para bypassar label_294b68 e invocar StartThread(tid=%u)\n",
+                GPR_U32(ctx, 17));
+        }
+        SET_GPR_S32(ctx, 2, 1);
+    }
     // 0x294b28: 0x1040000f  beqz        $v0, . + 4 + (0xF << 2)
     ctx->pc = 0x294B28u;
     {
