@@ -1,0 +1,31 @@
+A lista de jogos de PS2 que ganharam "ports nativos" (feitos por fãs através de descompilação) ainda é pequena, justamente porque é um trabalho monumental de engenharia.
+Diferente da emulação, onde o PC "finge" ser um PS2, nesses ports o jogo roda como se tivesse sido feito originalmente para o Windows. Aqui estão os principais:
+1. A Trilogia Jak and Daxter (O "Padrão Ouro")
+Este é o projeto mais avançado que existe (chamado OpenGOAL). Eles reescreveram o código do jogo para rodar nativamente no PC.
+
+    Jak and Daxter: The Precursor Legacy: 100% jogável, com suporte a 4K, ultra-wide e mods.
+    Jak II: 100% jogável.
+    Jak 3: Recentemente finalizado e totalmente jogável no PC.
+
+2. Grand Theft Auto (Projetos re3 e reVC)
+Embora a Rockstar tenha tentado derrubar esses projetos, eles são ports nativos baseados na engenharia reversa dos jogos originais de PS2/PC.
+
+    GTA III: Port nativo completo.
+    GTA Vice City: Port nativo completo.
+    GTA San Andreas: Existem versões "recompiladas" (como a que você viu no R36S), que muitas vezes usam a base da versão de Android (que é mais fácil de portar para Linux/ARM) adaptada para rodar como um jogo nativo.
+
+3. Em Andamento (Quase lá)
+Estes jogos já possuem versões de teste ou estão com a descompilação muito avançada:
+
+    Sly Cooper and the Thievius Raccoonus: O primeiro jogo da série já tem um port funcional em estágio avançado.
+    The Simpsons Hit & Run: Existe um projeto de descompilação ativo, embora a maioria das pessoas use o "Lucas' Mod Launcher" (que melhora a versão original de PC).
+    Silent Hill 2: Existe um projeto de descompilação, mas o "Silent Hill 2: Enhanced Edition" (um projeto de fãs que reconstrói o jogo) é tão perfeito que funciona como um port nativo na prática.
+
+4. A Nova Tecnologia: "Recompilação Estática"
+Em 2024/2025, surgiu uma nova técnica que promete acelerar isso. Em vez de ler o código linha por linha (que leva anos), um software "traduz" o jogo de PS2 para PC automaticamente.
+
+    O primeiro grande teste foi com Zelda: Majora's Mask (de N64), mas os desenvolvedores já estão testando isso com jogos de PS2. Isso significa que, em breve, essa lista pode crescer muito rápido.
+
+Por que não tem mais jogos?
+Para fazer um port como o do Jak and Daxter, os fãs levaram mais de 2 anos apenas para entender como o jogo "falava" com o processador do PS2. É como traduzir um livro inteiro de uma língua morta que ninguém mais fala.
+Resumo: Se você quer a experiência de "Port Nativo" hoje, a série Jak and Daxter é o melhor exemplo do que a comunidade consegue fazer. O resto ainda depende muito de emuladores como o PCSX2, que hoje em dia é tão bom que faz o jogo parecer um port nativo (com texturas em HD e 60fps).
