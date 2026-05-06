@@ -659,6 +659,10 @@ namespace
     // ========================================================================
     void gow_stub_func_13E090_pool_expand(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime)
     {
+        // Bug AF (2026-05-06): pool_array[idx] pode conter 0 (entrada nula/nao-inicializada)
+        // mesmo quando idx < limit. PASSO 22A original retornava v0=0 nesse caso →
+        // sub_0013DC78 recebia s2=null silenciosamente → 13+ falhas em JAL[9/11].
+        // Fix: checar entryPtr != 0 antes de retornar; se 0, tratar como esgotado e forjar.
         constexpr uint32_t kPoolBase = 0x2CB940u;
         const uint32_t poolArrayBase = READ32(kPoolBase + 0u);
         const uint32_t currentIdx    = READ32(kPoolBase + 4u);
@@ -668,26 +672,37 @@ namespace
         static std::atomic<uint32_t> s_forgeCount{0u};
         const uint32_t callN = s_callCount.fetch_add(1u, std::memory_order_relaxed) + 1u;
 
-        if (callN <= 6u)
-        {
-            std::fprintf(stderr,
-                "[PASSO 22A] func_13E090 chamada #%u: pool_base=0x%x idx=%u limit=%u\n",
-                callN, poolArrayBase, currentIdx, poolLimit);
-        }
-
         if (poolArrayBase != 0u && currentIdx < poolLimit)
         {
             const uint32_t entryAddr = poolArrayBase + currentIdx * 4u;
             const uint32_t entryPtr  = READ32(entryAddr);
-            if (callN <= 6u)
+
+            if (entryPtr != 0u)
             {
-                std::fprintf(stderr,
-                    "[PASSO 22A] func_13E090 #%u: pool OK — entry=0x%x\n",
-                    callN, entryPtr);
+                if (callN <= 20u)
+                {
+                    std::fprintf(stderr,
+                        "[PASSO 22A] func_13E090 chamada #%u: pool_base=0x%x idx=%u limit=%u"
+                        " — entry=0x%x OK\n",
+                        callN, poolArrayBase, currentIdx, poolLimit, entryPtr);
+                }
+                SET_GPR_U32(ctx, 2, entryPtr);
+                ctx->pc = GPR_U32(ctx, 31);
+                return;
             }
-            SET_GPR_U32(ctx, 2, entryPtr);
-            ctx->pc = GPR_U32(ctx, 31);
-            return;
+
+            // Bug AF: entrada nula mesmo com idx < limit — forjar no
+            std::fprintf(stderr,
+                "[Bug AF] func_13E090 chamada #%u: pool_base=0x%x idx=%u limit=%u"
+                " — pool_array[%u]=0 (entrada nula) ra=0x%x — forjando no\n",
+                callN, poolArrayBase, currentIdx, poolLimit, currentIdx, GPR_U32(ctx, 31));
+        }
+        else
+        {
+            std::fprintf(stderr,
+                "[PASSO 22A] func_13E090 chamada #%u: pool esgotado"
+                " (base=0x%x idx=%u limit=%u) ra=0x%x — forjando no\n",
+                callN, poolArrayBase, currentIdx, poolLimit, GPR_U32(ctx, 31));
         }
 
         const uint32_t forgeN = s_forgeCount.fetch_add(1u, std::memory_order_relaxed) + 1u;
@@ -709,13 +724,9 @@ namespace
             WRITE32(guestPtr + i, 0u);
         }
 
-        if (forgeN <= 16u)
-        {
-            std::fprintf(stderr,
-                "[PASSO 22A] func_13E090 forge #%u: pool esgotado (idx=%u>=limit=%u)"
-                " — novo no guestPtr=0x%x (ra=0x%x)\n",
-                forgeN, currentIdx, poolLimit, guestPtr, GPR_U32(ctx, 31));
-        }
+        std::fprintf(stderr,
+            "[PASSO 22A] func_13E090 forge #%u: guestPtr=0x%x (ra=0x%x)\n",
+            forgeN, guestPtr, GPR_U32(ctx, 31));
 
         SET_GPR_U32(ctx, 2, guestPtr);
         ctx->pc = GPR_U32(ctx, 31);

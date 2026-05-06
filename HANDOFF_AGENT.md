@@ -1153,62 +1153,75 @@ sub_00138D48 [JAL 8/11]
 
 ---
 
-### ESTADO ATUAL — 2026-05-06 (PASSO 22A+22B aplicados) — fix pool 0x2CB940 + log StartThread
+### ESTADO ATUAL — 2026-05-06 (Bug AF aplicado) — PASSO 22A corrigido: entrada nula no pool
 
-#### Causa raiz da tela preta — MAPEADA COMPLETAMENTE ✅
+#### Bug AF — CAUSA RAIZ dos 13+ `s2=null` em JAL[9/11] — DIAGNOSTICADA E CORRIGIDA ✅
 
-**Ring buffer FUN_002947c8 (0x326f48):**
+**O que o round pós-PASSO 22A+22B revelou:**
+
+- Pool struct em 0x2CB940 tinha `pool_base=0x304728, idx=127, limit=128` (não limit=3 como esperado)
+- Chamadas #1-#6 em JAL[6/11]: todas retornam `entry=0x35c1b0` com idx=127 (pool OK)
+- Chamadas #7+ em JAL[9/11] (via sub_00175CD0, sub_0017E530, sub_00118798): **PASSO 22A entrava no caminho "pool OK"** (`idx=127 < limit=128`) mas lia `pool_array[127]` = **0x00000000 (entrada nula, não inicializada)**
+- PASSO 22A retornava `v0=0` sem logar nem forjar → sub_0013DC78 recebia `s2=null` → 13+ falhas silenciosas
+
+**Por que o forge não rodava:** A condição `poolArrayBase != 0 && currentIdx < poolLimit` era TRUE (pool "OK"), então o código nunca caía no caminho do forge. A verificação de `entryPtr != 0` estava ausente — Bug AF.
+
+**Callees de sub_0017A940 confirmados que chamam func_13E090:**
+- `sub_00175CD0` (0x175CD0) — jal func_13E090 em 0x175cec
+- `sub_0017E530` (0x17E530) — jal func_13E090 em 0x17e550
+- `sub_00118798` (0x118798) — jal func_13E090 em 0x1187a8, depois jal func_13DC78
+
+**Fix Bug AF** — `game_overrides.cpp` → `gow_stub_func_13E090_pool_expand`:
+```cpp
+// ANTES (bug): retornava entryPtr sem checar se é 0
+SET_GPR_U32(ctx, 2, entryPtr);  // retornava 0 se entrada nula!
+return;
+
+// DEPOIS (fix): checa entryPtr != 0; se 0, cai no forge
+if (entryPtr != 0u) {
+    SET_GPR_U32(ctx, 2, entryPtr);  // entry válida
+    return;
+}
+// entryPtr == 0 → loga "[Bug AF]" e forja novo nó do bump allocator
 ```
-+0        = read_index (& 0x1FF)
-+8+idx*2  = TYPE byte   (0=iSignalSema, 1=WakeupThread, 2=syscall 0x37, ≥3=sub_00296440)
-+9+idx*2  = DATA byte
-```
-- Tipo=0 → `iSignalSema(data)` — toca campainha de outro semáforo
-- **Tipo=1 → `WakeupThread(data)`** — acorda thread de render ← o que precisamos
-- Tipo=2 → `ReleaseWaitThread(data)`
 
-**Pool 0x2CB940 — estrutura decodificada:**
-```
-READ32(0x2CB940) = pool_array_base   ← array de ponteiros para nós
-READ32(0x2CB944) = current_index     ← próximo slot a servir
-READ32(0x2CB948) = pool_limit        ← máximo de entradas (= 3)
-```
-`func_13E090`: se `current_index >= pool_limit` → retorna 0 (pool esgotado).
-Pool tem apenas 3 slots: 1 usado no JAL[6/11] (sub_0013FCA8), 2 usados no JAL[9/11] (sub_0017A940). Resultado: **13+ chamadas a sub_0013DC78 recebem s2=null** → operações de lista ligada falham silenciosamente → CreateThread para tid=4..8 nunca é chamado → StartThread(8) via func_293930 falha → WakeupThread(8) no ring buffer = erro de TID inexistente → **tela preta**.
-
-**func_293930 (0x293930) = `syscall v1=0x12` = `StartThread(a0=tid, a1=arg)`**
-- Chamado de sub_0017A940 com `a0=8, a1=0x157358` — inicia thread de render
-- Sem CreateThread para tid=8 → StartThread(8) falha silenciosamente
-
-#### PASSO 22A + 22B — implementados (este commit)
-
-**PASSO 22A** — override de `func_13E090` (0x13E090) em `game_overrides.cpp`:
-- Quando `current_index < pool_limit` E `pool_array_base != 0`: comportamento original (retorna `pool_array[current_index]`)
-- Quando pool esgotado (`current_index >= pool_limit`): aloca nó do bump allocator (`kGowStubHeapBase + offset`, 0x01000000+) e retorna guestPtr válido zerado
-- Logs: `[PASSO 22A] func_13E090 chamada #N`, `[PASSO 22A] func_13E090 forge #N guestPtr=0x...`
-
-**PASSO 22B** — override de `func_293930` (0x293930) em `game_overrides.cpp`:
-- Loga `thid, arg, ra` antes do syscall e `resultado v0` depois
-- Executa `runtime->handleSyscall(rdram, ctx, 0x0u)` com `v1=18` (StartThread) — comportamento preservado
-- Logs: `[PASSO 22B] func_293930 StartThread #N: thid=N arg=0x... resultado: v0=0x...`
+Logs adicionados (agora sempre logar, sem limite callN<=6):
+- `[PASSO 22A] func_13E090 chamada #N: ... entry=0x... OK` — entrada válida
+- `[Bug AF] func_13E090 chamada #N: pool_array[idx]=0 (entrada nula) ra=0x... — forjando no` — fix em ação
+- `[PASSO 22A] func_13E090 chamada #N: pool esgotado ...` — idx >= limit
+- `[PASSO 22A] func_13E090 forge #N: guestPtr=0x...` — sempre (sem limite forgeN<=16)
 
 **Arquivo alterado:** `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp` → `rebuild_runtime.sh`
 
-#### O que esperar no próximo round (pós-PASSO 22A+22B)
+#### O que esperar no próximo round (pós-Bug AF)
 
 ```
-[PASSO 22A] func_13E090 chamada #1: pool_base=0x... idx=0 limit=3
-[PASSO 22A] func_13E090 #1: pool OK — entry=0x35c1b0
-...
-[PASSO 22A] func_13E090 forge #1: pool esgotado (idx=3>=limit=3) — novo no guestPtr=0x01000040
-→ [PASSO 12] sub_0013DC78: s2=0x01000040 sentinela OK (next=self)   ← 13 vezes agora!
+[PASSO 22A] func_13E090 chamada #1..#2: pool OK entry=0x35c1b0
+[Bug AF] func_13E090 chamada #3: pool_array[127]=0 (entrada nula) ra=0x... — forjando no
+[PASSO 22A] func_13E090 forge #1: guestPtr=0x01000140 (ra=0x...)
+→ [PASSO 12] sub_0013DC78: s2=0x01000140 sentinela OK   ← antes era null!
+... (13 vezes forjando, 13 vezes s2=OK em vez de null)
 → [CreateThread] id=4 entry=... (render thread criado!)
-→ [CreateThread] id=5 ...
-→ [PASSO 22B] func_293930 StartThread #1: thid=8 arg=0x157358
-→ [PASSO 22B] func_293930 StartThread #1 resultado: v0=0x0         ← sucesso!
-→ [WakeupThread] tid=8 ... (render thread acordado!)
+→ [CreateThread] id=5..8 ...
+→ [PASSO 22B] func_293930 StartThread #N: thid=8 arg=0x157358
+→ [PASSO 22B] func_293930 StartThread #N resultado: v0=0x0  ← sucesso!
 → frame:upload nonBlack>0 ???
 ```
+
+#### Estado anterior — PASSO 22A+22B — implementados (commit anterior)
+
+**Pool 0x2CB940 — estrutura real (corrigida pós-round):**
+```
+READ32(0x2CB940) = pool_array_base = 0x304728
+READ32(0x2CB944) = current_index  = 127
+READ32(0x2CB948) = pool_limit     = 128   ← NÃO era 3!
+pool_array[127]  = 0x35c1b0 (única entrada válida das 128)
+pool_array[0..126] = 0x00000000 (entradas nulas — Bug AF)
+```
+
+**func_293930 (0x293930) = `syscall v1=0x12` = `StartThread(a0=tid, a1=arg)`**
+- Chamado de sub_0017A940 com `a0=8, a1=0x157358` — inicia thread de render
+- Sem CreateThread para tid=8 → StartThread(8) falha silenciosamente (será resolvido com Bug AF)
 
 ---
 
