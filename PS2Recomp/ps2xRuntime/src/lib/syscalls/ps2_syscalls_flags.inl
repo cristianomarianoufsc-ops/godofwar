@@ -345,6 +345,28 @@ void WaitSema(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
             // o WaitSema acordar, e o jogo avanca para 35+ modulos SIF (log 6625971).
         }
 
+        // PASSO 21 — Bug AE: FUN_002947c8 (tid=2, IOP module loader) bloqueia
+        // em WaitSema(sid=3) com delta_ms_since_RPC_BIND=never porque nao ha
+        // RPC_BIND previo neste callsite (pc=0x293C64 ra=0x294810).
+        // No PS2 real, o IOP sinalizaria este sema apos carregar cada modulo.
+        // Como nao temos IOP real, forjamos o signal imediatamente.
+        // Condicao especifica: delta=never + pc=0x293C64 + ra=0x294810 (FUN_002947c8).
+        static std::atomic<uint32_t> s_passo21Logs{0};
+        if (deltaMsSinceBind < 0 &&
+            ctx->pc == 0x293C64u &&
+            getRegU32(ctx, 31) == 0x294810u &&
+            sema->count < sema->maxCount)
+        {
+            const uint32_t p21Log = s_passo21Logs.fetch_add(1, std::memory_order_relaxed);
+            if (p21Log < 32u)
+            {
+                std::cout << "[PASSO 21] Bug AE: Forjando iSignalSema(sid=" << sid
+                          << ") para FUN_002947c8 (IOP module loader) — delta=never, sem RPC_BIND previo"
+                          << std::endl;
+            }
+            sema->count++;
+        }
+
         if (info)
         {
             std::lock_guard<std::mutex> tLock(info->m);

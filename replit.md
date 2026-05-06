@@ -64,6 +64,13 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
 - **NUNCA feche o loop `auto_round.sh loop` para rodar outro comando.** Se precisar rodar algo manual, abra Terminal 2 separado.
 - **NÃO pedir log ao Agente Cris.** Os logs são enviados automaticamente para o GitHub.
 
+## Estado atual do boot (2026-05-06)
+
+- **Jogo roda por 300s** (limite do auto_round.sh) — SIGINT final é timeout, não crash
+- **activeThreads=2** após ExitThread de tid=1: tid=2 (IOP loader) + tid=3 (sceSifRpcThread stub)
+- **Bug AE (PASSO 21):** tid=2 bloqueado em WaitSema(sid=3, pc=0x293C64, ra=0x294810) — fix aplicado em `ps2_syscalls_flags.inl`, aguarda `rebuild_runtime.sh`
+- **frame:upload nonBlack=0** — renderização ativa mas tela preta; nonBlack>0 = primeiro frame real do jogo
+
 ## Gotchas
 
 - **Critical `src/recompiled/` directories:** Edits to `./src/recompiled/` are ignored; always modify `GOD_PC_PORT_FINAL/src/recompiled/`.
@@ -71,6 +78,8 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
 - **Never run `bash build.sh`:** This recompiles all 5,626 `.cpp` files, taking ~80 minutes and consuming resources unnecessarily. `recompilar.sh` is for incremental builds.
 - **`git fetch` is blocked locally:** Always use `curl raw.githubusercontent.com` to access GitHub content (e.g., logs).
 - **Truncated functions:** Many functions are initially truncated by the recompiler and require manual fixes or `truncation_overrides.csv` entries and `regen_truncated.sh`. This is a common source of bugs.
+- **"Error during program execution: PS2 Thread Exit"** no log = ExitThread normal de tid=1, não erro fatal.
+- **SIGINT (sinal 2) no final** = timeout de 300s do auto_round.sh, não crash do jogo.
 
 ## Pointers
 

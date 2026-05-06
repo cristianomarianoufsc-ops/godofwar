@@ -1153,57 +1153,78 @@ sub_00138D48 [JAL 8/11]
 
 ---
 
-### ESTADO ATUAL — 2026-05-05 (round pós-PASSO 9C)
+### ESTADO ATUAL — 2026-05-06 (round pós-PASSO 20 + Bug AD) — 🏆 JOGO RODANDO 300s!
 
-**PASSO 9C disparou com sucesso** (linha 436 do log):
+#### MEGA VITÓRIA CONFIRMADA neste round
+
+O jogo **RODOU POR 300 SEGUNDOS** antes de ser encerrado pelo timeout do `auto_round.sh`. Não foi crash — foi o script de automação matando um processo vivo com SIGINT (sinal 2). Arquitetura de threads confirmada:
+
+| Thread | Papel | Status no round |
+|---|---|---|
+| tid=1 | entry_0x2996b0 (game main init) | Saiu via ExitThread ✅ normal |
+| tid=2 | FUN_002947c8 (IOP module loader) | Bloqueou em WaitSema(sid=3) — **Bug AE** |
+| tid=3 | 0x27CBD0 (sceSifRpcThread stub) | Rodou loop cooperativo infinito ✅ |
+
+`activeThreads` foi 1→3→2 (ExitThread de tid=1 decrementou 1). Loop Raylib continuou pois activeThreads=2 > 0. `[frame:upload]` disparou (tela preta, nonBlack=0 — renderização tentou).
+
+**"Error during program execution: PS2 Thread Exit"** é o ExitThread de tid=1 capturado pelo lambda da gameThread — **comportamento NORMAL**.
+
+#### PASSO 20 + Bug AD confirmados ✅
+
 ```
-[PASSO 9C] entry_27ab00: label_27ab80 retornou s0=0 (READ32(0x202A2900)=0) -- forcando v0=1 para sair de label_17bd50
+[PASSO 20] sub_00294AF8: func_299230 retornou v0=0 -- forcando v0=1 ...
+[sub_00294AF8] StartThread(tid=2) chamando agora
+[StartThread] id=2 entry=0x2947c8
+[BugP_entry] FUN_002947c8 START a0=0x326f48
+[StartThread] id=3 entry=0x27cbd0
+[stub:0x27CBD0] Bug AD: sceSifRpcThread — iniciando loop cooperativo IOP simulado
 ```
 
-**Progresso enorme:** o jogo avançou muito além do ponto anterior:
-- 8 novos RPC_BINDs (sids 12-16, 21-23) todos forjados pelo PASSO 3
-- `sub_0027C100` apareceu e completou (`PATH=full`)
-- `entry_1389d8` apareceu e completou dois RPC_BINDs (sids 0x123456 e 0x123457)
-- `sub_00283570` apareceu → novo loop identificado
+#### Bug AE — PASSO 21 aplicado (próximo build)
 
-**Novo travamento (PASSO 10A):**
+**Problema:** tid=2 bloqueia imediatamente em `WaitSema(sid=3)`:
 ```
-sub_00283570 → label_283600: func_293FC0 (sceSifDmaStat, a0=DMA_ID=1 fictício)
-  → bgez v0 → loop com cooperativeGuestYield
-  → sem IOP real: sempre retorna >= 0 (DMA "pendente")
-  → loop eterno @VBlank tick #60 até #17940
+[WaitSema:block] tid=2 sid=3 pc=0x293c64 ra=0x294810 delta_ms_since_RPC_BIND=never
 ```
+- sid=3 criado com `init=0, max=255` — aguarda sinal do IOP que nunca vem
+- `delta_ms_since_RPC_BIND=never` → PASSO 3 não intervém (precisa deltaMsSinceBind >= 0)
 
-**PASSO 10A aplicado** em `sub_00283570_0x283570.cpp` linha 222:
-- Após `func_293FC0` retornar, se v0>=0 → força v0=-1 (DMA completo)
-- Seguro: DMA ID=1 é fictício do PASSO 7B, não existe IOP real para completar
-- Label `label_283600` apenas confirma envio — sem IOP real, a confirmação é imediata
+**Fix (PASSO 21)** aplicado em `PS2Recomp/ps2xRuntime/src/lib/syscalls/ps2_syscalls_flags.inl`:
+- Quando `deltaMsSinceBind < 0` (never) E `pc=0x293C64` E `ra=0x294810` → forge `iSignalSema` imediatamente
+- Específico para o callsite de FUN_002947c8 (IOP module loader, tid=2)
+- `rebuild_runtime.sh` necessário (muda arquivo ps2xRuntime)
 
-**Sequência de módulos vistos até agora (boot chain completa):**
+#### Sequência de boot completa até este round
+
 ```
-[boot_stub] init → [138D48] JAL chain
-→ sub_0017BC80 START
-→ sub_0027A810 → sub_00297290 (sid=0x80000592)
+[boot_stub] init → [138D48] JAL [1..8/11]
+→ sub_0017BC80 START → sub_0027A810 → sub_00297290 (RPC_BIND sid=0x80000592)
 → sub_0027A6B8 (a0=0x22) → [PASSO 8A] → sub_00297290 (sid=0x80000593)
 → [PASSO 9C] → sai loop label_17bd50
 → sub_00297290 (sid=0x80000003) → sub_00297290 (sid=0x80000006)
 → sub_0027C100 [PATH=full] → entry_281510 → entry_27d5b8 → sub_00294AF8
 → sub_00283570 (a0=0x29c4e0) → [PASSO 7B+PASSO 10A]
 → entry_1389d8 → sub_00297290 (sid=0x123456) → sub_00297290 (sid=0x123457)
-→ ??? (próximo obstáculo pós-PASSO 10A)
+→ [138D48] JAL [8/11] → DONE → entry_2996b0 (game main)
+→ 47 WaitEventFlag (Bug AB) → ExitThread(tid=1)
+→ tid=2 bloqueado WaitSema(sid=3) [Bug AE — aguarda PASSO 21]
+→ tid=3 loop cooperativo ativo (300s timeout)
 ```
 
-### O que o próximo log deve mostrar
+#### O que esperar no próximo round (pós-PASSO 21)
 
 ```
-[PASSO 10A] sub_00283570: sceSifDmaStat retornou X (>= 0, pending) -- forcando v0=-1 ...
-→ sub_00283570 continua: func_298CE8 → func_2988E0 → retorna
-→ entry_1389d8 DONE (ou equivalente)
-→ alguma nova função/loop a identificar
+[PASSO 21] Bug AE: Forjando iSignalSema(sid=3) para FUN_002947c8 (IOP module loader) — delta=never, sem RPC_BIND previo
+[WaitSema:wake] tid=2 sid=3 ret=0 count=0
+→ FUN_002947c8 processa fila de módulos (provavelmente vazia → loop de volta a WaitSema)
+→ ou avança para próxima inicialização IOP
+→ frame:upload nonBlack>0 ??? (tela preta → primeiros pixels do jogo!)
 ```
 
 ### ⚠️ Lembrete ao analista
-- Sempre pedir ao Agente Cris para clicar em **Push** no Replit após qualquer edição de código.
-- O log FULL (`log_latest_full.txt`) tem 852 linhas neste round — SEMPRE ler o full, nunca só o filtered.
+- O SIGINT no final do log é o timeout de 300s do auto_round.sh — **NÃO é crash**.
+- `[run] exiting loop, activeThreads=N` SÓ aparece se o processo encerrar limpo — com timeout não aparece.
+- `frame:upload nonBlack=0` = tela preta; quando nonBlack>0 = primeiro frame do jogo visível.
 - PASSO 7B já existe em sub_00283570 (label_2835e8, força s0=1 se sceSifSetDma retorna 0).
 - PASSO 10A: sub_00283570 label_283600 (sceSifDmaStat, força v0=-1 se >= 0).
+- **Arquivo alterado nesta sessão:** `PS2Recomp/ps2xRuntime/src/lib/syscalls/ps2_syscalls_flags.inl` (PASSO 21) → `rebuild_runtime.sh`.
