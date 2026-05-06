@@ -257,7 +257,7 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-06 — PASSO 22C aplicado)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-06 — PASSO 23 aplicado)
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 ### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
@@ -281,28 +281,40 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 ### ✅ PASSO 21 — CONFIRMADO NO LOG: tid=2 acordou via WaitSema:wake, processou fila vazia, dormiu
 ### ✅ Bug AF — CORRIGIDO (PASSO 22A): pool idx=127 entry=0x35c1b0 OK; cap log 20→200; +ra
 ### ✅ PASSO 22B — ATIVO: loga StartThread via func_293930 (0x293930)
-### ✅ PASSO 22C — APLICADO (2026-05-06) em sub_0013DC78_0x13dc78.cpp:
-###   CAUSA RAIZ dos 13+ s2=null: callees de sub_0017A940 (JAL[9/11]) como sub_0017E530
-###   leem a0 de READ32(globals não-inicializadas — 0x32EC4C, 0x32F198, etc) que o IOP
-###   loader ausente deveria popular. NÃO vêm de func_13E090!
-###   Fix: bump heap [0x01200000..0x01300000], nó de 0x40 bytes, sentinela next=self, prev=self.
-###   Logs: [PASSO 22C] sub_0013DC78 forge #N: a0=null → guestPtr=0x... ra=0x...
-### 🔴 AGUARDANDO ROUND — 3 arquivos alterados neste ciclo:
-###   - GOD_PC_PORT_FINAL/src/recompiled/sub_0013DC78_0x13dc78.cpp (PASSO 22C)
-###   - PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp (PASSO 22A cap 20→200, +ra)
-###   - auto_round.sh (GREP_PATTERN: +PASSO 22, +Bug AF)
+### ✅ PASSO 22C — CONFIRMADO NO LOG: 133 forges (esperados ~13 — loop maior). Heap OK (133×64B=8KB de 256KB).
+### ✅ entry_1389d8 — DONE + renderer_type=0x2 CONFIRMADOS neste round.
+### ✅ Bug AG — IDENTIFICADO E FIXADO (PASSO 23A, 2026-05-06):
+###   CAUSA: 0x1838d0 (JAL[5/11] de sub_00138D48) é LABEL DENTRO de entry_183878_0x183948.
+###   Não está registrado como entry point separado → runtime diz "NAO REGISTRADA" → skip.
+###   Resultado: registradores GS nunca escritos → fbp=0, fbw=0 → tela preta.
+###   Fix: stub gow_stub_0x1838d0_gs_init em game_overrides.cpp escreve:
+###     WRITE32(0x10008020, 0)       — GS_PMODE
+###     WRITE32(0x10008030, 0x2b0f00) — GS_SMODE1
+###     WRITE32(0x1000e020, 1)       — GS_DISPLAY2
+###     WRITE32(0x1000e010, 1)       — GS_DISPLAY1
+###     WRITE32(0x10008000, 0x145)   — GS_IMR
+###   Log: [PASSO 23A] 0x1838d0: GS init stub — PMODE=0 SMODE1=0x2b0f00 DISPLAY1/2=1 IMR=0x145
+### ✅ PASSO 23B — APLICADO: logs em sub_0017A940_0x17a940.cpp após cada uma das 10 chamadas:
+###   175978(1/10) → 175CD0(2/10) → 17E530(3/10) → 17BFF0(4/10) → 131A58(5/10)
+###   → 118798(6/10) → 293930/StartThread(7/10) → 182810(8/10) → 21C788(9/10) → 17D778(10/10)
+###   OBJETIVO: pinçar em qual das 10 sub_0017A940 trava (JAL[9/11] nunca retornou em 300s).
+### ✅ PASSO 23C — APLICADO: stub gow_stub_0x283770_init_guard para 0x283770 (JAL[1/11]):
+###   Guard de init: se 0x326940!=0 retorna; senão seta 1 e chama 0x2836c0 (entry_283790).
+### 🔴 AGUARDANDO ROUND — 4 arquivos alterados neste ciclo:
+###   - PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp (PASSO 23A + 23C)
+###   - GOD_PC_PORT_FINAL/src/recompiled/sub_0017A940_0x17a940.cpp (PASSO 23B)
+###   - auto_round.sh (GREP_PATTERN: +PASSO 23, +sub_0017A940)
+###   - replit.md + HANDOFF_AGENT.md (este arquivo)
 ### 🔴 BUILDS NECESSÁRIOS:
-###   sub_0013DC78_0x13dc78.cpp → recompilar.sh (loop detecta mudança em src/recompiled/)
 ###   game_overrides.cpp → rebuild_runtime.sh (loop detecta mudança em ps2xRuntime/)
+###   sub_0017A940_0x17a940.cpp → recompilar.sh (loop detecta mudança em src/recompiled/)
 ###   → loop auto_round.sh faz os dois automaticamente
 ### 🔴 APÓS ROUND → verificar no filtered log:
-###   [PASSO 22C] forge #1..#13 → confirma 13 nulls corrigidos
-###   [CreateThread] id=4,5,6,7,8 → threads de render criadas
-###   [PASSO 22B] StartThread #N thid=8 resultado: v0=0x0 → StartThread bem-sucedido
-###   nonBlack>0 → primeiro frame colorido!
-### ⚠️  Bug AE (a confirmar) — se CreateThread(4..8) aparecer mas nonBlack=0:
-###   as threads de render podem precisar de mais stubs (GSHandler, VU1, DMA).
-###   Aguardar round para diagnóstico.
+###   [PASSO 23A] 0x1838d0: GS init stub → confirma GS registers escritos
+###   [PASSO 23B] sub_0017A940: apos func_XXX (N/10) → pinça onde trava
+###   Se (N/10) chegar a 10/10: sub_0017A940 completou → JALs 10/11 e 11/11 serão próximos
+###   Se travar em N/10: a função N é o próximo alvo de investigação
+###   nonBlack>0 → OBJETIVO PRINCIPAL deste round!
 
 ---
 

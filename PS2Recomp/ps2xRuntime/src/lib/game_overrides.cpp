@@ -788,6 +788,61 @@ namespace
         ctx->pc = GPR_U32(ctx, 31);  // return (ra=0 → dispatcher limpa)
     }
 
+    // ---------------------------------------------------------------------------
+    // PASSO 23A — stub para 0x1838d0 (JAL[5/11] de sub_00138D48)
+    // 0x1838d0 e um LABEL dentro de entry_183878_0x183948 que o runtime nao
+    // consegue resolver como entry point separado → NAO REGISTRADA → skip.
+    // Esta funcao replica exatamente o bloco 0x1838d0..0x183940 (GS register
+    // init: PMODE=0, SMODE1=0x2b0f00, DISPLAY2=1, DISPLAY1=1, IMR=0x145).
+    // O loop cop0 (bc0f) foi recompilado como sempre-false — mantemos assim.
+    // ---------------------------------------------------------------------------
+    void gow_stub_0x1838d0_gs_init(uint8_t* rdram, R5900Context* ctx, PS2Runtime* /*runtime*/)
+    {
+        std::fprintf(stderr,
+            "[PASSO 23A] 0x1838d0: GS init stub — PMODE=0 SMODE1=0x2b0f00 DISPLAY1/2=1 IMR=0x145\n");
+
+        // 0x1838e0: sw $zero, ($v0)  → WRITE32(0x10008020, 0)  — GS_PMODE
+        WRITE32(0x10008020u, 0u);
+        // 0x1838f0: sw $a1, ($v1)   → WRITE32(0x10008030, 0x2b0f00) — GS_SMODE1
+        WRITE32(0x10008030u, 0x2b0f00u);
+        // 0x183900: sw $a1, ($a0)   → WRITE32(0x1000e020, 1) — GS_DISPLAY2
+        WRITE32(0x1000e020u, 1u);
+        // 0x183908: sw $a1, ($v0)   → WRITE32(0x1000e010, 1) — GS_DISPLAY1
+        WRITE32(0x1000e010u, 1u);
+        // 0x183918: sw $v0, ($v1)   → WRITE32(0x10008000, 0x145) — GS_IMR
+        WRITE32(0x10008000u, 0x145u);
+        // loop cop0 bc0f = sempre false no PC port — pulado
+        // 0x183940: jr $ra
+        ctx->pc = GPR_U32(ctx, 31);
+    }
+
+    // ---------------------------------------------------------------------------
+    // PASSO 23C — stub para 0x283770 (JAL[1/11] de sub_00138D48)
+    // Guard de inicializacao: se READ32(0x326940)!=0 retorna, caso contrario
+    // seta 0x326940=1 e faz tail-call para 0x2836c0 (entry_283790).
+    // Sem IOP real o guard simplesmente marca como inicializado e retorna.
+    // ---------------------------------------------------------------------------
+    void gow_stub_0x283770_init_guard(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime)
+    {
+        const uint32_t flag = READ32(0x326940u);
+        if (flag != 0u) {
+            // ja inicializado — retorna imediatamente (path normal do jr $ra)
+            ctx->pc = GPR_U32(ctx, 31);
+            return;
+        }
+        std::fprintf(stderr,
+            "[PASSO 23C] 0x283770: guard init — 0x326940=0 -> setando 1, chamando entry_283790\n");
+        WRITE32(0x326940u, 1u);
+        // tail-call para 0x2836c0 (dentro de entry_283790_0x283e80)
+        // executamos via dispatch normal do runtime
+        ctx->pc = 0x2836c0u;
+        if (runtime->hasFunction(0x2836c0u)) {
+            auto fn = runtime->lookupFunction(0x2836c0u);
+            fn(rdram, ctx, runtime);
+        }
+        // pc ja foi setado pela funcao chamada (ou retornou normalmente)
+    }
+
     void apply_god_of_war_overrides(PS2Runtime& runtime)
     {
         runtime.registerFunction(0x0013DA10u, gow_stub_sub_0013DA10);
@@ -823,6 +878,16 @@ namespace
         runtime.registerFunction(0x000293930u, gow_log_func_293930_StartThread);
         std::cout << "[game_overrides] God of War: PASSO 22B registrado em 0x00293930 "
                   << "(func_293930 — log StartThread(tid=8, entry=0x157358) via syscall v1=0x12)"
+                  << std::endl;
+
+        runtime.registerFunction(0x001838D0u, gow_stub_0x1838d0_gs_init);
+        std::cout << "[game_overrides] God of War: PASSO 23A registrado em 0x001838D0 "
+                  << "(GS init stub — JAL[5/11] de sub_00138D48; configura PMODE/SMODE1/DISPLAY1/2/IMR)"
+                  << std::endl;
+
+        runtime.registerFunction(0x00283770u, gow_stub_0x283770_init_guard);
+        std::cout << "[game_overrides] God of War: PASSO 23C registrado em 0x00283770 "
+                  << "(guard init 0x326940 — JAL[1/11] de sub_00138D48)"
                   << std::endl;
     }
 }

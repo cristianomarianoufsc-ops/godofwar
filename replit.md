@@ -68,12 +68,13 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
 
 - **Jogo roda por 300s** (limite do auto_round.sh) — SIGINT final é timeout, não crash
 - **activeThreads=2** após ExitThread de tid=1: tid=2 (IOP loader) + tid=3 (sceSifRpcThread stub)
-- **PASSO 21 ✅ confirmado:** tid=2 acordou (WaitSema:wake sid=3), processou fila vazia (tipo=0→iSignalSema(0)), dormiu novamente — comportamento 100% esperado
-- **Bug AF ✅ corrigido (PASSO 22A):** Pool idx=127 entry=0x35c1b0 — OK para as primeiras chamadas.
-- **PASSO 22C ✅ aplicado** em `sub_0013DC78_0x13dc78.cpp`: 13+ chamadas com a0=null vêm de globals não-inicializadas (e.g. READ32(0x32EC4C), READ32(0x32F198)) que o IOP loader ausente deveria popular. Fix: forja nó de 0x40 bytes em bump heap [0x01200000..0x01300000], inicializa sentinela (next=self, prev=self), injeta em a0 → sub_0013DC78 prossegue normalmente. Logs: `[PASSO 22C] sub_0013DC78 forge #N: a0=null → guestPtr=0x... ra=0x...`
-- **PASSO 22A log cap:** aumentado de 20→200 chamadas; adicionado `ra=0x...` ao log OK.
-- **GREP_PATTERN:** adicionado `PASSO 22|Bug AF` ao auto_round.sh
-- **Próximo:** aguardar round pós-PASSO 22C — esperar `[PASSO 22C] forge #1..#13` + `[CreateThread] id=4..8` + `[PASSO 22B] StartThread thid=8 resultado: v0=0x0` + `nonBlack>0`
+- **PASSO 22C ✅ confirmado:** 133 forges (não 13 — loop maior que esperado), todos com `ra=0x13d954`. Heap OK.
+- **entry_1389d8 ✅:** DONE + renderer_type=0x2 confirmados neste round.
+- **Bug AG 🔴 identificado e fixado (PASSO 23A):** `0x1838d0` (JAL[5/11]) era label DENTRO de `entry_183878_0x183948`, não registrado como entry point → NAO REGISTRADA → GS registers nunca escritos → fbp=0, fbw=0 → tela preta. Fix: stub em `game_overrides.cpp` escreve PMODE/SMODE1/DISPLAY1/2/IMR.
+- **PASSO 23B 🔴 aplicado:** logs em `sub_0017A940_0x17a940.cpp` após cada uma das 10 chamadas (175978→175CD0→17E530→17BFF0→131A58→118798→293930→182810→21C788→17D778) — para identificar onde trava (JAL[9/11] nunca retornou em 300s).
+- **PASSO 23C 🔴 aplicado:** stub para `0x283770` (JAL[1/11] guard de init 0x326940).
+- **GREP_PATTERN:** adicionado `PASSO 23|sub_0017A940` ao auto_round.sh
+- **Próximo:** aguardar round pós-PASSO 23 — esperar `[PASSO 23A]` + `[PASSO 23B] sub_0017A940: apos func_XXX (N/10)` para pinçar onde trava + `nonBlack>0`
 
 ## Gotchas
 

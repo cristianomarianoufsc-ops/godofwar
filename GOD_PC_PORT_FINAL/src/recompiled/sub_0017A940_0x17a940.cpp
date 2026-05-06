@@ -19,6 +19,8 @@ void sub_0017A940_0x17a940(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
 
     ctx->pc = 0x17a940u;
 
+    std::fprintf(stderr, "[PASSO 23B] sub_0017A940: START\n");
+
     // 0x17a940: 0x27bdfff0  addiu       $sp, $sp, -0x10
     ctx->pc = 0x17a940u;
     SET_GPR_S32(ctx, 29, (int32_t)ADD32(GPR_U32(ctx, 29), 4294967280));
@@ -41,6 +43,7 @@ void sub_0017A940_0x17a940(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         if (ctx->pc == __entryPc) { ctx->pc = 0x17A950u; }
         if (ctx->pc != 0x17A950u) { return; }
     }
+    std::fprintf(stderr, "[PASSO 23B] sub_0017A940: apos func_175978 (1/10) — pc=0x%x\n", ctx->pc);
     ctx->pc = 0x17A950u;
     // 0x17a950: 0xc05d734  jal         func_175CD0
     ctx->pc = 0x17A950u;
@@ -58,6 +61,7 @@ void sub_0017A940_0x17a940(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         if (ctx->pc == __entryPc) { ctx->pc = 0x17A958u; }
         if (ctx->pc != 0x17A958u) { return; }
     }
+    std::fprintf(stderr, "[PASSO 23B] sub_0017A940: apos func_175CD0 (2/10) — pc=0x%x\n", ctx->pc);
     ctx->pc = 0x17A958u;
     // 0x17a958: 0xc05f94c  jal         func_17E530
     ctx->pc = 0x17A958u;
@@ -75,6 +79,7 @@ void sub_0017A940_0x17a940(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         if (ctx->pc == __entryPc) { ctx->pc = 0x17A960u; }
         if (ctx->pc != 0x17A960u) { return; }
     }
+    std::fprintf(stderr, "[PASSO 23B] sub_0017A940: apos func_17E530 (3/10) — pc=0x%x\n", ctx->pc);
     ctx->pc = 0x17A960u;
     // 0x17a960: 0xc05effc  jal         func_17BFF0
     ctx->pc = 0x17A960u;
@@ -92,6 +97,7 @@ void sub_0017A940_0x17a940(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         if (ctx->pc == __entryPc) { ctx->pc = 0x17A968u; }
         if (ctx->pc != 0x17A968u) { return; }
     }
+    std::fprintf(stderr, "[PASSO 23B] sub_0017A940: apos func_17BFF0 (4/10) — pc=0x%x\n", ctx->pc);
     ctx->pc = 0x17A968u;
     // 0x17a968: 0xc04c696  jal         func_131A58
     ctx->pc = 0x17A968u;
@@ -109,6 +115,7 @@ void sub_0017A940_0x17a940(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         if (ctx->pc == __entryPc) { ctx->pc = 0x17A970u; }
         if (ctx->pc != 0x17A970u) { return; }
     }
+    std::fprintf(stderr, "[PASSO 23B] sub_0017A940: apos func_131A58 (5/10) — pc=0x%x\n", ctx->pc);
     ctx->pc = 0x17A970u;
     // 0x17a970: 0xc0461e6  jal         func_118798
     ctx->pc = 0x17A970u;
@@ -126,6 +133,7 @@ void sub_0017A940_0x17a940(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         if (ctx->pc == __entryPc) { ctx->pc = 0x17A978u; }
         if (ctx->pc != 0x17A978u) { return; }
     }
+    std::fprintf(stderr, "[PASSO 23B] sub_0017A940: apos func_118798 (6/10) — pc=0x%x\n", ctx->pc);
     ctx->pc = 0x17A978u;
     // 0x17a978: 0x3c050015  lui         $a1, 0x15
     ctx->pc = 0x17a978u;
@@ -157,6 +165,7 @@ void sub_0017A940_0x17a940(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         if (ctx->pc == __entryPc) { ctx->pc = 0x17A98Cu; }
         if (ctx->pc != 0x17A98Cu) { return; }
     }
+    std::fprintf(stderr, "[PASSO 23B] sub_0017A940: apos func_293930/StartThread (7/10) — pc=0x%x v0=0x%x\n", ctx->pc, GPR_U32(ctx, 2));
     ctx->pc = 0x17A98Cu;
     // 0x17a98c: 0xc060a04  jal         func_182810
     ctx->pc = 0x17A98Cu;
@@ -174,6 +183,7 @@ void sub_0017A940_0x17a940(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         if (ctx->pc == __entryPc) { ctx->pc = 0x17A994u; }
         if (ctx->pc != 0x17A994u) { return; }
     }
+    std::fprintf(stderr, "[PASSO 23B] sub_0017A940: apos func_182810 (8/10) — pc=0x%x\n", ctx->pc);
     ctx->pc = 0x17A994u;
     // 0x17a994: 0xc0871e2  jal         func_21C788
     ctx->pc = 0x17A994u;
@@ -191,6 +201,7 @@ void sub_0017A940_0x17a940(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         if (ctx->pc == __entryPc) { ctx->pc = 0x17A99Cu; }
         if (ctx->pc != 0x17A99Cu) { return; }
     }
+    std::fprintf(stderr, "[PASSO 23B] sub_0017A940: apos func_21C788 (9/10) — pc=0x%x\n", ctx->pc);
     ctx->pc = 0x17A99Cu;
     // 0x17a99c: 0xc05f5de  jal         func_17D778
     ctx->pc = 0x17A99Cu;
@@ -208,6 +219,7 @@ void sub_0017A940_0x17a940(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         if (ctx->pc == __entryPc) { ctx->pc = 0x17A9A4u; }
         if (ctx->pc != 0x17A9A4u) { return; }
     }
+    std::fprintf(stderr, "[PASSO 23B] sub_0017A940: apos func_17D778 (10/10) — pc=0x%x — DONE retornando\n", ctx->pc);
     ctx->pc = 0x17A9A4u;
     // 0x17a9a4: 0xdfbf0000  ld          $ra, 0x0($sp)
     ctx->pc = 0x17a9a4u;
