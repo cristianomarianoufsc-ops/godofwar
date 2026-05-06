@@ -657,7 +657,7 @@ namespace
     //     allocator (mesma regiao 0x01000000+ do sub_0013DA10).
     //   - Quando pool valido: comportamento original (retorna pool_array[idx]).
     // ========================================================================
-    void gow_stub_func_13E090_pool_expand(uint8_t* rdram, R5900Context* ctx, PS2Runtime* /*runtime*/)
+    void gow_stub_func_13E090_pool_expand(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime)
     {
         constexpr uint32_t kPoolBase = 0x2CB940u;
         const uint32_t poolArrayBase = READ32(kPoolBase + 0u);
