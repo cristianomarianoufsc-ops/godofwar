@@ -60,6 +60,23 @@ void sub_00294AF8_0x294af8(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         if (ctx->pc != 0x294B18u) { return; }
     }
     ctx->pc = 0x294B18u;
+    // PASSO 19: func_294618 tenta adquirir lock IOP — retorna !=0 (lock ocupado sem IOP real).
+    // Isso fazia branch para label_294c58 (exit) antes de StartThread ser chamado,
+    // deixando tid=2 e tid=3 eternamente dormentes → activeThreads=0 → processo encerra.
+    // Forcamos v0=0 para bypassar o early exit e deixar a funcao prosseguir ate StartThread.
+    if (GPR_U64(ctx, 2) != GPR_U64(ctx, 0)) {
+        static bool s_passo19_logged = false;
+        if (!s_passo19_logged) {
+            s_passo19_logged = true;
+            std::fprintf(stderr,
+                "[PASSO 19] sub_00294AF8: func_294618 retornou v0=0x%x (lock IOP ocupado)"
+                " -- forcando v0=0 para bypassar early exit e invocar StartThread\n",
+                GPR_U32(ctx, 2));
+        }
+        SET_GPR_S32(ctx, 2, 0);
+    } else {
+        std::fprintf(stderr, "[PASSO 19] sub_00294AF8: func_294618 retornou v0=0 OK (lock livre)\n");
+    }
     // 0x294b18: 0x1440004f  bnez        $v0, . + 4 + (0x4F << 2)
     ctx->pc = 0x294B18u;
     {

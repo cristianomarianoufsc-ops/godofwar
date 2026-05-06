@@ -257,7 +257,7 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-05 — PASSO 18 aplicado)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-06 — PASSO 19 aplicado)
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 ### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
@@ -278,18 +278,22 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 ### ✅ PASSO 15/15B/15C — DIAGNÓSTICOS escritos (sub_0026BF28 — aguardam disparo pós P18)
 ### ✅ PASSO 16 — FIX em sub_0026C4B8 label_26c530: força v0=0 após entry_297670 retornar !=0
 ### ✅ PASSO 17 — FIX em sub_0026BB98: stub retorna v0=1 imediatamente (IOP módulo pronto simulado)
-### ✅ PASSO 18 — FIX em sub_0026BF28 label_26c06c: força v0=0 após entry_297670(0x3055C8) retornar !=0
+### ✅ PASSO 18 — FIX em sub_0026BF28 label_26c06c: força v0=0 após entry_297670(0x3055C8) retornar !=0 — CONFIRMADO NO LOG
+### ✅ MARCO: entry_1389d8 DONE + renderer_type=0x2 + Starting execution at 0x2996b0 — jogo principal INICIOU
+### ✅ BOOT#1 pc=0x2996b0 — entry_0x2996b0 rodou, processou 47 WaitEventFlag (Bug AB), depois ExitThread
+### ✅ PASSO 19 — FIX em sub_00294AF8: força v0=0 após func_294618 (lock IOP) para bypassar early exit
 ### 🔴 AGUARDANDO ROUND — 2 arquivos alterados neste ciclo:
-###   - sub_0026BF28_0x26bf28.cpp (P18 — novo bloqueador em label_26c06c)
-###   - auto_round.sh (GREP_PATTERN: +PASSO 18)
+###   - sub_00294AF8_0x294af8.cpp (P19 — lock IOP bypassado → StartThread agora pode ser chamado)
+###   - auto_round.sh (GREP_PATTERN: +PASSO 19, +activeThread)
 ### 🔴 PRÓXIMO PASSO: bash auto_round.sh full no PC do Cris
 ### 🔴 APÓS ROUND → verificar:
-###   [PASSO 18] + [PASSO 17] + [PASSO 15] + [PASSO 15B] + [PASSO 15C] + [PASSO 16] + [renderer_type] + [DONE]
-### ⚠️  BLOQUEADOR ATUAL IDENTIFICADO NO ROUND ANTERIOR:
-###   entry_297670(0x3055C8) em label_26c06c retorna v0=1 (SIF RPC busy).
-###   Bit "pending" em *(READ32(0x3055C8)+0x10) fica 1 para sempre sem IOP real.
-###   sub_0026BF28 fazia loop cooperativo (cooperativeGuestYield + goto label_26c048) eternamente.
-###   VBlank chegava até tick #17940 (timeout), jogo não avançava.
+###   [PASSO 19] + StartThread id=2 + StartThread id=3 + threads ativas + [BugP_entry] (FUN_002947c8) + jogo rodando
+### ⚠️  BUG AC — CAUSA RAIZ IDENTIFICADA:
+###   sub_00294AF8 chamada 2x (para tid=2 @linha 100 e tid=3 @linha 356 do log).
+###   func_294618 (tenta adquirir lock IOP) retorna v0!=0 → branch label_294c58 (exit imediato).
+###   Nem PASSO 7A nem StartThread são jamais alcançados → tid=2 e tid=3 ficam dormentes.
+###   Após ExitThread do main (tid=1), activeThreads=0 → processo encerra.
+###   PASSO 19 força v0=0 → função prossegue → PASSO 7A força dormant → StartThread invocado.
 
 ---
 
