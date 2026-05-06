@@ -1092,6 +1092,21 @@ python3 tools/reachable_after_boot.py   # usa os novos seeds
 
 Ferramenta Universal (sem endereços GoW hard-coded). Sintaxe verificada (py_compile, exit 0).
 
+**`tools/triage_passo23.py`** — triagem focada no round PASSO 23 (adicionado 2026-05-06)
+
+Lê o log filtrado do GitHub e reporta especificamente: PASSO 23A (GS init), PASSO 23B (steps 1-10 de sub_0017A940), PASSO 23C (guard Bug AH), nonBlack, activeThreads e pool forges — em ~10 linhas.
+
+```bash
+python3 tools/triage_passo23.py              # log filtrado do GitHub
+python3 tools/triage_passo23.py --full       # log completo do GitHub
+python3 tools/triage_passo23.py --local arquivo.txt
+python3 tools/triage_passo23.py --raw        # linhas brutas sem formatação
+```
+
+Sintaxe verificada (py_compile, exit 0). Ferramenta do analista — roda no Replit, Cris não precisa fazer nada.
+
+---
+
 **`tools/triage_round.py`** — triagem automática pós-round em 1 comando (atualizado 2026-05-01)
 
 Baixa o log filtrado do GitHub via urllib e gera relatório estruturado: módulos IOP (sids, deltas), último VBlank, **seção `── THREADS EE` com CreateThread vs StartThread** (detecta thread criada sem start), alocações, erros/SIGSEGV, boot-loop suspects, diagnóstico e próximo passo.

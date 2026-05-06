@@ -92,3 +92,4 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
 - **Detailed workflow explanation:** `HANDOFF_AGENT.md` → "FLUXO AUTOMATIZADO"
 - **GitHub repository:** `https://github.com/cristianomarianoufsc-ops/godofwar/`
 - **Ghidra:** For MIPS R5900 disassembly and analysis of the PS2 ELF.
+- **Triagem round atual (PASSO 23):** `python3 tools/triage_passo23.py` — relatório focado nos marcadores 23A/23B/23C + nonBlack + activeThreads.
