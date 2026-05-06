@@ -349,19 +349,23 @@ void WaitSema(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
         // em WaitSema(sid=3) com delta_ms_since_RPC_BIND=never porque nao ha
         // RPC_BIND previo neste callsite (pc=0x293C64 ra=0x294810).
         // No PS2 real, o IOP sinalizaria este sema apos carregar cada modulo.
-        // Como nao temos IOP real, forjamos o signal imediatamente.
+        // Como nao temos IOP real, forjamos o signal UMA UNICA VEZ para desbloquear
+        // tid=2 inicialmente. Apos isso, tid=2 dorme indefinidamente (correto —
+        // nao ha modulos IOP reais para carregar).
         // Condicao especifica: delta=never + pc=0x293C64 + ra=0x294810 (FUN_002947c8).
+        static std::atomic<bool> s_passo21Done{false};
         static std::atomic<uint32_t> s_passo21Logs{0};
         if (deltaMsSinceBind < 0 &&
             ctx->pc == 0x293C64u &&
             getRegU32(ctx, 31) == 0x294810u &&
-            sema->count < sema->maxCount)
+            sema->count < sema->maxCount &&
+            !s_passo21Done.exchange(true, std::memory_order_acq_rel))
         {
             const uint32_t p21Log = s_passo21Logs.fetch_add(1, std::memory_order_relaxed);
-            if (p21Log < 32u)
+            if (p21Log < 4u)
             {
                 std::cout << "[PASSO 21] Bug AE: Forjando iSignalSema(sid=" << sid
-                          << ") para FUN_002947c8 (IOP module loader) — delta=never, sem RPC_BIND previo"
+                          << ") para FUN_002947c8 (IOP module loader) — delta=never, UNICO forge (tid=2 vai dormir apos processar fila vazia)"
                           << std::endl;
             }
             sema->count++;
@@ -832,7 +836,7 @@ void WaitEventFlag(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
     if (waitBits == 0)
     {
         static std::atomic<uint32_t> s_ilpatLogs{0};
-        if (s_ilpatLogs.fetch_add(1, std::memory_order_relaxed) < 16u)
+        if (s_ilpatLogs.fetch_add(1, std::memory_order_relaxed) < 64u)
         {
             std::cout << "[WaitEventFlag:ILPAT] eid=" << eid
                       << " mode=0x" << std::hex << mode
@@ -848,7 +852,7 @@ void WaitEventFlag(uint8_t *rdram, R5900Context *ctx, PS2Runtime *runtime)
     if (!info)
     {
         static std::atomic<uint32_t> s_unknownEidLogs{0};
-        if (s_unknownEidLogs.fetch_add(1, std::memory_order_relaxed) < 16u)
+        if (s_unknownEidLogs.fetch_add(1, std::memory_order_relaxed) < 64u)
         {
             std::cout << "[WaitEventFlag:UNKNOWN_EID] eid=" << eid
                       << " waitBits=0x" << std::hex << waitBits

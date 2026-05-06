@@ -67,6 +67,15 @@ void entry_2996b0_0x2996e0(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
         SET_GPR_S32(ctx, 29, (int32_t)ADD32(GPR_U32(ctx, 29), 32));
         ctx->in_delay_slot = false;
     ctx->pc = 0x293840u;
+    {
+        static std::atomic<uint32_t> s_exitLogs{0};
+        if (s_exitLogs.fetch_add(1, std::memory_order_relaxed) < 4u)
+        {
+            std::cout << "[entry_2996b0:ExitThread] a0=" << GPR_U32(ctx, 4)
+                      << " pc=0x2996d0 -> func_293840 (syscall4=ExitThread) — tid=1 finalizando init"
+                      << std::endl;
+        }
+    }
     if (runtime->hasFunction(0x293840u)) {
         auto targetFn = runtime->lookupFunction(0x293840u);
         targetFn(rdram, ctx, runtime); return;

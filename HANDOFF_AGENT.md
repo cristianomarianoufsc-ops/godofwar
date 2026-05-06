@@ -1153,9 +1153,32 @@ sub_00138D48 [JAL 8/11]
 
 ---
 
-### ESTADO ATUAL — 2026-05-06 (round pós-PASSO 20 + Bug AD) — 🏆 JOGO RODANDO 300s!
+### ESTADO ATUAL — 2026-05-06 (round pós-PASSO 21 refinamento) — cadeia ExitThread confirmada
 
-#### MEGA VITÓRIA CONFIRMADA neste round
+#### Cadeia de ExitThread de tid=1 — TOTALMENTE MAPEADA ✅
+
+```
+boot_stub → entry_2996b0_0x2996e0 [BOOT#1, a0=0]
+  → FUN_0029aa48: syscall 0x7F (GetMemorySize=0x02000000) → Caminho A
+  → sub_0029AA88: 47 WEF Bug-AB + 6 WEF não-Bug-AB (ra=0x29ac10) + 8 WEF ILPAT (ra=0x29ac54)
+  → retorna para FUN_0029aa48 → retorna para entry_2996b0
+  → [entry_2996b0:ExitThread] j func_293840 (0x293840: addiu $v1,0x4; syscall4=ExitThread)
+  → tid=1 morre — COMPORTAMENTO INTENCIONAL
+```
+
+**Fato crítico:** as 14 WEF não-Bug-AB:
+- 6 chamadas (ra=0x29ac10): `waitBits=*(s0+0)` lido de struct — provavelmente 0 → **KE_EVF_ILPAT** (diagnóstico confirmado no próximo round com limite 64)
+- 8 chamadas (ra=0x29ac54): `waitBits=0` hardcoded → **KE_EVF_ILPAT** explícito
+
+**Por que tela preta (nonBlack=0):** Após ExitThread de tid=1, apenas tid=2 (dorme em WaitSema) e tid=3 (loop SIF stub) ficam vivos. Nenhum thread de renderização foi criado. O jogo esperaria callbacks IOP (que em real PS2 ativam o game loop) — nossa simulação IOP não os fornece.
+
+**Próximo passo crítico:** identificar onde o thread de renderização deveria ser criado (provavelmente via callbacks IOP simulados) ou entender se VBlank ISR deveria ativar o loop de render.
+
+---
+
+### ESTADO ANTERIOR — 2026-05-06 (round pós-PASSO 20 + Bug AD) — 🏆 JOGO RODANDO 300s!
+
+#### MEGA VITÓRIA CONFIRMADA
 
 O jogo **RODOU POR 300 SEGUNDOS** antes de ser encerrado pelo timeout do `auto_round.sh`. Não foi crash — foi o script de automação matando um processo vivo com SIGINT (sinal 2). Arquitetura de threads confirmada:
 
@@ -1180,7 +1203,7 @@ O jogo **RODOU POR 300 SEGUNDOS** antes de ser encerrado pelo timeout do `auto_r
 [stub:0x27CBD0] Bug AD: sceSifRpcThread — iniciando loop cooperativo IOP simulado
 ```
 
-#### Bug AE — PASSO 21 aplicado (próximo build)
+#### Bug AE — PASSO 21 refinado (este commit)
 
 **Problema:** tid=2 bloqueia imediatamente em `WaitSema(sid=3)`:
 ```
