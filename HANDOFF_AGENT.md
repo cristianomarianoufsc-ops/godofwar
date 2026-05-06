@@ -300,6 +300,14 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 ###   OBJETIVO: pinçar em qual das 10 sub_0017A940 trava (JAL[9/11] nunca retornou em 300s).
 ### ✅ PASSO 23C — APLICADO: stub gow_stub_0x283770_init_guard para 0x283770 (JAL[1/11]):
 ###   Guard de init: se 0x326940!=0 retorna; senão seta 1 e chama 0x2836c0 (entry_283790).
+### ✅ INVESTIGAÇÃO NAO REGISTRADA — ENCERRADA (2026-05-06):
+###   0x17acb8 (JAL[3/11]) — fim de sub_0017AC88 (0x17ac88-0x17acb8). Última instrução do
+###     arquivo é NOP em 0x17acb4; endereço 0x17acb8 = jr $ra do próximo bloco de código.
+###     Chamar = retornar imediatamente. Skip ≡ chamada. SEM FIX NECESSÁRIO.
+###   0x138b10 (JAL[4/11]) — label DENTRO de entry_1389d8_0x138cb0.cpp (linha 441).
+###     Inicializa tabela de pool em 0x2c7920. Verificado: JAL[5/11] (GS init),
+###     JAL[6/11] (sub_0017A910) e JAL[7/11] (sub_0021FF60) NÃO leem 0x2c7920.
+###     A mesma inicialização roda dentro de entry_1389d8 em JAL[8/11]. SEM FIX NECESSÁRIO.
 ### 🔴 AGUARDANDO ROUND — 4 arquivos alterados neste ciclo:
 ###   - PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp (PASSO 23A + 23C)
 ###   - GOD_PC_PORT_FINAL/src/recompiled/sub_0017A940_0x17a940.cpp (PASSO 23B)
