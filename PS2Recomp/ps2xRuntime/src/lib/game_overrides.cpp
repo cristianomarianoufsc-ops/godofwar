@@ -679,12 +679,12 @@ namespace
 
             if (entryPtr != 0u)
             {
-                if (callN <= 20u)
+                if (callN <= 200u)
                 {
                     std::fprintf(stderr,
                         "[PASSO 22A] func_13E090 chamada #%u: pool_base=0x%x idx=%u limit=%u"
-                        " — entry=0x%x OK\n",
-                        callN, poolArrayBase, currentIdx, poolLimit, entryPtr);
+                        " — entry=0x%x OK ra=0x%x\n",
+                        callN, poolArrayBase, currentIdx, poolLimit, entryPtr, GPR_U32(ctx, 31));
                 }
                 SET_GPR_U32(ctx, 2, entryPtr);
                 ctx->pc = GPR_U32(ctx, 31);

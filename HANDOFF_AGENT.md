@@ -257,50 +257,69 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-06 — PASSO 20 + Bug AD aplicados)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-06 — PASSO 22C aplicado)
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 ### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
 ### ✅ PASSO 5 — CONFIRMADO FUNCIONANDO (PASSO 5 FIRE @tick #88)
-### ✅ PASSO 6 / PASSO 6B — CONFIRMADOS COMPILADOS (sub_00297290 tem fixes em todos os paths de saída)
+### ✅ PASSO 6 / PASSO 6B — CONFIRMADOS COMPILADOS
 ### ✅ PASSO 7A — APLICADO em sub_00294AF8 (força THS_DORMANT=0x10 para invocar StartThread)
 ### ✅ PASSO 7B — APLICADO em sub_00283570 (força sceSifSetDma retorno=1 se =0)
 ### ✅ entry_1389d8 — HOOKS ADICIONADOS (START/renderer_type/DONE)
-### ✅ PASSO 8A — CONFIRMADO NO LOG — sub_0027A6B8 PASSO 8A disparou + sub_00297290 sid=0x80000593
-### ✅ PASSO 9A/9B — APLICADO em sub_00297470 — força v0=1 se func_2969D0 retornar 0
-### ✅ PASSO 9C — CONFIRMADO NO LOG — entry_27ab00 label_27ab80 s0=0 → v0=1 forçado
+### ✅ PASSO 8A — CONFIRMADO NO LOG
+### ✅ PASSO 9A/9B — APLICADO em sub_00297470
+### ✅ PASSO 9C — CONFIRMADO NO LOG
 ### ✅ PASSO 11 (A+B+C+D) — CONFIRMADO FUNCIONANDO
-### ✅ PASSO 12 — CONFIRMADO NO LOG (sentinela inicializada, pool cheio após JAL[8/11])
+### ✅ PASSO 12 — CONFIRMADO NO LOG
 ### ✅ PASSO 13 — APLICADO em sub_0017AA18 (bypassar spin-loop renderer/GS)
 ### ✅ PASSO 14/14B — CONFIRMADOS NO LOG
 ### ✅ PASSO 15/15B/15C/16/17/18 — CONFIRMADOS NO LOG
 ### ✅ MARCO: entry_1389d8 DONE + renderer_type=0x2 + Starting execution at 0x2996b0
 ### ✅ BOOT#1 pc=0x2996b0 — entry_0x2996b0 rodou, 47 WaitEventFlag (Bug AB), depois ExitThread
-### ✅ PASSO 19 — CONFIRMADO NO LOG: "func_294618 retornou v0=0x1 -- forcando v0=0"
-###    MAS: func_299230 retornou v0=0 → beqz label_294b68 → FAIL (Bug AC-B)
-### ✅ PASSO 20 — APLICADO em sub_00294AF8: força v0=1 após func_299230 retornar 0
-###    → bypass label_294b68 → prossegue para func_293B20 → PASSO 7A → StartThread(tid=2)
-### ✅ Bug AD — APLICADO em game_overrides.cpp: stub 0x27CBD0 (sceSifRpcThread)
-###    → loop cooperativo infinito → StartThread(tid=3) agora terá entry registrado
+### ✅ PASSO 19/20 — CONFIRMADOS NO LOG
+### ✅ Bug AD — APLICADO em game_overrides.cpp: stub 0x27CBD0 (sceSifRpcThread loop cooperativo)
+### ✅ PASSO 21 — CONFIRMADO NO LOG: tid=2 acordou via WaitSema:wake, processou fila vazia, dormiu
+### ✅ Bug AF — CORRIGIDO (PASSO 22A): pool idx=127 entry=0x35c1b0 OK; cap log 20→200; +ra
+### ✅ PASSO 22B — ATIVO: loga StartThread via func_293930 (0x293930)
+### ✅ PASSO 22C — APLICADO (2026-05-06) em sub_0013DC78_0x13dc78.cpp:
+###   CAUSA RAIZ dos 13+ s2=null: callees de sub_0017A940 (JAL[9/11]) como sub_0017E530
+###   leem a0 de READ32(globals não-inicializadas — 0x32EC4C, 0x32F198, etc) que o IOP
+###   loader ausente deveria popular. NÃO vêm de func_13E090!
+###   Fix: bump heap [0x01200000..0x01300000], nó de 0x40 bytes, sentinela next=self, prev=self.
+###   Logs: [PASSO 22C] sub_0013DC78 forge #N: a0=null → guestPtr=0x... ra=0x...
 ### 🔴 AGUARDANDO ROUND — 3 arquivos alterados neste ciclo:
-###   - sub_00294AF8_0x294af8.cpp (PASSO 20 — bypass label_294b68 → StartThread(tid=2))
-###   - game_overrides.cpp (Bug AD — stub 0x27CBD0 sceSifRpcThread registrado)
-###   - auto_round.sh (GREP_PATTERN: +PASSO 20, +Bug AD, +27CBD0, +frame:upload, +nonBlack)
+###   - GOD_PC_PORT_FINAL/src/recompiled/sub_0013DC78_0x13dc78.cpp (PASSO 22C)
+###   - PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp (PASSO 22A cap 20→200, +ra)
+###   - auto_round.sh (GREP_PATTERN: +PASSO 22, +Bug AF)
 ### 🔴 BUILDS NECESSÁRIOS:
-###   sub_00294AF8_0x294af8.cpp → recompilar.sh (detectado automaticamente pelo loop)
+###   sub_0013DC78_0x13dc78.cpp → recompilar.sh (loop detecta mudança em src/recompiled/)
 ###   game_overrides.cpp → rebuild_runtime.sh (loop detecta mudança em ps2xRuntime/)
-### 🔴 APÓS ROUND → verificar:
-###   [PASSO 20] disparou + StartThread(tid=2) chamado + [stub:0x27CBD0] apareceu
-###   + tid=2 entra em FUN_002947c8 + activeThreads>0 após ExitThread de tid=1
-###   + jogo continua rodando (frame:upload nonBlack>0?)
-### ⚠️  Bug AC-B — CAUSA RAIZ (round pós-PASSO 19):
-###   sub_00294AF8 1ª chamada (tid=2): PASSO 19 OK mas func_299230 retorna 0
-###   → beqz $v0, label_294b68 → exit sem StartThread
-###   PASSO 20 força v0=1 → function prossegue → PASSO 7A → StartThread(tid=2)
-### ⚠️  Bug AD — CAUSA RAIZ (round pós-PASSO 19):
-###   StartThread(tid=3, entry=0x27CBD0) → "entry not registered" → thread nunca inicia
-###   → após ExitThread(tid=1), activeThreads=0 → processo encerra
-###   Stub 0x27CBD0 registrado em game_overrides.cpp → rebuild_runtime.sh requerido
+###   → loop auto_round.sh faz os dois automaticamente
+### 🔴 APÓS ROUND → verificar no filtered log:
+###   [PASSO 22C] forge #1..#13 → confirma 13 nulls corrigidos
+###   [CreateThread] id=4,5,6,7,8 → threads de render criadas
+###   [PASSO 22B] StartThread #N thid=8 resultado: v0=0x0 → StartThread bem-sucedido
+###   nonBlack>0 → primeiro frame colorido!
+### ⚠️  Bug AE (a confirmar) — se CreateThread(4..8) aparecer mas nonBlack=0:
+###   as threads de render podem precisar de mais stubs (GSHandler, VU1, DMA).
+###   Aguardar round para diagnóstico.
+
+---
+
+### 🧬 ANÁLISE PASSO 22C (2026-05-06 — causa raiz dos 13 nulls em JAL[9/11])
+
+**Diagnóstico completo:**
+
+🕵️ **Espionagem:** Os 13 agentes sentinela da fila de prioridade chegavam sem identidade (ponteiro nulo). Parecia que o almoxarifado (func_13E090/PASSO 22A) estava falhando, mas na verdade os agentes vinham de um depósito diferente — variáveis globais que deveriam ser preenchidas pelo IOP loader ausente (0x32EC4C, 0x32F198, etc).
+
+🚗 **Carro:** Era como se o mecânico mandasse buscar as peças no depósito A (func_13E090), mas 13 das buscas iam ao depósito B (READ32(global)) que estava vazio. A nova peça forjada (PASSO 22C) preenche o slot vazio com uma peça genérica mas funcional.
+
+🔧 **Técnico:** `sub_0017E530` (e similares) chama `func_13E090` UMA vez (→ s0=0x35c1b0), mas chama `sub_0013DC78` DUAS vezes: a 1ª com `a0 = READ32(0x330000 - 0xE68) = READ32(0x32F198)` e a 2ª com `a0 = READ32(0x330000 - 0x13B4) = READ32(0x32EC4C)`. Ambas as leituras retornam 0 (globals não-inicializadas). Fix: PASSO 22C no início de `sub_0013DC78` forja nó quando a0=0.
+
+**Arquivos modificados:**
+- `GOD_PC_PORT_FINAL/src/recompiled/sub_0013DC78_0x13dc78.cpp` — PASSO 22C inline no PASSO 12
+- `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp` — PASSO 22A cap 20→200, +ra ao log OK
+- `auto_round.sh` — GREP_PATTERN: +`PASSO 22`, +`Bug AF`
 
 ---
 

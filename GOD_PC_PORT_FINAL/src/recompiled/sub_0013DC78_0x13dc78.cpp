@@ -25,7 +25,16 @@ void sub_0013DC78_0x13dc78(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
     // Na PS2 real, o IOP inicializa esses structs antes do EE usar.
     // No port sem IOP, s2+4 contém lixo de memória → loop infinito via cooperativeGuestYield.
     // Fix: se READ32(s2+4) != s2, forçamos o sentinela circular (next=self, prev=self).
+    //
+    // PASSO 22C (2026-05-06): quando a0=0 (global nao-inicializada — e.g. 0x32EC4C, 0x32F198
+    // que seriam populadas pelo IOP loader ausente), forja um no do bump allocator em vez de
+    // deixar o caller operar em ponteiro nulo. Esto conserta 13+ chamadas null em JAL[9/11].
     {
+        static std::atomic<uint32_t> s_p22c_bump{0x01200000u};
+        static std::atomic<uint32_t> s_p22c_n{0u};
+        constexpr uint32_t kP22cNodeSz = 0x40u;
+        constexpr uint32_t kP22cHeapEnd = 0x01300000u;
+
         uint32_t _p12_s2 = GPR_U32(ctx, 4); // a0 = s2 (ponteiro do struct pool)
         if (_p12_s2 != 0) {
             uint32_t _p12_next = READ32(ADD32(_p12_s2, 4));
@@ -40,7 +49,34 @@ void sub_0013DC78_0x13dc78(uint8_t* rdram, R5900Context* ctx, PS2Runtime *runtim
                           << " sentinela ja OK (next=self)\n" << std::dec;
             }
         } else {
-            std::cerr << "[PASSO 12] sub_0013DC78: s2=null (func_13E090 retornou 0 — pool cheio?)\n";
+            // PASSO 22C: a0=null → global nao-inicializada (IOP loader ausente).
+            // Forjamos um no do bump allocator para que sub_0013DC78 prossiga normalmente.
+            const uint32_t _p22c_ra = GPR_U32(ctx, 31);
+            const uint32_t _p22c_forgeN = s_p22c_n.fetch_add(1u, std::memory_order_relaxed) + 1u;
+            const uint32_t _p22c_ptr = s_p22c_bump.fetch_add(kP22cNodeSz, std::memory_order_relaxed);
+
+            if (_p22c_ptr + kP22cNodeSz > kP22cHeapEnd) {
+                std::fprintf(stderr,
+                    "[PASSO 22C] sub_0013DC78 forge #%u: bump ESGOTADO! ra=0x%x\n",
+                    _p22c_forgeN, _p22c_ra);
+            } else {
+                // Zero-inicializa o no forjado
+                for (uint32_t _i = 0u; _i < kP22cNodeSz; _i += 4u) {
+                    WRITE32(ADD32(_p22c_ptr, _i), 0u);
+                }
+                // Inicializa sentinela (next=self, prev=self)
+                WRITE32(ADD32(_p22c_ptr, 4), _p22c_ptr);
+                WRITE32(ADD32(_p22c_ptr, 8), _p22c_ptr);
+
+                std::fprintf(stderr,
+                    "[PASSO 22C] sub_0013DC78 forge #%u: a0=null → guestPtr=0x%x ra=0x%x"
+                    " (global nao-inicializada corrigida)\n",
+                    _p22c_forgeN, _p22c_ptr, _p22c_ra);
+
+                // Injetar no contexto para que a funcao prossiga com ponteiro valido
+                SET_GPR_U32(ctx, 4, _p22c_ptr);
+                _p12_s2 = _p22c_ptr;
+            }
         }
     }
 
