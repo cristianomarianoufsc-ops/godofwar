@@ -796,7 +796,7 @@ namespace
     // init: PMODE=0, SMODE1=0x2b0f00, DISPLAY2=1, DISPLAY1=1, IMR=0x145).
     // O loop cop0 (bc0f) foi recompilado como sempre-false — mantemos assim.
     // ---------------------------------------------------------------------------
-    void gow_stub_0x1838d0_gs_init(uint8_t* rdram, R5900Context* ctx, PS2Runtime* /*runtime*/)
+    void gow_stub_0x1838d0_gs_init(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime)
     {
         std::fprintf(stderr,
             "[PASSO 23A] 0x1838d0: GS init stub — PMODE=0 SMODE1=0x2b0f00 DISPLAY1/2=1 IMR=0x145\n");
