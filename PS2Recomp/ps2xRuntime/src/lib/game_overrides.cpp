@@ -847,6 +847,42 @@ namespace
     }
 
     // ---------------------------------------------------------------------------
+    // PASSO 26 / Bug AJ — stub para func_180D08 (0x180D08)
+    // sub_0017E530 chama func_180D08 como callee 5/8 (após alloc5, func_180A10 ✅,
+    // func_17ECE0, func_13DC78_2ª, func_13E180). func_180D08 contém 4 jalr vtable
+    // dispatches (em 0x180d30, 0x180d60, 0x180d9c, 0x180dc0), padrão idêntico ao
+    // Bug AI (func_180A10→func_180A90). Os alvos do jalr são funções reais do jogo
+    // que alteram ctx->pc, causando retorno prematuro em cadeia:
+    //   func_180D08 -> sub_0017E530 -> sub_0017A940 (steps 4-10 nunca executam)
+    //   -> StartThread(tid=8) step 7/10 nunca chamado -> render thread não criada
+    //   -> nonBlack=0 permanente (Bug AJ).
+    //
+    // Evidência do log: forge#134 ra=0x17e62c (callee 3/8 passou) -> boot_stub imediato
+    // (callee 4/8 func_13E180 é jr $ra seguro; callee 5/8 func_180D08 tem jalr → bloqueio).
+    //
+    // Fix: reproduz o primeiro side-effect (sw $s0, 4($s1) = WRITE32(a1+4, a0))
+    // e pula todos os jalr dispatches. Sub_0017E530 não usa v0 de func_180D08.
+    // func_180CD8 (callee 6/8) chama func_180D08 condicionalmente — este stub
+    // também protege essa chamada indireta.
+    // ---------------------------------------------------------------------------
+    void gow_stub_0x180D08_vtable_dispatch_skip(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime)
+    {
+        const uint32_t a0 = GPR_U32(ctx, 4);  // s0 em func_180D08 (struct ptr)
+        const uint32_t a1 = GPR_U32(ctx, 5);  // s1 em func_180D08 (container/list ptr)
+        // Reproduz o primeiro side-effect: sw $s0, 4($s1) (0x180d20)
+        if (a1 != 0u) {
+            WRITE32(ADD32(a1, 4u), a0);
+        }
+        // Pula os 4 jalr vtable dispatches (0x180d30, 0x180d60, 0x180d9c, 0x180dc0)
+        SET_GPR_U32(ctx, 2, 0u);  // v0 = 0 (neutro; sub_0017E530 não usa v0 após retorno)
+        std::fprintf(stderr,
+            "[PASSO 26] func_180D08 stub: a0=0x%x a1=0x%x "
+            "— 4x jalr vtable dispatch PULADO (Bug AJ fix)\n",
+            a0, a1);
+        ctx->pc = GPR_U32(ctx, 31);
+    }
+
+    // ---------------------------------------------------------------------------
     // PASSO 23C — stub para 0x283770 (JAL[1/11] de sub_00138D48)
     // Guard de inicializacao: se READ32(0x326940)!=0 retorna, caso contrario
     // seta 0x326940=1 e retorna ao caller.
@@ -924,6 +960,12 @@ namespace
         std::cout << "[game_overrides] God of War: PASSO 25 registrado em 0x00180A10 "
                   << "(func_180A10 — dispatch func_180A90 PULADO; "
                   << "sub_0017A940 step 3/10 desbloqueia, steps 4-10 + StartThread(tid=8) esperados)"
+                  << std::endl;
+
+        runtime.registerFunction(0x00180D08u, gow_stub_0x180D08_vtable_dispatch_skip);
+        std::cout << "[game_overrides] God of War: PASSO 26 registrado em 0x00180D08 "
+                  << "(func_180D08 — Bug AJ: 4x jalr vtable dispatch PULADO; "
+                  << "callee 5/8 de sub_0017E530; callee 6/8 func_180CD8 tambem protegida indiretamente)"
                   << std::endl;
     }
 }

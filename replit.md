@@ -69,13 +69,16 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
 - **Jogo roda por 300s** (limite do auto_round.sh) — SIGINT final é timeout, não crash
 - **activeThreads=2** após ExitThread de tid=1: tid=2 (IOP loader) + tid=3 (sceSifRpcThread stub)
 - **Bug AH ✅ fixado (PASSO 23C):** tail-call removida do stub 0x283770; boot completa.
-- **Bug AI 🔴→✅ causa raiz CONFIRMADA + fix PASSO 25 APLICADO (2026-05-06):**
-  - `func_180A10` (0x180A10) chama `func_180A90` que faz `jalr $v1` (ptr em 0x2C046C).
-  - Função real em 0x2C046C muda `ctx->pc` → retorno prematuro em cadeia 3 níveis.
-  - sub_0017A940 steps 3-10 nunca executam → StartThread(tid=8) nunca chamado → nonBlack=0.
-  - **Fix:** stub `gow_stub_0x180A10_dispatch_skip` em `game_overrides.cpp` — escreve `*(a0+0xC)=0x2C0458` + `v0=a0`, pula func_180A90, retorna normalmente via `$ra`.
-  - **Build necessário:** `rebuild_runtime.sh` (arquivo de runtime modificado).
-- **Próximo:** aguardar round pós-PASSO 25 → procurar `[PASSO 25]` + `[PASSO 23B] apos func_17E530 (3/10)` + `[PASSO 22B] StartThread thid=8` + `frame:upload nonBlack>0`.
+- **Bug AI ✅ fixado (PASSO 25):** PASSO 25 CONFIRMADO no log (`[PASSO 25] func_180A10 stub` apareceu). Callee 1/8 de sub_0017E530 desbloqueado.
+- **Bug AJ 🔴→✅ causa raiz CONFIRMADA + fix PASSO 26 APLICADO (2026-05-06):**
+  - forge#134 ra=0x17e62c confirma que callees 1/8 (func_180A10 ✅), 2/8 (func_17ECE0 ✅), 3/8 (func_13DC78_2ª ✅) passaram.
+  - `func_180D08` (0x180D08) = callee 5/8 de sub_0017E530: contém **4 jalr vtable dispatches** (0x180d30, 0x180d60, 0x180d9c, 0x180dc0), padrão idêntico ao Bug AI.
+  - Os jalr alteram `ctx->pc` → retorno prematuro → sub_0017A940 steps 4-10 nunca executam → StartThread(tid=8) nunca chamado → nonBlack=0.
+  - **Fix:** stub `gow_stub_0x180D08_vtable_dispatch_skip` em `game_overrides.cpp` — reproduz `WRITE32(a1+4, a0)` (primeiro side-effect), pula os 4 jalr dispatches, v0=0, retorna via `$ra`.
+  - func_180CD8 (callee 6/8) chama func_180D08 condicionalmente — também protegida pelo stub.
+  - **Build necessário:** `rebuild_runtime.sh` (game_overrides.cpp modificado).
+- **PASSO 24 (logs sub_0017E530) — NÃO compilado ainda:** recompilar.sh precisa rodar para sub_0017E530.cpp — o loop detectará automaticamente na próxima push.
+- **Próximo:** aguardar round pós-PASSO 26 → procurar `[PASSO 26]` + `[PASSO 24] apos 180D08 (5/8)` + `[PASSO 23B] apos func_17E530 (3/10)` + `[PASSO 22B] StartThread thid=8` + `frame:upload nonBlack>0`.
 
 ## Gotchas
 

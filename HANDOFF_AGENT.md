@@ -322,37 +322,45 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 ###   Confirmado no log: [PASSO 23C] 0x326940=0 → setando 1, retornando ao caller ✅
 ###   Boot completa com v0=0 em sub_00138D48 após fix.
 
-### 🔴 Bug AI — IDENTIFICADO (2026-05-06):
-###   Sintoma: PASSO 23B steps 1/10 e 2/10 passam, mas step 3/10 (func_17E530) NUNCA aparece.
-###   alloc#5 (ra=0x17e5c4) no log confirma que sub_0017E530 executou pelo menos até func_13DA10.
-###   Causa raiz: sub_0017E530 tem 8 callees após func_13DA10; uma delas redireciona ctx->pc
-###     para endereço ≠ 0x17A960 (return addr de sub_0017A940). Padrão idêntico ao Bug AH.
-###   Consequência: sub_0017A940 aborta em steps 3-10; render thread tid=8 NUNCA criada;
-###     nonBlack=0 permanente.
-###   Callees suspeitas (em ordem): func_180A10, func_17ECE0, func_13DC78(2ª),
-###     func_13E180, func_180D08, func_180CD8, func_181068, func_17E690.
-###   PASSO 24 APLICADO: 9 logs std::fprintf inseridos em sub_0017E530_0x17e530.cpp
-###     (apos alloc5, apos 180A10(1/8), apos 17ECE0_ou_skip(2/8), apos 13DC78_2(3/8),
-###      apos 13E180(4/8), apos 180D08(5/8), apos 180CD8(6/8), apos 181068(7/8),
-###      apos 17E690(8/8) SUCESSO).
-###   BUILD: recompilar.sh (src/recompiled/ foi alterado)
+### ✅ Bug AI — RESOLVIDO (PASSO 25 CONFIRMADO no log 2026-05-06):
+###   [PASSO 25] func_180A10 stub: a0=0x1000100 *(a0+0xC)=0x2C0458 — apareceu no log ✅
+###   Callee 1/8 de sub_0017E530 desbloqueado. func_180A90 dispatch pulado com sucesso.
+###   Também confirmado: forge#134 ra=0x17e62c → callee 3/8 (func_13DC78_2ª) também passou ✅
 
-### 🔴 AGUARDANDO ROUND — 1 arquivo alterado:
-###   - GOD_PC_PORT_FINAL/src/recompiled/sub_0017E530_0x17e530.cpp (PASSO 24 logs)
-### 🔴 BUILD NECESSÁRIO:
-###   src/recompiled/ → recompilar.sh (build incremental, só recompila o arquivo alterado)
-### 🔴 APÓS ROUND → verificar no filtered log com triage_passo23.py:
-###   [PASSO 24] sub_0017E530: apos alloc5 → confirma que sub_0017E530 entrou
-###   [PASSO 24] sub_0017E530: apos 180A10 (1/8) → passa func_180A10
-###   [PASSO 24] sub_0017E530: apos 17ECE0_ou_skip (2/8) → passa func_17ECE0 ou branch
-###   [PASSO 24] sub_0017E530: apos 13DC78_2 (3/8) → passa 2ª chamada func_13DC78
-###   [PASSO 24] sub_0017E530: apos 13E180 (4/8) → passa func_13E180
-###   [PASSO 24] sub_0017E530: apos 180D08 (5/8) → passa func_180D08
-###   [PASSO 24] sub_0017E530: apos 180CD8 (6/8) → passa func_180CD8
-###   [PASSO 24] sub_0017E530: apos 181068 (7/8) → passa func_181068
-###   [PASSO 24] sub_0017E530: apos 17E690 (8/8) SUCESSO! → sub_0017E530 passou INTEIRA
-###   O ÚLTIMO log visível = callee seguinte é o sabotador do Bug AI.
-###   nonBlack>0 → OBJETIVO PRINCIPAL (mas depende de resolver Bug AI primeiro)!
+### 🔴 Bug AJ — IDENTIFICADO E FIXADO (PASSO 26 APLICADO 2026-05-06):
+###   Evidência do log: forge#134 ra=0x17e62c (callee 3/8 passou) → boot_stub imediato
+###   Callees confirmadas ✅: 1/8 func_180A10 (PASSO 25), 2/8 func_17ECE0, 3/8 func_13DC78_2ª
+###   Callee 4/8 func_13E180 = SEGURA (jr $ra puro, pool read, não redireciona ctx->pc)
+###   Callee 5/8 func_180D08 (0x180D08) = SABOTADOR:
+###     Contém 4 jalr vtable dispatches (0x180d30, 0x180d60, 0x180d9c, 0x180dc0).
+###     Padrão idêntico ao Bug AI. Jalr alvos são funções reais que alteram ctx->pc.
+###     → retorno prematuro → sub_0017A940 steps 4-10 nunca executam
+###     → StartThread(tid=8) nunca chamado → render thread não criada → nonBlack=0
+###   Callee 6/8 func_180CD8 (0x180CD8) = chama func_180D08 condicionalmente (também protegida).
+###   Fix PASSO 26: stub gow_stub_0x180D08_vtable_dispatch_skip em game_overrides.cpp:
+###     WRITE32(a1+4, a0) (reproduz primeiro side-effect sw $s0, 4($s1))
+###     SET_GPR_U32(ctx, 2, 0u) (v0=0, neutro)
+###     ctx->pc = GPR_U32(ctx, 31) (retorno normal via $ra)
+###   BUILD NECESSÁRIO: rebuild_runtime.sh (game_overrides.cpp modificado)
+###
+### ⚠️  PASSO 24 (logs sub_0017E530.cpp) — NÃO compilado ainda:
+###   O código ESTÁ no arquivo (linhas 267, 299, 374, 406, 441, 467...) mas recompilar.sh
+###   nunca rodou para este arquivo. O loop detectará automaticamente na próxima push que
+###   inclua sub_0017E530.cpp (arquivo src/recompiled/ → auto-recompilar).
+###   NOTA: PASSO 24 logs não aparecem no log mesmo com GREP_PATTERN correto porque o
+###   binário rodando é o antigo sem os logs compilados.
+
+### 🔴 AGUARDANDO ROUND pós-PASSO 26:
+###   BUILD: rebuild_runtime.sh (game_overrides.cpp)
+### 🔴 APÓS ROUND → verificar no filtered log:
+###   [PASSO 26] func_180D08 stub: a0=0x... a1=0x... — jalr vtable dispatch PULADO
+###   [PASSO 24] sub_0017E530: apos 180D08 (5/8) → callee 5/8 passou (SE recompilar.sh rodou)
+###   [PASSO 24] sub_0017E530: apos 180CD8 (6/8) → callee 6/8 passou
+###   [PASSO 24] sub_0017E530: apos 181068 (7/8) → callee 7/8 passou
+###   [PASSO 24] sub_0017E530: apos 17E690 (8/8) SUCESSO! → sub_0017E530 inteira
+###   [PASSO 23B] sub_0017A940: apos func_17E530 (3/10) → step 3/10 finalmente retorna!
+###   [PASSO 22B] func_293930 StartThread #N: thid=8 → render thread criada!
+###   frame:upload nonBlack>0 → PRIMEIRO FRAME DO JOGO!
 
 ---
 
