@@ -65,7 +65,7 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
 - **NUNCA feche o loop `auto_round.sh loop` para rodar outro comando.** Se precisar rodar algo manual, abra Terminal 2 separado.
 - **NÃO pedir log ao Agente Cris.** Os logs são enviados automaticamente para o GitHub.
 
-## Estado atual do boot (2026-05-07) — 🔧 Bug AQ CORRIGIDO (PASSO 32)
+## Estado atual do boot (2026-05-07) — 🔧 Bug AQ CORRIGIDO (PASSO 32 — fix de link aplicado)
 
 - **auto_round.sh:** timeout = **60s** (era 300s).
 - **Bug AK ✅** PASSO 27 confirmado — `func_176FC8` BST skip funcionando.

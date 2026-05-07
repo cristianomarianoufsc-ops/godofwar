@@ -1111,14 +1111,15 @@ namespace
     //     saved_ra = $ra (= 0x17A99C, setado por sub_0017A940 antes do jal) e FORCA
     //     ctx->pc = saved_ra apos func_21C788 completar — garante step 9/10 sempre passa.
     //
-    // Nota: PASSO 32 substitui func_21C788 no dispatch. O wrapper chama a implementacao
-    // original diretamente (sub_0021C788_0x21c788) sem recursao de dispatch.
+    // Nota: PASSO 32 substitui func_21C788 no dispatch. O wrapper captura o ponteiro
+    // original via runtime.lookupFunction() em apply_god_of_war_overrides (chamado APOS
+    // register_functions registrar tudo) e chama pelo ponteiro — sem referencia cruzada
+    // entre libs ps2runtime <-> gow_recompiled.
     // sub_0017A9B0 (JAL[11/11]) devera agora executar -> PASSO 28 deve disparar -> nonBlack>0.
 
-    // Forward declaration da funcao recompilada original
-    void sub_0021C788_0x21c788(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime);
-
     static uint32_t s_passo32_count = 0u;
+    static PS2Runtime::RecompiledFunction s_passo32_orig_fn = nullptr;
+
     void gow_stub_0x21C788_wrapper(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime)
     {
         ++s_passo32_count;
@@ -1127,8 +1128,9 @@ namespace
             "[PASSO 32] func_21C788 wrapper ENTER #%u: saved_ra=0x%x a0=0x%x a1=0x%x\n",
             s_passo32_count, saved_ra, GPR_U32(ctx, 4), GPR_U32(ctx, 5));
 
-        // Chama implementacao original diretamente (sem dispatch — evita recursao)
-        sub_0021C788_0x21c788(rdram, ctx, runtime);
+        // Chama implementacao original via ponteiro capturado (sem recursao de dispatch)
+        if (s_passo32_orig_fn)
+            s_passo32_orig_fn(rdram, ctx, runtime);
 
         std::fprintf(stderr,
             "[PASSO 32] func_21C788 RETORNOU: ctx->pc=0x%x ra=$31=0x%x — forcando ctx->pc=0x%x\n",
@@ -1230,6 +1232,8 @@ namespace
                   << "fix: retorna v0=0 imediatamente, esperado: steps 9/10, 10/10, sub_0017A9B0 START, nonBlack>0)"
                   << std::endl;
 
+        // PASSO 32: capturar ponteiro original ANTES de sobrescrever no dispatch table
+        s_passo32_orig_fn = runtime.lookupFunction(0x00021C788u);
         runtime.registerFunction(0x00021C788u, gow_stub_0x21C788_wrapper);
         std::cout << "[game_overrides] God of War: PASSO 32 registrado em 0x00021C788 "
                   << "(func_21C788 — Bug AQ: step 9/10 de sub_0017A940; PASSO 30 corrompia $ra "
