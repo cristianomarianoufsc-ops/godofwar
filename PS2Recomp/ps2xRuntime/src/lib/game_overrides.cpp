@@ -1061,6 +1061,34 @@ namespace
         ctx->pc = GPR_U32(ctx, 31);
     }
 
+    // PASSO 31 / Bug AP fix:
+    // sub_0017CF78 (0x17cf78-0x17d0a0) e um dispatcher de geometria/render chamado 5x por
+    // sub_0017D0A0 (callee de func_17CBD0, cadeia de step 9/10 = func_21C788 de sub_0017A940).
+    // Apos o PASSO 30 pular corretamente os 32 jalrs para 0x1789e0 em sub_0017C628,
+    // a execucao segue para sub_0017CF78. Esta funcao:
+    //   1. Chama func_289910 (ok), func_2894F4 (ok), func_17CE00 (ok), entry_17cf28 (ok)
+    //   2. Le vtable nao-inicializada: READ32(READ32(idx_table + idx*4) + 0x20) + offset
+    //   3. Jalr #1 em 0x17D008: v0=0x8c  -> bios stub (normalizado ok, continua)
+    //   4. Jalr #2 em 0x17D030: v0=0xbd5d7162 -> bad-pc -> dispatcher recupera -> sub_0017A940 aborta
+    //   5. Jalr #3 em 0x17D05C e #4 em 0x17D084: nunca alcancados
+    // ra=0x17d038 no bad-pc confirma jalr #2 (0x17D030 seta ra=0x17D038).
+    // Steps 9/10 (func_21C788) e 10/10 (func_17D778) nunca completam -> nonBlack=0.
+    // Fix: retornar imediatamente com v0=0 (pula 4x jalr vtable nao-inicializada).
+    // Seguro: sub_0017D0A0 nao usa retorno de sub_0017CF78 (padrao identico Bug AJ/AN).
+    static uint32_t s_passo31_count = 0u;
+    void gow_stub_0x17CF78_vtable_jalr_skip(uint8_t* /*rdram*/, R5900Context* ctx, PS2Runtime* /*runtime*/)
+    {
+        ++s_passo31_count;
+        std::fprintf(stderr,
+            "[PASSO 31] sub_0017CF78 stub: 4x jalr vtable PULADO (Bug AP fix) #%u"
+            " — a0=0x%x a1=0x%x a2=0x%x a3=0x%x ra=0x%x\n",
+            s_passo31_count,
+            GPR_U32(ctx, 4), GPR_U32(ctx, 5), GPR_U32(ctx, 6), GPR_U32(ctx, 7),
+            GPR_U32(ctx, 31));
+        SET_GPR_U32(ctx, 2, 0u);  // v0=0 neutro
+        ctx->pc = GPR_U32(ctx, 31);
+    }
+
     void apply_god_of_war_overrides(PS2Runtime& runtime)
     {
         runtime.registerFunction(0x0013DA10u, gow_stub_sub_0013DA10);
@@ -1141,6 +1169,15 @@ namespace
                   << "0x17fd98/0x17fdec/0x17fe64 leiam lixo 0x3bd5a2c6 -> bad-PC; "
                   << "sub_0017A940 abortava antes de logar step 8/10 -> steps 8-10 + sub_0017A9B0 pulados; "
                   << "fix: retorna v0=0 imediatamente, render thread deve ser criada)"
+                  << std::endl;
+
+        runtime.registerFunction(0x0017CF78u, gow_stub_0x17CF78_vtable_jalr_skip);
+        std::cout << "[game_overrides] God of War: PASSO 31 registrado em 0x0017CF78 "
+                  << "(sub_0017CF78 — Bug AP: 4x jalr vtable nao inicializada; "
+                  << "jalr #2 em 0x17D030 le lixo 0xbd5d7162 -> bad-PC (ra=0x17d038); "
+                  << "chamada 5x por sub_0017D0A0 na cadeia step 9/10 = func_21C788; "
+                  << "PASSO 30 pulou 32x jalr 0x1789e0, execucao seguiu para sub_0017CF78; "
+                  << "fix: retorna v0=0 imediatamente, esperado: steps 9/10, 10/10, sub_0017A9B0 START, nonBlack>0)"
                   << std::endl;
     }
 }

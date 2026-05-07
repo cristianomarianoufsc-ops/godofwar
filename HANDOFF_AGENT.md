@@ -1643,7 +1643,7 @@ Verificar no log filtrado:
 
 ---
 
-### 🟢 ESTADO ATUAL — 2026-05-07 (Bug AO CORRIGIDO — PASSO 30 aplicado)
+### 🟢 ESTADO ATUAL — 2026-05-07 (Bug AP CORRIGIDO — PASSO 31 aplicado)
 
 #### Resultados do round pós-PASSO 29 (Bug AN fix — sub_0017FD10)
 
@@ -1705,8 +1705,51 @@ runtime.registerFunction(0x00017C628u, gow_stub_0x17C628_jalr_guard);
 
 **Arquivo modificado:** `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp`
 
-**Próximo passo após o round (rebuild_runtime.sh):**
-1. `[PASSO 30] sub_0017C628 jalr guard #N: v0=0x1789e0 NAO registrado` → Bug AO confirmado e corrigido
+**PASSO 30 ✅ CONFIRMADO no round — 32x `v0=0x1789e0 NAO registrado` detectado e jalr pulado corretamente.**
+
+---
+
+#### Bug AP 🔴→✅ CORRIGIDO (PASSO 31) — sub_0017CF78 jalr vtable não inicializada
+
+**Round pós-PASSO 30:**
+```
+[PASSO 30] sub_0017C628 jalr guard #1..32: v0=0x1789e0 NAO registrado  ← ✅ PASSO 30 funcionando
+[PASSO 23B] sub_0017A940: apos func_182810 (8/10)                       ← step 8/10 ✅
+[dispatch:first-bad-pc] bad=0xbd5d7162 ra=0x17d038                      ← NOVO BAD-PC
+  trace=... -> 0x17c688 -> 0x17c808 -> 0x17c628 (x32 loop BST)
+  -> 0x17cf78 -> 0x289910 -> 0x2894f4 -> 0x17ce00 -> 0x17cf28 -> 0x8c -> 0xbd5d7162
+[frame:upload] nonBlack=0                                                ← tela ainda preta
+```
+
+**Steps 9/10 e 10/10 ainda NÃO apareceram.**
+
+**Causa raiz:**
+Após PASSO 30 pular 32x jalr `0x1789e0`, o BST loop concluiu e a execução seguiu para `sub_0017CF78` (chamada 5x por `sub_0017D0A0`, dentro da cadeia de step 9/10 = `func_21C788`).
+
+`sub_0017CF78` (0x17CF78–0x17D0A0) chama internamente `func_289910` ✓ → `func_2894F4` ✓ → `func_17CE00` ✓ → `entry_17cf28` ✓ — depois lê vtable não-inicializada e faz 4x jalr:
+- **Jalr #1 em 0x17D008:** `v0=0x8c` → bios stub → runtime normaliza `ctx->pc=0x17D010` → continua.
+- **Jalr #2 em 0x17D030:** `v0=0xbd5d7162` → bad-PC. `ra=0x17D038` (confirmado: `SET_GPR_U32(ctx, 31, 0x17D038u)` nessa instrução). Dispatcher recupera → `sub_0017A940` aborta.
+- **Jalr #3 (0x17D05C) e #4 (0x17D084):** nunca alcançados.
+
+`sub_0017CF78` é chamada **5 vezes** por `sub_0017D0A0_0x17d0a0.cpp` (linhas 1493, 1521, 1549, 1577, 1605).
+
+**Fix (PASSO 31) — game_overrides.cpp:**
+```cpp
+void gow_stub_0x17CF78_vtable_jalr_skip(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime)
+{
+    // Retorna v0=0 imediatamente — pula 4x jalr vtable nao-inicializada
+    SET_GPR_U32(ctx, 2, 0u);
+    ctx->pc = GPR_U32(ctx, 31);  // jr $ra
+}
+// registrado em apply_god_of_war_overrides:
+runtime.registerFunction(0x0017CF78u, gow_stub_0x17CF78_vtable_jalr_skip);
+```
+
+**Arquivo modificado:** `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp`
+**Build necessário:** `rebuild_runtime.sh` (só runtime, não recompila os 5625 arquivos).
+
+**Próximo passo após o round (pós-PASSO 31):**
+1. `[PASSO 31] sub_0017CF78 stub: 4x jalr vtable PULADO #N` → Bug AP confirmado e corrigido
 2. `[PASSO 23B] sub_0017A940: apos ... (9/10)` e `(10/10)` → steps 9-10 completos ✅
 3. `[PASSO 28] sub_0017A9B0: START` → JAL[11/11] executou → render thread sendo criada
 4. Novos `[StartThread]` com tid>3
