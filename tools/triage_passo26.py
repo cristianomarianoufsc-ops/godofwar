@@ -21,6 +21,7 @@ USO:
 """
 
 import argparse
+import os
 import re
 import sys
 import urllib.request
@@ -68,8 +69,12 @@ _STEPS_A940 = [
 
 
 def fetch_url(url: str) -> str:
+    token = os.environ.get("GITHUB_TOKEN", "")
+    req = urllib.request.Request(url)
+    if token:
+        req.add_header("Authorization", f"token {token}")
     try:
-        with urllib.request.urlopen(url, timeout=20) as resp:
+        with urllib.request.urlopen(req, timeout=20) as resp:
             return resp.read().decode("utf-8", errors="replace")
     except urllib.error.URLError as e:
         print(f"[erro] Não foi possível baixar {url}: {e}", file=sys.stderr)

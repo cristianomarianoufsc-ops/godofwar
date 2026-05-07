@@ -14,6 +14,7 @@ EXEMPLOS:
 """
 
 import argparse
+import os
 import re
 import sys
 import urllib.request
@@ -91,8 +92,12 @@ BLOQUEIOS = [
 
 
 def fetch(url):
+    token = os.environ.get("GITHUB_TOKEN", "")
+    req = urllib.request.Request(url)
+    if token:
+        req.add_header("Authorization", f"token {token}")
     try:
-        with urllib.request.urlopen(url, timeout=20) as r:
+        with urllib.request.urlopen(req, timeout=20) as r:
             return r.read().decode("utf-8", errors="replace")
     except urllib.error.URLError as e:
         print(f"[erro] Não foi possível baixar {url}: {e}", file=sys.stderr)

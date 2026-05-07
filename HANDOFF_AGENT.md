@@ -264,12 +264,16 @@ Cada guarda = um bloqueio que precisa de um "passe" (fix) para ser superado.
 ## 🤖 FLUXO DE TRABALHO AUTOMATIZADO — VIGENTE DESDE 2026-04-28
 
 ```bash
-# Log filtrado mais recente (101 linhas típicas):
-curl -s "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/logs/auto/runs_automaticos/log_latest_filtered.txt"
+# Log filtrado mais recente (101 linhas típicas) — repo privado requer GITHUB_TOKEN:
+curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
+  "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/logs/auto/runs_automaticos/log_latest_filtered.txt"
 
 # Log completo (~465 linhas):
-curl -s "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/logs/auto/runs_automaticos/log_latest_full.txt"
+curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
+  "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/logs/auto/runs_automaticos/log_latest_full.txt"
 ```
+
+> **Repo privado:** o GITHUB_TOKEN (já usado para push) também autentica a leitura dos logs via curl e via os scripts Python (`triage_round.py`, `triage_passo26.py`, `triage_passo23.py`, `analisa_round.py` — todos já lêem `$GITHUB_TOKEN` automaticamente via `os.environ`).
 
 **O analista FAZ:** ler log via curl, commitar mudanças, pedir push ao Cris.
 **O analista NÃO FAZ:** pedir log no chat, tentar `git fetch` local no Replit, sugerir parar o loop.

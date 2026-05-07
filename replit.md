@@ -8,8 +8,8 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
 - **Incremental build (C++ changed):** `git pull origin main && bash recompilar.sh`
 - **Runtime-only build:** `bash rebuild_runtime.sh --run`
 - **Run with trace logs:** `PS2_TRACE=1 bash jogar.sh 2>&1 | tee log_teste.txt`
-- **Read latest filtered log:** `curl -s "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/logs/auto/runs_automaticos/log_latest_filtered.txt"`
-- **Read latest full log:** `curl -s "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/logs/auto/runs_automaticos/log_latest_full.txt"`
+- **Read latest filtered log:** `curl -s -H "Authorization: token ${GITHUB_TOKEN}" "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/logs/auto/runs_automaticos/log_latest_filtered.txt"`
+- **Read latest full log:** `curl -s -H "Authorization: token ${GITHUB_TOKEN}" "https://raw.githubusercontent.com/cristianomarianoufsc-ops/godofwar/logs/auto/runs_automaticos/log_latest_full.txt"`
 - **Required env vars:** `PS2_TRACE` (for verbose logs), `PS2_MISSING_LOG` (for missing function reports).
 
 ## Stack
@@ -95,7 +95,7 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
 - **Critical `src/recompiled/` directories:** Edits to `./src/recompiled/` are ignored; always modify `GOD_PC_PORT_FINAL/src/recompiled/`.
 - **`git push` is manual:** Replit auto-checkpoints but doesn't auto-push. Agent Cris must manually click "Push" in the Git sidebar.
 - **Never run `bash build.sh`:** This recompiles all 5,626 `.cpp` files, taking ~80 minutes. `recompilar.sh` is incremental.
-- **`git fetch` is blocked locally:** Always use `curl raw.githubusercontent.com` to access GitHub content (e.g., logs).
+- **`git fetch` is blocked locally:** Always use `curl raw.githubusercontent.com` with `-H "Authorization: token ${GITHUB_TOKEN}"` to access GitHub content (required for private repo). Scripts Python (triage_round.py etc.) já usam `$GITHUB_TOKEN` automaticamente via `os.environ`.
 - **Truncated functions:** Many functions are initially truncated by the recompiler and require manual fixes or `truncation_overrides.csv`.
 - **"Error during program execution: PS2 Thread Exit"** no log = ExitThread normal de tid=1, não erro fatal.
 - **SIGINT (sinal 2) no final** = timeout de 60s do auto_round.sh, não crash do jogo.
