@@ -65,34 +65,26 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
 - **NUNCA feche o loop `auto_round.sh loop` para rodar outro comando.** Se precisar rodar algo manual, abra Terminal 2 separado.
 - **NÃO pedir log ao Agente Cris.** Os logs são enviados automaticamente para o GitHub.
 
-## Estado atual do boot (2026-05-07) — 🔧 Bug AR CORRIGIDO (PASSO 32 atualizado — fix de $sp)
+## Estado atual do boot (2026-05-07) — 🔧 Bug AS IDENTIFICADO — fix em discovered_functions.csv
 
 - **auto_round.sh:** timeout = **60s** (era 300s).
 - **Bug AK ✅** PASSO 27 confirmado — `func_176FC8` BST skip funcionando.
 - **🏆 BOOT INIT CONCLUÍDO** — `entry=0x2996b0` alcançado, tid=1 fez ExitThread normalmente.
-- **Bug AM ✅ CORRIGIDO** — PASSO 22B stub agora faz `ctx->pc = ra` ao final.
-- **Bug AN ✅ CORRIGIDO (PASSO 29):** Stub `gow_stub_0x17FD10_vtable_jalr_skip` — `sub_0017FD10` tem 3x jalr para vtable não inicializada → retorna `v0=0` imediatamente.
-- **Bug AO ✅ CORRIGIDO (PASSO 30) — CONFIRMADO no round:**
-  - PASSO 30 disparou 32x `v0=0x1789e0 NAO registrado`, jalr pulado corretamente.
-  - Steps 9/10 e 10/10 ainda NÃO apareceram → novo bug downstream.
-- **Bug AP ✅ CORRIGIDO (PASSO 31 — 2026-05-07) — CONFIRMADO no round:**
-  - PASSO 31 disparou 7x (ra=0x17d59c..0x17d5fc) — sub_0017CF78 tratada corretamente.
-  - PASSO 30 disparou 34x total: #1-32 (v0=0x1789e0) + #33 (v0=0x178be8 — nova!) + #34 (v0=0x1789e0).
-- **Bug AQ ✅ CORRIGIDO (PASSO 32 — 2026-05-07) — CONFIRMADO no round:**
-  - Steps 9/10 E 10/10 de sub_0017A940 aparecem pela primeira vez juntos.
-  - Mas `[PASSO 28] sub_0017A9B0: START` NÃO apareceu — JAL[10/11] e JAL[11/11] ainda pulados.
-  - `[138D48] JAL [9/11] retornou pc=0x...` nunca logou → sub_00138D48 fez return antes da linha 255.
-  - **Fix duplo (PASSO 32 — game_overrides.cpp, rebuild_runtime.sh):**
-    - Parte 1: PASSO 30 agora adiciona `SET_GPR_U32(ctx, 31, saved_ra)` antes de `ctx->pc = saved_ra` (fix defensivo da corrupção de `$ra`).
-    - Parte 2: PASSO 32 = wrapper stub para `func_21C788` que força `ctx->pc = saved_ra = 0x17A99C` ao retornar — garante que step 9/10 sempre passa.
-- **Bug AR ✅ CORRIGIDO (PASSO 32 atualizado — 2026-05-07) — causa raiz de JAL[10/11] e JAL[11/11] nunca executarem após PASSO 32:**
-  - Steps 9/10 e 10/10 passaram, mas sub_00138D48 ainda detectava `ctx->pc ≠ 0x138dc0` após JAL[9/11].
-  - **Causa raiz:** `sub_0021C788_0x21c788` tem prólogo `addiu $sp, -0x50` (aloca 80 bytes). Quando faz early-return interno (por jalr ruim capturado por PASSO 30/31), não executa o epílogo → `$sp` permanece -0x50 deslocado. O wrapper PASSO 32 restaurava `$ra` mas não `$sp`. Com `$sp` errado: epílogo de sub_0017A940 faz `ld $ra, 0($sp)` do endereço errado → lixo no `$ra` → `jr $ra` = ctx->pc lixo ≠ 0x138dc0 → sub_00138D48 pula JAL[10/11] e JAL[11/11].
-  - **Fix (PASSO 32 atualizado — game_overrides.cpp, rebuild_runtime.sh):** wrapper agora salva `saved_sp = GPR_U32(ctx, 29)` antes de chamar sub_0021C788 e restaura `SET_GPR_U32(ctx, 29, saved_sp)` após — garante que frame de sub_0017A940 (sp-0x10) permanece intacto.
-- **PASSO 23A:** GS configurado com endereços corretos 0x12000000+.
-- **PASSO 28 adicionado:** logs em sub_0017A9B0 callees para rastrear render thread.
-- **GREP_PATTERN atualizado:** inclui PASSO 27-32 e sub_0017A9B0 explicitamente.
-- **Aguardando round:** verificar `[PASSO 32] ... saved_sp=0x...`, `[PASSO 23B] (9/10)` e `(10/10)`, `[138D48] JAL [9/11] retornou pc=0x138dc0`, `[PASSO 13]` (sub_0017AA18), `[PASSO 28] sub_0017A9B0: START`, novos `[StartThread]` + `nonBlack>0`.
+- **Bug AM/AN/AO/AP/AQ/AR ✅ TODOS CORRIGIDOS** — ver histórico abaixo.
+- **Bug AR ✅ CONFIRMADO (round main@6585d1a, 2026-05-07_14:47):**
+  - **HISTÓRICO:** JAL[1/11] a JAL[11/11] completados pela primeira vez! Todos os 11 JALs de sub_00138D48 passaram.
+  - PASSO 32 salvou/restaurou $sp corretamente: `sp_atual=0x1fff6f0 sp_salvo=0x1ffffc0`.
+  - PASSO 13 (JAL[10/11] = sub_0017AA18) ✅, PASSO 28 (JAL[11/11] = sub_0017A9B0) ✅ — 4 callees completos.
+  - Boot: entry_2996b0 ✅, 32 WEF (Bug AB) ✅, ExitThread(tid=1) ✅.
+  - `frame:upload fbp=0 fbw=0 nonBlack=0` — render thread nunca criada → novo bug identificado.
+- **Bug AS ✅ IDENTIFICADO (2026-05-07) — causa raiz de nonBlack=0 após Bug AR fix:**
+  - **Causa raiz:** `sub_001789E0` (0x1789E0) é uma função real do jogo retornada 34x pelo BST lookup (`func_1863B8`) dentro do PASSO 30 guard (sub_0017C628). A função NÃO estava em `discovered_functions.csv` → nunca compilada pelo PS2Recomp → `hasFunction(0x1789E0) = false` → PASSO 30 pula o jalr 34x. Sem essas chamadas: vtables dos 34 objetos do pool BST nunca inicializadas → render thread (tid=8 esperado) nunca criada → `nonBlack=0`.
+  - Também `0x178BE8` apareceu 1x como variante do BST → adicionada também.
+  - **Fix (discovered_functions.csv):** adicionadas linhas `discovered_0x1789e0` (520 bytes) e `discovered_0x178be8` (16 bytes). Próximo `recompilar.sh` compila ambas. PASSO 30 guard tem ramo `hasFunction → callFn` já implementado — chamará automaticamente quando registradas.
+  - **Issue secundária:** `WRITE64(0x12000070, 0x1400)` em PASSO 23A escreve em `rdram[0x12000000+]` que é out-of-bounds (EE RAM = 32MB = 0x2000000). GS state da runtime não é atualizado via WRITE64. Não-crítico agora — quando render thread subir pelo caminho normal, fará GS setup via MMIO corretamente.
+- **Threads criadas no round:** tid=1 (game main), tid=2 (IOP loader), tid=3 (sceSifRpc). Render thread (tid=8) ausente — esperada após fix Bug AS.
+- **GREP_PATTERN:** inclui PASSO 27-32 e sub_0017A9B0 explicitamente.
+- **Aguardando round pós-Bug AS:** verificar `sub_001789E0 chamada Nx`, novos `[StartThread]` (render thread tid=8), `nonBlack>0`.
 
 ## Gotchas
 

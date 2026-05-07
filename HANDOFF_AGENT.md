@@ -282,7 +282,7 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-06 — PASSO 24 aplicado)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-07 — Bug AS identificado)
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 ### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
@@ -1936,3 +1936,69 @@ void gow_stub_0x21C788_wrapper(uint8_t* rdram, R5900Context* ctx, PS2Runtime* ru
 5. `[PASSO 28] sub_0017A9B0: START` → JAL[11/11] → render thread sendo criada
 6. Novos `[StartThread]` com tid>3
 7. `nonBlack>0` → **PRIMEIRO FRAME DO JOGO!** 🏆
+
+---
+
+### 🏆 Bug AR ✅ CONFIRMADO — round main@6585d1a (2026-05-07_14:47) — TODOS OS 11 JALs PELA 1ª VEZ
+
+**Resultado do round:**
+- `[PASSO 32] saved_sp=0x1ffffc0 sp_atual=0x1fff6f0` ✅ — $sp salvo e restaurado
+- `[138D48] JAL[1/11]..JAL[11/11]` todos retornaram ✅ — **HISTÓRICO!**
+- `[PASSO 13]` (sub_0017AA18 = JAL[10/11]) ✅
+- `[PASSO 28] sub_0017A9B0: START` ✅ — 4 callees: func_21FEF0, func_26BB30, func_183330, func_17C050(a0=0x2)
+- Boot: entry_2996b0 ✅ → 32 WEF (Bug AB) ✅ → ExitThread(tid=1) ✅
+- Threads criadas: tid=1 (game main), tid=2 (IOP loader), tid=3 (sceSifRpc) — **render thread ausente**
+- `frame:upload fbp=0 fbw=0 nonBlack=0` → tela preta — novo bug identificado
+
+---
+
+### Bug AS 🔴 IDENTIFICADO (2026-05-07) — sub_001789E0 não recompilada
+
+#### Causa raiz
+
+O PASSO 30 guard (stub para `sub_0017C628`) chama `func_1863B8` (BST lookup com chave `lhu [s0+0]`) e obtém `v0 = 0x1789E0`. Checa `runtime->hasFunction(0x1789E0)` → **false** → pula o jalr.
+
+Isso acontece **34 vezes** (32x com v0=0x1789E0, 1x com v0=0x178BE8, 1x final com v0=0x1789E0).
+
+`0x1789E0` é uma **função real do jogo** armazenada em vtable pelo PS2 game. O PASSO 30 já tem o ramo correto para chamá-la quando registrada:
+```cpp
+if (runtime->hasFunction(v0_fn)) {
+    auto callFn = runtime->lookupFunction(v0_fn);
+    callFn(rdram, ctx, runtime);  // ← executa normalmente
+} else {
+    // v0 nao registrado: pular jalr (Bug AO)
+    fprintf(stderr, "[PASSO 30] ... NAO registrado ... pulando jalr\n");
+}
+```
+
+O problema: `sub_001789E0` e `sub_001789BE8` **nunca foram adicionadas a `tools/discovered_functions.csv`** → nunca compiladas pelo PS2Recomp → ausentes do runtime.
+
+**Gap confirmado:** no range 0x178xxx, o único arquivo compilado é `0x1785F0`. Nenhum arquivo `sub_001789E0_*.cpp` existe.
+
+**Consequência:** 34 objetos do pool BST ficam sem vtable inicializada → sistema de render não sobe → render thread (tid=8, esperada via PASSO 25) nunca criada → `nonBlack=0`.
+
+**Issue secundária (PASSO 23A):** `WRITE64(0x12000070, 0x1400)` escreve em `rdram[0x12000000]` — out-of-bounds (EE RAM = 32MB = 0x2000000). GS state da runtime não atualizado. Não-crítico agora: quando render thread subir pelo caminho normal, fará GS setup via MMIO corretamente.
+
+#### Fix aplicado (2026-05-07)
+
+`tools/discovered_functions.csv` — adicionadas 2 entradas:
+```
+discovered_0x1789e0,0x1789e0,0x178be8,520
+discovered_0x178be8,0x178be8,0x178bf8,16
+```
+
+**Por que funciona:** próximo `recompilar.sh` (incremental) compilará `sub_001789E0` e `sub_001789BE8` automaticamente. Quando registradas, `hasFunction(0x1789E0)` retorna `true` → PASSO 30 guard entra no ramo `callFn` → 34 chamadas executam → vtables inicializadas → render thread criada.
+
+**Nenhuma mudança necessária em `game_overrides.cpp`** — o guard já está correto.
+
+#### Esperado após fix Bug AS
+
+```
+[PASSO 30] sub_0017C628 jalr guard #1: v0=0x1789e0 REGISTRADO — chamando...  (ou sem log — funciona silencioso)
+[CreateThread] id=N entry=... (render thread!)
+[StartThread] id=N entry=...
+...
+frame:upload nonBlack>0  ← PRIMEIRO FRAME DO JOGO! 🏆
+```
+
+Ou pode surgir novo bug dentro de sub_001789E0 (vtable jalrs não registrados, truncação, etc.) — analisar log do próximo round.
