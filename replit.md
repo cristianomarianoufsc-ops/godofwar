@@ -69,16 +69,17 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
 - **Jogo roda por 300s** (limite do auto_round.sh) — SIGINT final é timeout, não crash
 - **activeThreads=2** após ExitThread de tid=1: tid=2 (IOP loader) + tid=3 (sceSifRpcThread stub)
 - **Bug AH ✅ fixado (PASSO 23C):** tail-call removida do stub 0x283770; boot completa.
-- **Bug AI ✅ fixado (PASSO 25):** PASSO 25 CONFIRMADO no log (`[PASSO 25] func_180A10 stub` apareceu). Callee 1/8 de sub_0017E530 desbloqueado.
-- **Bug AJ 🔴→✅ causa raiz CONFIRMADA + fix PASSO 26 APLICADO (2026-05-06):**
-  - forge#134 ra=0x17e62c confirma que callees 1/8 (func_180A10 ✅), 2/8 (func_17ECE0 ✅), 3/8 (func_13DC78_2ª ✅) passaram.
-  - `func_180D08` (0x180D08) = callee 5/8 de sub_0017E530: contém **4 jalr vtable dispatches** (0x180d30, 0x180d60, 0x180d9c, 0x180dc0), padrão idêntico ao Bug AI.
-  - Os jalr alteram `ctx->pc` → retorno prematuro → sub_0017A940 steps 4-10 nunca executam → StartThread(tid=8) nunca chamado → nonBlack=0.
-  - **Fix:** stub `gow_stub_0x180D08_vtable_dispatch_skip` em `game_overrides.cpp` — reproduz `WRITE32(a1+4, a0)` (primeiro side-effect), pula os 4 jalr dispatches, v0=0, retorna via `$ra`.
-  - func_180CD8 (callee 6/8) chama func_180D08 condicionalmente — também protegida pelo stub.
+- **Bug AI ✅ fixado (PASSO 25):** PASSO 25 CONFIRMADO no log. Callee 1/8 de sub_0017E530 desbloqueado.
+- **Bug AJ ✅ fixado (PASSO 26):** CONFIRMADO — PASSO 26 apareceu 125x; sub_0017E530 8/8 SUCESSO.
+- **Bug AK 🔴→✅ causa raiz CONFIRMADA + fix PASSO 27 APLICADO (2026-05-06):**
+  - sub_0017A940 step 5/10 → entry_131a58 → func_175B38 → func_176C58 → **func_176FC8** (0x176FC8).
+  - `func_176FC8` = BST insert/traverse do pool de nomes hash (sub_00176FC8, 4393 linhas).
+  - Único `cooperativeGuestYield()` em label_177470: `bnel $s4, $v0` — pool em 0x29C4B4 não inicializado → nó alvo nunca encontrado → **loop infinito → 298s de VBlanks**.
+  - **Fix:** stub `gow_stub_0x176FC8_bst_skip` em `game_overrides.cpp` — retorna imediatamente via `$ra`.
+  - Seguro: `func_176C58` seta `v0=s0` APÓS o retorno de func_176FC8 (daddu $v0,$s0,$zero em 0x176cd4) — inserção BST non-critical para o boot.
   - **Build necessário:** `rebuild_runtime.sh` (game_overrides.cpp modificado).
 - **PASSO 24 (logs sub_0017E530) — NÃO compilado ainda:** recompilar.sh precisa rodar para sub_0017E530.cpp — o loop detectará automaticamente na próxima push.
-- **Próximo:** aguardar round pós-PASSO 26 → procurar `[PASSO 26]` + `[PASSO 24] apos 180D08 (5/8)` + `[PASSO 23B] apos func_17E530 (3/10)` + `[PASSO 22B] StartThread thid=8` + `frame:upload nonBlack>0`.
+- **Próximo:** aguardar round pós-PASSO 27 → procurar `[PASSO 27] func_176FC8 stub` + `[PASSO 23B] apos func_131A58 (5/10)` + `[PASSO 22B] StartThread thid=8` + `frame:upload nonBlack>0`.
 
 ## Gotchas
 

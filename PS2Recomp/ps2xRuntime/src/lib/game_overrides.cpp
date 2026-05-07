@@ -909,6 +909,32 @@ namespace
         ctx->pc = GPR_U32(ctx, 31);
     }
 
+    // ---------------------------------------------------------------------------
+    // PASSO 27 — stub para 0x176FC8 (sub_00176FC8: BST insert/traverse pool nomes hash)
+    //
+    // Bug AK — causa raiz (2026-05-06):
+    //   sub_0017A940 step 5/10 chama entry_131a58 → func_175B38 → func_176C58 → func_176FC8.
+    //   func_176FC8 é uma travessia de BST (Binary Search Tree) baseada em pool.
+    //   O pool em 0x29C4B4 não está inicializado corretamente → READ32(0x29C4B4) != 0 mas
+    //   o nó buscado nunca é encontrado → loop infinito com cooperativeGuestYield() → 298s VBlanks.
+    //
+    //   Evidência: único cooperativeGuestYield() em sub_00176FC8 está no label_177470
+    //   (bnel $s4, $v0 — condição nunca satisfeita). VBlanks tick 300→17880 = 298 segundos.
+    //
+    // Fix: stub retorna imediatamente via $ra.
+    //   func_176C58 (caller) NÃO usa o retorno de func_176FC8:
+    //   após o retorno seta v0=s0 (daddu $v0, $s0, $zero em 0x176cd4) — independente.
+    //   Portanto o skip é seguro; a inserção BST é non-critical para o boot.
+    // ---------------------------------------------------------------------------
+    void gow_stub_0x176FC8_bst_skip(uint8_t* /*rdram*/, R5900Context* ctx, PS2Runtime* /*runtime*/)
+    {
+        std::fprintf(stderr,
+            "[PASSO 27] func_176FC8 stub: BST insert/traverse PULADO (Bug AK fix) "
+            "— a0=0x%x a1=0x%x a2=0x%x ra=0x%x\n",
+            GPR_U32(ctx, 4), GPR_U32(ctx, 5), GPR_U32(ctx, 6), GPR_U32(ctx, 31));
+        ctx->pc = GPR_U32(ctx, 31);
+    }
+
     void apply_god_of_war_overrides(PS2Runtime& runtime)
     {
         runtime.registerFunction(0x0013DA10u, gow_stub_sub_0013DA10);
@@ -966,6 +992,13 @@ namespace
         std::cout << "[game_overrides] God of War: PASSO 26 registrado em 0x00180D08 "
                   << "(func_180D08 — Bug AJ: 4x jalr vtable dispatch PULADO; "
                   << "callee 5/8 de sub_0017E530; callee 6/8 func_180CD8 tambem protegida indiretamente)"
+                  << std::endl;
+
+        runtime.registerFunction(0x00176FC8u, gow_stub_0x176FC8_bst_skip);
+        std::cout << "[game_overrides] God of War: PASSO 27 registrado em 0x00176FC8 "
+                  << "(func_176FC8 — Bug AK: BST insert/traverse pool nomes hash; "
+                  << "loop infinito bnel $s4,$v0 em label_177470 — pool 0x29C4B4 nao inicializado; "
+                  << "func_176C58 nao usa retorno de func_176FC8 -> skip seguro)"
                   << std::endl;
     }
 }

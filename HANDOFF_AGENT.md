@@ -1479,3 +1479,67 @@ O jogo **RODOU POR 300 SEGUNDOS** antes de ser encerrado pelo timeout do `auto_r
 - PASSO 7B já existe em sub_00283570 (label_2835e8, força s0=1 se sceSifSetDma retorna 0).
 - PASSO 10A: sub_00283570 label_283600 (sceSifDmaStat, força v0=-1 se >= 0).
 - **Arquivo alterado nesta sessão:** `PS2Recomp/ps2xRuntime/src/lib/syscalls/ps2_syscalls_flags.inl` (PASSO 21) → `rebuild_runtime.sh`.
+
+---
+
+### ESTADO ATUAL — 2026-05-06 (Bug AK + PASSO 27 fix aplicado)
+
+#### Bug AK — Causa raiz CONFIRMADA por análise estática
+
+**Sintoma:** round pós-PASSO 26 confirmou Bug AJ ✅ (PASSO 26 apareceu 125x, sub_0017E530 8/8 SUCESSO). Porém `[PASSO 23B] apos func_131A58 (5/10)` NUNCA apareceu — step 5/10 de sub_0017A940 travou por 298s (VBlanks tick 300 → 17880).
+
+**Cadeia de chamada confirmada:**
+```
+sub_0017A940 step 5/10
+  → entry_131a58_0x131ac8
+    → func_175958 (tiny, segura ✅)
+    → func_175B38 (sub_00175B38)
+      → func_13D630 (PASSO 22A #24 + PASSO 12 no log ✅ — completou)
+      → func_175A10 (sub_00175A10)
+        → func_1757D8: loop uppercase max 24 iters, SEGURO ✅
+        → func_175740: hash string até byte 0, SEGURO ✅ (ra salvo na stack com byte 0x00)
+      → func_176C58 (sub_00176C58)
+        → func_175D88: alloca pool, SEGURO ✅
+        → func_239140: tiny, OR flag 0x8000, SEGURO ✅
+        → func_176FC8 (sub_00176FC8) ← TRAVAMENTO AQUI
+```
+
+**Causa raiz — func_176FC8 (0x176FC8):**
+- Arquivo: `GOD_PC_PORT_FINAL/src/recompiled/sub_00176FC8_0x176fc8.cpp` (4393 linhas!)
+- Função: BST (Binary Search Tree) insert/traverse do pool de nomes hash
+- Loop infinito em **label_177470** (`bnel $s4, $v0` com `cooperativeGuestYield()`)
+- Condição de saída: `s4 == READ32(0x29C4B4)` (sentinela do pool) OU `s5 == v0` (nó encontrado)
+- **Pool em 0x29C4B4 não inicializado** → READ32(0x29C4B4) != 0 mas o nó alvo nunca é encontrado
+- Resultado: 298 segundos de loop infinito gerando 17.880 VBlanks (único `cooperativeGuestYield()` no arquivo)
+
+**Por que VBlank fica ticking:** tid=3 (sceSifRpcThread stub) chama cooperativeGuestYield() em seu loop. O loop BST em func_176FC8 também chama cooperativeGuestYield() a cada iteração do `bnel`.
+
+#### PASSO 27 — Fix aplicado (2026-05-06)
+
+**Arquivo modificado:** `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp`
+
+**Stub adicionado:** `gow_stub_0x176FC8_bst_skip` registrado em 0x00176FC8
+
+**Por que é seguro:**
+- `func_176C58` (caller) seta `v0 = s0` (o nó alocado) APÓS o retorno de func_176FC8:
+  - Instrução 0x176cd4: `daddu $v0, $s0, $zero`
+  - Esta linha está em sub_00176C58_0x176c58.cpp linha 163-165, DEPOIS da chamada a func_176FC8
+- `func_175B38` usa `v0 = READ32(s0+0)` como retorno (hash do nome) — independente da BST
+- A inserção BST é um cache de nomes por hash — non-critical para o boot
+
+**Build necessário:** `rebuild_runtime.sh` (apenas game_overrides.cpp modificado)
+
+#### O que esperar no round pós-PASSO 27
+
+```
+[PASSO 27] func_176FC8 stub: BST insert/traverse PULADO (Bug AK fix) — a0=... a1=... a2=... ra=0x176cd4
+[PASSO 23B] sub_0017A940: apos func_131A58 (5/10) — pc=0x17a970
+[PASSO 23B] sub_0017A940: apos func_118798 (6/10) — pc=0x17a980
+... (steps 7/10, 8/10, 9/10, 10/10)
+[PASSO 22B] StartThread #1: thid=8 arg=... ra=0x293930   ← render thread criada!
+frame:upload nonBlack>0  ← PRIMEIRA IMAGEM DO JOGO!
+```
+
+**Atenção:** Pode haver mais bugs nos steps 6-10/10 de sub_0017A940. Se aparecer `[PASSO 23B] (6/10)` mas não `(7/10)`, há novo bloqueio — analisar step 7/10.
+
+**Script de triagem:** usar `python3 tools/triage_passo26.py` no log pós-27 para monitorar marcadores 27/26/25/24/23B/22B + nonBlack.
