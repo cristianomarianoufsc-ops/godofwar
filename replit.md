@@ -65,7 +65,7 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
 - **NUNCA feche o loop `auto_round.sh loop` para rodar outro comando.** Se precisar rodar algo manual, abra Terminal 2 separado.
 - **NÃO pedir log ao Agente Cris.** Os logs são enviados automaticamente para o GitHub.
 
-## Estado atual do boot (2026-05-07) — 🔧 Bug AQ CORRIGIDO (PASSO 32 — fix de link aplicado)
+## Estado atual do boot (2026-05-07) — 🔧 Bug AR CORRIGIDO (PASSO 32 atualizado — fix de $sp)
 
 - **auto_round.sh:** timeout = **60s** (era 300s).
 - **Bug AK ✅** PASSO 27 confirmado — `func_176FC8` BST skip funcionando.
@@ -78,17 +78,21 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
 - **Bug AP ✅ CORRIGIDO (PASSO 31 — 2026-05-07) — CONFIRMADO no round:**
   - PASSO 31 disparou 7x (ra=0x17d59c..0x17d5fc) — sub_0017CF78 tratada corretamente.
   - PASSO 30 disparou 34x total: #1-32 (v0=0x1789e0) + #33 (v0=0x178be8 — nova!) + #34 (v0=0x1789e0).
-- **Bug AQ ✅ CORRIGIDO (PASSO 32 — 2026-05-07) — causa raiz de steps 9/10 e 10/10 nunca completarem após PASSO 31:**
-  - Mesmo com PASSO 30 (34x) + PASSO 31 (7x) corrigindo jalrs não-registrados, `func_21C788` retornava com `ctx->pc ≠ 0x17A99C` → sub_0017A940 abortava no step 9/10.
-  - **Causa raiz:** PASSO 30 fazia `SET_GPR_U32(ctx, 31, 0x17C648u)` antes de chamar `func_1863B8`, mas não restaurava `$ra` ao final. Na última iteração do loop BST (guard #34), o frame-pai usava `$ra=0x17C648` corrompido em seu `jr $ra` → func_21C788 retornava para endereço errado → ctx->pc ≠ 0x17A99C → sub_0017A940 aborta.
-  - `sub_00138D48` detecta `ctx->pc ≠ 0x138dc0` após JAL[9/11] → pula JAL[10/11] e JAL[11/11] → `sub_0017A9B0` (render thread) nunca chamada → nonBlack=0.
+- **Bug AQ ✅ CORRIGIDO (PASSO 32 — 2026-05-07) — CONFIRMADO no round:**
+  - Steps 9/10 E 10/10 de sub_0017A940 aparecem pela primeira vez juntos.
+  - Mas `[PASSO 28] sub_0017A9B0: START` NÃO apareceu — JAL[10/11] e JAL[11/11] ainda pulados.
+  - `[138D48] JAL [9/11] retornou pc=0x...` nunca logou → sub_00138D48 fez return antes da linha 255.
   - **Fix duplo (PASSO 32 — game_overrides.cpp, rebuild_runtime.sh):**
     - Parte 1: PASSO 30 agora adiciona `SET_GPR_U32(ctx, 31, saved_ra)` antes de `ctx->pc = saved_ra` (fix defensivo da corrupção de `$ra`).
-    - Parte 2: PASSO 32 = wrapper stub para `func_21C788` que chama `sub_0021C788_0x21c788` diretamente e força `ctx->pc = saved_ra = 0x17A99C` ao retornar — garante que step 9/10 sempre passa.
+    - Parte 2: PASSO 32 = wrapper stub para `func_21C788` que força `ctx->pc = saved_ra = 0x17A99C` ao retornar — garante que step 9/10 sempre passa.
+- **Bug AR ✅ CORRIGIDO (PASSO 32 atualizado — 2026-05-07) — causa raiz de JAL[10/11] e JAL[11/11] nunca executarem após PASSO 32:**
+  - Steps 9/10 e 10/10 passaram, mas sub_00138D48 ainda detectava `ctx->pc ≠ 0x138dc0` após JAL[9/11].
+  - **Causa raiz:** `sub_0021C788_0x21c788` tem prólogo `addiu $sp, -0x50` (aloca 80 bytes). Quando faz early-return interno (por jalr ruim capturado por PASSO 30/31), não executa o epílogo → `$sp` permanece -0x50 deslocado. O wrapper PASSO 32 restaurava `$ra` mas não `$sp`. Com `$sp` errado: epílogo de sub_0017A940 faz `ld $ra, 0($sp)` do endereço errado → lixo no `$ra` → `jr $ra` = ctx->pc lixo ≠ 0x138dc0 → sub_00138D48 pula JAL[10/11] e JAL[11/11].
+  - **Fix (PASSO 32 atualizado — game_overrides.cpp, rebuild_runtime.sh):** wrapper agora salva `saved_sp = GPR_U32(ctx, 29)` antes de chamar sub_0021C788 e restaura `SET_GPR_U32(ctx, 29, saved_sp)` após — garante que frame de sub_0017A940 (sp-0x10) permanece intacto.
 - **PASSO 23A:** GS configurado com endereços corretos 0x12000000+.
 - **PASSO 28 adicionado:** logs em sub_0017A9B0 callees para rastrear render thread.
 - **GREP_PATTERN atualizado:** inclui PASSO 27-32 e sub_0017A9B0 explicitamente.
-- **Aguardando round:** verificar `[PASSO 32] func_21C788 wrapper ENTER #1`, `[PASSO 23B] (9/10)` e `(10/10)`, `[PASSO 28] sub_0017A9B0: START`, novos `[StartThread]` + `nonBlack>0`.
+- **Aguardando round:** verificar `[PASSO 32] ... saved_sp=0x...`, `[PASSO 23B] (9/10)` e `(10/10)`, `[138D48] JAL [9/11] retornou pc=0x138dc0`, `[PASSO 13]` (sub_0017AA18), `[PASSO 28] sub_0017A9B0: START`, novos `[StartThread]` + `nonBlack>0`.
 
 ## Gotchas
 

@@ -1850,10 +1850,71 @@ runtime.registerFunction(0x00021C788u, gow_stub_0x21C788_wrapper);
 
 **GREP_PATTERN atualizado:** adicionados PASSO 27-32 e sub_0017A9B0 explicitamente.
 
-**Próximo passo após o round (pós-PASSO 32):**
-1. `[PASSO 32] func_21C788 wrapper ENTER #1: saved_ra=0x17a99c` → Bug AQ confirmado
-2. `[PASSO 23B] sub_0017A940: apos func_21C788 (9/10)` → step 9/10 ✅
-3. `[PASSO 23B] sub_0017A940: apos func_17D778 (10/10)` → step 10/10 ✅
-4. `[PASSO 28] sub_0017A9B0: START` → JAL[11/11] executou → render thread sendo criada
-5. Novos `[StartThread]` com tid>3
-6. `nonBlack>0` → **PRIMEIRO FRAME DO JOGO!** 🏆
+**Round pós-PASSO 32 (confirmação Bug AQ + descoberta Bug AR):**
+```
+[PASSO 32] func_21C788 wrapper ENTER #1: saved_ra=0x17a99c  ← Bug AQ confirmado
+[PASSO 23B] sub_0017A940: apos func_21C788 (9/10) — pc=0x17a99c  ← step 9/10 ✅ PRIMEIRA VEZ!
+[PASSO 23B] sub_0017A940: apos func_17D778 (10/10) — pc=0x17a9a4 — DONE retornando  ← step 10/10 ✅
+[boot_stub] 0x138d48 retornou v0=0x2a0000               ← boot completou
+[frame:upload] nonBlack=0                               ← tela ainda preta
+```
+`[138D48] JAL [9/11] retornou pc=0x...` **NUNCA apareceu** — sub_00138D48 fez `return` ANTES da linha 255 (`if (ctx->pc != 0x138dc0u) { return; }`).
+
+→ **Bug AR identificado:** ctx->pc ≠ 0x138dc0 após sub_0017A940 retornar.
+
+---
+
+#### Bug AR 🔴→✅ CORRIGIDO (PASSO 32 atualizado — 2026-05-07) — $sp corrompido por sub_0021C788 early-return
+
+**Causa raiz:**
+`sub_0021C788_0x21c788` tem prólogo `addiu $sp, $sp, -0x50` (aloca 80 bytes na pilha PS2).  
+Quando ela faz **early-return interno** — devido aos jalr ruins capturados pelos PASSOS 30/31 — não executa o epílogo `addiu $sp, $sp, +0x50`, deixando `$sp` -0x50 deslocado.
+
+O wrapper PASSO 32 (anterior) restaurava `$ra` e `ctx->pc` mas **não restaurava `$sp`**.
+
+**Cascata da corrupção:**
+```
+PASSO 32 wrapper chama sub_0021C788 → early-return interno → $sp -= 0x50 (nao restaurado)
+PASSO 32 wrapper forca ctx->pc=0x17A99C, $ra=0x17A99C → sub_0017A940 continua step 9/10 OK
+sub_0017A940 chama func_17D778 (step 10/10) com $sp corrompido
+func_17D778 retorna (sem $sp — ela nao usa $sp, cf. codigo verificado)
+sub_0017A940 epilogo: ld $ra, 0x0($sp) → lê do endereco errado (sp esta -0x50 abaixo)
+→ jumpTarget = lixo (nao 0x138dc0) → ctx->pc = lixo
+sub_00138D48: ctx->pc != 0x138dc0 → return prematura → JAL[10/11] e JAL[11/11] pulados
+→ PASSO 13 (sub_0017AA18) nao aparece → PASSO 28 (sub_0017A9B0) nao aparece
+→ render thread nunca criada → nonBlack=0
+```
+
+**Diagnóstico confirmado:**
+- `entry_17d778_0x17d948.cpp`: 474 linhas, sem `addiu $sp`, sem jalr → segura, não corrompe $sp.
+- `sub_0021C788_0x21c788.cpp` linha 22: `addiu $sp, $sp, -0x50` → CULPADA.
+- sub_0017A940 epilogo: `ld $ra, 0x0($sp)` usa $sp do momento da execução (post-corrupção).
+
+**Fix (PASSO 32 atualizado — game_overrides.cpp, rebuild_runtime.sh):**
+```cpp
+void gow_stub_0x21C788_wrapper(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime)
+{
+    ++s_passo32_count;
+    const uint32_t saved_ra = GPR_U32(ctx, 31);  // = 0x17A99C
+    const uint32_t saved_sp = GPR_U32(ctx, 29);  // Bug AR fix: sub_0021C788 aloca -0x50
+    std::fprintf(stderr,
+        "[PASSO 32] func_21C788 wrapper ENTER #%u: saved_ra=0x%x saved_sp=0x%x ...\n", ...);
+
+    if (s_passo32_orig_fn)
+        s_passo32_orig_fn(rdram, ctx, runtime);
+
+    // Bug AR fix: restaurar $sp antes de tudo
+    SET_GPR_U32(ctx, 29, saved_sp);
+    SET_GPR_U32(ctx, 31, saved_ra);
+    ctx->pc = saved_ra;  // = 0x17A99C
+}
+```
+
+**Esperado após fix Bug AR:**
+1. `[PASSO 32] ... saved_sp=0x...` → confirma novo log com $sp salvo
+2. `[PASSO 23B] (9/10)` + `(10/10)` → steps passam como antes
+3. `[138D48] JAL [9/11] retornou pc=0x138dc0` → **PRIMEIRA VEZ!** sub_00138D48 avança
+4. `[PASSO 13]` (sub_0017AA18 = JAL[10/11]) → nova chamada!
+5. `[PASSO 28] sub_0017A9B0: START` → JAL[11/11] → render thread sendo criada
+6. Novos `[StartThread]` com tid>3
+7. `nonBlack>0` → **PRIMEIRO FRAME DO JOGO!** 🏆

@@ -1090,7 +1090,7 @@ namespace
         ctx->pc = GPR_U32(ctx, 31);
     }
 
-    // PASSO 32 / Bug AQ fix:
+    // PASSO 32 / Bug AQ fix + Bug AR fix:
     // func_21C788 (step 9/10 de sub_0017A940): apos PASSO 30 (34x jalr guard) + PASSO 31 (7x
     // sub_0017CF78 skip) corrigirem jalrs nao-registrados na cadeia, func_21C788 ainda retorna
     // com ctx->pc != 0x17A99C (retorno esperado por sub_0017A940).
@@ -1105,17 +1105,33 @@ namespace
     //   -> sub_00138D48 detecta ctx->pc != 0x138dc0 -> pula JAL[10/11] e JAL[11/11]
     //   -> sub_0017A9B0 (render thread) nunca chamada -> nonBlack=0.
     //
-    // Fix duplo:
+    // Bug AR (2026-05-07): mesmo com PASSO 32 corrigindo ctx->pc e $ra apos func_21C788,
+    //   sub_00138D48 ainda detectava ctx->pc != 0x138dc0 apos JAL[9/11] (sub_0017A940).
+    //   Causa raiz: sub_0021C788_0x21c788 tem prolog 'addiu $sp, -0x50' (aloca 80 bytes);
+    //   quando ela faz early-return interno (jalr ruim capturado pelos PASSOS 30/31), nao executa
+    //   o epilogo — $sp permanece -0x50 deslocado. O wrapper PASSO 32 restaurava $ra mas nao $sp.
+    //   Com $sp errado: sub_0017A940 chama func_17D778 (step 10/10) com $sp corrompido ->
+    //   epilogo de sub_0017A940 lê 'ld $ra, 0($sp)' do endereco errado -> lixo no $ra ->
+    //   jr $ra = ctx->pc lixo != 0x138dc0 -> sub_00138D48 pula JAL[10/11] e JAL[11/11].
+    //
+    // Fix duplo (Bug AQ):
     //   Parte 1 (PASSO 30, linha acima): SET_GPR_U32(ctx, 31, saved_ra) antes de retornar.
     //   Parte 2 (PASSO 32, este wrapper): registrar func_21C788 com wrapper que salva
     //     saved_ra = $ra (= 0x17A99C, setado por sub_0017A940 antes do jal) e FORCA
     //     ctx->pc = saved_ra apos func_21C788 completar — garante step 9/10 sempre passa.
     //
+    // Fix Bug AR (PASSO 32 atualizado 2026-05-07):
+    //   Salvar saved_sp = $sp antes de chamar s_passo32_orig_fn e restaurar $sp apos —
+    //   garante que o frame de sub_0017A940 (sp-0x10, $ra em sp+0) permanece intacto
+    //   mesmo que sub_0021C788 faca early-return sem restaurar seu proprio frame.
+    //
     // Nota: PASSO 32 substitui func_21C788 no dispatch. O wrapper captura o ponteiro
     // original via runtime.lookupFunction() em apply_god_of_war_overrides (chamado APOS
     // register_functions registrar tudo) e chama pelo ponteiro — sem referencia cruzada
     // entre libs ps2runtime <-> gow_recompiled.
-    // sub_0017A9B0 (JAL[11/11]) devera agora executar -> PASSO 28 deve disparar -> nonBlack>0.
+    // Esperado apos Bug AR fix: sub_0017A940 epilogo lê $ra=0x138dc0 correto ->
+    //   sub_00138D48 JAL[10/11] (sub_0017AA18) e JAL[11/11] (sub_0017A9B0) executam ->
+    //   PASSO 13 + PASSO 28 disparam -> render thread criada -> nonBlack>0.
 
     static uint32_t s_passo32_count = 0u;
     static PS2Runtime::RecompiledFunction s_passo32_orig_fn = nullptr;
@@ -1124,18 +1140,21 @@ namespace
     {
         ++s_passo32_count;
         const uint32_t saved_ra = GPR_U32(ctx, 31);  // = 0x17A99C (setado por sub_0017A940)
+        const uint32_t saved_sp = GPR_U32(ctx, 29);  // Bug AR fix: sub_0021C788 aloca -0x50 sem restaurar em early-return
         std::fprintf(stderr,
-            "[PASSO 32] func_21C788 wrapper ENTER #%u: saved_ra=0x%x a0=0x%x a1=0x%x\n",
-            s_passo32_count, saved_ra, GPR_U32(ctx, 4), GPR_U32(ctx, 5));
+            "[PASSO 32] func_21C788 wrapper ENTER #%u: saved_ra=0x%x saved_sp=0x%x a0=0x%x a1=0x%x\n",
+            s_passo32_count, saved_ra, saved_sp, GPR_U32(ctx, 4), GPR_U32(ctx, 5));
 
         // Chama implementacao original via ponteiro capturado (sem recursao de dispatch)
         if (s_passo32_orig_fn)
             s_passo32_orig_fn(rdram, ctx, runtime);
 
         std::fprintf(stderr,
-            "[PASSO 32] func_21C788 RETORNOU: ctx->pc=0x%x ra=$31=0x%x — forcando ctx->pc=0x%x\n",
-            ctx->pc, GPR_U32(ctx, 31), saved_ra);
+            "[PASSO 32] func_21C788 RETORNOU: ctx->pc=0x%x sp_atual=0x%x sp_salvo=0x%x — restaurando sp+ra+pc\n",
+            ctx->pc, GPR_U32(ctx, 29), saved_sp);
 
+        // Bug AR fix: restaurar $sp antes de tudo (sub_0021C788 pode ter deixado $sp -0x50)
+        SET_GPR_U32(ctx, 29, saved_sp);
         // Forcar retorno correto: sub_0017A940 espera ctx->pc=0x17A99C apos step 9/10
         SET_GPR_U32(ctx, 31, saved_ra);  // restaurar $ra
         ctx->pc = saved_ra;              // garantir ctx->pc = 0x17A99C
