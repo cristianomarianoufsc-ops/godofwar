@@ -282,7 +282,7 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 
 ---
 
-## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-07 — Bug AS identificado)
+## 🟢 ESTADO ATUAL — LEIA ISTO PRIMEIRO (atualizado 2026-05-07 — Bug AS fix real aplicado)
 
 ### ✅ Bugs K, L, M, N, O, X, P, Z, AB — RESOLVIDOS
 ### ✅ Bug Y — RESOLVIDO em sub_00297290 (*(s1+0x24)=1, v0=1 — simula IOP ack)
@@ -375,16 +375,24 @@ Troubleshooting e configuração completa em `replit.md §🤖 FLUXO DE TRABALHO
 ###   NOTA: PASSO 24 logs não aparecem no log mesmo com GREP_PATTERN correto porque o
 ###   binário rodando é o antigo sem os logs compilados.
 
-### 🔴 AGUARDANDO ROUND pós-PASSO 26:
-###   BUILD: rebuild_runtime.sh (game_overrides.cpp)
+### 🟢 Bug AS — FIX REAL APLICADO (2026-05-07):
+###   CAUSA RAIZ: 0x1789E0 é label interno de sub_001785F0 (linhas 1161-1944 do .cpp).
+###     PS2Recomp nunca gerou sub_001789E0_0x1789e0.cpp separado.
+###     discovered_functions.csv NÃO resolve — recompilar.sh não chama PS2Recomp.
+###     BST lookup (func_1863B8) retorna 0x1789E0 34x → hasFunction=false → 34 jalrs pulados.
+###     → vtables dos 34 objetos BST nunca inicializadas → render thread (tid=8) nunca criada.
+###     0x178BE8 também ausente (4 instruções, 1 ocorrência).
+###   FIX: criar .cpp manualmente extraindo código do arquivo pai:
+###     GOD_PC_PORT_FINAL/src/recompiled/sub_001789E0_0x1789e0.cpp (código 0x1789E0-0x178BE8)
+###     GOD_PC_PORT_FINAL/src/recompiled/sub_00178BE8_0x178be8.cpp (4 instruções: lui+addiu+jr+sw)
+###   REGISTROS: ps2_recompiled_functions.h (2 declarações) + register_functions.cpp (2 linhas)
+###   CMakeLists usa GLOB_RECURSE → compilados automaticamente no próximo recompilar.sh
+###
+### 🔴 AGUARDANDO ROUND pós-Bug AS fix real:
+###   BUILD: recompilar.sh (2 novos .cpp: sub_001789E0 + sub_00178BE8)
 ### 🔴 APÓS ROUND → verificar no filtered log:
-###   [PASSO 26] func_180D08 stub: a0=0x... a1=0x... — jalr vtable dispatch PULADO
-###   [PASSO 24] sub_0017E530: apos 180D08 (5/8) → callee 5/8 passou (SE recompilar.sh rodou)
-###   [PASSO 24] sub_0017E530: apos 180CD8 (6/8) → callee 6/8 passou
-###   [PASSO 24] sub_0017E530: apos 181068 (7/8) → callee 7/8 passou
-###   [PASSO 24] sub_0017E530: apos 17E690 (8/8) SUCESSO! → sub_0017E530 inteira
-###   [PASSO 23B] sub_0017A940: apos func_17E530 (3/10) → step 3/10 finalmente retorna!
-###   [PASSO 22B] func_293930 StartThread #N: thid=8 → render thread criada!
+###   sub_001789E0 chamada 34x (ou qualquer N) → vtables BST inicializadas
+###   [StartThread] thid=8 → render thread criada!
 ###   frame:upload nonBlack>0 → PRIMEIRO FRAME DO JOGO!
 
 ---

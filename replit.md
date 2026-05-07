@@ -65,7 +65,7 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
 - **NUNCA feche o loop `auto_round.sh loop` para rodar outro comando.** Se precisar rodar algo manual, abra Terminal 2 separado.
 - **NÃO pedir log ao Agente Cris.** Os logs são enviados automaticamente para o GitHub.
 
-## Estado atual do boot (2026-05-07) — 🔧 Bug AS IDENTIFICADO — fix em discovered_functions.csv
+## Estado atual do boot (2026-05-07) — 🔧 Bug AS FIX APLICADO — .cpp criados manualmente
 
 - **auto_round.sh:** timeout = **60s** (era 300s).
 - **Bug AK ✅** PASSO 27 confirmado — `func_176FC8` BST skip funcionando.
@@ -77,14 +77,18 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
   - PASSO 13 (JAL[10/11] = sub_0017AA18) ✅, PASSO 28 (JAL[11/11] = sub_0017A9B0) ✅ — 4 callees completos.
   - Boot: entry_2996b0 ✅, 32 WEF (Bug AB) ✅, ExitThread(tid=1) ✅.
   - `frame:upload fbp=0 fbw=0 nonBlack=0` — render thread nunca criada → novo bug identificado.
-- **Bug AS ✅ IDENTIFICADO (2026-05-07) — causa raiz de nonBlack=0 após Bug AR fix:**
-  - **Causa raiz:** `sub_001789E0` (0x1789E0) é uma função real do jogo retornada 34x pelo BST lookup (`func_1863B8`) dentro do PASSO 30 guard (sub_0017C628). A função NÃO estava em `discovered_functions.csv` → nunca compilada pelo PS2Recomp → `hasFunction(0x1789E0) = false` → PASSO 30 pula o jalr 34x. Sem essas chamadas: vtables dos 34 objetos do pool BST nunca inicializadas → render thread (tid=8 esperado) nunca criada → `nonBlack=0`.
-  - Também `0x178BE8` apareceu 1x como variante do BST → adicionada também.
-  - **Fix (discovered_functions.csv):** adicionadas linhas `discovered_0x1789e0` (520 bytes) e `discovered_0x178be8` (16 bytes). Próximo `recompilar.sh` compila ambas. PASSO 30 guard tem ramo `hasFunction → callFn` já implementado — chamará automaticamente quando registradas.
-  - **Issue secundária:** `WRITE64(0x12000070, 0x1400)` em PASSO 23A escreve em `rdram[0x12000000+]` que é out-of-bounds (EE RAM = 32MB = 0x2000000). GS state da runtime não é atualizado via WRITE64. Não-crítico agora — quando render thread subir pelo caminho normal, fará GS setup via MMIO corretamente.
+- **Bug AS ✅ FIX APLICADO (2026-05-07) — `.cpp` criados manualmente:**
+  - **Causa raiz:** `sub_001789E0` (0x1789E0) é um label interno de `sub_001785F0` que o PS2Recomp não gerou como arquivo separado. O BST lookup (`func_1863B8`) retornava 0x1789E0 34x → `hasFunction(0x1789E0) = false` → PASSO 30 guard pulava o jalr 34x → vtables dos 34 objetos BST nunca inicializadas → render thread (tid=8) nunca criada → `nonBlack=0`.
+  - Também `0x178BE8` apareceu 1x como variante (4 instruções: `lui $v1,0x33 / addiu $v0,1 / jr $ra / sw $v0,0x3830($v1)`).
+  - **Fix real (2026-05-07):** O `recompilar.sh` só compila `.cpp` existentes — não executa PS2Recomp. O `discovered_functions.csv` NÃO resolve o problema sozinho. Solução: criar os `.cpp` **manualmente** extraindo o código de `sub_001785F0_0x1785f0.cpp`:
+    - `GOD_PC_PORT_FINAL/src/recompiled/sub_001789E0_0x1789e0.cpp` — 520 bytes, código extraído das linhas 1161-1944 do arquivo pai (com switch do jalr/jr $ra reduzido aos labels internos ao range 0x1789E0-0x178BE8)
+    - `GOD_PC_PORT_FINAL/src/recompiled/sub_00178BE8_0x178be8.cpp` — 16 bytes, 4 instruções triviais
+  - **Registros adicionados:** `GOD_PC_PORT_FINAL/include/ps2_recompiled_functions.h` (2 declarações) e `GOD_PC_PORT_FINAL/src/register_functions.cpp` (2 linhas `registerFunction`)
+  - **CMakeLists usa `GLOB_RECURSE`** → novos `.cpp` compilados automaticamente no próximo `recompilar.sh`.
+  - **Issue secundária:** `WRITE64(0x12000070, 0x1400)` em PASSO 23A out-of-bounds — não-crítico.
 - **Threads criadas no round:** tid=1 (game main), tid=2 (IOP loader), tid=3 (sceSifRpc). Render thread (tid=8) ausente — esperada após fix Bug AS.
 - **GREP_PATTERN:** inclui PASSO 27-32 e sub_0017A9B0 explicitamente.
-- **Aguardando round pós-Bug AS:** verificar `sub_001789E0 chamada Nx`, novos `[StartThread]` (render thread tid=8), `nonBlack>0`.
+- **Aguardando round pós-Bug AS fix real:** verificar `sub_001789E0 chamada Nx`, novos `[StartThread]` (render thread tid=8), `nonBlack>0`.
 
 ## Gotchas
 
