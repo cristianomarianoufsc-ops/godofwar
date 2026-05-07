@@ -1634,9 +1634,70 @@ Objetivo: descobrir qual dessas funções cria/inicia a render thread (via Start
 
 **auto_round.sh:** timeout = **60s**. Loop deve estar ativo.
 
-**Próximo passo após o round:**
+**Próximo passo após o round (PASSO 29 aplicado):**
 Verificar no log filtrado:
 1. Aparecem `[PASSO 23B] sub_0017A940: apos func_182810 (8/10)`? → Bug AM fix funcionou
 2. Aparecem `[PASSO 28] sub_0017A9B0: START`? → JAL[11/11] agora executa
 3. Aparecem novos `[StartThread] id=X entry=0xYYYYYY`? → render thread criada
 4. `nonBlack` ainda é 0? → ainda precisa investigar a thread de render
+
+---
+
+### 🟢 ESTADO ATUAL — 2026-05-07 (Bug AN CORRIGIDO — PASSO 29 aplicado)
+
+#### Resultados do round pós-Bug AM (PASSO 22B corrigido)
+
+**Bug AM fix ✅ CONFIRMADO — mas novos bugs revelados:**
+
+```
+[PASSO 23B] sub_0017A940: apos func_293930/StartThread (7/10) — pc=0x17a98c v0=0x2
+[dispatch:first-bad-pc] bad=0x3bd5a2c6 ra=0x17fda0 sp=0x1fffed0 ... trace=... -> 0x293930 -> 0x182810 -> 0x17e6b8 -> 0x180bc8 -> 0x180e90 -> 0x180d08 -> 0x180e10 -> 0x289a28 -> 0x17fd10 -> 0x2897c4 -> 0x175740 -> 0x175780 -> 0x3bd5a2c6
+[dispatch:recover-pc] bad=0x3bd5a2c6 ra=0x17fda0 fallback=0x175740
+INFO: TEXTURE: [ID 3] Texture loaded successfully (640x448 | R8G8B8A8 | 1 mipmaps)
+[PS2_PRINTF stub] # TLB spad=0 kernel=1:%d default=%d:%d extended=%d:%d
+[entry_2996b0:ExitThread] ...
+[frame:upload] idx=0 fbp=0 fbw=0 psm=0x0 size=640x448 nonBlack=0
+```
+
+**Novos sinais positivos:**
+- `TEXTURE: [ID 3] Texture loaded successfully (640x448)` — runtime GS carregando textura de buffer!
+- `[PS2_PRINTF stub]` — jogo está chamando printf (TLB info).
+- steps 8-10/10 de sub_0017A940 AINDA não apareceram.
+
+#### Bug AN 🔴→✅ CORRIGIDO — sub_0017FD10 jalr para vtable não inicializada
+
+**Causa raiz:**
+`sub_0017FD10` (0x17fd10) é uma função de busca/comparação em lista ordenada.
+Contém **3x `jalr $v0`** (em 0x17fd98, 0x17fdec, 0x17fe64) que leem ponteiros de função de vtable não inicializada:
+- `v0 = READ32(READ32(s3+0xC) + 0x44)` → lixo `0x3bd5a2c6` → bad-PC
+
+**Cadeia completa:**
+```
+sub_0017A940 step 8 → func_182810 → func_17E6B8 → func_180BC8 → func_180E90
+→ func_180D08 (PASSO 26 stub OK) → 0x180E10 → func_289A28 → sub_0017FD10
+→ jalr 0x3bd5a2c6 → BAD PC
+```
+
+**Consequência:**
+Dispatcher recupera com `ra=0x17fda0`, mas `sub_0017A940` detecta que `ctx->pc ≠ retorno esperado de func_182810` → aborta antes de logar step 8/10 → steps 8/10, 9/10, 10/10 nunca executam → `sub_0017A9B0` (JAL[11/11] = render thread) nunca chamada → `nonBlack=0`.
+
+**Fix (PASSO 29) — game_overrides.cpp:**
+```cpp
+void gow_stub_0x17FD10_vtable_jalr_skip(uint8_t* /*rdram*/, R5900Context* ctx, PS2Runtime* /*runtime*/)
+{
+    // Loga chamada com contador
+    SET_GPR_U32(ctx, 2, 0u);  // v0=0 (neutro: sem match / comparacao = igual)
+    ctx->pc = GPR_U32(ctx, 31);  // retorna imediatamente
+}
+// registrado em apply_god_of_war_overrides:
+runtime.registerFunction(0x0017FD10u, gow_stub_0x17FD10_vtable_jalr_skip);
+```
+
+**Arquivo modificado:** `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp`
+
+**Próximo passo após o round (rebuild_runtime.sh):**
+1. `[PASSO 29]` aparece no log → stub ativo
+2. `[PASSO 23B] sub_0017A940: apos func_182810 (8/10)` → step 8 completo ✅
+3. `[PASSO 23B] sub_0017A940: apos ... (9/10)` e `(10/10)` → steps 9-10 completos ✅
+4. `[PASSO 28] sub_0017A9B0: START` → JAL[11/11] executou → render thread deve ser criada
+5. `nonBlack>0` → PRIMEIRO FRAME DO JOGO!

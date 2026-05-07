@@ -964,6 +964,27 @@ namespace
         ctx->pc = GPR_U32(ctx, 31);
     }
 
+    // PASSO 29 / Bug AN fix:
+    // sub_0017FD10 (0x17fd10) e uma funcao de busca/comparacao em lista ordenada.
+    // Ela contem 3x "jalr $v0" que leem ponteiros de funcao de uma vtable nao inicializada
+    // (READ32(READ32(s3+0xC)+0x44), +0x3C, etc.). O primeiro le lixo 0x3bd5a2c6 -> bad-PC.
+    // Isso faz sub_0017A940 abortar antes do step 8/10 (ctx->pc != retorno esperado de func_182810),
+    // impedindo steps 8-10 e JAL[11/11]=sub_0017A9B0 (render thread) de executar.
+    // Fix: retornar imediatamente com v0=0 (neutro: "nao encontrado" / igual).
+    static uint32_t s_passo29_count = 0u;
+    void gow_stub_0x17FD10_vtable_jalr_skip(uint8_t* /*rdram*/, R5900Context* ctx, PS2Runtime* /*runtime*/)
+    {
+        ++s_passo29_count;
+        std::fprintf(stderr,
+            "[PASSO 29] sub_0017FD10 stub: 3x jalr vtable PULADO (Bug AN fix) #%u"
+            " — a0=0x%x a1=0x%x a2=0x%x a3=0x%x ra=0x%x\n",
+            s_passo29_count,
+            GPR_U32(ctx, 4), GPR_U32(ctx, 5), GPR_U32(ctx, 6), GPR_U32(ctx, 7),
+            GPR_U32(ctx, 31));
+        SET_GPR_U32(ctx, 2, 0u);  // v0=0 neutro (sem match / comparacao = igual)
+        ctx->pc = GPR_U32(ctx, 31);
+    }
+
     void apply_god_of_war_overrides(PS2Runtime& runtime)
     {
         runtime.registerFunction(0x0013DA10u, gow_stub_sub_0013DA10);
@@ -1028,6 +1049,14 @@ namespace
                   << "(func_176FC8 — Bug AK: BST insert/traverse pool nomes hash; "
                   << "loop infinito bnel $s4,$v0 em label_177470 — pool 0x29C4B4 nao inicializado; "
                   << "func_176C58 nao usa retorno de func_176FC8 -> skip seguro)"
+                  << std::endl;
+
+        runtime.registerFunction(0x0017FD10u, gow_stub_0x17FD10_vtable_jalr_skip);
+        std::cout << "[game_overrides] God of War: PASSO 29 registrado em 0x0017FD10 "
+                  << "(sub_0017FD10 — Bug AN: 3x jalr vtable nao inicializada; "
+                  << "0x17fd98/0x17fdec/0x17fe64 leiam lixo 0x3bd5a2c6 -> bad-PC; "
+                  << "sub_0017A940 abortava antes de logar step 8/10 -> steps 8-10 + sub_0017A9B0 pulados; "
+                  << "fix: retorna v0=0 imediatamente, render thread deve ser criada)"
                   << std::endl;
     }
 }

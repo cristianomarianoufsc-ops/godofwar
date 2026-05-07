@@ -64,18 +64,19 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
 - **NUNCA feche o loop `auto_round.sh loop` para rodar outro comando.** Se precisar rodar algo manual, abra Terminal 2 separado.
 - **NÃO pedir log ao Agente Cris.** Os logs são enviados automaticamente para o GitHub.
 
-## Estado atual do boot (2026-05-07) — 🔧 Bug AM CORRIGIDO
+## Estado atual do boot (2026-05-07) — 🔧 Bug AN CORRIGIDO (PASSO 29)
 
 - **auto_round.sh:** timeout = **60s** (era 300s).
 - **Bug AK ✅** PASSO 27 confirmado — `func_176FC8` BST skip funcionando.
 - **🏆 BOOT INIT CONCLUÍDO** — `entry=0x2996b0` alcançado, tid=1 fez ExitThread normalmente.
-- **Bug AM ✅ CORRIGIDO (2026-05-07) — causa raiz do Bug AL:**
-  - func_293930 = **AddDmacHandler** (syscall 0x12), NÃO StartThread (0x22) — erro de identificação anterior.
-  - Stub PASSO 22B omitia `jr $ra` → sub_0017A940 retornava após step 7/10 → steps 8-10, JAL[10/11], JAL[11/11] nunca executavam → render thread nunca criada → frame preto.
-  - **Fix:** `ctx->pc = ra` adicionado ao final do stub.
-- **PASSO 23A corrigido:** endereços GS eram errados (0x10008020 etc.); corretos são 0x12000000+ (PS2_GS_BASE). GS_DISPFB1 (0x12000070, fbw=10) agora configurado.
-- **PASSO 28 adicionado:** logs em sub_0017A9B0 callees (func_21FEF0, func_26BB30, func_183330, func_17C050) para rastrear criação da render thread.
-- **Aguardando round:** verificar `[PASSO 23B] ... (8/10)`, `[PASSO 28] sub_0017A9B0: START`, e novos `[StartThread]`.
+- **Bug AM ✅ CORRIGIDO** — PASSO 22B stub agora faz `ctx->pc = ra` ao final.
+- **Bug AN ✅ CORRIGIDO (2026-05-07) — causa raiz de steps 8-10 nunca executarem:**
+  - `sub_0017FD10` (0x17fd10) tem 3x `jalr $v0` (em 0x17fd98, 0x17fdec, 0x17fe64) que leem ponteiros de função de vtable não inicializada → lixo `0x3bd5a2c6` → bad-PC.
+  - Dispatcher recuperava com `ra=0x17fda0`, mas `sub_0017A940` detectava `ctx->pc ≠ retorno esperado de func_182810` e abortava → steps 8/10, 9/10, 10/10 NUNCA logados → `sub_0017A9B0` (JAL[11/11] = render thread) nunca chamada → `nonBlack=0`.
+  - **Fix (PASSO 29):** Stub `gow_stub_0x17FD10_vtable_jalr_skip` em `game_overrides.cpp` — retorna `v0=0` imediatamente, evitando os 3 jalr problemáticos.
+- **PASSO 23A:** GS configurado com endereços corretos 0x12000000+.
+- **PASSO 28 adicionado:** logs em sub_0017A9B0 callees para rastrear render thread.
+- **Aguardando round:** verificar `[PASSO 23B] ... (8/10)` até `(10/10)`, `[PASSO 28] sub_0017A9B0: START`, e novos `[StartThread]` + `nonBlack>0`.
 
 ## Gotchas
 
