@@ -1662,6 +1662,25 @@ Verificar no log filtrado:
 
 ---
 
+### 🟢 ESTADO ATUAL — 2026-05-07 (Bug AQ CORRIGIDO — PASSO 32 fix de link aplicado)
+
+#### ⚠️ Bug AQ PASSO 32 — Erro de link resolvido (2026-05-07)
+
+**Erro:** `undefined reference to '(anonymous namespace)::sub_0021C788_0x21c788'`
+
+**Causa:** `game_overrides.cpp` compila como parte de `ps2runtime`, mas `sub_0021C788_0x21c788` vive em `gow_recompiled` — duas static libs separadas. A forward declaration cruzava a fronteira de link.
+
+**Fix aplicado em `game_overrides.cpp`:**
+- Removida a forward declaration `void sub_0021C788_0x21c788(...)`.
+- Adicionada `static PS2Runtime::RecompiledFunction s_passo32_orig_fn = nullptr;`.
+- Em `apply_god_of_war_overrides`, ANTES de registrar o wrapper: `s_passo32_orig_fn = runtime.lookupFunction(0x00021C788u);`.
+- No wrapper `gow_stub_0x21C788_wrapper`: chama `s_passo32_orig_fn(rdram, ctx, runtime)` em vez da função direta.
+- `lookupFunction` retorna `nullptr` se não encontrar → wrapper verifica `if (s_passo32_orig_fn)` antes de chamar.
+
+**Build necessário:** `rebuild_runtime.sh` (apenas `game_overrides.cpp` modificado).
+
+---
+
 ### 🟢 ESTADO ATUAL — 2026-05-07 (Bug AQ CORRIGIDO — PASSO 32 aplicado)
 
 #### Resultados do round pós-PASSO 29 (Bug AN fix — sub_0017FD10)
