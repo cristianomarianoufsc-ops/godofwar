@@ -53,12 +53,31 @@ Se você terminar a sessão sem atualizar os dois, o próximo agente vai perder 
 
 ## 🚨 FLUXO DE PUSH — AUTOMÁTICO VIA git_push.sh 🚨
 
-**O push agora é automático! O GITHUB_TOKEN está salvo permanentemente nos secrets do Replit.**
+**O push é automático via `bash git_push.sh`. O GITHUB_TOKEN deve estar nos Secrets do Replit.**
+
+### ⚠️ ATENÇÃO PARA O PRÓXIMO AGENTE — VERIFICAÇÃO OBRIGATÓRIA DO GITHUB_TOKEN
+
+**ANTES de qualquer push, verifique se o GITHUB_TOKEN está configurado:**
+
+```javascript
+// Rode isto no code_execution para verificar:
+const result = await viewEnvVars({ type: "secret", keys: ["GITHUB_TOKEN"] });
+console.log(result.secrets); // deve mostrar {"GITHUB_TOKEN": true}
+```
+
+**Se mostrar `{"GITHUB_TOKEN": false}`:**
+1. O token não está configurado nos Secrets do Replit desta sessão
+2. Rode `requestEnvVar({ requestType: "secret", keys: ["GITHUB_TOKEN"], userMessage: "..." })` para pedir ao Agente Cris
+3. O Agente Cris fornecerá o Personal Access Token do GitHub (fine-grained, Contents: Read+Write, repositório `cristianomarianoufsc-ops/godofwar`)
+4. Após configurar, o token fica disponível como `$GITHUB_TOKEN` no bash
+
+**IMPORTANTE:** O GITHUB_TOKEN NÃO está em nenhum arquivo do projeto. Ele vive nos Secrets do Replit (painel lateral). Cada nova sessão de agente pode precisar reconfigurar. O Agente Cris já sabe qual é o token — basta pedir.
 
 **Sequência real:**
-1. Analista edita arquivos no Replit → commita as mudanças
-2. Analista roda `bash git_push.sh` → push vai direto pro GitHub
-3. Loop `auto_round.sh` no PC do Cris detecta em ≤30s → round dispara automaticamente
+1. Verificar GITHUB_TOKEN (acima)
+2. Analista edita arquivos no Replit → Replit auto-commita ao final da tarefa
+3. Analista roda `bash git_push.sh` → push vai direto pro GitHub
+4. Loop `auto_round.sh` no PC do Cris detecta em ≤30s → round dispara automaticamente
 
 **Obrigação do analista:** após QUALQUER commit que precisa rodar no PC, rodar `bash git_push.sh`. NÃO pedir ao Agente Cris para clicar em Push.
 
