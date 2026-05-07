@@ -1037,6 +1037,7 @@ namespace
             SET_GPR_S32(ctx, 2, (int32_t)aligned);
         }
 
+        SET_GPR_U32(ctx, 31, saved_ra);  // Bug AQ fix: restaura $ra antes de retornar
         ctx->pc = saved_ra;
     }
 
@@ -1087,6 +1088,55 @@ namespace
             GPR_U32(ctx, 31));
         SET_GPR_U32(ctx, 2, 0u);  // v0=0 neutro
         ctx->pc = GPR_U32(ctx, 31);
+    }
+
+    // PASSO 32 / Bug AQ fix:
+    // func_21C788 (step 9/10 de sub_0017A940): apos PASSO 30 (34x jalr guard) + PASSO 31 (7x
+    // sub_0017CF78 skip) corrigirem jalrs nao-registrados na cadeia, func_21C788 ainda retorna
+    // com ctx->pc != 0x17A99C (retorno esperado por sub_0017A940).
+    //
+    // Causa raiz do Bug AQ: PASSO 30 (gow_stub_0x17C628_jalr_guard) faz
+    //   SET_GPR_U32(ctx, 31, 0x17C648u)  antes de chamar func_1863B8
+    // mas o fix do Bug AQ parte 1 (SET_GPR_U32(ctx, 31, saved_ra) ao final) sozinho pode nao
+    // ser suficiente se algum frame intermediario na cadeia func_21C788 e folha (leaf function)
+    // e usa $ra diretamente sem salvar na pilha — o $ra corrompido de 34 iteracoes PASSO 30
+    // propaga ate o jr $ra de func_21C788 que retorna para endereco errado:
+    //   ctx->pc != 0x17A99C -> sub_0017A940 aborta no step 9/10
+    //   -> sub_00138D48 detecta ctx->pc != 0x138dc0 -> pula JAL[10/11] e JAL[11/11]
+    //   -> sub_0017A9B0 (render thread) nunca chamada -> nonBlack=0.
+    //
+    // Fix duplo:
+    //   Parte 1 (PASSO 30, linha acima): SET_GPR_U32(ctx, 31, saved_ra) antes de retornar.
+    //   Parte 2 (PASSO 32, este wrapper): registrar func_21C788 com wrapper que salva
+    //     saved_ra = $ra (= 0x17A99C, setado por sub_0017A940 antes do jal) e FORCA
+    //     ctx->pc = saved_ra apos func_21C788 completar — garante step 9/10 sempre passa.
+    //
+    // Nota: PASSO 32 substitui func_21C788 no dispatch. O wrapper chama a implementacao
+    // original diretamente (sub_0021C788_0x21c788) sem recursao de dispatch.
+    // sub_0017A9B0 (JAL[11/11]) devera agora executar -> PASSO 28 deve disparar -> nonBlack>0.
+
+    // Forward declaration da funcao recompilada original
+    void sub_0021C788_0x21c788(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime);
+
+    static uint32_t s_passo32_count = 0u;
+    void gow_stub_0x21C788_wrapper(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime)
+    {
+        ++s_passo32_count;
+        const uint32_t saved_ra = GPR_U32(ctx, 31);  // = 0x17A99C (setado por sub_0017A940)
+        std::fprintf(stderr,
+            "[PASSO 32] func_21C788 wrapper ENTER #%u: saved_ra=0x%x a0=0x%x a1=0x%x\n",
+            s_passo32_count, saved_ra, GPR_U32(ctx, 4), GPR_U32(ctx, 5));
+
+        // Chama implementacao original diretamente (sem dispatch — evita recursao)
+        sub_0021C788_0x21c788(rdram, ctx, runtime);
+
+        std::fprintf(stderr,
+            "[PASSO 32] func_21C788 RETORNOU: ctx->pc=0x%x ra=$31=0x%x — forcando ctx->pc=0x%x\n",
+            ctx->pc, GPR_U32(ctx, 31), saved_ra);
+
+        // Forcar retorno correto: sub_0017A940 espera ctx->pc=0x17A99C apos step 9/10
+        SET_GPR_U32(ctx, 31, saved_ra);  // restaurar $ra
+        ctx->pc = saved_ra;              // garantir ctx->pc = 0x17A99C
     }
 
     void apply_god_of_war_overrides(PS2Runtime& runtime)
@@ -1178,6 +1228,19 @@ namespace
                   << "chamada 5x por sub_0017D0A0 na cadeia step 9/10 = func_21C788; "
                   << "PASSO 30 pulou 32x jalr 0x1789e0, execucao seguiu para sub_0017CF78; "
                   << "fix: retorna v0=0 imediatamente, esperado: steps 9/10, 10/10, sub_0017A9B0 START, nonBlack>0)"
+                  << std::endl;
+
+        runtime.registerFunction(0x00021C788u, gow_stub_0x21C788_wrapper);
+        std::cout << "[game_overrides] God of War: PASSO 32 registrado em 0x00021C788 "
+                  << "(func_21C788 — Bug AQ: step 9/10 de sub_0017A940; PASSO 30 corrompia $ra "
+                  << "via SET_GPR_U32(ctx,31,0x17C648) sem restaurar — na ultima iteracao do loop "
+                  << "BST (guard #34), frame-pai usava $ra=0x17C648 corrompido -> jr $ra errado -> "
+                  << "func_21C788 retornava ctx->pc != 0x17A99C -> sub_0017A940 abortava step 9/10 "
+                  << "-> sub_00138D48 pc!=0x138dc0 -> JAL[11/11](sub_0017A9B0) nunca executava -> "
+                  << "render thread nunca criada -> nonBlack=0; "
+                  << "fix duplo: (1) PASSO 30 agora restaura $ra=saved_ra antes de retornar; "
+                  << "(2) PASSO 32 wrapper forca ctx->pc=saved_ra=0x17A99C apos func_21C788; "
+                  << "esperado: steps 9/10+10/10 logados, PASSO 28 START, StartThread render, nonBlack>0)"
                   << std::endl;
     }
 }

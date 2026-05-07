@@ -65,7 +65,7 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
 - **NUNCA feche o loop `auto_round.sh loop` para rodar outro comando.** Se precisar rodar algo manual, abra Terminal 2 separado.
 - **NÃO pedir log ao Agente Cris.** Os logs são enviados automaticamente para o GitHub.
 
-## Estado atual do boot (2026-05-07) — 🔧 Bug AP CORRIGIDO (PASSO 31)
+## Estado atual do boot (2026-05-07) — 🔧 Bug AQ CORRIGIDO (PASSO 32)
 
 - **auto_round.sh:** timeout = **60s** (era 300s).
 - **Bug AK ✅** PASSO 27 confirmado — `func_176FC8` BST skip funcionando.
@@ -75,15 +75,20 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
 - **Bug AO ✅ CORRIGIDO (PASSO 30) — CONFIRMADO no round:**
   - PASSO 30 disparou 32x `v0=0x1789e0 NAO registrado`, jalr pulado corretamente.
   - Steps 9/10 e 10/10 ainda NÃO apareceram → novo bug downstream.
-- **Bug AP ✅ CORRIGIDO (PASSO 31 — 2026-05-07) — causa raiz de steps 9/10 e 10/10 nunca completarem após PASSO 30:**
-  - Após PASSO 30 pular 32x jalr `0x1789e0`, execução segue para `sub_0017CF78` (chamada 5x por `sub_0017D0A0`, cadeia `func_21C788 → func_185698 → func_13E180 → func_186300 → func_17D0A0`).
-  - `sub_0017CF78` chama `func_289910` ✓ → `func_2894F4` ✓ → `func_17CE00` ✓ → `entry_17cf28` ✓, depois lê vtable não-inicializada e faz 4x jalr:
-    - Jalr #1 em 0x17D008: `v0=0x8c` → bios stub → normalizado, continua.
-    - Jalr #2 em 0x17D030: `v0=0xbd5d7162` → bad-PC, `ra=0x17d038` → dispatcher recupera → `sub_0017A940` aborta → steps 9/10, 10/10 nunca completam.
-  - **Fix (PASSO 31):** Stub `gow_stub_0x17CF78_vtable_jalr_skip` — retorna `v0=0` imediatamente, pulando 4x jalr vtable não-inicializada. Registrado em `0x0017CF78`. Padrão idêntico ao Bug AJ (PASSO 26) e Bug AN (PASSO 29).
+- **Bug AP ✅ CORRIGIDO (PASSO 31 — 2026-05-07) — CONFIRMADO no round:**
+  - PASSO 31 disparou 7x (ra=0x17d59c..0x17d5fc) — sub_0017CF78 tratada corretamente.
+  - PASSO 30 disparou 34x total: #1-32 (v0=0x1789e0) + #33 (v0=0x178be8 — nova!) + #34 (v0=0x1789e0).
+- **Bug AQ ✅ CORRIGIDO (PASSO 32 — 2026-05-07) — causa raiz de steps 9/10 e 10/10 nunca completarem após PASSO 31:**
+  - Mesmo com PASSO 30 (34x) + PASSO 31 (7x) corrigindo jalrs não-registrados, `func_21C788` retornava com `ctx->pc ≠ 0x17A99C` → sub_0017A940 abortava no step 9/10.
+  - **Causa raiz:** PASSO 30 fazia `SET_GPR_U32(ctx, 31, 0x17C648u)` antes de chamar `func_1863B8`, mas não restaurava `$ra` ao final. Na última iteração do loop BST (guard #34), o frame-pai usava `$ra=0x17C648` corrompido em seu `jr $ra` → func_21C788 retornava para endereço errado → ctx->pc ≠ 0x17A99C → sub_0017A940 aborta.
+  - `sub_00138D48` detecta `ctx->pc ≠ 0x138dc0` após JAL[9/11] → pula JAL[10/11] e JAL[11/11] → `sub_0017A9B0` (render thread) nunca chamada → nonBlack=0.
+  - **Fix duplo (PASSO 32 — game_overrides.cpp, rebuild_runtime.sh):**
+    - Parte 1: PASSO 30 agora adiciona `SET_GPR_U32(ctx, 31, saved_ra)` antes de `ctx->pc = saved_ra` (fix defensivo da corrupção de `$ra`).
+    - Parte 2: PASSO 32 = wrapper stub para `func_21C788` que chama `sub_0021C788_0x21c788` diretamente e força `ctx->pc = saved_ra = 0x17A99C` ao retornar — garante que step 9/10 sempre passa.
 - **PASSO 23A:** GS configurado com endereços corretos 0x12000000+.
 - **PASSO 28 adicionado:** logs em sub_0017A9B0 callees para rastrear render thread.
-- **Aguardando round:** verificar `[PASSO 31] sub_0017CF78 stub: 4x jalr vtable PULADO #N` (confirmação Bug AP), `[PASSO 23B] (9/10)` e `(10/10)`, `[PASSO 28] sub_0017A9B0: START`, e novos `[StartThread]` + `nonBlack>0`.
+- **GREP_PATTERN atualizado:** inclui PASSO 27-32 e sub_0017A9B0 explicitamente.
+- **Aguardando round:** verificar `[PASSO 32] func_21C788 wrapper ENTER #1`, `[PASSO 23B] (9/10)` e `(10/10)`, `[PASSO 28] sub_0017A9B0: START`, novos `[StartThread]` + `nonBlack>0`.
 
 ## Gotchas
 

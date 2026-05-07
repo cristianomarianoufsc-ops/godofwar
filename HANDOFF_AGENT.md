@@ -1662,7 +1662,7 @@ Verificar no log filtrado:
 
 ---
 
-### 🟢 ESTADO ATUAL — 2026-05-07 (Bug AP CORRIGIDO — PASSO 31 aplicado)
+### 🟢 ESTADO ATUAL — 2026-05-07 (Bug AQ CORRIGIDO — PASSO 32 aplicado)
 
 #### Resultados do round pós-PASSO 29 (Bug AN fix — sub_0017FD10)
 
@@ -1767,9 +1767,70 @@ runtime.registerFunction(0x0017CF78u, gow_stub_0x17CF78_vtable_jalr_skip);
 **Arquivo modificado:** `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp`
 **Build necessário:** `rebuild_runtime.sh` (só runtime, não recompila os 5625 arquivos).
 
-**Próximo passo após o round (pós-PASSO 31):**
-1. `[PASSO 31] sub_0017CF78 stub: 4x jalr vtable PULADO #N` → Bug AP confirmado e corrigido
-2. `[PASSO 23B] sub_0017A940: apos ... (9/10)` e `(10/10)` → steps 9-10 completos ✅
-3. `[PASSO 28] sub_0017A9B0: START` → JAL[11/11] executou → render thread sendo criada
-4. Novos `[StartThread]` com tid>3
-5. `nonBlack>0` → PRIMEIRO FRAME DO JOGO!
+**PASSO 31 ✅ CONFIRMADO no round — 7x `sub_0017CF78` tratada (ra=0x17d59c..0x17d5fc).**
+**PASSO 30 disparou 34x total: #1-32 (v0=0x1789e0) + #33 (v0=0x178be8 NOVA) + #34 (v0=0x1789e0).**
+
+---
+
+#### Bug AQ 🔴→✅ CORRIGIDO (PASSO 32) — func_21C788 retornava ctx->pc errado após PASSO 30+31
+
+**Round pós-PASSO 31:**
+```
+[PASSO 23B] sub_0017A940: apos func_182810 (8/10)   ← step 8/10 ✅
+[PASSO 30] jalr guard #1..32: v0=0x1789e0            ← PASSO 30 funcionando
+[PASSO 31] #1..7: sub_0017CF78 pulado               ← PASSO 31 funcionando
+[PASSO 30] jalr guard #33: v0=0x178be8 NAO registrado  ← NOVA! endereço não visto antes
+[PASSO 30] jalr guard #34: v0=0x1789e0 NAO registrado
+[boot_stub] 0x138d48 retornou v0=0x178bf8            ← boot completou
+[frame:upload] nonBlack=0                            ← tela ainda preta
+```
+Steps 9/10 e 10/10 NÃO apareceram. PASSO 28 NÃO apareceu.
+
+**Causa raiz do Bug AQ:**
+PASSO 30 (`gow_stub_0x17C628_jalr_guard`) executa `SET_GPR_U32(ctx, 31, 0x17C648u)` antes de chamar `func_1863B8` (BST lookup), mas ao final apenas fazia `ctx->pc = saved_ra` sem restaurar `$ra` (reg 31). Na última iteração do loop BST (guard #34), o frame-pai usava o `$ra=0x17C648` corrompido para seu `jr $ra` → func_21C788 retornava para endereço errado → `ctx->pc ≠ 0x17A99C` → sub_0017A940 abortava no check do step 9/10.
+
+**Cascata do abort:**
+```
+sub_0017A940: step 9/10 check falha (ctx->pc ≠ 0x17A99C) → return prematura
+sub_00138D48: JAL[9/11] ctx->pc ≠ 0x138dc0 → return prematura
+→ JAL[10/11] (sub_0017AA18) NUNCA executado
+→ JAL[11/11] (sub_0017A9B0) NUNCA executado
+→ render thread NUNCA criada → nonBlack=0
+```
+
+**Fix duplo (PASSO 32) — game_overrides.cpp (rebuild_runtime.sh apenas):**
+
+Parte 1 — Fix defensivo no PASSO 30 (restauração de `$ra`):
+```cpp
+// Antes do ctx->pc = saved_ra (ao final de gow_stub_0x17C628_jalr_guard):
+SET_GPR_U32(ctx, 31, saved_ra);  // Bug AQ fix: restaura $ra antes de retornar
+ctx->pc = saved_ra;
+```
+
+Parte 2 — PASSO 32: wrapper stub para `func_21C788`:
+```cpp
+// Forward declaration da funcao recompilada original
+void sub_0021C788_0x21c788(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime);
+
+void gow_stub_0x21C788_wrapper(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime)
+{
+    const uint32_t saved_ra = GPR_U32(ctx, 31);  // = 0x17A99C
+    // Chama implementacao original diretamente (sem dispatch — evita recursao)
+    sub_0021C788_0x21c788(rdram, ctx, runtime);
+    // Forca retorno correto: sub_0017A940 espera ctx->pc=0x17A99C apos step 9/10
+    SET_GPR_U32(ctx, 31, saved_ra);
+    ctx->pc = saved_ra;
+}
+// Registrado em apply_god_of_war_overrides:
+runtime.registerFunction(0x00021C788u, gow_stub_0x21C788_wrapper);
+```
+
+**GREP_PATTERN atualizado:** adicionados PASSO 27-32 e sub_0017A9B0 explicitamente.
+
+**Próximo passo após o round (pós-PASSO 32):**
+1. `[PASSO 32] func_21C788 wrapper ENTER #1: saved_ra=0x17a99c` → Bug AQ confirmado
+2. `[PASSO 23B] sub_0017A940: apos func_21C788 (9/10)` → step 9/10 ✅
+3. `[PASSO 23B] sub_0017A940: apos func_17D778 (10/10)` → step 10/10 ✅
+4. `[PASSO 28] sub_0017A9B0: START` → JAL[11/11] executou → render thread sendo criada
+5. Novos `[StartThread]` com tid>3
+6. `nonBlack>0` → **PRIMEIRO FRAME DO JOGO!** 🏆
