@@ -64,32 +64,30 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
 - **NUNCA feche o loop `auto_round.sh loop` para rodar outro comando.** Se precisar rodar algo manual, abra Terminal 2 separado.
 - **NÃO pedir log ao Agente Cris.** Os logs são enviados automaticamente para o GitHub.
 
-## Estado atual do boot (2026-05-06)
+## Estado atual do boot (2026-05-07) — 🔧 Bug AM CORRIGIDO
 
-- **Jogo roda por 300s** (limite do auto_round.sh) — SIGINT final é timeout, não crash
-- **activeThreads=2** após ExitThread de tid=1: tid=2 (IOP loader) + tid=3 (sceSifRpcThread stub)
-- **Bug AH ✅ fixado (PASSO 23C):** tail-call removida do stub 0x283770; boot completa.
-- **Bug AI ✅ fixado (PASSO 25):** PASSO 25 CONFIRMADO no log. Callee 1/8 de sub_0017E530 desbloqueado.
-- **Bug AJ ✅ fixado (PASSO 26):** CONFIRMADO — PASSO 26 apareceu 125x; sub_0017E530 8/8 SUCESSO.
-- **Bug AK 🔴→✅ causa raiz CONFIRMADA + fix PASSO 27 APLICADO (2026-05-06):**
-  - sub_0017A940 step 5/10 → entry_131a58 → func_175B38 → func_176C58 → **func_176FC8** (0x176FC8).
-  - `func_176FC8` = BST insert/traverse do pool de nomes hash (sub_00176FC8, 4393 linhas).
-  - Único `cooperativeGuestYield()` em label_177470: `bnel $s4, $v0` — pool em 0x29C4B4 não inicializado → nó alvo nunca encontrado → **loop infinito → 298s de VBlanks**.
-  - **Fix:** stub `gow_stub_0x176FC8_bst_skip` em `game_overrides.cpp` — retorna imediatamente via `$ra`.
-  - Seguro: `func_176C58` seta `v0=s0` APÓS o retorno de func_176FC8 (daddu $v0,$s0,$zero em 0x176cd4) — inserção BST non-critical para o boot.
-  - **Build necessário:** `rebuild_runtime.sh` (game_overrides.cpp modificado).
-- **PASSO 24 (logs sub_0017E530) — NÃO compilado ainda:** recompilar.sh precisa rodar para sub_0017E530.cpp — o loop detectará automaticamente na próxima push.
-- **Próximo:** aguardar round pós-PASSO 27 → procurar `[PASSO 27] func_176FC8 stub` + `[PASSO 23B] apos func_131A58 (5/10)` + `[PASSO 22B] StartThread thid=8` + `frame:upload nonBlack>0`.
+- **auto_round.sh:** timeout = **60s** (era 300s).
+- **Bug AK ✅** PASSO 27 confirmado — `func_176FC8` BST skip funcionando.
+- **🏆 BOOT INIT CONCLUÍDO** — `entry=0x2996b0` alcançado, tid=1 fez ExitThread normalmente.
+- **Bug AM ✅ CORRIGIDO (2026-05-07) — causa raiz do Bug AL:**
+  - func_293930 = **AddDmacHandler** (syscall 0x12), NÃO StartThread (0x22) — erro de identificação anterior.
+  - Stub PASSO 22B omitia `jr $ra` → sub_0017A940 retornava após step 7/10 → steps 8-10, JAL[10/11], JAL[11/11] nunca executavam → render thread nunca criada → frame preto.
+  - **Fix:** `ctx->pc = ra` adicionado ao final do stub.
+- **PASSO 23A corrigido:** endereços GS eram errados (0x10008020 etc.); corretos são 0x12000000+ (PS2_GS_BASE). GS_DISPFB1 (0x12000070, fbw=10) agora configurado.
+- **PASSO 28 adicionado:** logs em sub_0017A9B0 callees (func_21FEF0, func_26BB30, func_183330, func_17C050) para rastrear criação da render thread.
+- **Aguardando round:** verificar `[PASSO 23B] ... (8/10)`, `[PASSO 28] sub_0017A9B0: START`, e novos `[StartThread]`.
 
 ## Gotchas
 
 - **Critical `src/recompiled/` directories:** Edits to `./src/recompiled/` are ignored; always modify `GOD_PC_PORT_FINAL/src/recompiled/`.
 - **`git push` is manual:** Replit auto-checkpoints but doesn't auto-push. Agent Cris must manually click "Push" in the Git sidebar.
-- **Never run `bash build.sh`:** This recompiles all 5,626 `.cpp` files, taking ~80 minutes and consuming resources unnecessarily. `recompilar.sh` is for incremental builds.
+- **Never run `bash build.sh`:** This recompiles all 5,626 `.cpp` files, taking ~80 minutes. `recompilar.sh` is incremental.
 - **`git fetch` is blocked locally:** Always use `curl raw.githubusercontent.com` to access GitHub content (e.g., logs).
-- **Truncated functions:** Many functions are initially truncated by the recompiler and require manual fixes or `truncation_overrides.csv` entries and `regen_truncated.sh`. This is a common source of bugs.
+- **Truncated functions:** Many functions are initially truncated by the recompiler and require manual fixes or `truncation_overrides.csv`.
 - **"Error during program execution: PS2 Thread Exit"** no log = ExitThread normal de tid=1, não erro fatal.
-- **SIGINT (sinal 2) no final** = timeout de 300s do auto_round.sh, não crash do jogo.
+- **SIGINT (sinal 2) no final** = timeout de 60s do auto_round.sh, não crash do jogo.
+- **Stub sem `jr $ra` = retorno prematuro em cascata** (Bug AM): qualquer stub que chama `handleSyscall` mas não restaura `ctx->pc = GPR_U32(ctx, 31)` ao final quebra a cadeia de execução do caller.
+- **GS_BASE = 0x12000000:** todo WRITE de registrador GS privilege deve usar 0x12000000+offset, NÃO 0x10008000+ ou 0x1000e000+.
 
 ## Pointers
 

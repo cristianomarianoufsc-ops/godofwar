@@ -733,33 +733,45 @@ namespace
     }
 
     // ========================================================================
-    // PASSO 22B — Log StartThread via func_293930 (syscall v1=0x12)
+    // PASSO 22B — Log AddDmacHandler via func_293930 (syscall v1=0x12)
     // ========================================================================
-    // sub_0017A940 chama func_293930(a0=8, a1=0x157358) = StartThread(tid=8,
-    // entry=0x157358). Sem CreateThread para tid=8, isso falha. Apos PASSO 22A
-    // expandir o pool, esperamos ver CreateThread id=4..8 e depois StartThread(8)
-    // bem-sucedido.
+    // func_293930 faz: addiu $v1, $zero, 0x12; syscall; jr $ra
+    // Syscall 0x12 = AddDmacHandler (NAO StartThread — erro de analise anterior).
+    // sub_0017BC80 chama: AddDmacHandler(cause=5, handler=0x296a50)
+    // sub_0017A940 step 7 chama: AddDmacHandler(cause=8, handler=0x157358)
+    //
+    // Bug AM (CRITICO): stub original chamava handleSyscall mas NAO executava
+    // "jr $ra" (ctx->pc = ra). Isso fazia ctx->pc ficar no meio de func_293930
+    // (0x293934) em vez de 0x17A98C. O caller (sub_0017A940) via
+    // ctx->pc != return_addr e retornava prematuramente — steps 8-10/10 nunca
+    // executavam, JAL[10/11] e JAL[11/11] nunca rodavam, render thread nunca
+    // era criada -> nonBlack=0 (Bug AL).
+    // Fix: adicionar ctx->pc = GPR_U32(ctx, 31) ao final do stub.
     // ========================================================================
-    void gow_log_func_293930_StartThread(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime)
+    void gow_log_func_293930_AddDmacHandler(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime)
     {
         static std::atomic<uint32_t> s_logN{0u};
         const uint32_t logN = s_logN.fetch_add(1u, std::memory_order_relaxed) + 1u;
-        const uint32_t thid = GPR_U32(ctx, 4);
-        const uint32_t arg  = GPR_U32(ctx, 5);
+        const uint32_t cause = GPR_U32(ctx, 4);
+        const uint32_t handler = GPR_U32(ctx, 5);
+        const uint32_t ra = GPR_U32(ctx, 31);
         if (logN <= 8u)
         {
             std::fprintf(stderr,
-                "[PASSO 22B] func_293930 StartThread #%u: thid=%u arg=0x%x ra=0x%x\n",
-                logN, thid, arg, GPR_U32(ctx, 31));
+                "[PASSO 22B] func_293930 AddDmacHandler #%u: cause=%u handler=0x%x ra=0x%x\n",
+                logN, cause, handler, ra);
         }
         SET_GPR_S32(ctx, 3, 18);
         runtime->handleSyscall(rdram, ctx, 0x0u);
         if (logN <= 8u)
         {
             std::fprintf(stderr,
-                "[PASSO 22B] func_293930 StartThread #%u resultado: v0=0x%x\n",
+                "[PASSO 22B] func_293930 AddDmacHandler #%u resultado: v0=0x%x\n",
                 logN, GPR_U32(ctx, 2));
         }
+        // Bug AM fix: simula "jr $ra" — sem isso ctx->pc fica em 0x293934
+        // e o caller detecta retorno invalido, saindo prematuramente.
+        ctx->pc = ra;
     }
 
     void gow_stub_sceSifRpcThread_0x27CBD0(uint8_t* /*rdram*/, R5900Context* /*ctx*/, PS2Runtime* runtime)
@@ -792,25 +804,42 @@ namespace
     // PASSO 23A — stub para 0x1838d0 (JAL[5/11] de sub_00138D48)
     // 0x1838d0 e um LABEL dentro de entry_183878_0x183948 que o runtime nao
     // consegue resolver como entry point separado → NAO REGISTRADA → skip.
-    // Esta funcao replica exatamente o bloco 0x1838d0..0x183940 (GS register
-    // init: PMODE=0, SMODE1=0x2b0f00, DISPLAY2=1, DISPLAY1=1, IMR=0x145).
+    // Esta funcao replica o bloco 0x1838d0..0x183940 (GS register init).
+    //
+    // CORRECAO: stub anterior usava enderecos errados (0x10008020, 0x1000e010,
+    // etc.) que NAO sao registradores GS privilege. GS privilege regs ficam em
+    // PS2_GS_BASE = 0x12000000. Enderecos corretos:
+    //   GS_PMODE   = 0x12000000 (offset 0x0000)
+    //   GS_SMODE1  = 0x12000010 (offset 0x0010)
+    //   GS_DISPFB1 = 0x12000070 (offset 0x0070) — fbp=0, fbw=10 (640px), psm=0
+    //   GS_DISPLAY1= 0x12000080 (offset 0x0080)
+    //   GS_DISPFB2 = 0x12000090 (offset 0x0090)
+    //   GS_DISPLAY2= 0x120000A0 (offset 0x00A0)
+    //   GS_IMR     = 0x12001010 (offset 0x1010)
     // O loop cop0 (bc0f) foi recompilado como sempre-false — mantemos assim.
     // ---------------------------------------------------------------------------
     void gow_stub_0x1838d0_gs_init(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime)
     {
         std::fprintf(stderr,
-            "[PASSO 23A] 0x1838d0: GS init stub — PMODE=0 SMODE1=0x2b0f00 DISPLAY1/2=1 IMR=0x145\n");
+            "[PASSO 23A] 0x1838d0: GS init stub (corrigido) — escrevendo em 0x12000000+\n");
 
-        // 0x1838e0: sw $zero, ($v0)  → WRITE32(0x10008020, 0)  — GS_PMODE
-        WRITE32(0x10008020u, 0u);
-        // 0x1838f0: sw $a1, ($v1)   → WRITE32(0x10008030, 0x2b0f00) — GS_SMODE1
-        WRITE32(0x10008030u, 0x2b0f00u);
-        // 0x183900: sw $a1, ($a0)   → WRITE32(0x1000e020, 1) — GS_DISPLAY2
-        WRITE32(0x1000e020u, 1u);
-        // 0x183908: sw $a1, ($v0)   → WRITE32(0x1000e010, 1) — GS_DISPLAY1
-        WRITE32(0x1000e010u, 1u);
-        // 0x183918: sw $v0, ($v1)   → WRITE32(0x10008000, 0x145) — GS_IMR
-        WRITE32(0x10008000u, 0x145u);
+        // GS_PMODE = 0 (desabilita ambos os circuitos de display durante init)
+        WRITE32(0x12000000u, 0u);
+        // GS_SMODE1 = 0x2b0f00 (NTSC 640x448 timing)
+        WRITE32(0x12000010u, 0x2b0f00u);
+        // GS_DISPFB1: fbp=0, fbw=10 (10*64=640px), psm=0 (PSMCT32)
+        // valor = (0<<0) | (10<<9) | (0<<15) = 0x1400
+        // Sem esse write, dispfb1 fica 0 apos reset do jogo -> fbw=0 -> frame preto
+        WRITE64(0x12000070u, 0x1400ULL);
+        // GS_DISPLAY1: dx=0, dy=0, magh=3, magv=0, dw=2559 (640*4-1), dh=447
+        // valor tipico para NTSC 640x448: 0x000D_F9FF_0000_0000 (simplificado)
+        WRITE32(0x12000080u, 1u);
+        // GS_DISPFB2: igual a DISPFB1 por seguranca
+        WRITE64(0x12000090u, 0x1400ULL);
+        // GS_DISPLAY2
+        WRITE32(0x120000A0u, 1u);
+        // GS_IMR = 0x145 (mascara de interrupcoes GS)
+        WRITE32(0x12001010u, 0x145u);
         // loop cop0 bc0f = sempre false no PC port — pulado
         // 0x183940: jr $ra
         ctx->pc = GPR_U32(ctx, 31);
@@ -967,9 +996,9 @@ namespace
                   << " corrige 13+ chamadas sub_0013DC78(s2=null) em JAL[9/11])"
                   << std::endl;
 
-        runtime.registerFunction(0x000293930u, gow_log_func_293930_StartThread);
+        runtime.registerFunction(0x000293930u, gow_log_func_293930_AddDmacHandler);
         std::cout << "[game_overrides] God of War: PASSO 22B registrado em 0x00293930 "
-                  << "(func_293930 — log StartThread(tid=8, entry=0x157358) via syscall v1=0x12)"
+                  << "(func_293930 — AddDmacHandler syscall 0x12; Bug AM fix: jr $ra ao final)"
                   << std::endl;
 
         runtime.registerFunction(0x001838D0u, gow_stub_0x1838d0_gs_init);

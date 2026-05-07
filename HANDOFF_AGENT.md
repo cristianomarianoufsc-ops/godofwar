@@ -1543,3 +1543,98 @@ frame:upload nonBlack>0  ← PRIMEIRA IMAGEM DO JOGO!
 **Atenção:** Pode haver mais bugs nos steps 6-10/10 de sub_0017A940. Se aparecer `[PASSO 23B] (6/10)` mas não `(7/10)`, há novo bloqueio — analisar step 7/10.
 
 **Script de triagem:** usar `python3 tools/triage_passo26.py` no log pós-27 para monitorar marcadores 27/26/25/24/23B/22B + nonBlack.
+
+---
+
+### 🏆 ESTADO ATUAL — 2026-05-06 (MARCO HISTÓRICO — Boot init concluído + Bug AL identificado)
+
+#### Resultados do round pós-PASSO 27 (Bug AK fix confirmado)
+
+**PASSO 27 ✅ CONFIRMADO:**
+```
+[PASSO 27] func_176FC8 stub: BST insert/traverse PULADO (Bug AK fix) — a0=0x4 a1=0x1001140 a2=0xffe4aa7c ra=0x176cd4
+[PASSO 27] func_176FC8 stub: BST insert/traverse PULADO (Bug AK fix) — a0=0x4 a1=0x1001180 a2=0x6349dd3d ra=0x176cd4
+```
+
+**sub_0017A940 steps 1-7/10 ✅ TODOS COMPLETOS:**
+```
+[PASSO 23B] sub_0017A940: apos func_175978 (1/10)
+[PASSO 23B] sub_0017A940: apos func_175CD0 (2/10)
+[PASSO 23B] sub_0017A940: apos func_17E530 (3/10)
+[PASSO 23B] sub_0017A940: apos func_17BFF0 (4/10)
+[PASSO 23B] sub_0017A940: apos func_131A58 (5/10)  ← era o bloqueador (Bug AK)
+[PASSO 23B] sub_0017A940: apos func_118798 (6/10)
+[PASSO 22B] func_293930 StartThread #2: thid=8 arg=0x157358 ra=0x17a98c
+[PASSO 23B] sub_0017A940: apos func_293930/StartThread (7/10) — v0=0x2
+```
+
+**🏆 BOOT INIT CONCLUÍDO — PRIMEIRA VEZ NA HISTÓRIA DO PROJETO:**
+```
+[boot_stub] init concluido, entry=0x2996b0 (real game main)
+Starting execution at address 0x2996b0
+[BOOT#1] pc=0x2996b0 ra=0x0 sp=0x1fffff0 gp=0x2cf070 a0=0x0
+```
+tid=1 executou WaitEventFlag×32 (Bug AB handling, eid=0-31) e fez ExitThread em 0x2996d0 — comportamento normal PS2 (thread de init termina após spawnar threads de jogo).
+
+---
+
+#### Bug AL 🔴 — Frame preto (nonBlack=0) — Causa raiz identificada: Bug AM
+
+**Sintoma original:**
+```
+[frame:upload] idx=0 fbp=0 fbw=0 psm=0x0 size=640x448 nonBlack=0 page0=0 page150=0 allowFallback=1
+```
+
+---
+
+#### Bug AM ✅ CORRIGIDO — PASSO 22B faltava `jr $ra` (causa raiz do Bug AL)
+
+**Descoberta (2026-05-07):**
+
+**Erro de identificação PASSO 22B:**
+- func_293930 faz `addiu $v1, $zero, 0x12; syscall` → syscall 0x12 = **AddDmacHandler** (NÃO StartThread que é syscall 0x22).
+- "thid=5 arg=0x296a50" = AddDmacHandler(cause=5, handler=0x296a50) — handler DMAC canal 5
+- "thid=8 arg=0x157358" = AddDmacHandler(cause=8, handler=0x157358) — handler DMAC canal 8
+- Nenhum StartThread real ocorreu via func_293930.
+
+**Root cause — Bug AM:**
+O stub PASSO 22B chamava `handleSyscall(AddDmacHandler)` mas **não executava `jr $ra`** (`ctx->pc = GPR_U32(ctx, 31)`).
+Após o syscall, `ctx->pc` ficava em 0x293934 (meio de func_293930), não em 0x17A98C (return addr esperado por sub_0017A940).
+O caller sub_0017A940 verificava:
+```cpp
+if (ctx->pc != 0x17A98Cu) { return; }  // TRUE → saía prematuramente!
+```
+**Consequência em cascata:**
+- sub_0017A940 steps 8-10/10 **nunca executavam** (func_182810, func_21C788, func_17D778 nunca chamadas)
+- JAL[10/11] = sub_0017AA18 **nunca executava**
+- JAL[11/11] = sub_0017A9B0 **nunca executava** → func_21FEF0, func_26BB30, func_17C050 nunca chamadas
+- Render thread nunca criada → VRAM vazia → nonBlack=0 → frame preto (Bug AL)
+
+**Fix aplicado:**
+```cpp
+// game_overrides.cpp — gow_log_func_293930_AddDmacHandler()
+ctx->pc = ra;  // Bug AM fix: simula "jr $ra" que o stub original omitia
+```
+Função renomeada de `gow_log_func_293930_StartThread` → `gow_log_func_293930_AddDmacHandler`.
+
+**Correção PASSO 23A (bonus):**
+O stub anterior escrevia em endereços errados (0x10008020, 0x1000e010, etc.) ao invés de GS privilege regs em 0x12000000+.
+- `PS2_GS_BASE = 0x12000000` — endereços corretos: GS_PMODE=0x12000000, GS_DISPFB1=0x12000070 (fbw=10=640px), GS_IMR=0x12001010
+- Stub corrigido para escrever nos endereços certos + adicionou write de GS_DISPFB1 (fbw=10).
+
+**PASSO 28 adicionado:**
+Logs de entrada/saída em cada callee de sub_0017A9B0 (func_21FEF0, func_26BB30, func_183330, func_17C050).
+Objetivo: descobrir qual dessas funções cria/inicia a render thread (via StartThread syscall 0x22).
+
+**Arquivos modificados:**
+- `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp` — Bug AM fix + PASSO 23A endereços corretos
+- `GOD_PC_PORT_FINAL/src/recompiled/sub_0017A9B0_0x17a9b0.cpp` — PASSO 28 logs
+
+**auto_round.sh:** timeout = **60s**. Loop deve estar ativo.
+
+**Próximo passo após o round:**
+Verificar no log filtrado:
+1. Aparecem `[PASSO 23B] sub_0017A940: apos func_182810 (8/10)`? → Bug AM fix funcionou
+2. Aparecem `[PASSO 28] sub_0017A9B0: START`? → JAL[11/11] agora executa
+3. Aparecem novos `[StartThread] id=X entry=0xYYYYYY`? → render thread criada
+4. `nonBlack` ainda é 0? → ainda precisa investigar a thread de render
