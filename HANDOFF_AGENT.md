@@ -1164,6 +1164,24 @@ Sintaxe verificada (py_compile, exit 0). Ferramenta do analista — roda no Repl
 
 ---
 
+**`tools/agente_local.py`** — daemon local para o PC do Agente Cris (adicionado 2026-05-07)
+
+Monitora a branch `logs/auto` no GitHub. Quando detecta novo commit (round concluído):
+1. Exibe resumo dos marcadores críticos no terminal
+2. Envia notificação desktop via `notify-send` (Linux Mint)
+3. Mostra texto de comando pronto para colar no chat do Replit Agent
+
+```bash
+python3 tools/agente_local.py              # loop permanente, checa a cada 30s
+python3 tools/agente_local.py --once       # verifica uma vez e sai
+python3 tools/agente_local.py --interval 15  # checa a cada 15s
+```
+
+Requer: `GITHUB_TOKEN` no ambiente (ou em `~/.git-credentials`). Sem dependências externas (só stdlib Python).
+Sintaxe verificada (py_compile, exit 0).
+
+---
+
 **`tools/triage_passo23.py`** — triagem focada no round PASSO 23 (adicionado 2026-05-06)
 
 Lê o log filtrado do GitHub e reporta especificamente: PASSO 23A (GS init), PASSO 23B (steps 1-10 de sub_0017A940), PASSO 23C (guard Bug AH), nonBlack, activeThreads e pool forges — em ~10 linhas.

@@ -115,3 +115,4 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
 - **Ghidra:** For MIPS R5900 disassembly and analysis of the PS2 ELF.
 - **Triagem round atual (PASSO 23):** `python3 tools/triage_passo23.py` — relatório focado nos marcadores 23A/23B/23C + nonBlack + activeThreads.
 - **Triagem round atual (PASSO 26):** `python3 tools/triage_passo26.py` — relatório focado nos marcadores 26/25/24/23B/22B + nonBlack + activeThreads (Bug AJ fix).
+- **Agente local (PC do Cris):** `python3 tools/agente_local.py` — daemon que monitora branch `logs/auto` no GitHub, detecta novo commit (round concluído), exibe resumo no terminal + notificação desktop + comando pronto para colar no chat do Replit. Use `--once` para verificar uma vez e sair.
