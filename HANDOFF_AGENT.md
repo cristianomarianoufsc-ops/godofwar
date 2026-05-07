@@ -1157,6 +1157,21 @@ python3 tools/reachable_after_boot.py   # usa os novos seeds
 
 Ferramenta Universal (sem endereços GoW hard-coded). Sintaxe verificada (py_compile, exit 0).
 
+**`tools/triage_passo30.py`** — triagem focada no round PASSO 30 (adicionado 2026-05-07)
+
+Lê o log filtrado do GitHub e reporta especificamente: PASSO 30 (0x1789e0 e 0x178be8 REGISTRADO vs NAO registrado — Bug AS fix), forge count do PASSO 22C (monitorar crescimento explosivo: era 133, foi a 400+, agora 530), CreateThread/StartThread thid=8 (render thread), nonBlack, término do round — com diagnóstico automático. Detecta automaticamente novos endereços NAO registrados (potencial Bug AT).
+
+```bash
+python3 tools/triage_passo30.py              # log filtrado do GitHub
+python3 tools/triage_passo30.py --full       # log completo do GitHub
+python3 tools/triage_passo30.py --local arquivo.txt
+python3 tools/triage_passo30.py --raw        # linhas brutas sem formatação
+```
+
+Sintaxe verificada (py_compile, exit 0). Ferramenta do analista — roda no Replit, Cris não precisa fazer nada.
+
+---
+
 **`tools/triage_passo26.py`** — triagem focada no round PASSO 26 (adicionado 2026-05-06)
 
 Lê o log filtrado do GitHub e reporta especificamente: PASSO 26 (Bug AJ — func_180D08 vtable dispatch skip), PASSO 25 (Bug AI confirmação), PASSO 24 (callees 1/8 a 8/8 de sub_0017E530), PASSO 23B (steps 1/10 a 10/10 de sub_0017A940), PASSO 22B (StartThread thid=8), nonBlack, activeThreads — com diagnóstico automático do próximo passo.
