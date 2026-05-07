@@ -64,19 +64,23 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
 - **NUNCA feche o loop `auto_round.sh loop` para rodar outro comando.** Se precisar rodar algo manual, abra Terminal 2 separado.
 - **NÃO pedir log ao Agente Cris.** Os logs são enviados automaticamente para o GitHub.
 
-## Estado atual do boot (2026-05-07) — 🔧 Bug AN CORRIGIDO (PASSO 29)
+## Estado atual do boot (2026-05-07) — 🔧 Bug AO CORRIGIDO (PASSO 30)
 
 - **auto_round.sh:** timeout = **60s** (era 300s).
 - **Bug AK ✅** PASSO 27 confirmado — `func_176FC8` BST skip funcionando.
 - **🏆 BOOT INIT CONCLUÍDO** — `entry=0x2996b0` alcançado, tid=1 fez ExitThread normalmente.
 - **Bug AM ✅ CORRIGIDO** — PASSO 22B stub agora faz `ctx->pc = ra` ao final.
-- **Bug AN ✅ CORRIGIDO (2026-05-07) — causa raiz de steps 8-10 nunca executarem:**
-  - `sub_0017FD10` (0x17fd10) tem 3x `jalr $v0` (em 0x17fd98, 0x17fdec, 0x17fe64) que leem ponteiros de função de vtable não inicializada → lixo `0x3bd5a2c6` → bad-PC.
-  - Dispatcher recuperava com `ra=0x17fda0`, mas `sub_0017A940` detectava `ctx->pc ≠ retorno esperado de func_182810` e abortava → steps 8/10, 9/10, 10/10 NUNCA logados → `sub_0017A9B0` (JAL[11/11] = render thread) nunca chamada → `nonBlack=0`.
-  - **Fix (PASSO 29):** Stub `gow_stub_0x17FD10_vtable_jalr_skip` em `game_overrides.cpp` — retorna `v0=0` imediatamente, evitando os 3 jalr problemáticos.
+- **Bug AN ✅ CORRIGIDO (PASSO 29):** Stub `gow_stub_0x17FD10_vtable_jalr_skip` — `sub_0017FD10` tem 3x jalr para vtable não inicializada → retorna `v0=0` imediatamente.
+- **Bug AN confirmado no round:** step 8/10 (`func_182810`) ✅ apareceu pela primeira vez. Mas steps 9/10 e 10/10 NÃO apareceram.
+- **Bug AO ✅ CORRIGIDO (2026-05-07) — causa raiz de steps 9/10 e 10/10 nunca executarem:**
+  - Após step 8/10, `sub_0017A940` chama step 9/10 = `func_21C788`.
+  - Cadeia: `func_21C788 → func_185698 → func_13E180 → func_186300 (×17 loops) → func_17D0A0 → func_17CBD0 → func_17C790 → func_17C6F0 → func_17C688 → func_17C808 → sub_0017C628 → func_1863B8`
+  - `func_1863B8` (BST lookup) retorna `v0=0x1789e0` → `sub_0017C628` faz `jalr $v0`.
+  - `0x1789e0` é sub-entry interno de `sub_001785F0` — **NÃO registrado** → `"Warning: Function at address 0x1789e0 not found"` → bad-PC → dispatcher recupera → `sub_0017A940` aborta → steps 9/10, 10/10, `sub_0017A9B0` (render thread) nunca chamados → `nonBlack=0`.
+  - **Fix (PASSO 30):** Stub `gow_stub_0x17C628_jalr_guard` — reimplementa `sub_0017C628` com `runtime->hasFunction(v0)` antes do `jalr`; se não registrado, pula jalr e executa fallback `label_17c658` normalmente.
 - **PASSO 23A:** GS configurado com endereços corretos 0x12000000+.
 - **PASSO 28 adicionado:** logs em sub_0017A9B0 callees para rastrear render thread.
-- **Aguardando round:** verificar `[PASSO 23B] ... (8/10)` até `(10/10)`, `[PASSO 28] sub_0017A9B0: START`, e novos `[StartThread]` + `nonBlack>0`.
+- **Aguardando round:** verificar `[PASSO 30] ... NAO registrado` (confirmação Bug AO), `[PASSO 23B] (9/10)` e `(10/10)`, `[PASSO 28] sub_0017A9B0: START`, e novos `[StartThread]` + `nonBlack>0`.
 
 ## Gotchas
 

@@ -964,6 +964,82 @@ namespace
         ctx->pc = GPR_U32(ctx, 31);
     }
 
+    // PASSO 30 / Bug AO fix:
+    // sub_0017C628 (0x17c628) e um wrapper de "lookup + dispatch de renderizador":
+    //   1. Chama func_1863B8 (BST search) com a4=lhu[s0+0] -> v0 = ponteiro de funcao ou 0
+    //   2. Se v0 != 0, faz "jalr $v0" com a0=s0, a1=s1 — PERIGOSO se v0 nao registrado
+    //   3. label_17c658: v0 = (*(s0+4) + 0xF) & 0xFFFFFFF0 + 0x20, retorna
+    //
+    // No step 9/10 de sub_0017A940, a cadeia:
+    //   func_21C788 -> func_185698 -> func_13E180 -> func_186300 (x17) -> func_17D0A0
+    //   -> func_17CBD0 -> func_17C790 -> func_17C6F0 -> func_17C688 -> func_17C808
+    //   -> sub_0017C628 -> func_1863B8 retorna 0x1789e0 -> jalr 0x1789e0
+    // 0x1789e0 e sub-entry interno de sub_001785F0 (nao registrado no dispatch):
+    //   "Warning: Function at address 0x1789e0 not found" -> bad-PC -> recover ra=0x17c658
+    //   -> sub_0017A940 detecta ctx->pc != retorno esperado de func_21C788 -> aborta
+    //   -> steps 9/10, 10/10, sub_0017A9B0 (render thread) nunca chamados -> nonBlack=0.
+    //
+    // Fix: reimplementar sub_0017C628 com guarda: se v0 nao esta registrado, pular jalr.
+    static uint32_t s_passo30_count = 0u;
+    void gow_stub_0x17C628_jalr_guard(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime)
+    {
+        ++s_passo30_count;
+        // Salvar ra original do caller
+        const uint32_t saved_ra = GPR_U32(ctx, 31);
+        const uint32_t s0       = GPR_U32(ctx, 4);   // a0 = ponteiro objeto
+        const uint32_t s1_val   = GPR_U32(ctx, 5);   // a1
+
+        // a4 = lhu [s0 + 0]
+        SET_GPR_U32(ctx, 4, (uint32_t)(uint16_t)READ16(ADD32(s0, 0)));
+
+        // Chamar func_1863B8 (BST lookup) via dispatch
+        ctx->pc = 0x1863B8u;
+        SET_GPR_U32(ctx, 31, 0x17C648u);   // ra simulado do jal original
+        if (runtime->hasFunction(0x1863B8u)) {
+            auto bstFn = runtime->lookupFunction(0x1863B8u);
+            const uint32_t __ep = ctx->pc;
+            bstFn(rdram, ctx, runtime);
+            if (ctx->pc == __ep) { ctx->pc = 0x17C648u; }
+        } else {
+            SET_GPR_U32(ctx, 2, 0u);
+            ctx->pc = 0x17C648u;
+        }
+
+        const uint32_t v0_fn = GPR_U32(ctx, 2);
+
+        if (v0_fn != 0u) {
+            if (runtime->hasFunction(v0_fn)) {
+                // jalr normal — alvo registrado, seguro chamar
+                SET_GPR_U64(ctx, 4, (uint64_t)s0);
+                SET_GPR_U64(ctx, 5, (uint64_t)s1_val);
+                SET_GPR_U32(ctx, 31, 0x17C658u);
+                ctx->pc = v0_fn;
+                auto callFn = runtime->lookupFunction(v0_fn);
+                const uint32_t __ep2 = ctx->pc;
+                callFn(rdram, ctx, runtime);
+                if (ctx->pc == __ep2) { ctx->pc = 0x17C658u; }
+            } else {
+                // v0 nao registrado: pular jalr (Bug AO)
+                std::fprintf(stderr,
+                    "[PASSO 30] sub_0017C628 jalr guard #%u: v0=0x%x NAO registrado"
+                    " — s0=0x%x s1=0x%x ra=0x%x, pulando jalr\n",
+                    s_passo30_count, v0_fn, s0, s1_val, saved_ra);
+                ctx->pc = 0x17C658u;
+            }
+        } else {
+            ctx->pc = 0x17C658u;
+        }
+
+        // label_17c658: v0 = (*(s0+4) + 0xF) & 0xFFFFFFF0 + 0x20
+        if (ctx->pc == 0x17C658u) {
+            const uint32_t raw = (uint32_t)READ32(ADD32(s0, 4));
+            const uint32_t aligned = ((raw + 0xFu) & 0xFFFFFFF0u) + 0x20u;
+            SET_GPR_S32(ctx, 2, (int32_t)aligned);
+        }
+
+        ctx->pc = saved_ra;
+    }
+
     // PASSO 29 / Bug AN fix:
     // sub_0017FD10 (0x17fd10) e uma funcao de busca/comparacao em lista ordenada.
     // Ela contem 3x "jalr $v0" que leem ponteiros de funcao de uma vtable nao inicializada
@@ -1049,6 +1125,14 @@ namespace
                   << "(func_176FC8 — Bug AK: BST insert/traverse pool nomes hash; "
                   << "loop infinito bnel $s4,$v0 em label_177470 — pool 0x29C4B4 nao inicializado; "
                   << "func_176C58 nao usa retorno de func_176FC8 -> skip seguro)"
+                  << std::endl;
+
+        runtime.registerFunction(0x00017C628u, gow_stub_0x17C628_jalr_guard);
+        std::cout << "[game_overrides] God of War: PASSO 30 registrado em 0x0017C628 "
+                  << "(sub_0017C628 — Bug AO: jalr v0=0x1789e0 nao registrado; "
+                  << "sub-entry interno de sub_001785F0; step 9/10 de sub_0017A940 abortava; "
+                  << "fix: guarda hasFunction antes do jalr, pula se nao registrado; "
+                  << "esperado: steps 9/10, 10/10, sub_0017A9B0 START, nonBlack>0)"
                   << std::endl;
 
         runtime.registerFunction(0x0017FD10u, gow_stub_0x17FD10_vtable_jalr_skip);

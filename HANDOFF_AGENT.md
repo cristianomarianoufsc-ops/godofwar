@@ -1643,61 +1643,71 @@ Verificar no log filtrado:
 
 ---
 
-### 🟢 ESTADO ATUAL — 2026-05-07 (Bug AN CORRIGIDO — PASSO 29 aplicado)
+### 🟢 ESTADO ATUAL — 2026-05-07 (Bug AO CORRIGIDO — PASSO 30 aplicado)
 
-#### Resultados do round pós-Bug AM (PASSO 22B corrigido)
+#### Resultados do round pós-PASSO 29 (Bug AN fix — sub_0017FD10)
 
-**Bug AM fix ✅ CONFIRMADO — mas novos bugs revelados:**
+**Bug AN fix ✅ CONFIRMADO — step 8/10 apareceu pela primeira vez na história:**
 
 ```
-[PASSO 23B] sub_0017A940: apos func_293930/StartThread (7/10) — pc=0x17a98c v0=0x2
-[dispatch:first-bad-pc] bad=0x3bd5a2c6 ra=0x17fda0 sp=0x1fffed0 ... trace=... -> 0x293930 -> 0x182810 -> 0x17e6b8 -> 0x180bc8 -> 0x180e90 -> 0x180d08 -> 0x180e10 -> 0x289a28 -> 0x17fd10 -> 0x2897c4 -> 0x175740 -> 0x175780 -> 0x3bd5a2c6
-[dispatch:recover-pc] bad=0x3bd5a2c6 ra=0x17fda0 fallback=0x175740
-INFO: TEXTURE: [ID 3] Texture loaded successfully (640x448 | R8G8B8A8 | 1 mipmaps)
-[PS2_PRINTF stub] # TLB spad=0 kernel=1:%d default=%d:%d extended=%d:%d
-[entry_2996b0:ExitThread] ...
+[PASSO 23B] sub_0017A940: apos func_182810 (8/10) — pc=0x17a994
+[dispatch:first-bad-pc] bad=0x1789e0 ra=0x17c658 ...
+  trace=... -> 0x21c788 -> 0x185698 -> 0x13e180 -> 0x186300 (x17) -> 0x17d0a0
+  -> 0x17cbd0 -> 0x17c790 -> 0x17c6f0 -> 0x17c688 -> 0x17c808 -> 0x17c628 -> 0x1863b8 -> 0x1789e0
+Warning: Function at address 0x1789e0 not found
 [frame:upload] idx=0 fbp=0 fbw=0 psm=0x0 size=640x448 nonBlack=0
 ```
 
-**Novos sinais positivos:**
-- `TEXTURE: [ID 3] Texture loaded successfully (640x448)` — runtime GS carregando textura de buffer!
-- `[PS2_PRINTF stub]` — jogo está chamando printf (TLB info).
-- steps 8-10/10 de sub_0017A940 AINDA não apareceram.
+**Progressos do round:**
+- Step 8/10 (`func_182810`) ✅ pela primeira vez!
+- `TEXTURE: [ID 3] Texture loaded successfully (640x448)` — runtime GS funcionando
+- Steps 9/10 e 10/10 NÃO apareceram — novo bug bloqueador imediatamente identificado.
 
-#### Bug AN 🔴→✅ CORRIGIDO — sub_0017FD10 jalr para vtable não inicializada
+#### Bug AN 🔴→✅ CORRIGIDO (PASSO 29) — sub_0017FD10 jalr vtable não inicializada
+
+**Causa raiz:** `sub_0017FD10` contém 3x `jalr $v0` lendo vtable não inicializada → lixo `0x3bd5a2c6` → bad-PC → `sub_0017A940` abortava antes de step 8/10.
+**Fix:** Stub `gow_stub_0x17FD10_vtable_jalr_skip` — retorna `v0=0` imediatamente.
+
+---
+
+#### Bug AO 🔴→✅ CORRIGIDO (PASSO 30) — sub_0017C628 jalr para 0x1789e0 não registrado
 
 **Causa raiz:**
-`sub_0017FD10` (0x17fd10) é uma função de busca/comparação em lista ordenada.
-Contém **3x `jalr $v0`** (em 0x17fd98, 0x17fdec, 0x17fe64) que leem ponteiros de função de vtable não inicializada:
-- `v0 = READ32(READ32(s3+0xC) + 0x44)` → lixo `0x3bd5a2c6` → bad-PC
+Após step 8/10, `sub_0017A940` chama step 9/10 = `func_21C788`.
+Cadeia de chamadas dentro de func_21C788:
+```
+func_21C788 → func_185698 → func_13E158 → func_13D630 → func_13E090 → func_13DC78
+→ func_16AF50 → func_13DC78 → func_13E180 → func_186300 (×17 loops BST sort)
+→ func_17D0A0 → func_17CBD0 → func_17C790 → func_17C6F0 → func_17C688
+→ func_17C808 → sub_0017C628 → func_1863B8 (BST lookup) → v0=0x1789e0
+→ jalr 0x1789e0 → "Warning: Function at address 0x1789e0 not found" → BAD PC
+```
 
-**Cadeia completa:**
-```
-sub_0017A940 step 8 → func_182810 → func_17E6B8 → func_180BC8 → func_180E90
-→ func_180D08 (PASSO 26 stub OK) → 0x180E10 → func_289A28 → sub_0017FD10
-→ jalr 0x3bd5a2c6 → BAD PC
-```
+`0x1789e0` é um **sub-entry point interno** de `sub_001785F0_0x1785f0.cpp` (linha 1161), não registrado separadamente no dispatch table (`register_functions.cpp` só registra `0x1785f0`).
 
 **Consequência:**
-Dispatcher recupera com `ra=0x17fda0`, mas `sub_0017A940` detecta que `ctx->pc ≠ retorno esperado de func_182810` → aborta antes de logar step 8/10 → steps 8/10, 9/10, 10/10 nunca executam → `sub_0017A9B0` (JAL[11/11] = render thread) nunca chamada → `nonBlack=0`.
+Dispatcher recupera com `ra=0x17c658`, `sub_0017A940` detecta `ctx->pc ≠ retorno esperado de func_21C788` → aborta → steps 9/10, 10/10, `sub_0017A9B0` (render thread) nunca chamados → `nonBlack=0`.
 
-**Fix (PASSO 29) — game_overrides.cpp:**
+**Fix (PASSO 30) — game_overrides.cpp:**
 ```cpp
-void gow_stub_0x17FD10_vtable_jalr_skip(uint8_t* /*rdram*/, R5900Context* ctx, PS2Runtime* /*runtime*/)
+void gow_stub_0x17C628_jalr_guard(uint8_t* rdram, R5900Context* ctx, PS2Runtime* runtime)
 {
-    // Loga chamada com contador
-    SET_GPR_U32(ctx, 2, 0u);  // v0=0 (neutro: sem match / comparacao = igual)
-    ctx->pc = GPR_U32(ctx, 31);  // retorna imediatamente
+    // Reimplementa sub_0017C628 com guarda antes do jalr:
+    // 1. Chama func_1863B8 (BST lookup) com a4=lhu[s0+0]
+    // 2. Se v0 esta registrado: chama normalmente (jalr seguro)
+    // 3. Se v0 NAO registrado (caso 0x1789e0): pula jalr, executa label_17c658
+    //    label_17c658: v0 = (*(s0+4) + 0xF) & 0xFFFFFFF0 + 0x20
+    // 4. Retorna
 }
 // registrado em apply_god_of_war_overrides:
-runtime.registerFunction(0x0017FD10u, gow_stub_0x17FD10_vtable_jalr_skip);
+runtime.registerFunction(0x00017C628u, gow_stub_0x17C628_jalr_guard);
 ```
 
 **Arquivo modificado:** `PS2Recomp/ps2xRuntime/src/lib/game_overrides.cpp`
 
 **Próximo passo após o round (rebuild_runtime.sh):**
-1. `[PASSO 29]` aparece no log → stub ativo
-2. `[PASSO 23B] sub_0017A940: apos func_182810 (8/10)` → step 8 completo ✅
-3. `[PASSO 23B] sub_0017A940: apos ... (9/10)` e `(10/10)` → steps 9-10 completos ✅
-4. `[PASSO 28] sub_0017A9B0: START` → JAL[11/11] executou → render thread deve ser criada
+1. `[PASSO 30] sub_0017C628 jalr guard #N: v0=0x1789e0 NAO registrado` → Bug AO confirmado e corrigido
+2. `[PASSO 23B] sub_0017A940: apos ... (9/10)` e `(10/10)` → steps 9-10 completos ✅
+3. `[PASSO 28] sub_0017A9B0: START` → JAL[11/11] executou → render thread sendo criada
+4. Novos `[StartThread]` com tid>3
 5. `nonBlack>0` → PRIMEIRO FRAME DO JOGO!
