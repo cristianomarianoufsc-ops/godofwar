@@ -60,7 +60,7 @@ Port estático do God of War (PS2) para PC usando o PS2Recomp.
 - **NÃO RODE `bash build.sh`. NÃO RODE `bash rebuild_runtime.sh`. NÃO RODE `bash recompilar.sh`. NÃO RODE `bash setup_linux.sh`. NÃO RODE `bash instalar_linux_mint.sh`. NÃO RODE `bash jogar.sh`. NÃO RODE `cmake` NEM `make`.**
 - **NÃO iniciar o workflow `Start application`** — imprime só aviso intencional.
 - **Sempre que fizer qualquer progresso — fix aplicado, bug identificado, teste rodado, causa raiz descoberta — atualize OBRIGATORIAMENTE os dois arquivos:** `replit.md` e `HANDOFF_AGENT.md` (no mesmo commit).
-- **Sempre que editar código que precisa rodar, encerrar a resposta pedindo o push.** Documentação pura pode ir em lote.
+- **Push automático:** após commitar, SEMPRE rodar `bash git_push.sh` — o `GITHUB_TOKEN` está salvo nos secrets do Replit. NÃO pedir ao Agente Cris para clicar em Push.
 - **NUNCA feche o loop `auto_round.sh loop` para rodar outro comando.** Se precisar rodar algo manual, abra Terminal 2 separado.
 - **NÃO pedir log ao Agente Cris.** Os logs são enviados automaticamente para o GitHub.
 

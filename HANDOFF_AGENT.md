@@ -51,16 +51,18 @@ Se você terminar a sessão sem atualizar os dois, o próximo agente vai perder 
 
 ---
 
-## 🚨 FLUXO DE PUSH — REPLIT NÃO EMPURRA AUTOMATICAMENTE PRO REMOTO 🚨
+## 🚨 FLUXO DE PUSH — AUTOMÁTICO VIA git_push.sh 🚨
+
+**O push agora é automático! O GITHUB_TOKEN está salvo permanentemente nos secrets do Replit.**
 
 **Sequência real:**
-1. Analista edita arquivos no Replit → Replit cria checkpoint LOCAL
-2. **Analista AVISA explicitamente:** "Cris, clica no botão Push"
-3. Cris aperta botão na UI → commit vai pro GitHub → loop detecta em ≤30s → round dispara
+1. Analista edita arquivos no Replit → commita as mudanças
+2. Analista roda `bash git_push.sh` → push vai direto pro GitHub
+3. Loop `auto_round.sh` no PC do Cris detecta em ≤30s → round dispara automaticamente
 
-**Obrigação do analista:** ao terminar QUALQUER edição que precisa rodar no PC, explicitar na resposta: *"Cris, clica no botão Push do Replit pra mandar o fix pro GitHub."*
+**Obrigação do analista:** após QUALQUER commit que precisa rodar no PC, rodar `bash git_push.sh`. NÃO pedir ao Agente Cris para clicar em Push.
 
-**Exceção:** edição em `replit.md`/`HANDOFF_AGENT.md` puramente documental NÃO precisa de push imediato.
+**Exceção:** edição em `replit.md`/`HANDOFF_AGENT.md` puramente documental pode ir em lote no mesmo push da próxima correção de código.
 
 ---
 
